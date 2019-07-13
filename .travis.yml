@@ -5,10 +5,18 @@ env:
   - DEPS="python=3.6 numpy=1.14.6 geos=3.6.2"
   - DEPS="python=3.7 numpy geos"
 
-os:
-  - linux
-  - windows
-  - osx
+matrix:
+  include:
+  - os: linux
+    env: DEPS="python=3.5 numpy=1.11.3 geos=3.4.2"
+  - os: linux
+    env: DEPS="python=3.6 numpy=1.14.6 geos=3.6.2"
+  - os: linux
+    env: DEPS="numpy geos"
+  - os: osx
+    env: DEPS="numpy geos"
+  - os: windows
+    env: DEPS="numpy geos"
 
 before_install:
   # set conda path info
