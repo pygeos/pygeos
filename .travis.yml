@@ -14,7 +14,6 @@ matrix:
     env: DEPS="python=3.7 numpy geos"
 
 before_install:
-  # obtain miniconda installer
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
     elif  [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
@@ -22,10 +21,8 @@ before_install:
     fi;
 
 install:
-  # install miniconda
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda:$HOME/miniconda/bin:$PATH"
-  # for conda version 4.4 or later
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - hash -r;
   - conda config --set always_yes yes --set changeps1 no --set restore_free_channel true;
@@ -34,6 +31,6 @@ install:
   - conda activate testenv;
   - conda --version ; python --version ; pip --version;
   - python setup.py build_ext --inplace
-  - pip install .[test]
+  - pip install . --no-deps
 
-script: pytest --black
+script: pytest
