@@ -2,13 +2,15 @@ language: minimal
 
 matrix:
   include:
-  - os: linux
-    env: DEPS="python=3.3 numpy=1.7 geos=3.3.3"
-  - os: linux
-    env: DEPS="python=3.4 numpy=1.10 geos=3.5.0"
-  - os: linux
-    env: DEPS="python=3.6 numpy=1.13 geos=3.6.2"
-  - os: linux
+  - os: linux  # 2012
+    env: DEPS="python=3.3 numpy=1.7 geos=3.3"
+  - os: linux  # 2014
+    env: DEPS="python=3.4 numpy=1.9 geos=3.4"
+  - os: linux  # 2015
+    env: DEPS="python=3.5 numpy=1.10 geos=3.5"
+  - os: linux  # 2017
+    env: DEPS="python=3.6 numpy=1.13 geos=3.6"
+  - os: linux  # now
     env: DEPS="python=3.7 numpy geos"
   - os: osx
     env: DEPS="python=3.7 numpy geos"
@@ -26,7 +28,7 @@ install:
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - hash -r;
   - conda update --yes conda;
-  - conda config -set changeps1 no --set restore_free_channel true;
+  - conda config --set changeps1 no --set restore_free_channel true;
   - conda create -n testenv --yes pytest $DEPS;
   - conda activate testenv;
   - conda --version ; python --version ; pip --version;
