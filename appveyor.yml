@@ -1,6 +1,9 @@
 environment:
   matrix:
-    - PYTHON: "C:\\Miniconda36-x64"
+    - PYTHON: "C:\\Miniconda3"
+      DEPS: "numpy geos"
+
+    - PYTHON: "C:\\Miniconda3-x64"
       DEPS: "numpy geos"
 
 init:
@@ -27,9 +30,13 @@ install:
 
 build: false
 
-build_script:
-  - python setup.py build_ext --inplace
-  - pip install . --no-deps
+before_test:
+  - set GEOS_LIBRARY_PATH=%LIBRARY_BIN%\geos_c.dll
+  - "%CMD_IN_ENV%" python -m pip install --no-deps --ignore-installed .
+                                         --global-option=build_ext
+                                         --global-option="-I%LIBRARY_INC%"
+                                         --global-option="-L%LIBRARY_LIB%"
+                                         --global-option="-lgeos_c"
 
 test_script:
-  - pytest
+  - "%CMD_IN_ENV% pytest"
