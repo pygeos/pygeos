@@ -32,7 +32,8 @@ build: false
 
 before_test:
   - set GEOS_LIBRARY_PATH=%LIBRARY_BIN%\geos_c.dll
-  - "%CMD_IN_ENV%" python -m pip install --no-deps --ignore-installed .
+  - >
+    "%CMD_IN_ENV%" python -m pip install --no-deps --ignore-installed .
                                          --global-option=build_ext
                                          --global-option="-I%LIBRARY_INC%"
                                          --global-option="-L%LIBRARY_LIB%"
