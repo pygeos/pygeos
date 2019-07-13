@@ -3,8 +3,8 @@
 language : shell
 
 env:
-  - DEPS="python=3.5 numpy=1.10 geos=3.3"
-  - DEPS="python=3.6 numpy=1.14 geos=3.5"
+  - DEPS="python=3.5 numpy=1.11.3 geos=3.3.3"
+  - DEPS="python=3.6 numpy=1.14.6 geos=3.5.0"
   - DEPS="python=3.7 numpy geos"
 
 os:
@@ -50,4 +50,4 @@ install:
   - python setup.py build_ext --inplace
   - pip install .[test]
 
-script: pytest
+script: pytest --black
