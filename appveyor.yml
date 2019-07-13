@@ -28,9 +28,14 @@ install:
   - conda create -n testenv --yes %DEPS% pytest
   - activate testenv
 
+
 build: false
 
 before_test:
+  - "ECHO %LIBRARY_BIN%"
+  - "ECHO %LIBRARY_BIN%\\geos_c.dll"
+  - "%CMD_IN_ENV ECHO %LIBRARY_BIN%"
+  - "%CMD_IN_ENV ECHO %CONDA_PREFIX%"
   - "%CMD_IN_ENV% set GEOS_LIBRARY_PATH=%LIBRARY_BIN%\\geos_c.dll"
   - "%CMD_IN_ENV% python setup.py build_ext --inplace"
 
