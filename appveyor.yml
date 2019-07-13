@@ -21,7 +21,7 @@ install:
           throw "There are newer queued builds for this pull request, failing early." }
 
   # Prepend to the PATH of this build
-  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%CONDA_ROOT%\\Library\\bin;%PATH%"
+  - "set PATH=%PYTHON%;%PYTHON%\\Scripts;%CONDA_ROOT%\\Library\\bin;%PATH%"
 
   # Install dependencies
   - conda update --yes conda
@@ -31,13 +31,8 @@ install:
 build: false
 
 before_test:
-  - set GEOS_LIBRARY_PATH=%LIBRARY_BIN%\geos_c.dll
-  - >
-    "%CMD_IN_ENV%" python -m pip install --no-deps --ignore-installed .
-                                         --global-option=build_ext
-                                         --global-option="-I%LIBRARY_INC%"
-                                         --global-option="-L%LIBRARY_LIB%"
-                                         --global-option="-lgeos_c"
+  - "set GEOS_LIBRARY_PATH=%LIBRARY_BIN%\geos_c.dll"
+  - "%CMD_IN_ENV% python setup.py build_ext --inplace"
 
 test_script:
-  - "%CMD_IN_ENV% pytest"
+  - pytest
