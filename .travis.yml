@@ -20,7 +20,7 @@ matrix:
       - ./miniconda.sh -b -p /home/travis/mc
       - export PATH=/home/travis/mc/bin:$PATH
       - conda update --yes conda
-      - conda create -n testenv --yes pip numpy geos pytest pytest-black python=$TRAVIS_PYTHON_VERSION
+      - conda create -n testenv --yes pip numpy geos pytest python=$TRAVIS_PYTHON_VERSION
 
 install:
   - python setup.py build_ext --inplace
