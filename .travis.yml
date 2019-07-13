@@ -10,19 +10,8 @@ matrix:
     env: DEPS="numpy geos"
   - os: osx
     env: DEPS="numpy geos"
-  - os: windows
-    env: DEPS="numpy geos"
 
 before_install:
-  # set conda path info
-  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
-      MINICONDA_PATH=$HOME/miniconda;
-      MINICONDA_SUB_PATH=$MINICONDA_PATH/bin;
-    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      MINICONDA_PATH=/c/tools/miniconda3/;
-      MINICONDA_PATH_WIN=`cygpath --windows $MINICONDA_PATH`;
-      MINICONDA_SUB_PATH=$MINICONDA_PATH/Scripts;
-    fi;
   # obtain miniconda installer
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
@@ -32,16 +21,10 @@ before_install:
 
 install:
   # install miniconda
-  # pip and conda will also need OpenSSL for Windows
-  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
-      bash miniconda.sh -b -p $HOME/miniconda;
-    elif  [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
-      choco install openssl.light;
-      choco install miniconda3 --params="'/AddToPath:1 /D:$MINICONDA_PATH_WIN'";
-    fi;
-  - export PATH="$MINICONDA_PATH:$MINICONDA_SUB_PATH:$PATH";
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda:$HOME/miniconda/bin:$PATH"
   # for conda version 4.4 or later
-  - source $MINICONDA_PATH/etc/profile.d/conda.sh;
+  - source $HOME/miniconda/etc/profile.d/conda.sh
   - hash -r;
   - conda config --set always_yes yes --set changeps1 no;
   - conda update -q conda;
