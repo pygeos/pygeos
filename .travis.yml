@@ -3,11 +3,13 @@ language: minimal
 matrix:
   include:
   - os: linux
-    env: DEPS="python=3.5 numpy=1.11 geos=3.6.0"
+    env: DEPS="python=3.3 numpy=1.7 geos=3.3.3"
   - os: linux
-    env: DEPS="python=3.6 numpy=1.14 geos=3.6.2"
+    env: DEPS="python=3.4 numpy=1.10 geos=3.5.0"
   - os: linux
-    env: DEPS="numpy geos"
+    env: DEPS="python=3.6 numpy=1.13 geos=3.6.2"
+  - os: linux
+    env: DEPS="python-3.7 numpy geos"
   - os: osx
     env: DEPS="numpy geos"
 
@@ -26,7 +28,7 @@ install:
   # for conda version 4.4 or later
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - hash -r;
-  - conda config --set always_yes yes --set changeps1 no;
+  - conda config --set always_yes yes --set changeps1 no --set restore_free_channel true;
   - conda update -q conda;
   - conda create -n testenv pytest $DEPS;
   - conda activate testenv;
