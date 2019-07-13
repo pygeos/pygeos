@@ -1,6 +1,4 @@
-# https://github.com/kangwonlee/travis-yml-conda-posix-nt/blob/master/.travis.yml
-
-language : shell
+language: minimal
 
 env:
   - DEPS="python=3.5 numpy=1.11.3 geos=3.3.3"
@@ -44,7 +42,7 @@ install:
   - hash -r;
   - conda config --set always_yes yes --set changeps1 no;
   - conda update -q conda;
-  - conda create -n testenv --yes $DEPS;
+  - conda create -n testenv pytest $DEPS;
   - conda activate testenv;
   - conda --version ; python --version ; pip --version;
   - python setup.py build_ext --inplace
