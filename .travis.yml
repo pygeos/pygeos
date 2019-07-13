@@ -44,8 +44,8 @@ install:
   - hash -r;
   - conda config --set always_yes yes --set changeps1 no;
   - conda update -q conda;
-  - conda env create --name test-environment $DEPS;
-  - conda activate test-environment;
+  - conda create -n testenv --yes $DEPS;
+  - conda activate testenv;
   - conda --version ; python --version ; pip --version;
   - python setup.py build_ext --inplace
   - pip install .[test]
