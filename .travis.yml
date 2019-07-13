@@ -25,9 +25,9 @@ install:
   - export PATH="$HOME/miniconda:$HOME/miniconda/bin:$PATH"
   - source $HOME/miniconda/etc/profile.d/conda.sh
   - hash -r;
-  - conda config --set always_yes yes --set changeps1 no --set restore_free_channel true;
-  - conda update -q conda;
-  - conda create -n testenv pytest $DEPS;
+  - conda update --yes conda;
+  - conda config -set changeps1 no --set restore_free_channel true;
+  - conda create -n testenv --yes pytest $DEPS;
   - conda activate testenv;
   - conda --version ; python --version ; pip --version;
   - python setup.py build_ext --inplace

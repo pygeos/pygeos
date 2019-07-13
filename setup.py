@@ -28,7 +28,7 @@ setup(
     license="BSD 3-Clause",
     packages=["pygeos"],
     install_requires=["numpy"],
-    extras_require={"test": ["pytest", "pytest-black"]},
+    extras_require={"test": ["pytest"]},
     python_requires=">=3",
     include_package_data=True,
     ext_modules=[module_ufuncs],
