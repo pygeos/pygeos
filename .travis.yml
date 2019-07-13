@@ -1,35 +1,52 @@
-language: python
+# https://github.com/kangwonlee/travis-yml-conda-posix-nt/blob/master/.travis.yml
 
-matrix:
-  include:
-  - os: linux
-    dist: xenial
-    python: "3.6"
-    addons:
-      apt:
-        packages:
-          - libgeos-dev
-    before_install:
-      - pip install numpy
-  - os: linux
-    dist: xenial
-    python: "3.6"
-    before_install:
-      - wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-      - bash miniconda.sh -b -p "$HOME"/miniconda
-      - source "$HOME"/miniconda/etc/profile.d/conda.sh
-      - conda update --yes conda
-      - conda create -n testenv --yes pip numpy geos pytest python=$TRAVIS_PYTHON_VERSION
-  - os: osx
-    python: "3.6"
-    before_install:
-      - wget https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh
-      - bash miniconda.sh -b -p "$HOME"/miniconda
-      - source "$HOME"/miniconda/etc/profile.d/conda.sh
-      - conda update --yes conda
-      - conda create -n testenv --yes pip numpy geos pytest python=$TRAVIS_PYTHON_VERSION
+language : shell
+
+env:
+  - DEPS="python=3.5 numpy=1.10 geos=3.3"
+  - DEPS="python=3.6 numpy=1.14 geos=3.5"
+  - DEPS="python=3.7 numpy geos"
+
+os:
+  - linux
+  - windows
+  - osx
+
+before_install:
+  # set conda path info
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
+      MINICONDA_PATH=$HOME/miniconda;
+      MINICONDA_SUB_PATH=$MINICONDA_PATH/bin;
+    elif [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      MINICONDA_PATH=/c/tools/miniconda3/;
+      MINICONDA_PATH_WIN=`cygpath --windows $MINICONDA_PATH`;
+      MINICONDA_SUB_PATH=$MINICONDA_PATH/Scripts;
+    fi;
+  # obtain miniconda installer
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    elif  [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
+    fi;
 
 install:
+  # install miniconda
+  # pip and conda will also need OpenSSL for Windows
+  - if [[ "$TRAVIS_OS_NAME" != "windows" ]]; then
+      bash miniconda.sh -b -p $HOME/miniconda;
+    elif  [[ "$TRAVIS_OS_NAME" == "windows" ]]; then
+      choco install openssl.light;
+      choco install miniconda3 --params="'/AddToPath:1 /D:$MINICONDA_PATH_WIN'";
+    fi;
+  - export PATH="$MINICONDA_PATH:$MINICONDA_SUB_PATH:$PATH";
+  # for conda version 4.4 or later
+  - source $MINICONDA_PATH/etc/profile.d/conda.sh;
+  - hash -r;
+  - conda config --set always_yes yes --set changeps1 no;
+  - conda update -q conda;
+  - conda env create --name test-environment $DEPS;
+  - conda activate test-environment;
+  - conda --version ; python --version ; pip --version;
   - python setup.py build_ext --inplace
   - pip install .[test]
 
