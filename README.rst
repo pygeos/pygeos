@@ -1,7 +1,7 @@
 ======
 PyGEOS
 ======
-[![build status](https://travis-ci.org/caspervdw/pygeos.svg?branch=master)](https://travis-ci.org/caspervdw/pygeos)
+[![build status](https://travis-ci.org/caspervdw/pygeos.svg?branch=master)](https://travis-ci.org/caspervdw/pygeos)[![Build status](https://ci.appveyor.com/api/projects/status/yx6nmovs0wq8eg9n?svg=true)](https://ci.appveyor.com/project/caspervdw/pygeos)
 
 This is a C/Python library that wraps geometry functions in GEOS in numpy ufuncs.
 This project is still in a mock-up phase: the API will most likely change.

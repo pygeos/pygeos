@@ -2,8 +2,6 @@ language: minimal
 
 matrix:
   include:
-  - os: linux  # 2012
-    env: DEPS="python=3.3 numpy=1.7 geos=3.3"
   - os: linux  # 2014
     env: DEPS="python=3.4 numpy=1.9 geos=3.4"
   - os: linux  # 2015
