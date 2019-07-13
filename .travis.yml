@@ -1,8 +1,8 @@
 language: minimal
 
 env:
-  - DEPS="python=3.5 numpy=1.11.3 geos=3.3.3"
-  - DEPS="python=3.6 numpy=1.14.6 geos=3.5.0"
+  - DEPS="python=3.5 numpy=1.11.3 geos=3.4.2"
+  - DEPS="python=3.6 numpy=1.14.6 geos=3.6.2"
   - DEPS="python=3.7 numpy geos"
 
 os:
