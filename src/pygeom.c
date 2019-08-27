@@ -295,8 +295,10 @@ PyTypeObject GeometryType = {
 };
 
 int
-init_geom_type(PyObject *m)
+init_geom_type(PyObject *m, PyTypeObject* tp)
 {
+    GeometryType.tp_base = tp;
+
     if (PyType_Ready(&GeometryType) < 0)
         return -1;
 

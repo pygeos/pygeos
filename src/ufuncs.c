@@ -1,17 +1,21 @@
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#define PY_ARRAY_UNIQUE_SYMBOL pygeos_ARRAY_API
 
 #include <Python.h>
 #include <math.h>
 
-#include "numpy/ndarraytypes.h"
-#include "numpy/ufuncobject.h"
-#include "numpy/npy_3kcompat.h"
+#include <numpy/arrayobject.h>
+#include <numpy/ndarraytypes.h>
+#include <numpy/ufuncobject.h>
+#include <numpy/npy_3kcompat.h>
 
 #include "geos.h"
 #include "pygeom.h"
+#include "dtype.h"
 #include "fast_loop_macros.h"
 
+#include <stdio.h>
 
 #define RAISE_NO_MALLOC PyErr_Format(PyExc_MemoryError, "Could not allocate memory")
 #define CREATE_COORDSEQ(SIZE, NDIM)\
@@ -996,20 +1000,34 @@ static struct PyModuleDef moduledef = {
 PyMODINIT_FUNC PyInit_ufuncs(void)
 {
     PyObject *m, *d, *ufunc;
+    PyObject *np_module;
 
     m = PyModule_Create(&moduledef);
     if (!m) {
         return NULL;
     }
 
-    if (init_geom_type(m) < 0){
+    import_array();
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    import_umath();
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+
+    np_module = PyImport_ImportModule("numpy");
+    if (!np_module) {
+        return NULL;
+    }
+
+    if (init_geom_type(m, &PyGenericArrType_Type) < 0){
         return NULL;
     };
 
-    d = PyModule_GetDict(m);
+    init_geometry_descriptor(np_module);
 
-    import_array();
-    import_umath();
+    d = PyModule_GetDict(m);
 
     void *context_handle = GEOS_init_r();
     PyObject* GEOSException = PyErr_NewException("pygeos.GEOSException", NULL, NULL);

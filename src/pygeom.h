@@ -19,6 +19,6 @@ PyTypeObject GeometryType;
 PyObject *GeometryObject_FROMGEOS(PyTypeObject *type, GEOSGeometry *ptr);
 PyObject *GeometryObject_FromGEOS(PyTypeObject *type, GEOSGeometry *ptr);
 
-int init_geom_type(PyObject *m);
+int init_geom_type(PyObject *m, PyTypeObject* tp);
 
 #endif
