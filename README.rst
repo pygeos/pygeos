@@ -109,10 +109,16 @@ these using Anaconda::
 
     $ conda install numpy geos
 
-On Linux / OSX::
+On OSX::
 
     $ export GEOS_INCLUDE_PATH=$CONDA_PREFIX/Library/include
     $ export GEOS_LIBRARY_PATH=$CONDA_PREFIX/Library/lib
+    $ pip install pygeos
+
+On Linux::
+
+    $ export GEOS_INCLUDE_PATH=$CONDA_PREFIX/include
+    $ export GEOS_LIBRARY_PATH=$CONDA_PREFIX/lib
     $ pip install pygeos
 
 On windows (assuming you are in a Visual C++ shell)::
