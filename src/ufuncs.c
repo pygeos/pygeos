@@ -4,12 +4,15 @@
 #include <Python.h>
 #include <math.h>
 
+#define PY_ARRAY_UNIQUE_SYMBOL pygeos_ARRAY_API
+
 #include "numpy/ndarraytypes.h"
 #include "numpy/ufuncobject.h"
 #include "numpy/npy_3kcompat.h"
 
 #include "geos.h"
 #include "pygeom.h"
+#include "coords.h"
 #include "fast_loop_macros.h"
 
 
@@ -32,12 +35,6 @@
     PyObject **out = (PyObject **)op1;\
     Py_XDECREF(*out);\
     *out = ret
-
-/* This tells Python what methods this module has. */
-static PyMethodDef GeosModule[] = {
-    {NULL, NULL, 0, NULL},
-    {NULL, NULL, 0, NULL}
-};
 
 /* This initializes a global GEOS Context */
 void *geos_context[1] = {NULL};
@@ -986,6 +983,13 @@ TODO relate functions
 #define DEFINE_GENERALIZED(NAME, N_IN, SIGNATURE)\
     ufunc = PyUFunc_FromFuncAndDataAndSignature(NAME ##_funcs, null_data, NAME ##_dtypes, 1, N_IN, 1, PyUFunc_None, # NAME, "", 0, SIGNATURE);\
     PyDict_SetItemString(d, # NAME, ufunc)
+
+/* This tells Python what methods this module has. */
+static PyMethodDef GeosModule[] = {
+    {"get_total_coords", PyCountCoords, METH_VARARGS, "Counts the total amount of coordinates in a array with geometry objects"},
+    {NULL, NULL, 0, NULL}
+};
+
 
 static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT,
