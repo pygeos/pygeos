@@ -14,6 +14,7 @@
 #include "geos.h"
 #include "pygeom.h"
 
+static char get_coordinates(GEOSContextHandle_t, GEOSGeometry *, PyArrayObject *, npy_intp *);
 
 static char get_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *geom,
                                    PyArrayObject *out, npy_intp *cursor) {
@@ -30,6 +31,55 @@ static char get_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *ge
     }
     return 1;
 }
+
+static char get_coordinates_polygon(GEOSContextHandle_t context, GEOSGeometry *geom,
+                                    PyArrayObject *out, npy_intp *cursor) {
+    int n, i;
+    GEOSGeometry *ring;
+
+    ring = (GEOSGeometry *) GEOSGetExteriorRing_r(context, geom);
+    if (ring == NULL) { return 0; }
+    if (!get_coordinates_simple(context, ring, out, cursor)) { return 0; }
+
+    n = GEOSGetNumInteriorRings_r(context, geom);
+    if (n == -1) { return 0; }
+    for(i = 0; i < n; i++) {
+        ring = (GEOSGeometry *) GEOSGetInteriorRingN_r(context, geom, i);
+        if (ring == NULL) { return 0; }
+        if (!get_coordinates_simple(context, ring, out, cursor)) { return 0; }
+    }
+    return 1;
+}
+
+static char get_coordinates_collection(GEOSContextHandle_t context, GEOSGeometry *geom,
+                                       PyArrayObject *out, npy_intp *cursor) {
+    int n, i;
+    GEOSGeometry *sub_geom;
+
+    n = GEOSGetNumGeometries_r(context, geom);
+    if (n == -1) { return 0; }
+    for(i = 0; i < n; i++) {
+        sub_geom = (GEOSGeometry *) GEOSGetGeometryN_r(context, geom, i);
+        if (sub_geom == NULL) { return 0; }
+        if (!get_coordinates(context, sub_geom, out, cursor)) { return 0; }
+    }
+    return 1;
+}
+
+static char get_coordinates(GEOSContextHandle_t context, GEOSGeometry *geom,
+                            PyArrayObject *out, npy_intp *cursor) {
+    int type = GEOSGeomTypeId_r(context, geom);
+    if ((type == 0) | (type == 1) | (type == 2)) {
+        return get_coordinates_simple(context, geom, out, cursor);
+    } else if (type == 3) {
+        return get_coordinates_polygon(context, geom, out, cursor);
+    } else if ((type >= 4) & (type <= 7)) {
+        return get_coordinates_collection(context, geom, out, cursor);
+    } else {
+        return 0;
+    }
+}
+
 
 static char set_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *geom,
                                    int type, PyArrayObject *out, npy_intp *cursor) {
@@ -70,25 +120,6 @@ static char set_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *ge
     fail:
         GEOSCoordSeq_destroy_r(context, seq_new);
         return 0;
-}
-
-
-static char get_coordinates(GEOSContextHandle_t context, GEOSGeometry *geom,
-                            PyArrayObject *out, npy_intp *cursor) {
-    int type = GEOSGeomTypeId_r(context, geom);
-    if ((type == 0) | (type == 1) | (type == 2)) {
-        return get_coordinates_simple(context, geom, out, cursor);
-    } else {
-        return 0;
-    }
-   /* } else if ((type == 1) | (type == 2) {
-        return retrieve_coordinates_line(context, geom, out, cursor);
-    } else if (type == 3) {
-        return retrieve_coordinates_polygon(context, geom, out, cursor);
-    } else {
-        return retrieve_coordinates_collection(context, geom, out, cursor);
-    }*/
-
 }
 
 static char set_coordinates(GEOSContextHandle_t context, GEOSGeometry *geom,
