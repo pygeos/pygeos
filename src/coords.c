@@ -22,7 +22,7 @@ static char get_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *ge
     const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, geom);
     if (seq == NULL) { return 0; }
     if (GEOSCoordSeq_getSize_r(context, seq, &n) == 0) { return 0; }
-    for(i = 0; i < n; i++, i += 1, *cursor += 1) {
+    for(i = 0; i < n; i++, *cursor += 1) {
         x = PyArray_GETPTR2(out, 0, *cursor);
         y = PyArray_GETPTR2(out, 1, *cursor);
         if (GEOSCoordSeq_getX_r(context, seq, i, x) == 0) { return 0; }
@@ -47,7 +47,7 @@ static char set_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *ge
     GEOSCoordSequence *seq_new = GEOSCoordSeq_create_r(context, n, dims);
     if (seq_new == NULL) { return 0; }
 
-    for(i = 0; i < n; i++, i += 1, *cursor += 1) {
+    for(i = 0; i < n; i++, *cursor += 1) {
         x = PyArray_GETPTR2(out, 0, *cursor);
         y = PyArray_GETPTR2(out, 1, *cursor);
         if (GEOSCoordSeq_setX_r(context, seq_new, i, *x) == 0) { goto fail; }
