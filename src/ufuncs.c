@@ -986,7 +986,8 @@ TODO relate functions
 
 /* This tells Python what methods this module has. */
 static PyMethodDef GeosModule[] = {
-    {"get_total_coords", PyCountCoords, METH_VARARGS, "Counts the total amount of coordinates in a array with geometry objects"},
+    {"count_coordinates", PyCountCoords, METH_VARARGS, "Counts the total amount of coordinates in a array with geometry objects"},
+    {"get_coordinates", PyGetCoords, METH_VARARGS, "Gets the coordinates as an (N, 2) shaped ndarray of floats"},
     {NULL, NULL, 0, NULL}
 };
 

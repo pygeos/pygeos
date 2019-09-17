@@ -5,5 +5,6 @@
 #include <geos_c.h>
 
 extern PyObject *PyCountCoords(PyObject *self, PyObject *args);
+extern PyObject *PyGetCoords(PyObject *self, PyObject *args);
 
 #endif
