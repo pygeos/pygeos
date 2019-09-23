@@ -1,6 +1,6 @@
 import pytest
 import pygeos
-from pygeos.ufuncs import count_coordinates, get_coordinates
+from pygeos.ufuncs import count_coordinates, get_coordinates, set_coordinates
 import numpy as np
 from numpy.testing import assert_equal
 
@@ -68,3 +68,29 @@ def test_get_coords(geoms, x, y):
     actual = get_coordinates(np.array(geoms, np.object))
     expected = np.array([x, y], np.float64)
     assert_equal(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "geoms,count",
+    [
+        ([], 0),
+        ([empty], 0),
+        ([point, empty], 1),
+        ([empty, point, empty], 1),
+        ([point, point], 2),
+        ([point, point_z], 2),
+        ([line_string, linear_ring], 8),
+        # ([polygon], 5),
+        # ([polygon_with_hole], 10),
+        # ([multi_point, multi_line_string], 4),
+        # ([multi_polygon], 10),
+        # ([geometry_collection], 3),
+        # ([nested_2], 4),
+        # ([nested_3], 5),
+    ],
+)
+def test_set_coords(geoms, count):
+    coords = np.random.random((2, count))
+    geoms = np.array(geoms, np.object)
+    set_coordinates(geoms, coords)
+    assert_equal(coords, get_coordinates(geoms))
