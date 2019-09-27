@@ -71,26 +71,30 @@ def test_get_coords(geoms, x, y):
 
 
 @pytest.mark.parametrize(
-    "geoms,count",
+    "geoms,count,has_ring",
     [
-        ([], 0),
-        ([empty], 0),
-        ([point, empty], 1),
-        ([empty, point, empty], 1),
-        ([point, point], 2),
-        ([point, point_z], 2),
-        ([line_string, linear_ring], 8),
-        ([polygon], 5),
-        ([polygon_with_hole], 10),
-        ([multi_point, multi_line_string], 4),
-        ([multi_polygon], 10),
-        ([geometry_collection], 3),
-        ([nested_2], 4),
-        ([nested_3], 5),
+        ([], 0, False),
+        ([empty], 0, False),
+        ([point, empty], 1, False),
+        ([empty, point, empty], 1, False),
+        ([point, point], 2, False),
+        ([point, point_z], 2, False),
+        ([line_string, linear_ring], 8, True),
+        ([polygon], 5, True),
+        ([polygon_with_hole], 10, True),
+        ([multi_point, multi_line_string], 4, False),
+        ([multi_polygon], 10, True),
+        ([geometry_collection], 3, False),
+        ([nested_2], 4, False),
+        ([nested_3], 5, False),
     ],
 )
-def test_set_coords(geoms, count):
+def test_set_coords(geoms, count, has_ring):
     geoms = np.array(geoms, np.object)
-    coords = get_coordinates(geoms) + 1.
+    if has_ring:
+        # do not randomize; linearrings / polygons should stay closed
+        coords = get_coordinates(geoms) + np.random.random((2, 1))
+    else:
+        coords = np.random.random((2, count))
     set_coordinates(geoms, coords)
     assert_equal(coords, get_coordinates(geoms))
