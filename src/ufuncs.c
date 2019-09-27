@@ -1036,6 +1036,102 @@ static void from_wkt_func(char **args, npy_intp *dimensions,
 }
 static PyUFuncGenericFunction from_wkt_funcs[1] = {&from_wkt_func};
 
+static char to_wkb_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static void to_wkb_func(char **args, npy_intp *dimensions,
+                        npy_intp *steps, void *data)
+{
+    void *context_handle = geos_context[0];
+    GEOSGeometry *in1;
+
+    GEOSWKBWriter *writer;
+    unsigned char *wkb;
+    size_t size;
+    
+    int dimension = 3;
+    int byte_order = 1;
+    char include_srid = 0;
+    char hex = 0;
+
+    /* Create the WKB writer */
+    writer = GEOSWKBWriter_create_r(context_handle);
+    if (writer == NULL) {
+        return;
+    }
+
+    GEOSWKBWriter_setOutputDimension_r(context_handle, writer, dimension);
+    GEOSWKBWriter_setByteOrder_r(context_handle, writer, byte_order);
+    GEOSWKBWriter_setIncludeSRID_r(context_handle, writer, include_srid);
+
+    UNARY_LOOP {
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        PyObject **out = (PyObject **)op1;
+
+        if (in1 == NULL) {  
+            Py_XDECREF(*out);
+            Py_INCREF(Py_None);
+            *out = Py_None;
+        } else {
+            if (hex) {
+                wkb = GEOSWKBWriter_writeHEX_r(context_handle, writer, in1, &size);
+            } else {
+                wkb = GEOSWKBWriter_write_r(context_handle, writer, in1, &size);
+            }
+            Py_XDECREF(*out);
+            *out = PyBytes_FromStringAndSize((char *) wkb, size);
+            GEOSFree_r(context_handle, wkb);
+        }
+    }
+    GEOSWKBWriter_destroy_r(context_handle, writer);
+}
+static PyUFuncGenericFunction to_wkb_funcs[1] = {&to_wkb_func};
+
+static char to_wkt_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static void to_wkt_func(char **args, npy_intp *dimensions,
+                        npy_intp *steps, void *data)
+{
+    void *context_handle = geos_context[0];
+    GEOSGeometry *in1;
+
+    GEOSWKTWriter *writer;
+    char *wkt;
+    char *format = "%s";
+    
+    char trim = 1;
+    int precision = 6;
+    int dimension = 3;
+    int use_old_3d = 0;
+
+    /* Create the WKT writer */
+    writer = GEOSWKTWriter_create_r(context_handle);
+    if (writer == NULL) {
+        return;
+    }
+
+    GEOSWKTWriter_setRoundingPrecision_r(context_handle, writer, precision);
+    GEOSWKTWriter_setTrim_r(context_handle, writer, trim);
+    GEOSWKTWriter_setOutputDimension_r(context_handle, writer, dimension);
+    GEOSWKTWriter_setOld3D_r(context_handle, writer, use_old_3d);
+
+    UNARY_LOOP {
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        PyObject **out = (PyObject **)op1;
+
+        if (in1 == NULL) {  
+            Py_XDECREF(*out);
+            Py_INCREF(Py_None);
+            *out = Py_None;
+        } else {
+            wkt = GEOSWKTWriter_write_r(context_handle, writer, in1);
+            Py_XDECREF(*out);
+            *out = PyUnicode_FromFormat(format, wkt);
+            GEOSFree_r(context_handle, wkt);
+        }
+    }
+    GEOSWKTWriter_destroy_r(context_handle, writer);
+}
+static PyUFuncGenericFunction to_wkt_funcs[1] = {&to_wkt_func};
+
+
 
 
 /*
@@ -1221,6 +1317,8 @@ PyMODINIT_FUNC PyInit_ufuncs(void)
 
     DEFINE_CUSTOM (from_wkb, 1);
     DEFINE_CUSTOM (from_wkt, 1);
+    DEFINE_CUSTOM (to_wkb, 1);
+    DEFINE_CUSTOM (to_wkt, 1);
 
     Py_DECREF(ufunc);
     return m;
