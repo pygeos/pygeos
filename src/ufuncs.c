@@ -3,6 +3,7 @@
 
 #include <Python.h>
 #include <math.h>
+#include <stdio.h>
 
 #include <numpy/ndarraytypes.h>
 #include <numpy/ufuncobject.h>
@@ -928,6 +929,115 @@ static void create_collection_func(char **args, npy_intp *dimensions,
 }
 static PyUFuncGenericFunction create_collection_funcs[1] = {&create_collection_func};
 
+
+
+/* Define the object -> geom functions (O_Y) */
+
+static char from_wkb_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static void from_wkb_func(char **args, npy_intp *dimensions,
+                          npy_intp *steps, void *data)
+{
+    void *context_handle = geos_context[0];
+    GEOSGeometry *ret_ptr;
+    PyObject *in1;
+
+    GEOSWKBReader *reader;
+    unsigned char *wkb;
+    Py_ssize_t size;
+    char is_hex;
+
+    /* Create the WKB reader */
+    reader = GEOSWKBReader_create_r(context_handle);
+    if (reader == NULL) {
+        return;
+    }
+
+    UNARY_LOOP {
+        in1 = *(PyObject **)ip1;
+
+        /* Cast the PyObject (only bytes) to char* */
+        if (!PyBytes_Check(in1)) {
+            PyErr_Format(PyExc_TypeError, "Expected bytes, found %s", in1->ob_type->tp_name);
+            return;
+        }
+        size = PyBytes_Size(in1);
+        wkb = (unsigned char *)PyBytes_AsString(in1);
+        if (wkb == NULL) {
+            return;
+        }
+
+        /* Check if this is a HEX WKB */
+        if (size != 0) {
+            is_hex = ((wkb[0] == 48) | (wkb[0] == 49));
+        } else {
+            is_hex = 0;
+        }
+
+        /* Read the WKB */
+        if (is_hex) {
+            ret_ptr = GEOSWKBReader_readHEX_r(context_handle, reader, wkb, size);
+        } else {
+            ret_ptr = GEOSWKBReader_read_r(context_handle, reader, wkb, size);
+        }
+        if (ret_ptr == NULL) {
+            return;
+        }
+
+        OUTPUT_Y;
+    }
+    GEOSWKBReader_destroy_r(context_handle, reader);
+}
+static PyUFuncGenericFunction from_wkb_funcs[1] = {&from_wkb_func};
+
+
+
+static char from_wkt_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static void from_wkt_func(char **args, npy_intp *dimensions,
+                          npy_intp *steps, void *data)
+{
+    void *context_handle = geos_context[0];
+    GEOSGeometry *ret_ptr;
+    PyObject *in1;
+
+    GEOSWKTReader *reader;
+    const char *wkt;
+
+    /* Create the WKB reader */
+    reader = GEOSWKTReader_create_r(context_handle);
+    if (reader == NULL) {
+        return;
+    }
+
+    UNARY_LOOP {
+        in1 = *(PyObject **)ip1;
+
+        /* Cast the PyObject (bytes or str) to char* */
+        if (PyBytes_Check(in1)) {
+            wkt = PyBytes_AsString(in1);
+            if (wkt == NULL) { return; }
+        }
+        else if (PyUnicode_Check(in1)) {
+            wkt = PyUnicode_AsUTF8(in1);
+            if (wkt == NULL) { return; }
+        } else {
+            PyErr_Format(PyExc_TypeError, "Expected bytes, found %s", in1->ob_type->tp_name);
+            return;
+        }
+
+        /* Read the WKT */
+        ret_ptr = GEOSWKTReader_read_r(context_handle, reader, wkt);
+        if (ret_ptr == NULL) {
+            return;
+        }
+
+        OUTPUT_Y;
+    }
+    GEOSWKTReader_destroy_r(context_handle, reader);
+}
+static PyUFuncGenericFunction from_wkt_funcs[1] = {&from_wkt_func};
+
+
+
 /*
 TODO polygonizer functions
 TODO prepared geometry predicate functions
@@ -1108,6 +1218,9 @@ PyMODINIT_FUNC PyInit_ufuncs(void)
     DEFINE_Y_Y (polygons_without_holes);
     DEFINE_GENERALIZED(polygons_with_holes, 2, "(),(i)->()");
     DEFINE_GENERALIZED(create_collection, 2, "(i),()->()");
+
+    DEFINE_CUSTOM (from_wkb, 1);
+    DEFINE_CUSTOM (from_wkt, 1);
 
     Py_DECREF(ufunc);
     return m;
