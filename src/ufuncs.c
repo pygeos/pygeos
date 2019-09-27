@@ -6,9 +6,9 @@
 
 #define PY_ARRAY_UNIQUE_SYMBOL pygeos_ARRAY_API
 
-#include "numpy/ndarraytypes.h"
-#include "numpy/ufuncobject.h"
-#include "numpy/npy_3kcompat.h"
+#include <numpy/ndarraytypes.h>
+#include <numpy/ufuncobject.h>
+#include <numpy/npy_3kcompat.h>
 
 #include "geos.h"
 #include "pygeom.h"
@@ -1030,9 +1030,8 @@ PyMODINIT_FUNC PyInit_ufuncs(void)
     GEOSContext_setNoticeMessageHandler_r(context_handle, HandleGEOSNotice, NULL);
     geos_context[0] = context_handle;  /* for global access */
 
-    /* create the missing geometry NaG (a singleton like Py_None) */
-    PyObject *NaG = GeometryObject_FromGEOS(&GeometryType, NULL);
-    PyModule_AddObject(m, "NaG", NaG);
+    /* export the version as a python string */
+    PyModule_AddObject(m, "geos_version", PyUnicode_FromString(GEOS_VERSION));
 
     DEFINE_Y_b (is_empty);
     DEFINE_Y_b (is_simple);
