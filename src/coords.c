@@ -25,8 +25,8 @@ static char get_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *ge
     if (seq == NULL) { return 0; }
     if (GEOSCoordSeq_getSize_r(context, seq, &n) == 0) { return 0; }
     for(i = 0; i < n; i++, *cursor += 1) {
-        x = PyArray_GETPTR2(out, 0, *cursor);
-        y = PyArray_GETPTR2(out, 1, *cursor);
+        x = PyArray_GETPTR2(out, *cursor, 0);
+        y = PyArray_GETPTR2(out, *cursor, 1);
         if (GEOSCoordSeq_getX_r(context, seq, i, x) == 0) { return 0; }
         if (GEOSCoordSeq_getY_r(context, seq, i, y) == 0) { return 0; }
     }
@@ -99,8 +99,8 @@ static void *set_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *g
     if (seq_new == NULL) { return NULL; }
 
     for(i = 0; i < n; i++, *cursor += 1) {
-        x = PyArray_GETPTR2(coords, 0, *cursor);
-        y = PyArray_GETPTR2(coords, 1, *cursor);
+        x = PyArray_GETPTR2(coords, *cursor, 0);
+        y = PyArray_GETPTR2(coords, *cursor, 1);
         if (GEOSCoordSeq_setX_r(context, seq_new, i, *x) == 0) { goto fail; }
         if (GEOSCoordSeq_setY_r(context, seq_new, i, *y) == 0) { goto fail; }
     }
@@ -267,7 +267,7 @@ PyObject *GetCoords(PyArrayObject *arr)
     if (size == -1) {
         return Py_None;
     }
-    npy_intp dims[2] = {2, size};
+    npy_intp dims[2] = {size, 2};
     PyArrayObject *result = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_DOUBLE);
     if (result == NULL) {
         return Py_None;

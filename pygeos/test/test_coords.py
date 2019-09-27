@@ -66,7 +66,7 @@ def test_count_coords(geoms, count):
 )  # fmt: on
 def test_get_coords(geoms, x, y):
     actual = get_coordinates(np.array(geoms, np.object))
-    expected = np.array([x, y], np.float64)
+    expected = np.array([x, y], np.float64).T
     assert_equal(actual, expected)
 
 
@@ -93,8 +93,8 @@ def test_set_coords(geoms, count, has_ring):
     geoms = np.array(geoms, np.object)
     if has_ring:
         # do not randomize; linearrings / polygons should stay closed
-        coords = get_coordinates(geoms) + np.random.random((2, 1))
+        coords = get_coordinates(geoms) + np.random.random((1, 2))
     else:
-        coords = np.random.random((2, count))
+        coords = np.random.random((count, 2))
     set_coordinates(geoms, coords)
     assert_equal(coords, get_coordinates(geoms))
