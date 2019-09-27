@@ -80,17 +80,17 @@ def test_get_coords(geoms, x, y):
         ([point, point], 2),
         ([point, point_z], 2),
         ([line_string, linear_ring], 8),
-        # ([polygon], 5),
-        # ([polygon_with_hole], 10),
-        # ([multi_point, multi_line_string], 4),
-        # ([multi_polygon], 10),
-        # ([geometry_collection], 3),
-        # ([nested_2], 4),
-        # ([nested_3], 5),
+        ([polygon], 5),
+        ([polygon_with_hole], 10),
+        ([multi_point, multi_line_string], 4),
+        ([multi_polygon], 10),
+        ([geometry_collection], 3),
+        ([nested_2], 4),
+        ([nested_3], 5),
     ],
 )
 def test_set_coords(geoms, count):
-    coords = np.random.random((2, count))
     geoms = np.array(geoms, np.object)
+    coords = get_coordinates(geoms) + 1.
     set_coordinates(geoms, coords)
     assert_equal(coords, get_coordinates(geoms))

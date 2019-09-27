@@ -15,6 +15,7 @@
 #include "pygeom.h"
 
 static char get_coordinates(GEOSContextHandle_t, GEOSGeometry *, PyArrayObject *, npy_intp *);
+static void *set_coordinates(GEOSContextHandle_t, GEOSGeometry *, PyArrayObject *, npy_intp *);
 
 static char get_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *geom,
                                    PyArrayObject *out, npy_intp *cursor) {
@@ -82,7 +83,7 @@ static char get_coordinates(GEOSContextHandle_t context, GEOSGeometry *geom,
 
 
 static void *set_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *geom,
-                                   int type, PyArrayObject *coords, npy_intp *cursor) {
+                                    int type, PyArrayObject *coords, npy_intp *cursor) {
     unsigned int n, i, dims;
     double *x, *y;
     GEOSGeometry *ret;
@@ -125,67 +126,58 @@ static void *set_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry *g
 
 static void *set_coordinates_polygon(GEOSContextHandle_t context, GEOSGeometry *geom,
                                      PyArrayObject *coords, npy_intp *cursor) {
-    int i, dims;
-    GEOSGeometry *ring, *hole;
-
+    int i;
+    GEOSGeometry *shell, *hole, *result = NULL;
     int n = GEOSGetNumInteriorRings_r(context, geom);
+
     if (n == -1) { return NULL; }
     GEOSGeometry **holes = malloc(sizeof(void *) * n);
 
     /* create the exterior ring */
-    ring = (GEOSGeometry *) GEOSGetExteriorRing_r(context, geom);
-    if (ring == NULL) { return NULL; }
-    ring = set_coordinates_simple(context, ring, 2, out, cursor)
-    if (ring == NULL) ( return NULL; )
+    shell = (GEOSGeometry *) GEOSGetExteriorRing_r(context, geom);
+    if (shell == NULL) { goto finish; }
+    shell = set_coordinates_simple(context, shell, 2, coords, cursor);
+    if (shell == NULL) { goto finish; }
 
     for(i = 0; i < n; i++) {
         hole = (GEOSGeometry *) GEOSGetInteriorRingN_r(context, geom, i);
-        if (hole == NULL) { return NULL; }
-        hole = set_coordinates_simple(context, hole, 2, out, cursor)
-        if (hole == NULL) { return NULL; }
+        if (hole == NULL) { goto finish; }
+        hole = set_coordinates_simple(context, hole, 2, coords, cursor);
+        if (hole == NULL) { goto finish; }
+        holes[i] = hole;
     }
 
-    return 1;
+    result = GEOSGeom_createPolygon_r(context, shell, holes, n);
 
+    finish:
+        if (holes != NULL) { free(holes); }
+        return result;
+}
 
+static void *set_coordinates_collection(GEOSContextHandle_t context, GEOSGeometry *geom,
+                                        int type, PyArrayObject *coords, npy_intp *cursor) {
+    int i;
+    GEOSGeometry *sub_geom, *result = NULL;
+    int n = GEOSGetNumGeometries_r(context, geom);
+    if (n == -1) { return NULL; }
+    GEOSGeometry **geoms = malloc(sizeof(void *) * n);
 
-    /* Investigate the current (const) CoordSequence */
-    const GEOSCoordSequence *seq = GEOSGeom_getCoordSeq_r(context, geom);
-    if (seq == NULL) { return NULL; }
-    if (GEOSCoordSeq_getSize_r(context, seq, &n) == 0) { return NULL; }
-    if (GEOSCoordSeq_getDimensions_r(context, seq, &dims) == 0) { return NULL; }
-
-    /* Create a new one to fill with the new coordinates */
-    GEOSCoordSequence *seq_new = GEOSCoordSeq_create_r(context, n, dims);
-    if (seq_new == NULL) { return NULL; }
-
-    for(i = 0; i < n; i++, *cursor += 1) {
-        x = PyArray_GETPTR2(coords, 0, *cursor);
-        y = PyArray_GETPTR2(coords, 1, *cursor);
-        if (GEOSCoordSeq_setX_r(context, seq_new, i, *x) == 0) { goto fail; }
-        if (GEOSCoordSeq_setY_r(context, seq_new, i, *y) == 0) { goto fail; }
+    for(i = 0; i < n; i++) {
+        sub_geom = (GEOSGeometry *) GEOSGetGeometryN_r(context, geom, i);
+        if (sub_geom == NULL) { goto finish; }
+        sub_geom = set_coordinates(context, sub_geom, coords, cursor);
+        if (sub_geom == NULL) { goto finish; }
+        geoms[i] = sub_geom;
     }
 
-    /* Construct a new geometry */
-    if (type == 0) {
-        ret = GEOSGeom_createPoint_r(context, seq_new);
-    } else if (type == 1) {
-        ret = GEOSGeom_createLineString_r(context, seq_new);
-    } else if (type == 2) {
-        ret = GEOSGeom_createLinearRing_r(context, seq_new);
-    } else {
-        goto fail;
-    }
-    /* Do not destroy the seq_new if ret is NULL; will lead to segfaults */
-    return ret;
-
-    fail:
-        GEOSCoordSeq_destroy_r(context, seq_new);
-        return NULL;
+    result = GEOSGeom_createCollection_r(context, type, geoms, n);
+    finish:
+        if (geoms != NULL) { free(geoms); }
+        return result;
 }
 
 static void *set_coordinates(GEOSContextHandle_t context, GEOSGeometry *geom,
-                            PyArrayObject *coords, npy_intp *cursor) {
+                             PyArrayObject *coords, npy_intp *cursor) {
     int type = GEOSGeomTypeId_r(context, geom);
     if ((type == 0) | (type == 1) | (type == 2)) {
         return set_coordinates_simple(context, geom, type, coords, cursor);
