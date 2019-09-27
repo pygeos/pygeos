@@ -132,7 +132,11 @@ setup(
     packages=["pygeos"],
     setup_requires=["numpy"],
     install_requires=["numpy>=1.10"],
-    extras_require={"test": ["pytest"], "docs": ["sphinx", "numpydoc"]},
+    extras_require={
+        "test": ["pytest"],
+        "docs": ["sphinx", "numpydoc"],
+        "transform": ["pyproj>=2.1.0"],
+    },
     python_requires=">=3",
     include_package_data=True,
     ext_modules=[module_ufuncs],

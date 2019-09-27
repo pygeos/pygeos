@@ -2,7 +2,7 @@ language: minimal
 
 matrix:
   include:
-  - os: linux  # 2015
+  - os: linux  # 2015 (pyproj 2.1.0 is from 2019)
     env: PYTHON_VERSION="3.5" DEPS="numpy=1.10 geos=3.5 pyproj=2.1"
   - os: linux  # 2017
     env: PYTHON_VERSION="3.6" DEPS="numpy=1.13 geos=3.6 pyproj"
@@ -25,6 +25,7 @@ install:
   - hash -r;
   - conda update --yes conda;
   - conda config --set changeps1 no --set restore_free_channel true;
+  - conda config --append channels conda-forge
   - conda create -n testenv --yes python=$PYTHON_VERSION $DEPS pytest;
   - conda activate testenv;
   - conda --version ; python --version ; pip --version;

@@ -4,12 +4,12 @@ import numpy as np
 __all__ = ["apply", "transform"]
 
 
-def apply(geometries, transformation):
+def apply(geometry, transformation):
     """Apply a function to the coordinates of a geometry.
 
     Parameters
     ----------
-    geometries : Geometry or array_like
+    geometry : Geometry or array_like
     transformation : function
         A function that transforms a (N, 2) ndarray of float64 to another
         (N, 2) ndarray of float64.
@@ -25,7 +25,7 @@ def apply(geometries, transformation):
     >>> apply([Geometry("POINT (0 0)"), None], lambda x: x).tolist()
     [<pygeos.Geometry POINT (0 0)>, None]
     """
-    geometries = np.asarray(geometries, dtype=np.object)
+    geometries = np.asarray(geometry, dtype=np.object)
     coordinates = ufuncs.get_coordinates(geometries)
     coordinates = transformation(coordinates)
     geometries = ufuncs.set_coordinates(geometries, coordinates)
@@ -34,12 +34,24 @@ def apply(geometries, transformation):
     return geometries
 
 
-def transform(geometries, crs_from, crs_to):
-    """Transform the coordinates from one CRS to another.
+def _wrap_pyproj_transformer(crs_from, crs_to):
+    from pyproj import Transformer
+
+    transformer = Transformer.from_crs(crs_from, crs_to)
+    # pyproj takes a (2, N) array, while we have (N, 2)
+    def transformation(coords):
+        x, y = transformer.transform(*coords.T)
+        return np.array([x, y]).T
+
+    return transformation
+
+
+def transform(geometry, crs_from, crs_to):
+    """Transform a geometry from one CRS to another using pyproj.
 
     Parameters
     ----------
-    geometries : Geometry or array_like
+    geometry : Geometry or array_like
     crs_from : CRS or input used to create one
         Projection of input data.
     crs_to : CRS or input used to create one
@@ -55,14 +67,8 @@ def transform(geometries, crs_from, crs_to):
     <pygeos.Geometry POINT (52.1 5.12)>
     """
     try:
-        from pyproj import Transformer
+        transformation = _wrap_pyproj_transformer(crs_from, crs_to)
     except ImportError:
         raise ImportError("This function requires pyproj >= 2.1.0")
-    transformer = Transformer.from_crs(crs_from, crs_to)
 
-    # pyproj takes a (2, N) array, while we have (N, 2)
-    def transformation(coords):
-        x, y = transformer.transform(*coords.T)
-        return np.array([x, y]).T
-
-    return apply(geometries, transformation)
+    return apply(geometry, transformation)
