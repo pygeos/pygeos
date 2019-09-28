@@ -1097,34 +1097,37 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
 }
 static PyUFuncGenericFunction to_wkb_funcs[1] = {&to_wkb_func};
 
-static char to_wkt_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static char to_wkt_dtypes[6] = {NPY_OBJECT, NPY_INT, NPY_BOOL, NPY_INT, NPY_BOOL, NPY_OBJECT};
 static void to_wkt_func(char **args, npy_intp *dimensions,
                         npy_intp *steps, void *data)
 {
     void *context_handle = geos_context[0];
-    GEOSGeometry *in1;
+    char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4], *op1 = args[5];
+    npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4], os1 = steps[5];
+    npy_intp n = dimensions[0];
+    npy_intp i;
 
+    GEOSGeometry *in1;
     GEOSWKTWriter *writer;
     char *wkt;
     char *format = "%s";
-    
-    char trim = 1;
-    int precision = 6;
-    int dimension = 3;
-    int use_old_3d = 0;
+
+    if ((is2 != 0) | (is3 != 0) | (is4 != 0) | (is5 != 0)) {
+        PyErr_Format(PyExc_ValueError, "to_wkt function called with non-scalar parameters");
+        return;
+    }
 
     /* Create the WKT writer */
     writer = GEOSWKTWriter_create_r(context_handle);
     if (writer == NULL) {
         return;
     }
+    GEOSWKTWriter_setRoundingPrecision_r(context_handle, writer, *(int *) ip2);
+    GEOSWKTWriter_setTrim_r(context_handle, writer, *(npy_bool *) ip3);
+    GEOSWKTWriter_setOutputDimension_r(context_handle, writer, *(int *) ip4);
+    GEOSWKTWriter_setOld3D_r(context_handle, writer, *(npy_bool *) ip5);
 
-    GEOSWKTWriter_setRoundingPrecision_r(context_handle, writer, precision);
-    GEOSWKTWriter_setTrim_r(context_handle, writer, trim);
-    GEOSWKTWriter_setOutputDimension_r(context_handle, writer, dimension);
-    GEOSWKTWriter_setOld3D_r(context_handle, writer, use_old_3d);
-
-    UNARY_LOOP {
+    for(i = 0; i < n; i++, ip1 += is1, op1 += os1) {
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
         PyObject **out = (PyObject **)op1;
 
@@ -1142,7 +1145,6 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
     GEOSWKTWriter_destroy_r(context_handle, writer);
 }
 static PyUFuncGenericFunction to_wkt_funcs[1] = {&to_wkt_func};
-
 
 
 
@@ -1330,7 +1332,7 @@ PyMODINIT_FUNC PyInit_ufuncs(void)
     DEFINE_CUSTOM (from_wkb, 1);
     DEFINE_CUSTOM (from_wkt, 1);
     DEFINE_CUSTOM (to_wkb, 1);
-    DEFINE_CUSTOM (to_wkt, 1);
+    DEFINE_CUSTOM (to_wkt, 5);
 
     Py_DECREF(ufunc);
     return m;

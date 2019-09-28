@@ -2,7 +2,8 @@ import numpy
 import pygeos
 import pytest
 
-from pygeos.ufuncs import from_wkt, from_wkb, to_wkt, to_wkb
+from pygeos.ufuncs import from_wkt, from_wkb, to_wkb
+from pygeos.io import to_wkt
 
 
 POINT11_WKB = (
@@ -46,15 +47,27 @@ def test_from_wkb():
 
 
 def test_to_wkt():
-    points = pygeos.points(1, 1)
-    actual = to_wkt(points)
+    points = pygeos.points(1, 1, 1)
+    actual = to_wkt(points, trim=True)
     assert actual == "POINT (1 1)"
+
+    actual = to_wkt(points, rounding_precision=2)
+    assert actual == "POINT (1.00 1.00)"
+
+    actual = to_wkt(points, trim=True, output_dimension=3)
+    assert actual == "POINT Z (1 1 1)"
+
+    actual = to_wkt(points, trim=True, output_dimension=3, old_3d=True)
+    assert actual == "POINT (1 1 1)"
 
     # None propagates
     assert to_wkt(None) is None
 
     with pytest.raises(TypeError):
         to_wkt(1)
+
+    with pytest.raises(pygeos.GEOSException):
+        to_wkt(points, output_dimension=4)
 
 
 def test_to_wkb():
