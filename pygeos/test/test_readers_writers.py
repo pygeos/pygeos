@@ -17,7 +17,10 @@ def test_from_wkt():
     actual = from_wkt(b"POINT (1 1)")
     assert pygeos.equals(actual, expected)
 
-    with pytest.raises(TypeError, match="Expected bytes, found int"):
+    # None propagates
+    assert from_wkb(None) is None
+
+    with pytest.raises(TypeError, match="Expected bytes, got int"):
         from_wkt(1)
 
     with pytest.raises(pygeos.GEOSException):
@@ -32,7 +35,10 @@ def test_from_wkb():
     actual = from_wkb(b"0101000000000000000000F03F000000000000F03F")
     assert pygeos.equals(actual, expected)
 
-    with pytest.raises(TypeError, match="Expected bytes, found str"):
+    # None propagates
+    assert from_wkb(None) is None
+
+    with pytest.raises(TypeError, match="Expected bytes, got str"):
         from_wkb("test")
 
     with pytest.raises(pygeos.GEOSException):
@@ -44,9 +50,21 @@ def test_to_wkt():
     actual = to_wkt(points)
     assert actual == "POINT (1 1)"
 
+    # None propagates
+    assert to_wkt(None) is None
+
+    with pytest.raises(TypeError):
+        to_wkt(1)
+
 
 def test_to_wkb():
     points = pygeos.points(1, 1)
     actual = to_wkb(points)
     assert actual == POINT11_WKB
+
+    # None propagates
+    assert to_wkb(None) is None
+
+    with pytest.raises(TypeError):
+        to_wkb(1)
 

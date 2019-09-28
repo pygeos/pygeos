@@ -953,36 +953,42 @@ static void from_wkb_func(char **args, npy_intp *dimensions,
     }
 
     UNARY_LOOP {
+        /* ip1 is pointer to array element PyObject* */
         in1 = *(PyObject **)ip1;
 
-        /* Cast the PyObject (only bytes) to char* */
-        if (!PyBytes_Check(in1)) {
-            PyErr_Format(PyExc_TypeError, "Expected bytes, found %s", in1->ob_type->tp_name);
-            return;
+        if (in1 == Py_None) {
+            /* None in the input propagates to the output */
+            ret_ptr = NULL;
         }
-        size = PyBytes_Size(in1);
-        wkb = (unsigned char *)PyBytes_AsString(in1);
-        if (wkb == NULL) {
-            return;
-        }
+        else {
+            /* Cast the PyObject (only bytes) to char* */
+            if (!PyBytes_Check(in1)) {
+                PyErr_Format(PyExc_TypeError, "Expected bytes, got %s", Py_TYPE(in1)->tp_name);
+                return;
+            }
+            size = PyBytes_Size(in1);
+            wkb = (unsigned char *)PyBytes_AsString(in1);
+            if (wkb == NULL) {
+                return;
+            }
 
-        /* Check if this is a HEX WKB */
-        if (size != 0) {
-            is_hex = ((wkb[0] == 48) | (wkb[0] == 49));
-        } else {
-            is_hex = 0;
-        }
+            /* Check if this is a HEX WKB */
+            if (size != 0) {
+                is_hex = ((wkb[0] == 48) | (wkb[0] == 49));
+            } else {
+                is_hex = 0;
+            }
 
-        /* Read the WKB */
-        if (is_hex) {
-            ret_ptr = GEOSWKBReader_readHEX_r(context_handle, reader, wkb, size);
-        } else {
-            ret_ptr = GEOSWKBReader_read_r(context_handle, reader, wkb, size);
+            /* Read the WKB */
+            if (is_hex) {
+                ret_ptr = GEOSWKBReader_readHEX_r(context_handle, reader, wkb, size);
+            } else {
+                ret_ptr = GEOSWKBReader_read_r(context_handle, reader, wkb, size);
+            }
+            if (ret_ptr == NULL) {
+                return;
+            }
         }
-        if (ret_ptr == NULL) {
-            return;
-        }
-
         OUTPUT_Y;
     }
     GEOSWKBReader_destroy_r(context_handle, reader);
@@ -1009,27 +1015,33 @@ static void from_wkt_func(char **args, npy_intp *dimensions,
     }
 
     UNARY_LOOP {
+        /* ip1 is pointer to array element PyObject* */
         in1 = *(PyObject **)ip1;
 
-        /* Cast the PyObject (bytes or str) to char* */
-        if (PyBytes_Check(in1)) {
-            wkt = PyBytes_AsString(in1);
-            if (wkt == NULL) { return; }
+        if (in1 == Py_None) {
+            /* None in the input propagates to the output */
+            ret_ptr = NULL;
         }
-        else if (PyUnicode_Check(in1)) {
-            wkt = PyUnicode_AsUTF8(in1);
-            if (wkt == NULL) { return; }
-        } else {
-            PyErr_Format(PyExc_TypeError, "Expected bytes, found %s", in1->ob_type->tp_name);
-            return;
-        }
+        else {
+            /* Cast the PyObject (bytes or str) to char* */
+            if (PyBytes_Check(in1)) {
+                wkt = PyBytes_AsString(in1);
+                if (wkt == NULL) { return; }
+            }
+            else if (PyUnicode_Check(in1)) {
+                wkt = PyUnicode_AsUTF8(in1);
+                if (wkt == NULL) { return; }
+            } else {
+                PyErr_Format(PyExc_TypeError, "Expected bytes, got %s", Py_TYPE(in1)->tp_name);
+                return;
+            }
 
-        /* Read the WKT */
-        ret_ptr = GEOSWKTReader_read_r(context_handle, reader, wkt);
-        if (ret_ptr == NULL) {
-            return;
+            /* Read the WKT */
+            ret_ptr = GEOSWKTReader_read_r(context_handle, reader, wkt);
+            if (ret_ptr == NULL) {
+                return;
+            }
         }
-
         OUTPUT_Y;
     }
     GEOSWKTReader_destroy_r(context_handle, reader);
