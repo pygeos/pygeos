@@ -964,12 +964,12 @@ static void from_wkb_func(char **args, npy_intp *dimensions,
             /* Cast the PyObject (only bytes) to char* */
             if (!PyBytes_Check(in1)) {
                 PyErr_Format(PyExc_TypeError, "Expected bytes, got %s", Py_TYPE(in1)->tp_name);
-                return;
+                goto finish;
             }
             size = PyBytes_Size(in1);
             wkb = (unsigned char *)PyBytes_AsString(in1);
             if (wkb == NULL) {
-                return;
+                goto finish;
             }
 
             /* Check if this is a HEX WKB */
@@ -986,12 +986,14 @@ static void from_wkb_func(char **args, npy_intp *dimensions,
                 ret_ptr = GEOSWKBReader_read_r(context_handle, reader, wkb, size);
             }
             if (ret_ptr == NULL) {
-                return;
+                goto finish;
             }
         }
         OUTPUT_Y;
     }
-    GEOSWKBReader_destroy_r(context_handle, reader);
+    goto finish;
+
+    finish: GEOSWKBReader_destroy_r(context_handle, reader);
 }
 static PyUFuncGenericFunction from_wkb_funcs[1] = {&from_wkb_func};
 
@@ -1026,25 +1028,27 @@ static void from_wkt_func(char **args, npy_intp *dimensions,
             /* Cast the PyObject (bytes or str) to char* */
             if (PyBytes_Check(in1)) {
                 wkt = PyBytes_AsString(in1);
-                if (wkt == NULL) { return; }
+                if (wkt == NULL) { goto finish; }
             }
             else if (PyUnicode_Check(in1)) {
                 wkt = PyUnicode_AsUTF8(in1);
-                if (wkt == NULL) { return; }
+                if (wkt == NULL) { goto finish; }
             } else {
                 PyErr_Format(PyExc_TypeError, "Expected bytes, got %s", Py_TYPE(in1)->tp_name);
-                return;
+                goto finish;
             }
 
             /* Read the WKT */
             ret_ptr = GEOSWKTReader_read_r(context_handle, reader, wkt);
             if (ret_ptr == NULL) {
-                return;
+                goto finish;
             }
         }
         OUTPUT_Y;
     }
-    GEOSWKTReader_destroy_r(context_handle, reader);
+    goto finish;
+
+    finish: GEOSWKTReader_destroy_r(context_handle, reader);
 }
 static PyUFuncGenericFunction from_wkt_funcs[1] = {&from_wkt_func};
 
@@ -1075,7 +1079,7 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
     GEOSWKBWriter_setIncludeSRID_r(context_handle, writer, include_srid);
 
     UNARY_LOOP {
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { goto finish; }
         PyObject **out = (PyObject **)op1;
 
         if (in1 == NULL) {  
@@ -1093,7 +1097,9 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
             GEOSFree_r(context_handle, wkb);
         }
     }
-    GEOSWKBWriter_destroy_r(context_handle, writer);
+    goto finish;
+
+    finish: GEOSWKBWriter_destroy_r(context_handle, writer);
 }
 static PyUFuncGenericFunction to_wkb_funcs[1] = {&to_wkb_func};
 
@@ -1128,7 +1134,7 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
     GEOSWKTWriter_setOld3D_r(context_handle, writer, *(npy_bool *) ip5);
 
     for(i = 0; i < n; i++, ip1 += is1, op1 += os1) {
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { goto finish; }
         PyObject **out = (PyObject **)op1;
 
         if (in1 == NULL) {  
@@ -1142,7 +1148,9 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
             GEOSFree_r(context_handle, wkt);
         }
     }
-    GEOSWKTWriter_destroy_r(context_handle, writer);
+    goto finish;
+
+    finish: GEOSWKTWriter_destroy_r(context_handle, writer);
 }
 static PyUFuncGenericFunction to_wkt_funcs[1] = {&to_wkt_func};
 
