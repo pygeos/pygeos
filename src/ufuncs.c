@@ -1116,7 +1116,6 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
     GEOSGeometry *in1;
     GEOSWKTWriter *writer;
     char *wkt;
-    char *format = "%s";
 
     if ((is2 != 0) | (is3 != 0) | (is4 != 0) | (is5 != 0)) {
         PyErr_Format(PyExc_ValueError, "to_wkt function called with non-scalar parameters");
@@ -1144,7 +1143,7 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
         } else {
             wkt = GEOSWKTWriter_write_r(context_handle, writer, in1);
             Py_XDECREF(*out);
-            *out = PyUnicode_FromFormat(format, wkt);
+            *out = PyUnicode_FromString(wkt);
             GEOSFree_r(context_handle, wkt);
         }
     }
