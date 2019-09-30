@@ -8,7 +8,7 @@ from .predicates import *
 from .measurement import *
 from .set_operations import *
 from .linear import *
-from .transform import *
+from .coordinates import *
 
 from ._version import get_versions
 

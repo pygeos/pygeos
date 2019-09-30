@@ -266,13 +266,28 @@ PyTypeObject GeometryType = {
     .tp_repr = (reprfunc) GeometryObject_repr,
 };
 
-int
-init_geom_type(PyObject *m)
-{
-    if (PyType_Ready(&GeometryType) < 0)
-        return -1;
 
+/* Get a GEOSGeometry pointer from a GeometryObject, or NULL if the input is
+Py_None. Returns 0 on error, 1 on success. */
+char get_geom(GeometryObject *obj, GEOSGeometry **out) {
+    if (!PyObject_IsInstance((PyObject *) obj, (PyObject *) &GeometryType)) {
+        if ((PyObject *) obj == Py_None) {
+            *out = NULL;
+            return 1;
+        } else {
+            PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
+            return 0;
+        }
+    } else {
+        *out = obj->ptr;
+        return 1;
+    }
+}
+
+char init_geom_type(PyObject *m)
+{
+    if (PyType_Ready(&GeometryType) < 0) { return 0; }
     Py_INCREF(&GeometryType);
     PyModule_AddObject(m, "Geometry", (PyObject *) &GeometryType);
-    return 0;
+    return 1;
 }

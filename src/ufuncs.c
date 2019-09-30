@@ -36,33 +36,6 @@
     Py_XDECREF(*out);\
     *out = ret
 
-/* This initializes a global GEOS Context */
-void *geos_context[1] = {NULL};
-
-static void HandleGEOSError(const char *message, void *userdata) {
-    PyErr_SetString(userdata, message);
-}
-
-static void HandleGEOSNotice(const char *message, void *userdata) {
-    PyErr_WarnEx(PyExc_Warning, message, 1);
-}
-
-
-static char get_geom(GeometryObject *obj, GEOSGeometry **out) {
-    if (!PyObject_IsInstance((PyObject *) obj, (PyObject *) &GeometryType)) {
-        if ((PyObject *) obj == Py_None) {
-            *out = NULL;
-            return 1;
-        } else {
-            PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
-            return 0;
-        }
-    } else {
-        *out = obj->ptr;
-        return 1;
-    }
-}
-
 /* Define the geom -> bool functions (Y_b) */
 static void *is_empty_data[1] = {GEOSisEmpty_r};
 /* the GEOSisSimple_r function fails on geometrycollections */
@@ -1010,25 +983,15 @@ PyMODINIT_FUNC PyInit_ufuncs(void)
     PyObject *m, *d, *ufunc;
 
     m = PyModule_Create(&moduledef);
-    if (!m) {
-        return NULL;
-    }
 
-    if (init_geom_type(m) < 0){
-        return NULL;
-    };
+    if (!m) { return NULL; }
+    if (!init_geos(m)) { return NULL; }
+    if (!init_geom_type(m)) { return NULL; }
 
     d = PyModule_GetDict(m);
 
     import_array();
     import_umath();
-
-    void *context_handle = GEOS_init_r();
-    PyObject* GEOSException = PyErr_NewException("pygeos.GEOSException", NULL, NULL);
-    PyModule_AddObject(m, "GEOSException", GEOSException);
-    GEOSContext_setErrorMessageHandler_r(context_handle, HandleGEOSError, GEOSException);
-    GEOSContext_setNoticeMessageHandler_r(context_handle, HandleGEOSNotice, NULL);
-    geos_context[0] = context_handle;  /* for global access */
 
     /* export the version as a python string */
     PyModule_AddObject(m, "geos_version", PyUnicode_FromString(GEOS_VERSION));

@@ -108,7 +108,7 @@ class build_ext(_build_ext):
 
 
 module_ufuncs = Extension(
-    "pygeos.ufuncs", sources=["src/ufuncs.c", "src/pygeom.c", "src/coords.c"], **get_geos_paths())
+    "pygeos.ufuncs", sources=["src/geos.c", "src/pygeom.c", "src/coords.c", "src/ufuncs.c"], **get_geos_paths())
 
 
 try:
@@ -135,7 +135,6 @@ setup(
     extras_require={
         "test": ["pytest"],
         "docs": ["sphinx", "numpydoc"],
-        "transform": ["pyproj>=2.1.0"],
     },
     python_requires=">=3",
     include_package_data=True,

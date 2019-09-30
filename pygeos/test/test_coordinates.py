@@ -1,6 +1,6 @@
 import pytest
 import pygeos
-from pygeos.ufuncs import count_coordinates, get_coordinates, set_coordinates
+from pygeos import count_coordinates, get_coordinates, set_coordinates
 import numpy as np
 from numpy.testing import assert_equal
 
@@ -27,6 +27,8 @@ nested_3 = pygeos.geometrycollections([nested_2, point])
         ([empty], 0),
         ([point, empty], 1),
         ([empty, point, empty], 1),
+        ([point, None], 1),
+        ([None, point, None], 1),
         ([point, point], 2),
         ([point, point_z], 2),
         ([line_string, linear_ring], 8),
@@ -52,6 +54,8 @@ def test_count_coords(geoms, count):
         ([empty], [], []),
         ([point, empty], [2], [3]),
         ([empty, point, empty], [2], [3]),
+        ([point, None], [2], [3]),
+        ([None, point, None], [2], [3]),
         ([point, point], [2, 2], [3, 3]),
         ([point, point_z], [2, 1], [3, 1]),
         ([line_string, linear_ring], [0, 1, 1, 0, 1, 1, 0, 0], [0, 0, 1, 0, 0, 1, 1, 0]),
@@ -77,6 +81,8 @@ def test_get_coords(geoms, x, y):
         ([empty], 0, False),
         ([point, empty], 1, False),
         ([empty, point, empty], 1, False),
+        ([point, None], 1, False),
+        ([None, point, None], 1, False),
         ([point, point], 2, False),
         ([point, point_z], 2, False),
         ([line_string, linear_ring], 8, True),
@@ -96,5 +102,5 @@ def test_set_coords(geoms, count, has_ring):
         coords = get_coordinates(geoms) + np.random.random((1, 2))
     else:
         coords = np.random.random((count, 2))
-    set_coordinates(geoms, coords)
-    assert_equal(coords, get_coordinates(geoms))
+    new_geoms = set_coordinates(geoms, coords)
+    assert_equal(coords, get_coordinates(new_geoms))
