@@ -108,7 +108,7 @@ class build_ext(_build_ext):
 
 
 module_ufuncs = Extension(
-    "pygeos.ufuncs", sources=["src/ufuncs.c", "src/pygeom.c"], **get_geos_paths())
+    "pygeos.lib", sources=["src/lib.c", "src/geos.c", "src/pygeom.c"], **get_geos_paths())
 
 
 try:
