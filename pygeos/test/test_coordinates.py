@@ -1,6 +1,6 @@
 import pytest
 import pygeos
-from pygeos import count_coordinates, get_coordinates, set_coordinates
+from pygeos import apply, count_coordinates, get_coordinates, set_coordinates
 import numpy as np
 from numpy.testing import assert_equal
 
@@ -104,3 +104,56 @@ def test_set_coords(geoms, count, has_ring):
         coords = np.random.random((count, 2))
     new_geoms = set_coordinates(geoms, coords)
     assert_equal(coords, get_coordinates(new_geoms))
+
+
+def test_set_coords_nan():
+    geoms = np.array([point])
+    coords = np.array([[np.nan, np.inf]])
+    new_geoms = set_coordinates(geoms, coords)
+    assert_equal(coords, get_coordinates(new_geoms))
+
+
+def test_set_coords_breaks_ring():
+    with pytest.raises(pygeos.GEOSException):
+        set_coordinates(linear_ring, np.random.random((5, 2)))
+
+
+def test_set_coords_0dim():
+    # a geometry input returns a geometry
+    actual = set_coordinates(point, [[1, 1]])
+    assert isinstance(actual, pygeos.Geometry)
+    # a 0-dim array input returns a 0-dim array
+    actual = set_coordinates(np.asarray(point), [[1, 1]])
+    assert isinstance(actual, np.ndarray)
+    assert actual.ndim == 0
+
+
+@pytest.mark.parametrize(
+    "geoms",
+    [[], [empty], [None, point, None], [nested_3]],
+)
+def test_apply(geoms):
+    geoms = np.array(geoms, np.object)
+    coordinates_before = get_coordinates(geoms)
+    new_geoms = apply(geoms, lambda x: x + 1)
+    assert new_geoms is not geoms
+    coordinates_after = get_coordinates(new_geoms)
+    assert_equal(coordinates_before + 1, coordinates_after)
+
+
+def test_apply_0dim():
+    # a geometry input returns a geometry
+    actual = apply(point, lambda x: x + 1)
+    assert isinstance(actual, pygeos.Geometry)
+    # a 0-dim array input returns a 0-dim array
+    actual = apply(np.asarray(point), lambda x: x + 1)
+    assert isinstance(actual, np.ndarray)
+    assert actual.ndim == 0
+
+
+def test_apply_check_shape():
+    def remove_coord(arr):
+        return arr[:-1]
+
+    with pytest.raises(ValueError):
+        apply(linear_ring, remove_coord)
