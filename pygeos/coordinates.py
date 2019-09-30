@@ -5,7 +5,7 @@ __all__ = ["apply", "count_coordinates", "get_coordinates", "set_coordinates"]
 
 
 def apply(geometry, transformation):
-    """Apply a function to the coordinates of a geometry.
+    """Applies a function to the coordinates of a geometry.
 
     Parameters
     ----------
@@ -35,7 +35,7 @@ def apply(geometry, transformation):
 
 
 def count_coordinates(geometry):
-    """Count the number of coordinate pairs in a geometry array
+    """Counts the number of coordinate pairs in a geometry array.
 
     Parameters
     ----------
@@ -56,7 +56,7 @@ def count_coordinates(geometry):
 
 
 def get_coordinates(geometry):
-    """Get coordinates from a geometry array as a float array
+    """Gets coordinates from a geometry array as an array of floats.
 
     Parameters
     ----------
@@ -64,15 +64,12 @@ def get_coordinates(geometry):
 
     Examples
     --------
-    >>> get_coordinates(Geometry("POINT (0 0)"))
-    array([[0., 0.]])
-    >>> get_coordinates(Geometry("LINESTRING (2 2, 4 4)"))
-    array([[2., 2.],
-           [4., 4.]])
+    >>> get_coordinates(Geometry("POINT (0 0)")).tolist()
+    [[0.0, 0.0]]
+    >>> get_coordinates(Geometry("LINESTRING (2 2, 4 4)")).tolist()
+    [[2.0, 2.0], [4.0, 4.0]]
     >>> get_coordinates(None)
     array([], shape=(0, 2), dtype=float64)
-    >>> get_coordinates([Geometry("POINT (0 0)"), None])
-    array([[0., 0.]])
     """
     return ufuncs.get_coordinates(np.asarray(geometry, dtype=np.object))
 
