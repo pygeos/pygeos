@@ -25,7 +25,6 @@ install:
   - hash -r;
   - conda update --yes conda;
   - conda config --set changeps1 no --set restore_free_channel true;
-  - conda config --append channels conda-forge
   - conda create -n testenv --yes python=$PYTHON_VERSION $DEPS pytest;
   - conda activate testenv;
   - conda --version ; python --version ; pip --version;
