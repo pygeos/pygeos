@@ -1,6 +1,3 @@
-#ifndef _UFUNCS_H
-#define _UFUNCS_H
-
 #define PY_SSIZE_T_CLEAN
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
@@ -1048,5 +1045,3 @@ int init_ufuncs(PyObject *m, PyObject *d)
     Py_DECREF(ufunc);
     return 0;
 }
-
-#endif

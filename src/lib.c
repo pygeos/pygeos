@@ -10,7 +10,9 @@
 
 #include "geos.h"
 #include "pygeom.h"
-#include "ufuncs.h"
+
+/* include ufuncs.c directly instead of linking it */
+#include "ufuncs.c"
 
 
 /* This tells Python what methods this module has. */
