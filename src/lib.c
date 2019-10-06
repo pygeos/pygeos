@@ -4,15 +4,14 @@
 #include <Python.h>
 
 #define PY_ARRAY_UNIQUE_SYMBOL pygeos_ARRAY_API
+#define PY_UFUNC_UNIQUE_SYMBOL pygeos_UFUNC_API
 #include <numpy/ndarraytypes.h>
 #include <numpy/ufuncobject.h>
 #include <numpy/npy_3kcompat.h>
 
 #include "geos.h"
 #include "pygeom.h"
-
-/* include ufuncs.c directly instead of linking it */
-#include "ufuncs.c"
+#include "ufuncs.h"
 
 
 /* This tells Python what methods this module has. */
