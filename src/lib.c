@@ -41,11 +41,11 @@ PyMODINIT_FUNC PyInit_lib(void)
         return NULL;
     }
 
-    if (init_geos(m) < 0){
+    if (init_geos(m) < 0) {
         return NULL;
     };
 
-    if (init_geom_type(m) < 0){
+    if (init_geom_type(m) < 0) {
         return NULL;
     };
 
@@ -57,7 +57,7 @@ PyMODINIT_FUNC PyInit_lib(void)
     /* export the version as a python string */
     PyModule_AddObject(m, "geos_version", PyUnicode_FromString(GEOS_VERSION));
 
-    if (init_ufuncs(m, d) < 0){
+    if (init_ufuncs(m, d) < 0) {
         return NULL;
     };
 

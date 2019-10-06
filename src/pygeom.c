@@ -287,8 +287,9 @@ char get_geom(GeometryObject *obj, GEOSGeometry **out) {
 int
 init_geom_type(PyObject *m)
 {
-    if (PyType_Ready(&GeometryType) < 0)
+    if (PyType_Ready(&GeometryType) < 0) {
         return -1;
+    }
 
     Py_INCREF(&GeometryType);
     PyModule_AddObject(m, "Geometry", (PyObject *) &GeometryType);
