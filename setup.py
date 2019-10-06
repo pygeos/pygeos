@@ -107,8 +107,11 @@ class build_ext(_build_ext):
         self.include_dirs.append(numpy.get_include())
 
 
-module_ufuncs = Extension(
-    "pygeos.ufuncs", sources=["src/geos.c", "src/pygeom.c", "src/coords.c", "src/ufuncs.c"], **get_geos_paths())
+module_lib = Extension(
+    "pygeos.lib",
+    sources=["src/lib.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c"],
+    **get_geos_paths()
+)
 
 
 try:
@@ -138,7 +141,7 @@ setup(
     },
     python_requires=">=3",
     include_package_data=True,
-    ext_modules=[module_ufuncs],
+    ext_modules=[module_lib],
     classifiers=[
         "Programming Language :: Python :: 3",
         "Development Status :: 1 - Planning",

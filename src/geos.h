@@ -9,6 +9,6 @@
 /* This declares a global GEOS Context */
 extern void *geos_context[1];
 
-char init_geos(PyObject *m);
+int init_geos(PyObject *m);
 
 #endif

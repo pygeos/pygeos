@@ -1,4 +1,4 @@
-from . import ufuncs, Geometry
+from . import lib, Geometry
 import numpy as np
 
 __all__ = ["apply", "count_coordinates", "get_coordinates", "set_coordinates"]
@@ -30,7 +30,7 @@ def apply(geometry, transformation):
     [<pygeos.Geometry POINT (0 0)>, None]
     """
     geometry_arr = np.array(geometry, dtype=np.object)  # makes a copy
-    coordinates = ufuncs.get_coordinates(geometry_arr)
+    coordinates = lib.get_coordinates(geometry_arr)
     new_coordinates = transformation(coordinates)
     # check the array to yield understandable error messages
     if not isinstance(new_coordinates, np.ndarray):
@@ -46,7 +46,7 @@ def apply(geometry, transformation):
             "The provided transformation returned an array with an unexpected "
             "shape ({})".format(new_coordinates.shape)
         )
-    geometry_arr = ufuncs.set_coordinates(geometry_arr, new_coordinates)
+    geometry_arr = lib.set_coordinates(geometry_arr, new_coordinates)
     if geometry_arr.ndim == 0 and not isinstance(geometry, np.ndarray):
         return geometry_arr.item()
     return geometry_arr
@@ -70,7 +70,7 @@ def count_coordinates(geometry):
     >>> count_coordinates([Geometry("POINT (0 0)"), None])
     1
     """
-    return ufuncs.count_coordinates(np.asarray(geometry, dtype=np.object))
+    return lib.count_coordinates(np.asarray(geometry, dtype=np.object))
 
 
 def get_coordinates(geometry):
@@ -92,7 +92,7 @@ def get_coordinates(geometry):
     >>> get_coordinates(None)
     array([], shape=(0, 2), dtype=float64)
     """
-    return ufuncs.get_coordinates(np.asarray(geometry, dtype=np.object))
+    return lib.get_coordinates(np.asarray(geometry, dtype=np.object))
 
 
 def set_coordinates(geometry, coordinates):
@@ -117,11 +117,11 @@ def set_coordinates(geometry, coordinates):
     """
     geometry_arr = np.asarray(geometry, dtype=np.object)
     coordinates = np.atleast_2d(np.asarray(coordinates)).astype(np.float64)
-    if coordinates.shape != (ufuncs.count_coordinates(geometry_arr), 2):
+    if coordinates.shape != (lib.count_coordinates(geometry_arr), 2):
         raise ValueError(
             "The coordinate array has an invalid shape {}".format(coordinates.shape)
         )
-    ufuncs.set_coordinates(geometry_arr, coordinates)
+    lib.set_coordinates(geometry_arr, coordinates)
     if geometry_arr.ndim == 0 and not isinstance(geometry, np.ndarray):
         return geometry_arr.item()
     return geometry_arr

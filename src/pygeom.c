@@ -254,7 +254,7 @@ static PyMethodDef GeometryObject_methods[] = {
 
 PyTypeObject GeometryType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "pygeos.ufuncs.GEOSGeometry",
+    .tp_name = "pygeos.lib.GEOSGeometry",
     .tp_doc = "Geometry type",
     .tp_basicsize = sizeof(GeometryObject),
     .tp_itemsize = 0,
@@ -284,10 +284,14 @@ char get_geom(GeometryObject *obj, GEOSGeometry **out) {
     }
 }
 
-char init_geom_type(PyObject *m)
+int
+init_geom_type(PyObject *m)
 {
-    if (PyType_Ready(&GeometryType) < 0) { return 0; }
+    if (PyType_Ready(&GeometryType) < 0) {
+        return -1;
+    }
+
     Py_INCREF(&GeometryType);
     PyModule_AddObject(m, "Geometry", (PyObject *) &GeometryType);
-    return 1;
+    return 0;
 }

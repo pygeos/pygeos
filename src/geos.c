@@ -17,14 +17,13 @@ static void HandleGEOSNotice(const char *message, void *userdata) {
     PyErr_WarnEx(PyExc_Warning, message, 1);
 }
 
-char init_geos(PyObject *m)
+int init_geos(PyObject *m)
 {
     void *context_handle = GEOS_init_r();
     PyObject* GEOSException = PyErr_NewException("pygeos.GEOSException", NULL, NULL);
     PyModule_AddObject(m, "GEOSException", GEOSException);
     GEOSContext_setErrorMessageHandler_r(context_handle, HandleGEOSError, GEOSException);
     GEOSContext_setNoticeMessageHandler_r(context_handle, HandleGEOSNotice, NULL);
-    printf("Setting context");
     geos_context[0] = context_handle;  /* for global access */
-    return 1;
+    return 0;
 }

@@ -4,8 +4,10 @@
 #include <Python.h>
 #include <math.h>
 
+#define NO_IMPORT_ARRAY
+#define NO_IMPORT_UFUNC
 #define PY_ARRAY_UNIQUE_SYMBOL pygeos_ARRAY_API
-
+#define PY_UFUNC_UNIQUE_SYMBOL pygeos_UFUNC_API
 #include <numpy/ndarraytypes.h>
 #include <numpy/ufuncobject.h>
 #include <numpy/npy_3kcompat.h>
@@ -957,44 +959,9 @@ TODO relate functions
     ufunc = PyUFunc_FromFuncAndDataAndSignature(NAME ##_funcs, null_data, NAME ##_dtypes, 1, N_IN, 1, PyUFunc_None, # NAME, "", 0, SIGNATURE);\
     PyDict_SetItemString(d, # NAME, ufunc)
 
-/* This tells Python what methods this module has. */
-static PyMethodDef GeosModule[] = {
-    {"count_coordinates", PyCountCoords, METH_VARARGS, "Counts the total amount of coordinates in a array with geometry objects"},
-    {"get_coordinates", PyGetCoords, METH_VARARGS, "Gets the coordinates as an (N, 2) shaped ndarray of floats"},
-    {"set_coordinates", PySetCoords, METH_VARARGS, "Sets coordinates to a geometry array"},
-    {NULL, NULL, 0, NULL}
-};
-
-
-static struct PyModuleDef moduledef = {
-    PyModuleDef_HEAD_INIT,
-    "ufuncs",
-    NULL,
-    -1,
-    GeosModule,
-    NULL,
-    NULL,
-    NULL,
-    NULL
-};
-
-PyMODINIT_FUNC PyInit_ufuncs(void)
+int init_ufuncs(PyObject *m, PyObject *d)
 {
-    PyObject *m, *d, *ufunc;
-
-    m = PyModule_Create(&moduledef);
-
-    if (!m) { return NULL; }
-    if (!init_geos(m)) { return NULL; }
-    if (!init_geom_type(m)) { return NULL; }
-
-    d = PyModule_GetDict(m);
-
-    import_array();
-    import_umath();
-
-    /* export the version as a python string */
-    PyModule_AddObject(m, "geos_version", PyUnicode_FromString(GEOS_VERSION));
+    PyObject *ufunc;
 
     DEFINE_Y_b (is_empty);
     DEFINE_Y_b (is_simple);
@@ -1079,5 +1046,5 @@ PyMODINIT_FUNC PyInit_ufuncs(void)
     DEFINE_GENERALIZED(create_collection, 2, "(i),()->()");
 
     Py_DECREF(ufunc);
-    return m;
+    return 0;
 }
