@@ -14,7 +14,6 @@
 
 #include "geos.h"
 #include "pygeom.h"
-#include "coords.h"
 #include "fast_loop_macros.h"
 
 
