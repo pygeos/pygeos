@@ -16,7 +16,7 @@ def test_from_wkt():
     assert pygeos.equals(actual, expected)
 
     # None propagates
-    assert pygeos.from_wkb(None) is None
+    assert pygeos.from_wkt(None) is None
 
     with pytest.raises(TypeError, match="Expected bytes, got int"):
         pygeos.from_wkt(1)
@@ -44,17 +44,24 @@ def test_from_wkb():
 
 
 def test_to_wkt():
-    points = pygeos.points(1, 1, 1)
-    actual = pygeos.to_wkt(points, trim=True)
+    point = pygeos.points(1, 1)
+    actual = pygeos.to_wkt(point)
     assert actual == "POINT (1 1)"
 
-    actual = pygeos.to_wkt(points, rounding_precision=2)
+    actual = pygeos.to_wkt(point, rounding_precision=2, trim=False)
     assert actual == "POINT (1.00 1.00)"
 
-    actual = pygeos.to_wkt(points, trim=True, output_dimension=3)
+    # 3D points
+    point_z = pygeos.points(1, 1, 1)
+    actual = pygeos.to_wkt(point_z)
+    assert actual == "POINT Z (1 1 1)"
+    actual = pygeos.to_wkt(point_z, output_dimension=3)
     assert actual == "POINT Z (1 1 1)"
 
-    actual = pygeos.to_wkt(points, trim=True, output_dimension=3, old_3d=True)
+    actual = pygeos.to_wkt(point_z, output_dimension=2)
+    assert actual == "POINT (1 1)"
+
+    actual = pygeos.to_wkt(point_z, old_3d=True)
     assert actual == "POINT (1 1 1)"
 
     # None propagates
@@ -64,21 +71,21 @@ def test_to_wkt():
         pygeos.to_wkt(1)
 
     with pytest.raises(pygeos.GEOSException):
-        pygeos.to_wkt(points, output_dimension=4)
+        pygeos.to_wkt(point, output_dimension=4)
 
 
 def test_to_wkb():
-    points = pygeos.points(1, 1)
-    actual = pygeos.to_wkb(points)
+    point = pygeos.points(1, 1)
+    actual = pygeos.to_wkb(point)
     assert actual == POINT11_WKB
 
-    actual = pygeos.to_wkb(points, hex=True)
+    actual = pygeos.to_wkb(point, hex=True)
     assert actual == '0101000000000000000000F03F000000000000F03F'
 
-    points = pygeos.points(1, 1, 1)
-    actual = pygeos.to_wkb(points)
+    point_z = pygeos.points(1, 1, 1)
+    actual = pygeos.to_wkb(point_z)
     assert actual == b'\x01\x01\x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?'  # noqa
-    actual = pygeos.to_wkb(points, output_dimension=2)
+    actual = pygeos.to_wkb(point_z, output_dimension=2)
     assert actual == POINT11_WKB
 
     # None propagates
@@ -88,7 +95,7 @@ def test_to_wkb():
         pygeos.to_wkb(1)
 
     with pytest.raises(pygeos.GEOSException):
-        pygeos.to_wkb(points, output_dimension=4)
+        pygeos.to_wkb(point, output_dimension=4)
 
 
 def test_srid_roundtrip():

@@ -9,9 +9,9 @@ __all__ = ["from_wkb", "from_wkt", "to_wkb", "to_wkt"]
 
 def to_wkt(
     geometry,
-    rounding_precision=-1,
-    trim=False,
-    output_dimension=2,
+    rounding_precision=6,
+    trim=True,
+    output_dimension=3,
     old_3d=False,
     **kwargs
 ):
@@ -24,16 +24,16 @@ def to_wkt(
     Parameters
     ----------
     geometry : Geometry or array_like
-    rounding_precision : int
-        The rounding precision when writing the WKT string. A value of -1
-        indicates the full precision.
-    trim : bool
+    rounding_precision : int, default 6
+        The rounding precision when writing the WKT string. Set to a value of
+        -1 to indicate the full precision.
+    trim : bool, default True
         Whether to trim unnecessary decimals (trailing zero's).
-    output_dimension : int
+    output_dimension : int, default 3
         The output dimension for the WKT string. Supported values are 2 and 3.
         Specifying 3 means that up to 3 dimensions will be written but 2D
         geometries will still be represented as 2D in the WKT string.
-    old_3d : bool
+    old_3d : bool, default False
         Enable old style 3D/4D WKT generation. By default, new style 3D/4D WKT
         (ie. "POINT Z (10 20 30)") is returned, but with ``old_3d=True``
         the WKT will be formatted in the style "POINT (10 20 30)".
@@ -41,17 +41,25 @@ def to_wkt(
     Examples
     --------
     >>> to_wkt(Geometry("POINT (0 0)"))
-    'POINT (0.0000000000000000 0.0000000000000000)'
-    >>> to_wkt(Geometry("POINT (0 0)"), trim=True)
     'POINT (0 0)'
-    >>> to_wkt(Geometry("POINT (0 0)"), rounding_precision=3)
+    >>> to_wkt(Geometry("POINT (0 0)"), rounding_precision=3, trim=False)
     'POINT (0.000 0.000)'
+    >>> to_wkt(Geometry("POINT (0 0)"), rounding_precision=-1, trim=False)
+    'POINT (0.0000000000000000 0.0000000000000000)'
+
     >>> to_wkt(Geometry("POINT (1 2 3)"), trim=True)
-    'POINT (1 2)'
-    >>> to_wkt(Geometry("POINT (1 2 3)"), trim=True, output_dimension=3)
     'POINT Z (1 2 3)'
-    >>> to_wkt(Geometry("POINT (1 2 3)"), trim=True, output_dimension=3, old_3d=True)
+    >>> to_wkt(Geometry("POINT (1 2 3)"), trim=True, output_dimension=2)
+    'POINT (1 2)'
+    >>> to_wkt(Geometry("POINT (1 2 3)"), trim=True, old_3d=True)
     'POINT (1 2 3)'
+
+    Notes
+    -----
+    The defaults differ from the default of the GEOS library. To mimic this,
+    use:
+
+    >>> to_wkt(geometry, rounding_precision=-1, trim=False, output_dimension=2)
 
     """
     if not np.isscalar(rounding_precision):
