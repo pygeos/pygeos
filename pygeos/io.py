@@ -1,9 +1,10 @@
 import numpy as np
+
 from . import Geometry  # noqa
 from . import lib
 
 
-__all__ = ["from_wkb", "from_wkt", "to_wkb", "to_wkb"]
+__all__ = ["from_wkb", "from_wkt", "to_wkb", "to_wkt"]
 
 
 def to_wkt(
@@ -15,10 +16,10 @@ def to_wkt(
     **kwargs
 ):
     """
-    Converts to the Well-Known Text (WKT) representation of a  Geometry.
+    Converts to the Well-Known Text (WKT) representation of a Geometry.
 
     The Well-known Text format is defined in the `OGC Simple Features
-    Specification for SQL <http://www.opengis.org/techno/specs.htm>`__.
+    Specification for SQL <https://www.opengeospatial.org/standards/sfs>`__.
 
     Parameters
     ----------
@@ -70,3 +71,65 @@ def to_wkt(
         np.bool(old_3d),
         **kwargs,
     )
+
+
+def to_wkb(geometry, **kwargs):
+    """
+    Converts to the Well-Known Binary (WKB) representation of a Geometry.
+
+    The Well-Known Binary format is defined in the `OGC Simple Features
+    Specification for SQL <https://www.opengeospatial.org/standards/sfs>`__.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> to_wkb(Geometry("POINT (1 1)"))
+    b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?'
+
+    """
+    return lib.to_wkb(geometry, **kwargs)
+
+
+def from_wkt(geometry, **kwargs):
+    """
+    Creates geometries from the Well-Known Text (WKT) representation.
+
+    The Well-known Text format is defined in the `OGC Simple Features
+    Specification for SQL <https://www.opengeospatial.org/standards/sfs>`__.
+
+    Parameters
+    ----------
+    geometry : str or array_like
+        The WKT string(s) to convert.
+
+    Examples
+    --------
+    >>> from_wkt('POINT (0 0)')
+    <pygeos.Geometry POINT (0 0)>
+
+    """
+    return lib.from_wkt(geometry, **kwargs)
+
+
+def from_wkb(geometry, **kwargs):
+    """
+    Creates geometries from the Well-Known Binary (WKB) representation.
+
+    The Well-Known Binary format is defined in the `OGC Simple Features
+    Specification for SQL <https://www.opengeospatial.org/standards/sfs>`__.
+
+    Parameters
+    ----------
+    geometry : str or array_like
+        The WKB byte object(s) to convert.
+
+    Examples
+    --------
+    >>> from_wkb(b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?')
+    <pygeos.Geometry POINT (1 1)>
+
+    """
+    return lib.from_wkb(geometry, **kwargs)
