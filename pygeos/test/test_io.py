@@ -2,9 +2,6 @@ import numpy
 import pygeos
 import pytest
 
-from pygeos.lib import from_wkt, from_wkb, to_wkb
-from pygeos.io import from_wkt, from_wkb, to_wkt, to_wkb
-
 
 POINT11_WKB = (
     b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"
@@ -75,9 +72,32 @@ def test_to_wkb():
     actual = pygeos.to_wkb(points)
     assert actual == POINT11_WKB
 
+    actual = pygeos.to_wkb(points, hex=True)
+    assert actual == '0101000000000000000000F03F000000000000F03F'
+
+    points = pygeos.points(1, 1, 1)
+    actual = pygeos.to_wkb(points)
+    assert actual == b'\x01\x01\x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?'  # noqa
+    actual = pygeos.to_wkb(points, output_dimension=2)
+    assert actual == POINT11_WKB
+
     # None propagates
     assert pygeos.to_wkb(None) is None
 
     with pytest.raises(TypeError):
         pygeos.to_wkb(1)
 
+    with pytest.raises(pygeos.GEOSException):
+        pygeos.to_wkb(points, output_dimension=4)
+
+
+def test_srid_roundtrip():
+    # hex representation of POINT (0 0) with SRID=4
+    ewkb = "01010000200400000000000000000000000000000000000000"
+    wkb = "010100000000000000000000000000000000000000"
+
+    actual = pygeos.from_wkb(ewkb.encode())
+    assert pygeos.to_wkt(actual, trim=True) == 'POINT (0 0)'
+
+    assert pygeos.to_wkb(actual, hex=True) == wkb
+    assert pygeos.to_wkb(actual, hex=True, include_srid=True) == ewkb

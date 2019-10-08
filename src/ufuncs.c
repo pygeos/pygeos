@@ -1023,21 +1023,25 @@ static void from_wkt_func(char **args, npy_intp *dimensions,
 }
 static PyUFuncGenericFunction from_wkt_funcs[1] = {&from_wkt_func};
 
-static char to_wkb_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static char to_wkb_dtypes[6] = {NPY_OBJECT, NPY_BOOL, NPY_INT, NPY_INT, NPY_BOOL, NPY_OBJECT};
 static void to_wkb_func(char **args, npy_intp *dimensions,
                         npy_intp *steps, void *data)
 {
     void *context_handle = geos_context[0];
-    GEOSGeometry *in1;
+    char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4], *op1 = args[5];
+    npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4], os1 = steps[5];
+    npy_intp n = dimensions[0];
+    npy_intp i;
 
+    GEOSGeometry *in1;
     GEOSWKBWriter *writer;
     unsigned char *wkb;
     size_t size;
-    
-    int dimension = 3;
-    int byte_order = 1;
-    char include_srid = 0;
-    char hex = 0;
+
+    if ((is2 != 0) | (is3 != 0) | (is4 != 0) | (is5 != 0)) {
+        PyErr_Format(PyExc_ValueError, "to_wkb function called with non-scalar parameters");
+        return;
+    }
 
     /* Create the WKB writer */
     writer = GEOSWKBWriter_create_r(context_handle);
@@ -1045,11 +1049,15 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
         return;
     }
 
-    GEOSWKBWriter_setOutputDimension_r(context_handle, writer, dimension);
-    GEOSWKBWriter_setByteOrder_r(context_handle, writer, byte_order);
-    GEOSWKBWriter_setIncludeSRID_r(context_handle, writer, include_srid);
+    char hex = *(npy_bool *) ip2;
+    GEOSWKBWriter_setOutputDimension_r(context_handle, writer, *(int *) ip3);
+    int byte_order = *(int *) ip4;
+    if (byte_order != -1) {
+        GEOSWKBWriter_setByteOrder_r(context_handle, writer, *(int *) ip4);
+    }
+    GEOSWKBWriter_setIncludeSRID_r(context_handle, writer, *(npy_bool *) ip5);
 
-    UNARY_LOOP {
+    for(i = 0; i < n; i++, ip1 += is1, op1 += os1) {
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { goto finish; }
         PyObject **out = (PyObject **)op1;
 
@@ -1064,7 +1072,11 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
                 wkb = GEOSWKBWriter_write_r(context_handle, writer, in1, &size);
             }
             Py_XDECREF(*out);
-            *out = PyBytes_FromStringAndSize((char *) wkb, size);
+            if (hex) {
+                *out = PyUnicode_FromStringAndSize((char *) wkb, size);
+            } else {
+                *out = PyBytes_FromStringAndSize((char *) wkb, size);
+            }
             GEOSFree_r(context_handle, wkb);
         }
     }
@@ -1273,7 +1285,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
 
     DEFINE_CUSTOM (from_wkb, 1);
     DEFINE_CUSTOM (from_wkt, 1);
-    DEFINE_CUSTOM (to_wkb, 1);
+    DEFINE_CUSTOM (to_wkb, 5);
     DEFINE_CUSTOM (to_wkt, 5);
 
     Py_DECREF(ufunc);

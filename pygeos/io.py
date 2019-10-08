@@ -73,7 +73,7 @@ def to_wkt(
     )
 
 
-def to_wkb(geometry, **kwargs):
+def to_wkb(geometry, hex=False, output_dimension=3, byte_order=-1, include_srid=False, **kwargs):
     """
     Converts to the Well-Known Binary (WKB) representation of a Geometry.
 
@@ -83,14 +83,45 @@ def to_wkb(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    hex : bool, default False
+        If true, export the WKB as a hexidecimal string. The default is to
+        return a binary bytes object.
+    output_dimension : int, default 3
+        The output dimension for the WKB. Supported values are 2 and 3.
+        Specifying 3 means that up to 3 dimensions will be written but 2D
+        geometries will still be represented as 2D in the WKB represenation.
+    byte_order : int
+        Defaults to native machine byte order (-1). Use 0 to force big endian
+        and 1 for little endian.
+    include_srid : bool, default False
+        Whether the SRID should be included in WKB (this is an extension
+        to the OGC WKB specification).
 
     Examples
     --------
     >>> to_wkb(Geometry("POINT (1 1)"))
     b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?'
+    >>> to_wkb(Geometry("POINT (1 1)"), hex=True)
+    '0101000000000000000000F03F000000000000F03F'
 
     """
-    return lib.to_wkb(geometry, **kwargs)
+    if not np.isscalar(hex):
+        raise TypeError("hex only accepts scalar values")
+    if not np.isscalar(output_dimension):
+        raise TypeError("output_dimension only accepts scalar values")
+    if not np.isscalar(byte_order):
+        raise TypeError("byte_order only accepts scalar values")
+    if not np.isscalar(include_srid):
+        raise TypeError("include_srid only accepts scalar values")
+
+    return lib.to_wkb(
+        geometry,
+        np.bool(hex),
+        np.intc(output_dimension),
+        np.intc(byte_order),
+        np.bool(include_srid),
+        **kwargs,
+    )
 
 
 def from_wkt(geometry, **kwargs):
