@@ -53,8 +53,8 @@ def test_from_wkb():
     # None propagates
     assert pygeos.from_wkb(None) is None
 
-    with pytest.raises(TypeError, match="Expected bytes, got str"):
-        pygeos.from_wkb("test")
+    with pytest.raises(TypeError, match="Expected bytes, got int"):
+        pygeos.from_wkb(1)
 
     with pytest.raises(pygeos.GEOSException):
         pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00")

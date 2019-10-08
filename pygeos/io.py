@@ -57,9 +57,9 @@ def to_wkt(
     Notes
     -----
     The defaults differ from the default of the GEOS library. To mimic this,
-    use:
+    use::
 
-    >>> to_wkt(geometry, rounding_precision=-1, trim=False, output_dimension=2)
+        to_wkt(geometry, rounding_precision=-1, trim=False, output_dimension=2)
 
     """
     if not np.isscalar(rounding_precision):
