@@ -45,6 +45,8 @@ def test_from_wkb():
     actual = pygeos.from_wkb(POINT11_WKB)
     assert pygeos.equals(actual, expected)
     # HEX form
+    actual = pygeos.from_wkb("0101000000000000000000F03F000000000000F03F")
+    assert pygeos.equals(actual, expected)
     actual = pygeos.from_wkb(b"0101000000000000000000F03F000000000000F03F")
     assert pygeos.equals(actual, expected)
 
@@ -59,12 +61,11 @@ def test_from_wkb():
 
 
 @pytest.mark.parametrize("geom", all_types)
-@pytest.mark.parametrize("use_hex", [False])  #, [False, True])
+@pytest.mark.parametrize("use_hex", [False])  # [False, True])
 @pytest.mark.parametrize("byte_order", [1])  # [0, 1])
 def test_from_wkb_all_types(geom, use_hex, byte_order):
     wkb = pygeos.to_wkb(geom, hex=use_hex, byte_order=byte_order)
-    # TODO accept strings
-    actual = pygeos.from_wkb(wkb.encode() if use_hex else wkb)
+    actual = pygeos.from_wkb(wkb)
     assert pygeos.equals(actual, geom)
 
 
@@ -145,8 +146,8 @@ def test_to_wkb_srid():
     ewkb = "01010000200400000000000000000000000000000000000000"
     wkb = "010100000000000000000000000000000000000000"
 
-    actual = pygeos.from_wkb(ewkb.encode())
-    assert pygeos.to_wkt(actual, trim=True) == 'POINT (0 0)'
+    actual = pygeos.from_wkb(ewkb)
+    assert pygeos.to_wkt(actual, trim=True) == "POINT (0 0)"
 
     assert pygeos.to_wkb(actual, hex=True) == wkb
     assert pygeos.to_wkb(actual, hex=True, include_srid=True) == ewkb

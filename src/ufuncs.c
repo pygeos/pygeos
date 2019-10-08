@@ -933,13 +933,19 @@ static void from_wkb_func(char **args, npy_intp *dimensions,
         }
         else {
             /* Cast the PyObject (only bytes) to char* */
-            if (!PyBytes_Check(in1)) {
+            if (PyBytes_Check(in1)) {
+                size = PyBytes_Size(in1);
+                wkb = (unsigned char *)PyBytes_AsString(in1);
+                if (wkb == NULL) {
+                    goto finish;
+                }
+            } else if (PyUnicode_Check(in1)) {
+                wkb = (unsigned char *)PyUnicode_AsUTF8AndSize(in1, &size);
+                if (wkb == NULL) {
+                    goto finish;
+                }
+            } else {
                 PyErr_Format(PyExc_TypeError, "Expected bytes, got %s", Py_TYPE(in1)->tp_name);
-                goto finish;
-            }
-            size = PyBytes_Size(in1);
-            wkb = (unsigned char *)PyBytes_AsString(in1);
-            if (wkb == NULL) {
                 goto finish;
             }
 
