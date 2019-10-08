@@ -2,7 +2,7 @@ import numpy
 import pygeos
 import pytest
 
-from pygeos.ufuncs import from_wkt, from_wkb, to_wkb
+from pygeos.lib import from_wkt, from_wkb, to_wkb
 from pygeos.io import to_wkt
 
 

@@ -1,6 +1,6 @@
 import numpy as np
 from . import Geometry  # noqa
-from . import ufuncs
+from . import lib
 
 
 __all__ = ["from_wkb", "from_wkt", "to_wkb", "to_wkb"]
@@ -62,7 +62,7 @@ def to_wkt(
     if not np.isscalar(old_3d):
         raise TypeError("old_3d only accepts scalar values")
 
-    return ufuncs.to_wkt(
+    return lib.to_wkt(
         geometry,
         np.intc(rounding_precision),
         np.bool(trim),
