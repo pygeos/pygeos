@@ -88,6 +88,11 @@ static PyObject *GeometryObject_repr(GeometryObject *self)
     }
 }
 
+static PyObject *GeometryObject_str(GeometryObject *self)
+{
+    return to_wkt(self, "%s", 1, 3, 3, 0);
+}
+
 static PyObject *GeometryObject_ToWKB(GeometryObject *self, PyObject *args, PyObject *kw)
 {
     void *context_handle = geos_context[0];
@@ -264,6 +269,7 @@ PyTypeObject GeometryType = {
     .tp_members = GeometryObject_members,
     .tp_methods = GeometryObject_methods,
     .tp_repr = (reprfunc) GeometryObject_repr,
+    .tp_str = (reprfunc) GeometryObject_str,
 };
 
 

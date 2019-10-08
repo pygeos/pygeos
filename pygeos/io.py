@@ -82,7 +82,7 @@ def to_wkt(
 
 
 def to_wkb(geometry, hex=False, output_dimension=3, byte_order=-1, include_srid=False, **kwargs):
-    """
+    r"""
     Converts to the Well-Known Binary (WKB) representation of a Geometry.
 
     The Well-Known Binary format is defined in the `OGC Simple Features
@@ -154,7 +154,7 @@ def from_wkt(geometry, **kwargs):
 
 
 def from_wkb(geometry, **kwargs):
-    """
+    r"""
     Creates geometries from the Well-Known Binary (WKB) representation.
 
     The Well-Known Binary format is defined in the `OGC Simple Features
