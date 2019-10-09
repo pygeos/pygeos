@@ -31,6 +31,13 @@ def test_from_wkt():
         pygeos.from_wkt("NOT A WKT STRING")
 
 
+@pytest.mark.parametrize("geom", all_types)
+def test_from_wkt_all_types(geom):
+    wkt = pygeos.to_wkt(geom)
+    actual = pygeos.from_wkt(wkt)
+    assert pygeos.equals(actual, geom)
+
+
 @pytest.mark.parametrize(
     "wkt", ("POINT EMPTY", "LINESTRING EMPTY", "GEOMETRYCOLLECTION EMPTY")
 )
@@ -61,8 +68,8 @@ def test_from_wkb():
 
 
 @pytest.mark.parametrize("geom", all_types)
-@pytest.mark.parametrize("use_hex", [False])  # [False, True])
-@pytest.mark.parametrize("byte_order", [1])  # [0, 1])
+@pytest.mark.parametrize("use_hex", [False, True])
+@pytest.mark.parametrize("byte_order", [0, 1])
 def test_from_wkb_all_types(geom, use_hex, byte_order):
     wkb = pygeos.to_wkb(geom, hex=use_hex, byte_order=byte_order)
     actual = pygeos.from_wkb(wkb)

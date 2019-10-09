@@ -171,4 +171,8 @@ def from_wkb(geometry, **kwargs):
     <pygeos.Geometry POINT (1 1)>
 
     """
+    # ensure the input has object dtype, to avoid numpy inferring it as a
+    # fixed-length string dtype (which removes trailing null bytes upon access
+    # of array elements)
+    geometry = np.asarray(geometry, dtype=object)
     return lib.from_wkb(geometry, **kwargs)
