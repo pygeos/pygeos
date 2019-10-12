@@ -14,7 +14,7 @@ def line_interpolate_point(line, distance, normalize=False):
         Negative values measure distance from the end of the line. Out-of-range
         values will be clipped to the line endings.
     normalize : bool
-        If normalizei is set to True, the distance is a fraction of the total
+        If normalize is set to True, the distance is a fraction of the total
         line length instead of the absolute distance.
 
     Examples
