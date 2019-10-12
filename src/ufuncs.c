@@ -16,7 +16,6 @@
 #include "pygeom.h"
 #include "fast_loop_macros.h"
 
-
 #define RAISE_NO_MALLOC PyErr_Format(PyExc_MemoryError, "Could not allocate memory")
 #define CREATE_COORDSEQ(SIZE, NDIM)\
     void *coord_seq = GEOSCoordSeq_create_r(context_handle, SIZE, NDIM);\
@@ -225,26 +224,33 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
 /* Define the geom, double -> geom functions (Yd_Y) */
-static void *GEOSInterpolateProtectEmpty_r(void *context, void *geom, double d) {
-    int n = GEOSGeomGetNumPoints_r(context, geom);
-    if (n < 2) {
-        /* return NULL for empty linestrings to protect against a segfault */
-        return NULL;
-    } else {
-        return GEOSInterpolate_r(context, geom, d);
+
+/* GEOS < 3.8 gives segfault for empty linestrings, this is fixed since
+   https://github.com/libgeos/geos/commit/18505af1103cdafb2178f2f0eb8e1a10cfa16d2d */
+#if GEOS_SINCE_380
+    static void *line_interpolate_point_data[1] = {GEOSInterpolate_r};
+    static void *line_interpolate_point_normalized_data[1] = {GEOSInterpolateNormalized_r};
+#else
+    static void *GEOSInterpolateProtectEmpty_r(void *context, void *geom, double d) {
+        int n = GEOSGeomGetNumPoints_r(context, geom);
+        if (n < 2) {
+            return GEOSGeom_createEmptyPoint_r(context);
+        } else {
+            return GEOSInterpolate_r(context, geom, d);
+        }
     }
-}
-static void *line_interpolate_point_data[1] = {GEOSInterpolateProtectEmpty_r};
-static void *GEOSInterpolateNormalizedProtectEmpty_r(void *context, void *geom, double d) {
-    int n = GEOSGeomGetNumPoints_r(context, geom);
-    if (n < 2) {
-        /* return NULL for empty linestrings to protect against a segfault */
-        return NULL;
-    } else {
-        return GEOSInterpolateNormalized_r(context, geom, d);
+    static void *line_interpolate_point_data[1] = {GEOSInterpolateProtectEmpty_r};
+    static void *GEOSInterpolateNormalizedProtectEmpty_r(void *context, void *geom, double d) {
+        int n = GEOSGeomGetNumPoints_r(context, geom);
+        if (n < 2) {
+            return GEOSGeom_createEmptyPoint_r(context);
+        } else {
+            return GEOSInterpolateNormalized_r(context, geom, d);
+        }
     }
-}
-static void *line_interpolate_point_normalized_data[1] = {GEOSInterpolateNormalizedProtectEmpty_r};
+    static void *line_interpolate_point_normalized_data[1] = {GEOSInterpolateNormalizedProtectEmpty_r};
+#endif
+
 static void *simplify_data[1] = {GEOSSimplify_r};
 static void *simplify_preserve_topology_data[1] = {GEOSTopologyPreserveSimplify_r};
 typedef void *FuncGEOS_Yd_Y(void *context, void *a, double b);

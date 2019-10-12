@@ -28,8 +28,8 @@ def line_interpolate_point(line, distance, normalize=False):
     <pygeos.Geometry POINT (0 8)>
     >>> line_interpolate_point(line, [0.25, -0.25], normalize=True).tolist()
     [<pygeos.Geometry POINT (0 4)>, <pygeos.Geometry POINT (0 8)>]
-    >>> line_interpolate_point(Geometry("LINESTRING EMPTY"), 1) is None
-    True
+    >>> line_interpolate_point(Geometry("LINESTRING EMPTY"), 1)
+    <pygeos.Geometry POINT EMPTY>
     """
     if normalize:
         return lib.line_interpolate_point_normalized(line, distance)
