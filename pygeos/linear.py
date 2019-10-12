@@ -79,7 +79,6 @@ def line_merge(line):
 
     Examples
     --------
-    >>> line = Geometry("LINESTRING(0 2, 0 10)")
     >>> line_merge(Geometry("MULTILINESTRING((0 2, 0 10), (0 10, 5 10))"))
     <pygeos.Geometry LINESTRING (0 2, 0 10, 5 10)>
     >>> line_merge(Geometry("MULTILINESTRING((0 2, 0 10), (0 11, 5 10))"))
