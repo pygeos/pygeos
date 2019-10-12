@@ -1,6 +1,9 @@
 import pygeos
 import numpy as np
 
+from .common import empty_point
+from .common import empty_line_string
+from .common import point
 from .common import line_string
 from .common import linear_ring
 from .common import multi_line_string
@@ -19,6 +22,12 @@ def test_line_interpolate_point_float_array():
     assert pygeos.equals(actual[0], pygeos.Geometry("POINT (0.2 0)"))
     assert pygeos.equals(actual[1], pygeos.Geometry("POINT (1 0.5)"))
     assert pygeos.equals(actual[2], pygeos.Geometry("POINT (1 0.8)"))
+
+
+def test_line_interpolate_point_empty():
+    assert pygeos.equals(
+        pygeos.line_interpolate_point(empty_line_string, 0.2), empty_point
+    )
 
 
 def test_line_interpolate_point_none():
@@ -43,7 +52,12 @@ def test_line_locate_point_geom_array2():
 
 def test_line_locate_point_none():
     assert np.isnan(pygeos.line_locate_point(line_string, None))
-    assert np.isnan(pygeos.line_locate_point(None, pygeos.points(0, 0)))
+    assert np.isnan(pygeos.line_locate_point(None, point))
+
+
+def test_line_locate_point_empty():
+    assert np.isnan(pygeos.line_locate_point(line_string, empty_point))
+    assert np.isnan(pygeos.line_locate_point(empty_line_string, point))
 
 
 def test_line_merge_geom_array():
