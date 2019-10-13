@@ -24,6 +24,7 @@ __all__ = [
     "overlaps",
     "touches",
     "within",
+    "equals_exact",
 ]
 
 
@@ -490,7 +491,6 @@ def equals(a, b, tolerance=0.0, **kwargs):
     a, b : Geometry or array_like
     tolerance : float or array_like
 
-
     Examples
     --------
     >>> line = Geometry("LINESTRING(0 0, 5 5, 10 10)")
@@ -635,3 +635,43 @@ def within(a, b, **kwargs):
     False
     """
     return lib.within(a, b, **kwargs)
+
+
+def equals_exact(a, b, tolerance=0.0, **kwargs):
+    """Returns True if A and B are structurally equal.
+
+    This method uses exact coordinate equality, which requires coordinates
+    to be equal (within specified tolerance) and and in the same order for all
+    components of a geometry. This is in contrast with the `equals` function
+    which uses spatial (topological) equality.
+
+    Parameters
+    ----------
+    a, b : Geometry or array_like
+    tolerance : float or array_like
+
+    See Also
+    --------
+    equals : Check if A and B are spatially equal.
+
+    Examples
+    --------
+    >>> point1 = Geometry("POINT(50 50)")
+    >>> point2 = Geometry("POINT(50.1 50.1)")
+    >>> equals_exact(point1, point2)
+    False
+    >>> equals_exact(point1, point2, tolerance=0.2)
+    True
+    >>> equals_exact(point1, None, tolerance=0.2)
+    True
+
+    Difference between structucal and spatial equality:
+
+    >>> polygon1 = Geometry("POLYGON((0 0, 1 1, 0 1, 0 0))")
+    >>> polygon2 = Geometry("POLYGON((0 0, 0 1, 1 1, 0 0))")
+    >>> equals_exact(polygon1, polygon2)
+    False
+    >>> equals(polygon1, polygon2)
+    True
+    """
+    return lib.equals_exact(a, b, tolerance, **kwargs)
