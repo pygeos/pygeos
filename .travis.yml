@@ -18,6 +18,7 @@ install:
   - chmod +x conda.exe
   - export CONDA_ALWAYS_YES=1
   - ./conda.exe config --set changeps1 no --set restore_free_channel true;
+  - ./conda.exe config --append channels conda-forge
   - ./conda.exe create --prefix $HOME/miniconda python=$PYTHON_VERSION conda pytest $DEPS
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
