@@ -14,6 +14,7 @@
 #include "strtree.h"
 #include "geos.h"
 #include "pygeom.h"
+#include "kvec.h"
 
 
 static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
@@ -88,25 +89,51 @@ static void STRtree_dealloc(STRtree *self)
 
 /* Callback to give to strtree_query
  * Given the value returned from each intersecting geometry it inserts that
- * value (typically an index) into the given size_vector
-void strtree_query_callback(void *item, void *vec)
+ * value (typically an index) into the given size_vector */
+
+void strtree_query_callback(void *item, void *user_data)
 {
-    kv_push((PyObject *), *((obj_vector*) vec), (PyObject *) item);
+    kv_push(PyObject *, *(geom_array *)user_data, (PyObject *) item);
 }
 
-static void STRtree_query(STRtree *self, PyObject *envelope) {
+static PyObject *STRtree_query(STRtree *self, PyObject *envelope) {
     GEOSContextHandle_t context = geos_context[0];
     GEOSGeometry *geom;
-    size_vector vec; // Resizable array for matches for each geometry
+    geom_array arr; // Resizable array for matches for each geometry
+    npy_intp i, size;
+    PyObject *obj;
+    PyObject **ptr;
 
-    if (!get_geom(envelope, &geom)) {
+    if (self->ptr == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
+        return NULL;
+    }
+    if (!get_geom((GeometryObject *) envelope, &geom)) {
         PyErr_SetString(PyExc_TypeError, "Invalid geometry");
         return NULL;
     }
-    GEOSSTRtree_query_r(context, tree, geom, strtree_query_callback, &vec);
+    if (geom == NULL) {
+        PyErr_SetString(PyExc_TypeError, "Missing geometry");
+        return NULL;
+    }
 
+    kv_init(arr);
+    GEOSSTRtree_query_r(context, self->ptr, geom, strtree_query_callback, &arr);
+
+    /* create a geometry array with the appropriate dimensions */
+    size = kv_size(arr);
+    npy_intp dims[1] = {size};
+    PyArrayObject *result = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_OBJECT);
+    if (result == NULL) { kv_destroy(arr); return NULL; }
+    for (i = 0; i < size; i++) {
+        ptr = PyArray_GETPTR1(result, i);
+        obj = kv_pop(arr);
+        Py_INCREF(obj);
+        *(PyObject **) ptr = obj;
+    }
+    kv_destroy(arr);
+    return (PyObject *) result;
 }
-
 
 
 
@@ -116,9 +143,9 @@ static PyMemberDef STRtree_members[] = {
 };
 
 static PyMethodDef STRtree_methods[] = {
-    /*{"query", (PyCFunction) STRtree_query, METH_O,
+    {"query", (PyCFunction) STRtree_query, METH_O,
      "Queries the index for all items whose extents intersect the given search envelope. "
-    }, */
+    },
     {NULL}  /* Sentinel */
 };
 

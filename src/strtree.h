@@ -15,7 +15,7 @@ typedef struct
 {
     size_t n, m;
     PyObject **a;
-} obj_vector;
+} geom_array;
 
 
 PyTypeObject STRtreeType;
