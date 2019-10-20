@@ -103,8 +103,7 @@ def test_from_wkb_empty(wkt):
 
 def test_from_wkb_empty_point():
     geom = pygeos.from_wkt("POINT EMPTY")
-    # TODO make this a more specific error
-    with pytest.raises(Exception):
+    with pytest.raises(pygeos.GEOSException):
         pygeos.to_wkb(geom)
 
 

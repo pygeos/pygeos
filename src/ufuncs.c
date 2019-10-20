@@ -1076,6 +1076,9 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
             } else {
                 wkb = GEOSWKBWriter_write_r(context_handle, writer, in1, &size);
             }
+            if (wkb == NULL) {
+                goto finish;
+            }
             Py_XDECREF(*out);
             if (hex) {
                 *out = PyUnicode_FromStringAndSize((char *) wkb, size);
@@ -1130,6 +1133,9 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
             *out = Py_None;
         } else {
             wkt = GEOSWKTWriter_write_r(context_handle, writer, in1);
+            if (wkt == NULL) {
+                goto finish;
+            }
             Py_XDECREF(*out);
             *out = PyUnicode_FromString(wkt);
             GEOSFree_r(context_handle, wkt);
