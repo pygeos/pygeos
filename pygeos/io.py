@@ -28,7 +28,7 @@ def to_wkt(
         The rounding precision when writing the WKT string. Set to a value of
         -1 to indicate the full precision.
     trim : bool, default True
-        Whether to trim unnecessary decimals (trailing zero's).
+        Whether to trim unnecessary decimals (trailing zeros).
     output_dimension : int, default 3
         The output dimension for the WKT string. Supported values are 2 and 3.
         Specifying 3 means that up to 3 dimensions will be written but 2D
@@ -46,7 +46,6 @@ def to_wkt(
     'POINT (0.000 0.000)'
     >>> to_wkt(Geometry("POINT (0 0)"), rounding_precision=-1, trim=False)
     'POINT (0.0000000000000000 0.0000000000000000)'
-
     >>> to_wkt(Geometry("POINT (1 2 3)"), trim=True)
     'POINT Z (1 2 3)'
     >>> to_wkt(Geometry("POINT (1 2 3)"), trim=True, output_dimension=2)
@@ -111,7 +110,6 @@ def to_wkb(geometry, hex=False, output_dimension=3, byte_order=-1, include_srid=
     b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?'
     >>> to_wkb(Geometry("POINT (1 1)"), hex=True)
     '0101000000000000000000F03F000000000000F03F'
-
     """
     if not np.isscalar(hex):
         raise TypeError("hex only accepts scalar values")
@@ -148,7 +146,6 @@ def from_wkt(geometry, **kwargs):
     --------
     >>> from_wkt('POINT (0 0)')
     <pygeos.Geometry POINT (0 0)>
-
     """
     return lib.from_wkt(geometry, **kwargs)
 
@@ -169,7 +166,6 @@ def from_wkb(geometry, **kwargs):
     --------
     >>> from_wkb(b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?')
     <pygeos.Geometry POINT (1 1)>
-
     """
     # ensure the input has object dtype, to avoid numpy inferring it as a
     # fixed-length string dtype (which removes trailing null bytes upon access

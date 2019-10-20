@@ -2,7 +2,7 @@ import numpy as np
 import pygeos
 import pytest
 
-from .common import all_types
+from .common import all_types, point
 
 
 POINT11_WKB = (
@@ -18,9 +18,13 @@ def test_from_wkt():
     actual = pygeos.from_wkt(b"POINT (1 1)")
     assert pygeos.equals(actual, expected)
 
+
+def test_from_wkt_none():
     # None propagates
     assert pygeos.from_wkt(None) is None
 
+
+def test_from_wkt_exceptions():
     with pytest.raises(TypeError, match="Expected bytes, got int"):
         pygeos.from_wkt(1)
 
@@ -39,27 +43,37 @@ def test_from_wkt_all_types(geom):
 
 
 @pytest.mark.parametrize(
-    "wkt", ("POINT EMPTY", "LINESTRING EMPTY", "GEOMETRYCOLLECTION EMPTY")
+    "wkt",
+    ("POINT EMPTY", "LINESTRING EMPTY", "POLYGON EMPTY", "GEOMETRYCOLLECTION EMPTY"),
 )
 def test_from_wkt_empty(wkt):
     geom = pygeos.from_wkt(wkt)
     assert pygeos.is_geometry(geom).all()
     assert pygeos.is_empty(geom).all()
+    assert pygeos.to_wkt(geom) == wkt
 
 
 def test_from_wkb():
     expected = pygeos.points(1, 1)
     actual = pygeos.from_wkb(POINT11_WKB)
     assert pygeos.equals(actual, expected)
+
+
+def test_from_wkb_hex():
     # HEX form
+    expected = pygeos.points(1, 1)
     actual = pygeos.from_wkb("0101000000000000000000F03F000000000000F03F")
     assert pygeos.equals(actual, expected)
     actual = pygeos.from_wkb(b"0101000000000000000000F03F000000000000F03F")
     assert pygeos.equals(actual, expected)
 
+
+def test_from_wkb_none():
     # None propagates
     assert pygeos.from_wkb(None) is None
 
+
+def test_from_wkb_exceptions():
     with pytest.raises(TypeError, match="Expected bytes, got int"):
         pygeos.from_wkb(1)
 
@@ -76,6 +90,24 @@ def test_from_wkb_all_types(geom, use_hex, byte_order):
     assert pygeos.equals(actual, geom)
 
 
+@pytest.mark.parametrize(
+    "wkt", ("LINESTRING EMPTY", "POLYGON EMPTY", "GEOMETRYCOLLECTION EMPTY")
+)
+def test_from_wkb_empty(wkt):
+    wkb = pygeos.to_wkb(pygeos.from_wkt(wkt))
+    geom = pygeos.from_wkb(wkb)
+    assert pygeos.is_geometry(geom).all()
+    assert pygeos.is_empty(geom).all()
+    assert pygeos.to_wkb(geom) == wkb
+
+
+def test_from_wkb_empty_point():
+    geom = pygeos.from_wkt("POINT EMPTY")
+    # TODO make this a more specific error
+    with pytest.raises(Exception):
+        pygeos.to_wkb(geom)
+
+
 def test_to_wkt():
     point = pygeos.points(1, 1)
     actual = pygeos.to_wkt(point)
@@ -87,6 +119,8 @@ def test_to_wkt():
     actual = pygeos.to_wkt(point, rounding_precision=3, trim=False)
     assert actual == "POINT (1.000 1.000)"
 
+
+def test_to_wkt_3D():
     # 3D points
     point_z = pygeos.points(1, 1, 1)
     actual = pygeos.to_wkt(point_z)
@@ -100,9 +134,13 @@ def test_to_wkt():
     actual = pygeos.to_wkt(point_z, old_3d=True)
     assert actual == "POINT (1 1 1)"
 
+
+def test_to_wkt_none():
     # None propagates
     assert pygeos.to_wkt(None) is None
 
+
+def test_to_wkt_exceptions():
     with pytest.raises(TypeError):
         pygeos.to_wkt(1)
 
@@ -115,21 +153,30 @@ def test_to_wkb():
     actual = pygeos.to_wkb(point)
     assert actual == POINT11_WKB
 
+
+def test_to_wkb_hex():
+    point = pygeos.points(1, 1)
     actual = pygeos.to_wkb(point, hex=True)
     le = "01"
     point_type = "01000000"
     coord = "000000000000F03F"  # 1.0 as double (LE)
     assert actual == le + point_type + 2 * coord
 
+
+def test_to_wkb_3D():
     point_z = pygeos.points(1, 1, 1)
     actual = pygeos.to_wkb(point_z)
-    assert actual == b'\x01\x01\x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?'  # noqa
+    assert actual == b"\x01\x01\x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"  # noqa
     actual = pygeos.to_wkb(point_z, output_dimension=2)
     assert actual == POINT11_WKB
 
+
+def test_to_wkb_none():
     # None propagates
     assert pygeos.to_wkb(None) is None
 
+
+def test_to_wkb_exceptions():
     with pytest.raises(TypeError):
         pygeos.to_wkb(1)
 

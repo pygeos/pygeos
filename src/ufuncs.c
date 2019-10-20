@@ -3,7 +3,6 @@
 
 #include <Python.h>
 #include <math.h>
-#include <stdio.h>
 
 #define NO_IMPORT_ARRAY
 #define NO_IMPORT_UFUNC
