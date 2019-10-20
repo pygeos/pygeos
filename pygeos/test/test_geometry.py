@@ -162,12 +162,6 @@ def test_new_from_wkt(geom):
     assert pygeos.equals(actual, geom)
 
 
-@pytest.mark.parametrize("geom", all_types)
-def test_new_from_wkb(geom):
-    actual = pygeos.Geometry(pygeos.to_wkb(geom))
-    assert pygeos.equals(actual, geom)
-
-
 def test_adapt_ptr_raises():
     point = pygeos.Geometry("POINT (2 2)")
     with pytest.raises(AttributeError):
