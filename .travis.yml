@@ -13,24 +13,14 @@ matrix:
   - os: osx
     env: PYTHON_VERSION="3.7" DEPS="numpy geos"
 
-before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-    elif  [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -O miniconda.sh;
-    fi;
-
 install:
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda:$HOME/miniconda/bin:$PATH"
-  - source $HOME/miniconda/etc/profile.d/conda.sh
-  - hash -r;
-  - conda update --yes conda;
-  - conda config --set changeps1 no --set restore_free_channel true;
-  - conda config --append channels conda-forge
-  - conda create -n testenv --yes python=$PYTHON_VERSION $DEPS pytest;
-  - conda activate testenv;
-  - conda --version ; python --version ; pip --version;
+  - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-$TRAVIS_OS_NAME-64.exe -O conda.exe
+  - chmod +x conda.exe
+  - export CONDA_ALWAYS_YES=1
+  - ./conda.exe config --set changeps1 no --set restore_free_channel true;
+  - ./conda.exe create --prefix $HOME/miniconda python=$PYTHON_VERSION conda pytest $DEPS
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
   - python setup.py build_ext --inplace
   - pip install . --no-deps
 
