@@ -17,7 +17,7 @@ install:
   - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-$TRAVIS_OS_NAME-64.exe -O conda.exe
   - chmod +x conda.exe
   - export CONDA_ALWAYS_YES=1
-  - .if [ -z ${CONDA_FORGE+x} ]; then /conda.exe config --add channels conda-forge; fi
+  - if [ -z ${CONDA_FORGE+x} ]; then /conda.exe config --add channels conda-forge; fi
   - ./conda.exe create --prefix $HOME/miniconda python=$PYTHON_VERSION conda pytest $DEPS
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
