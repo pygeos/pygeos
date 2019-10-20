@@ -8,8 +8,14 @@
 typedef struct {
     PyObject_HEAD
     void *ptr;
-    PyObject *geometries;
 } STRtree;
+
+/* A resizable vector with geometry objects */
+typedef struct
+{
+    size_t n, m;
+    PyObject **a;
+} obj_vector;
 
 
 PyTypeObject STRtreeType;

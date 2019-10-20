@@ -57,7 +57,8 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         if (!get_geom(obj, &geom)) { continue; }
         if (geom == NULL) { continue; }
         /* perform the insert */
-        GEOSSTRtree_insert_r(context, tree, geom, (void *) i );
+        Py_INCREF(obj);   /* STRtree holds a reference to each GeometryObject */
+        GEOSSTRtree_insert_r(context, tree, geom, (void *) obj );
     }
 
     STRtree *self = (STRtree *) type->tp_alloc(type, 0);
@@ -66,34 +67,58 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         return NULL;
     }
     self->ptr = tree;
-
-    /* we don't copy the array, but just add a reference to it on it */
-    /* this is to easily track references to the contained GeometryObjects */
-    /* the array should never be changed inplace! */
-    Py_INCREF(arr);
-    self->geometries = arr;
     return (PyObject *) self;
+}
+
+void strtree_dealloc_callback(void *item, void *vec)
+{
+    Py_XDECREF((PyObject *) item);
 }
 
 static void STRtree_dealloc(STRtree *self)
 {
     void *context = geos_context[0];
     if (self->ptr != NULL) {
+        /* Decrease the refcount of each GeometryObject in the STRTree */
+        GEOSSTRtree_iterate_r(context, self->ptr, strtree_dealloc_callback, NULL);
         GEOSSTRtree_destroy_r(context, self->ptr);
-    }
-    if (self->geometries != NULL) {
-        Py_XDECREF(self->geometries);
     }
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
+/* Callback to give to strtree_query
+ * Given the value returned from each intersecting geometry it inserts that
+ * value (typically an index) into the given size_vector
+void strtree_query_callback(void *item, void *vec)
+{
+    kv_push((PyObject *), *((obj_vector*) vec), (PyObject *) item);
+}
+
+static void STRtree_query(STRtree *self, PyObject *envelope) {
+    GEOSContextHandle_t context = geos_context[0];
+    GEOSGeometry *geom;
+    size_vector vec; // Resizable array for matches for each geometry
+
+    if (!get_geom(envelope, &geom)) {
+        PyErr_SetString(PyExc_TypeError, "Invalid geometry");
+        return NULL;
+    }
+    GEOSSTRtree_query_r(context, tree, geom, strtree_query_callback, &vec);
+
+}
+
+
+
+
 static PyMemberDef STRtree_members[] = {
     {"_ptr", T_PYSSIZET, offsetof(STRtree, ptr), READONLY, "Pointer to GEOSSTRtree"},
-    {"geometries", T_OBJECT, offsetof(STRtree, geometries), READONLY, "The geometries inside this tree"},
     {NULL}  /* Sentinel */
 };
 
 static PyMethodDef STRtree_methods[] = {
+    /*{"query", (PyCFunction) STRtree_query, METH_O,
+     "Queries the index for all items whose extents intersect the given search envelope. "
+    }, */
     {NULL}  /* Sentinel */
 };
 
