@@ -193,6 +193,7 @@ def from_shapely(geometry, **kwargs):
     <pygeos.Geometry POINT (1 2)>
     """
     from shapely.geos import geos_version_string as shapely_geos_version
+    from shapely.geometry.base import BaseGeometry
 
     # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
     # pygeos has something like: "3.6.2"
@@ -201,5 +202,11 @@ def from_shapely(geometry, **kwargs):
             "The shapely GEOS version ({}) is "
             "incompatible".format(shapely_geos_version)
         )
-    geometry = np.asarray(geometry, dtype=object)
+
+    if isinstance(geometry, BaseGeometry):
+        # this so that the __array_interface__ of the shapely geometry is not
+        # used, converting the Geometry to its coordinates
+        geometry = np.array([geometry], dtype=np.object).reshape(())
+    else:
+        geometry = np.asarray(geometry, dtype=object)
     return lib.from_shapely(geometry, **kwargs)

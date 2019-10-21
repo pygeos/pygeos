@@ -16,6 +16,10 @@ class ShapelyGeometryMock:
         self.g = g
         self.__geom__ = g._ptr if hasattr(g, "_ptr") else g
 
+    def __array_interface__(self):
+        # this should not be called
+        raise NotImplementedError()
+
 
 def test_from_wkt():
     expected = pygeos.points(1, 1)
@@ -222,6 +226,7 @@ def test_to_wkb_srid():
 
 
 @pytest.mark.parametrize("geom", all_types)
+@mock.patch("shapely.geometry.base.BaseGeometry", ShapelyGeometryMock)
 def test_from_shapely(geom):
     actual = pygeos.from_shapely(ShapelyGeometryMock(geom))
     assert isinstance(geom, pygeos.Geometry)
@@ -240,6 +245,7 @@ def test_from_shapely_none():
 
 
 @pytest.mark.parametrize("geom", [1, 2.3, "x", ShapelyGeometryMock(None)])
+@mock.patch("shapely.geometry.base.BaseGeometry", ShapelyGeometryMock)
 def test_from_shapely_error(geom):
     with pytest.raises(TypeError):
         pygeos.from_shapely(geom)
