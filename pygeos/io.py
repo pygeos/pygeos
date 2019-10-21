@@ -2,9 +2,10 @@ import numpy as np
 
 from . import Geometry  # noqa
 from . import lib
+from . import geos_version
 
 
-__all__ = ["from_wkb", "from_wkt", "to_wkb", "to_wkt"]
+__all__ = ["from_shapely", "from_wkb", "from_wkt", "to_wkb", "to_wkt"]
 
 
 def to_wkt(
@@ -13,7 +14,7 @@ def to_wkt(
     trim=True,
     output_dimension=3,
     old_3d=False,
-    **kwargs
+    **kwargs,
 ):
     """
     Converts to the Well-Known Text (WKT) representation of a Geometry.
@@ -80,7 +81,9 @@ def to_wkt(
     )
 
 
-def to_wkb(geometry, hex=False, output_dimension=3, byte_order=-1, include_srid=False, **kwargs):
+def to_wkb(
+    geometry, hex=False, output_dimension=3, byte_order=-1, include_srid=False, **kwargs
+):
     r"""
     Converts to the Well-Known Binary (WKB) representation of a Geometry.
 
@@ -172,3 +175,31 @@ def from_wkb(geometry, **kwargs):
     # of array elements)
     geometry = np.asarray(geometry, dtype=object)
     return lib.from_wkb(geometry, **kwargs)
+
+
+def from_shapely(geometry, **kwargs):
+    """Creates geometries from shapely Geometry objects.
+
+    This function requires the GEOS version of PyGEOS and shapely to be equal.
+
+    Parameters
+    ----------
+    geometry : shapely Geometry object or array_like
+
+    Examples
+    --------
+    >>> from shapely.geometry import Point   # doctest: +SKIP
+    >>> from_wkt(Point(1, 2))   # doctest: +SKIP
+    <pygeos.Geometry POINT (1 2)>
+    """
+    from shapely.geos import geos_version_string as shapely_geos_version
+
+    # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
+    # pygeos has something like: "3.6.2"
+    if not shapely_geos_version.startswith(geos_version):
+        raise ImportError(
+            "The shapely GEOS version ({}) is "
+            "incompatible".format(shapely_geos_version)
+        )
+    geometry = np.asarray(geometry, dtype=object)
+    return lib.from_shapely(geometry, **kwargs)

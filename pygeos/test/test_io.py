@@ -1,6 +1,7 @@
 import numpy as np
 import pygeos
 import pytest
+from unittest import mock
 
 from .common import all_types, point
 
@@ -8,6 +9,12 @@ from .common import all_types, point
 POINT11_WKB = (
     b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"
 )
+
+
+class ShapelyGeometryMock:
+    def __init__(self, g):
+        self.g = g
+        self.__geom__ = g._ptr if hasattr(g, "_ptr") else g
 
 
 def test_from_wkt():
@@ -165,7 +172,10 @@ def test_to_wkb_hex():
 def test_to_wkb_3D():
     point_z = pygeos.points(1, 1, 1)
     actual = pygeos.to_wkb(point_z)
-    assert actual == b"\x01\x01\x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"  # noqa
+    assert (
+        actual
+        == b"\x01\x01\x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"
+    )  # noqa
     actual = pygeos.to_wkb(point_z, output_dimension=2)
     assert actual == POINT11_WKB
 
@@ -209,3 +219,34 @@ def test_to_wkb_srid():
     point_with_srid = pygeos.set_srid(point, np.int32(4326))
     result = pygeos.to_wkb(point_with_srid, include_srid=True)
     assert np.frombuffer(result[5:9], "<u4").item() == 4326
+
+
+@pytest.mark.parametrize("geom", all_types)
+def test_from_shapely(geom):
+    actual = pygeos.from_shapely(ShapelyGeometryMock(geom))
+    assert isinstance(geom, pygeos.Geometry)
+    assert pygeos.equals(geom, actual)
+    assert geom._ptr != actual._ptr
+
+
+def test_from_shapely_arr():
+    actual = pygeos.from_shapely([ShapelyGeometryMock(point), None])
+    assert pygeos.equals(point, actual[0])
+
+
+def test_from_shapely_none():
+    actual = pygeos.from_shapely(None)
+    assert actual is None
+
+
+@pytest.mark.parametrize("geom", [1, 2.3, "x", ShapelyGeometryMock(None)])
+def test_from_shapely_error(geom):
+    with pytest.raises(TypeError):
+        pygeos.from_shapely(geom)
+
+
+# We have >= 3.5 in PyGEOS. Test with some random older version.
+@mock.patch("shapely.geos.geos_version_string", "2.3.4-abc")
+def test_from_shapely_incompatible_versions():
+    with pytest.raises(ImportError):
+        pygeos.from_shapely(point)
