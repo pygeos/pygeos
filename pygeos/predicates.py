@@ -661,7 +661,7 @@ def equals_exact(a, b, tolerance=0.0, **kwargs):
     >>> equals_exact(point1, point2, tolerance=0.2)
     True
     >>> equals_exact(point1, None, tolerance=0.2)
-    True
+    False
 
     Difference between structucal and spatial equality:
 
