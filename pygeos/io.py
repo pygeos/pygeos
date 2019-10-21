@@ -213,7 +213,9 @@ def from_shapely(geometry, **kwargs):
     if isinstance(geometry, ShapelyGeometry):
         # this so that the __array_interface__ of the shapely geometry is not
         # used, converting the Geometry to its coordinates
-        geometry = np.array([geometry], dtype=np.object).reshape(())
+        arr = np.empty(1, dtype=object)
+        arr[0] = geometry
+        arr.shape = ()
     else:
-        geometry = np.asarray(geometry, dtype=object)
-    return lib.from_shapely(geometry, **kwargs)
+        arr = np.asarray(geometry, dtype=object)
+    return lib.from_shapely(arr, **kwargs)
