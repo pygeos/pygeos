@@ -132,12 +132,6 @@ static PyObject *GeometryObject_new(PyTypeObject *type, PyObject *args,
 }
 
 static PyMethodDef GeometryObject_methods[] = {
-    {"to_wkt", (PyCFunction) GeometryObject_ToWKT, METH_VARARGS | METH_KEYWORDS,
-     "Write the geometry to Well-Known Text (WKT) format"
-    },
-    {"from_wkt", (PyCFunction) GeometryObject_FromWKT, METH_CLASS | METH_O,
-     "Read the geometry from Well-Known Text (WKT) format"
-    },
     {NULL}  /* Sentinel */
 };
 
