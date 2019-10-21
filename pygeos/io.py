@@ -4,6 +4,13 @@ from . import Geometry  # noqa
 from . import lib
 from . import geos_version
 
+try:
+    from shapely.geos import geos_version_string as shapely_geos_version
+    from shapely.geometry.base import BaseGeometry as ShapelyGeometry
+except ImportError:
+    shapely_geos_version = None
+    ShapelyGeometry = None
+
 
 __all__ = ["from_shapely", "from_wkb", "from_wkt", "to_wkb", "to_wkt"]
 
@@ -192,8 +199,8 @@ def from_shapely(geometry, **kwargs):
     >>> from_wkt(Point(1, 2))   # doctest: +SKIP
     <pygeos.Geometry POINT (1 2)>
     """
-    from shapely.geos import geos_version_string as shapely_geos_version
-    from shapely.geometry.base import BaseGeometry
+    if shapely_geos_version is None:
+        raise ImportError("This function requires shapely")
 
     # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
     # pygeos has something like: "3.6.2"
@@ -203,7 +210,7 @@ def from_shapely(geometry, **kwargs):
             "incompatible".format(shapely_geos_version)
         )
 
-    if isinstance(geometry, BaseGeometry):
+    if isinstance(geometry, ShapelyGeometry):
         # this so that the __array_interface__ of the shapely geometry is not
         # used, converting the Geometry to its coordinates
         geometry = np.array([geometry], dtype=np.object).reshape(())

@@ -225,7 +225,8 @@ def test_to_wkb_srid():
 
 
 @pytest.mark.parametrize("geom", all_types)
-@mock.patch("shapely.geometry.base.BaseGeometry", ShapelyGeometryMock)
+@mock.patch("pygeos.io.ShapelyGeometry", ShapelyGeometryMock)
+@mock.patch("pygeos.io.shapely_geos_version", pygeos.geos_version)
 def test_from_shapely(geom):
     actual = pygeos.from_shapely(ShapelyGeometryMock(geom))
     assert isinstance(geom, pygeos.Geometry)
@@ -233,25 +234,30 @@ def test_from_shapely(geom):
     assert geom._ptr != actual._ptr
 
 
+@mock.patch("pygeos.io.ShapelyGeometry", ShapelyGeometryMock)
+@mock.patch("pygeos.io.shapely_geos_version", pygeos.geos_version)
 def test_from_shapely_arr():
     actual = pygeos.from_shapely([ShapelyGeometryMock(point), None])
     assert pygeos.equals(point, actual[0])
 
 
+@mock.patch("pygeos.io.ShapelyGeometry", ShapelyGeometryMock)
+@mock.patch("pygeos.io.shapely_geos_version", pygeos.geos_version)
 def test_from_shapely_none():
     actual = pygeos.from_shapely(None)
     assert actual is None
 
 
 @pytest.mark.parametrize("geom", [1, 2.3, "x", ShapelyGeometryMock(None)])
-@mock.patch("shapely.geometry.base.BaseGeometry", ShapelyGeometryMock)
+@mock.patch("pygeos.io.ShapelyGeometry", ShapelyGeometryMock)
+@mock.patch("pygeos.io.shapely_geos_version", pygeos.geos_version)
 def test_from_shapely_error(geom):
     with pytest.raises(TypeError):
         pygeos.from_shapely(geom)
 
 
 # We have >= 3.5 in PyGEOS. Test with some random older version.
-@mock.patch("shapely.geos.geos_version_string", "2.3.4-abc")
+@mock.patch("pygeos.io.shapely_geos_version", "2.3.4-abc")
 def test_from_shapely_incompatible_versions():
     with pytest.raises(ImportError):
         pygeos.from_shapely(point)
