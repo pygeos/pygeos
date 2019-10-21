@@ -14,7 +14,7 @@ def to_wkt(
     trim=True,
     output_dimension=3,
     old_3d=False,
-    **kwargs,
+    **kwargs
 ):
     """
     Converts to the Well-Known Text (WKT) representation of a Geometry.

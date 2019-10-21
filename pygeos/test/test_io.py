@@ -176,10 +176,9 @@ def test_to_wkb_hex():
 def test_to_wkb_3D():
     point_z = pygeos.points(1, 1, 1)
     actual = pygeos.to_wkb(point_z)
-    assert (
-        actual
-        == b"\x01\x01\x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"
-    )  # noqa
+    # fmt: off
+    assert actual == b"\x01\x01\x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"  # noqa
+    # fmt: on
     actual = pygeos.to_wkb(point_z, output_dimension=2)
     assert actual == POINT11_WKB
 
