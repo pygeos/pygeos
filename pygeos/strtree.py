@@ -15,4 +15,10 @@ class STRtree:
         self._tree = lib.STRtree(np.asarray(geometries, dtype=np.object), leafsize)
 
     def query(self, envelope):
+        """Return all items whose extent intersect the given envelope.
+
+        Parameters
+        ----------
+        envelope : Geometry
+        """
         return self._tree.query(envelope)
