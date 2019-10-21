@@ -479,34 +479,32 @@ def disjoint(a, b, **kwargs):
     return lib.disjoint(a, b, **kwargs)
 
 
-def equals(a, b, tolerance=0.0, **kwargs):
+def equals(a, b, **kwargs):
     """Returns True if A and B are spatially equal.
 
     If A is within B and B is within A, A and B are considered equal. The
-    ordering of points can be different. Optionally, a tolerance can be
-    provided for comparing vertices.
+    ordering of points can be different.
 
     Parameters
     ----------
     a, b : Geometry or array_like
-    tolerance : float or array_like
+
+    See Also
+    --------
+    equals_exact : Check if A and B are structurally equal given a specified
+        tolerance.
 
     Examples
     --------
     >>> line = Geometry("LINESTRING(0 0, 5 5, 10 10)")
     >>> equals(line, Geometry("LINESTRING(0 0, 10 10)"))
     True
-    >>> equals(Geometry("POINT (5 5)"), Geometry("POINT (5.1 5)"), tolerance=0.1)
-    True
     >>> equals(Geometry("POLYGON EMPTY"), Geometry("GEOMETRYCOLLECTION EMPTY"))
     True
     >>> equals(None, None)
     False
     """
-    if tolerance > 0.0:
-        return lib.equals_exact(a, b, tolerance, **kwargs)
-    else:
-        return lib.equals(a, b, **kwargs)
+    return lib.equals(a, b, **kwargs)
 
 
 def intersects(a, b, **kwargs):
