@@ -51,8 +51,7 @@ def test_query_no_geom(tree):
 
 
 def test_query_none(tree):
-    with pytest.raises(TypeError):
-        tree.query(None)
+    assert tree.query(None).size == 0
 
 
 def test_query_empty(tree):

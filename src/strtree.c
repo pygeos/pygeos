@@ -71,7 +71,7 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         strtree_insert(context, tree, geom, obj, i);
     }
 
-    STRtree *self = (STRtree *) type->tp_alloc(type, 0);
+    STRtreeObject *self = (STRtreeObject *) type->tp_alloc(type, 0);
     if (self == NULL) {
         GEOSSTRtree_destroy_r(context, tree);
         return NULL;
@@ -90,7 +90,7 @@ void strtree_dealloc_callback(void *item, void *vec)
     free(elem);
 }
 
-static void STRtree_dealloc(STRtree *self)
+static void STRtree_dealloc(STRtreeObject *self)
 {
     void *context = geos_context[0];
     if (self->ptr != NULL) {
@@ -112,7 +112,7 @@ void strtree_query_callback(void *item, void *user_data)
     kv_push(npy_intp, *(npy_intp_vec *)user_data, elem->i);
 }
 
-static PyObject *STRtree_query(STRtree *self, PyObject *envelope) {
+static PyObject *STRtree_query(STRtreeObject *self, PyObject *envelope) {
     GEOSContextHandle_t context = geos_context[0];
     GEOSGeometry *geom;
     npy_intp_vec arr; // Resizable array for matches for each geometry
@@ -127,13 +127,11 @@ static PyObject *STRtree_query(STRtree *self, PyObject *envelope) {
         PyErr_SetString(PyExc_TypeError, "Invalid geometry");
         return NULL;
     }
-    if (geom == NULL) {
-        PyErr_SetString(PyExc_TypeError, "Missing geometry");
-        return NULL;
-    }
 
     kv_init(arr);
-    GEOSSTRtree_query_r(context, self->ptr, geom, strtree_query_callback, &arr);
+    if (geom != NULL) {
+        GEOSSTRtree_query_r(context, self->ptr, geom, strtree_query_callback, &arr);
+    }
 
     /* create an index array with the appropriate dimensions */
     size = kv_size(arr);
@@ -152,8 +150,8 @@ static PyObject *STRtree_query(STRtree *self, PyObject *envelope) {
 
 
 static PyMemberDef STRtree_members[] = {
-    {"_ptr", T_PYSSIZET, offsetof(STRtree, ptr), READONLY, "Pointer to GEOSSTRtree"},
-    {"geometries", T_OBJECT_EX, offsetof(STRtree, geometries), READONLY, "Geometries used to construct the GEOSSTRtree"},
+    {"_ptr", T_PYSSIZET, offsetof(STRtreeObject, ptr), READONLY, "Pointer to GEOSSTRtree"},
+    {"geometries", T_OBJECT_EX, offsetof(STRtreeObject, geometries), READONLY, "Geometries used to construct the GEOSSTRtree"},
     {NULL}  /* Sentinel */
 };
 
@@ -168,7 +166,7 @@ PyTypeObject STRtreeType = {
     PyVarObject_HEAD_INIT(NULL, 0)
     .tp_name = "pygeos.lib.STRtree",
     .tp_doc = "A query-only R-tree created using the Sort-Tile-Recursive (STR) algorithm.",
-    .tp_basicsize = sizeof(STRtree),
+    .tp_basicsize = sizeof(STRtreeObject),
     .tp_itemsize = 0,
     .tp_flags = Py_TPFLAGS_DEFAULT,
     .tp_new = STRtree_new,

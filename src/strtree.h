@@ -9,7 +9,7 @@ typedef struct {
     PyObject_HEAD
     void *ptr;
     PyObject *geometries;
-} STRtree;
+} STRtreeObject;
 
 /* A resizable vector with numpy indices */
 typedef struct
