@@ -1070,12 +1070,16 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
     char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4], *op1 = args[5];
     npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4], os1 = steps[5];
     npy_intp n = dimensions[0];
-    npy_intp i;
+    npy_intp i, j;
 
     GEOSGeometry *in1;
     GEOSWKBWriter *writer;
     unsigned char *wkb;
     size_t size;
+
+    int ndim, srid;
+    GEOSCoordSequence *coord_seq;
+    GEOSGeometry *nan_point;
 
     if ((is2 != 0) | (is3 != 0) | (is4 != 0) | (is5 != 0)) {
         PyErr_Format(PyExc_ValueError, "to_wkb function called with non-scalar parameters");
@@ -1111,7 +1115,34 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
                 wkb = GEOSWKBWriter_write_r(context_handle, writer, in1, &size);
             }
             if (wkb == NULL) {
-                goto finish;
+                /* There could have been an empty point. We handle this the same
+                   as PostGIS does, by filling NaN in the coordinates */
+                if (
+                    (GEOSGeomTypeId_r(context_handle, in1) == 0) &
+                    (GEOSisEmpty_r(context_handle, in1))
+                ) {
+                    PyErr_Clear();  /* Clear the GEOSException */
+                    ndim = GEOSGeom_getCoordinateDimension_r(context_handle, in1);
+                    if (ndim == 0) { goto finish; }
+                    coord_seq = GEOSCoordSeq_create_r(context_handle, 1, ndim);
+                    if (coord_seq == NULL) { goto finish; }
+                    for (j = 0; j < ndim; j++) {
+                        if (!GEOSCoordSeq_setOrdinate_r(context_handle, coord_seq, 0, j, NPY_NAN)) { GEOSCoordSeq_destroy_r(context_handle, coord_seq); goto finish; }
+                    }
+                    nan_point = GEOSGeom_createPoint_r(context_handle, coord_seq);
+                    if (nan_point == NULL) { GEOSCoordSeq_destroy_r(context_handle, coord_seq); goto finish; }
+                    srid = GEOSGetSRID_r(context_handle, in1);
+                    GEOSSetSRID_r(context_handle, nan_point, srid);
+                    if (hex) {
+                        wkb = GEOSWKBWriter_writeHEX_r(context_handle, writer, in1, &size);
+                    } else {
+                        wkb = GEOSWKBWriter_write_r(context_handle, writer, in1, &size);
+                    }
+                    GEOSGeom_destroy_r(context_handle, nan_point);
+                    if (wkb == NULL) { goto finish; }
+                } else {
+                    goto finish;
+                }
             }
             Py_XDECREF(*out);
             if (hex) {

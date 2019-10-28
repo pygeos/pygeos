@@ -5,9 +5,9 @@ import pytest
 from .common import all_types, point
 
 
-POINT11_WKB = (
-    b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"
-)
+POINTEMPTY_WKB = "0101000000000000000000F87F000000000000F87F"
+POINT11_WKB = "0101000000000000000000F03F000000000000F03F"
+POINT111_WKB = "0101000080000000000000F03F000000000000F03F000000000000F03F"
 
 
 def test_from_wkt():
@@ -62,9 +62,9 @@ def test_from_wkb():
 def test_from_wkb_hex():
     # HEX form
     expected = pygeos.points(1, 1)
-    actual = pygeos.from_wkb("0101000000000000000000F03F000000000000F03F")
+    actual = pygeos.from_wkb(POINT11_WKB)
     assert pygeos.equals(actual, expected)
-    actual = pygeos.from_wkb(b"0101000000000000000000F03F000000000000F03F")
+    actual = pygeos.from_wkb(POINT11_WKB.encode())
     assert pygeos.equals(actual, expected)
 
 
@@ -103,8 +103,7 @@ def test_from_wkb_empty(wkt):
 
 def test_from_wkb_empty_point():
     geom = pygeos.from_wkt("POINT EMPTY")
-    with pytest.raises(pygeos.GEOSException):
-        pygeos.to_wkb(geom)
+    assert pygeos.to_wkb(geom) == bytes.fromhex(POINTEMPTY_WKB)
 
 
 def test_to_wkt():
@@ -150,24 +149,21 @@ def test_to_wkt_exceptions():
 def test_to_wkb():
     point = pygeos.points(1, 1)
     actual = pygeos.to_wkb(point)
-    assert actual == POINT11_WKB
+    assert actual == bytes.fromhex(POINT11_WKB)
 
 
 def test_to_wkb_hex():
     point = pygeos.points(1, 1)
     actual = pygeos.to_wkb(point, hex=True)
-    le = "01"
-    point_type = "01000000"
-    coord = "000000000000F03F"  # 1.0 as double (LE)
-    assert actual == le + point_type + 2 * coord
+    assert actual == POINT11_WKB
 
 
 def test_to_wkb_3D():
     point_z = pygeos.points(1, 1, 1)
     actual = pygeos.to_wkb(point_z)
-    assert actual == b"\x01\x01\x00\x00\x80\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"  # noqa
+    assert actual == bytes.fromhex(POINT111_WKB)
     actual = pygeos.to_wkb(point_z, output_dimension=2)
-    assert actual == POINT11_WKB
+    assert actual == bytes.fromhex(POINT11_WKB)
 
 
 def test_to_wkb_none():
