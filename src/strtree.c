@@ -17,6 +17,30 @@
 #include "kvec.h"
 
 
+void strtree_dealloc_callback(void *item, void *vec)
+{
+    STRtreeElem *elem = item;
+    Py_XDECREF(elem->geometry);
+    free(elem);
+}
+
+void GEOSSTRtree_dealloc(GEOSContextHandle_t context, GEOSSTRtree *tree)
+{
+    if (tree != NULL) {
+        /* Decrease the refcount of each GeometryObject in the STRTree */
+        GEOSSTRtree_iterate_r(context, tree, strtree_dealloc_callback, NULL);
+        GEOSSTRtree_destroy_r(context, tree);
+    }
+}
+
+static void STRtree_dealloc(STRtreeObject *self)
+{
+    void *context = geos_context[0];
+    GEOSSTRtree_dealloc(context, self->ptr);
+    Py_XDECREF(self->geometries);
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
 void strtree_insert(GEOSContextHandle_t context, GEOSSTRtree *tree, GEOSGeometry *geometry, GeometryObject *obj, npy_intp i)
 {
     STRtreeElem *elem;
@@ -64,8 +88,12 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         /* get the geometry */
         ptr = PyArray_GETPTR1((PyArrayObject *) arr, i);
         obj = *(GeometryObject **) ptr;
-        /* skip incase obj was no geometry or None */
-        if (!get_geom(obj, &geom)) { continue; }
+        /* fail and cleanup incase obj was no geometry */
+        if (!get_geom(obj, &geom)) {
+            GEOSSTRtree_dealloc(context, tree);
+            return NULL;
+        }
+        /* skip incase obj was None */
         if (geom == NULL) { continue; }
         /* perform the insert */
         strtree_insert(context, tree, geom, obj, i);
@@ -80,26 +108,6 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
     Py_INCREF(arr);
     self->geometries = arr;
     return (PyObject *) self;
-}
-
-
-void strtree_dealloc_callback(void *item, void *vec)
-{
-    STRtreeElem *elem = item;
-    Py_XDECREF(elem->geometry);
-    free(elem);
-}
-
-static void STRtree_dealloc(STRtreeObject *self)
-{
-    void *context = geos_context[0];
-    if (self->ptr != NULL) {
-        /* Decrease the refcount of each GeometryObject in the STRTree */
-        GEOSSTRtree_iterate_r(context, self->ptr, strtree_dealloc_callback, NULL);
-        GEOSSTRtree_destroy_r(context, self->ptr);
-    }
-    Py_XDECREF(self->geometries);
-    Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 /* Callback to give to strtree_query

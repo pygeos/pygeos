@@ -16,6 +16,11 @@ def test_init_with_none():
     pygeos.STRtree(np.array([None]))
 
 
+def test_init_with_no_geometry():
+    with pytest.raises(TypeError):
+        pygeos.STRtree(np.array(["Not a geometry"], dtype=object))
+
+
 def test_init_increases_refcount():
     arr = np.array([point])
     with assert_increases_refcount(point), assert_increases_refcount(arr):
