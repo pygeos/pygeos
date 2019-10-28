@@ -50,6 +50,8 @@ def test_distance_missing():
     "geom,expected",
     [
         (point, [2.0, 3.0, 2.0, 3.0]),
+        (pygeos.linestrings([[0, 0], [0, 1]]), [0.0, 0.0, 0.0, 1.0]),
+        (pygeos.linestrings([[0, 0], [1, 0]]), [0.0, 0.0, 1.0, 0.0]),
         (multi_point, [0.0, 0.0, 1.0, 2.0]),
         (multi_polygon, [0.0, 0.0, 2.2, 2.2]),
         (geometry_collection, [49.0, -1.0, 52.0, 2.0]),

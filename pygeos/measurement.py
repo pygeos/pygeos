@@ -64,9 +64,9 @@ def extent(geometry, **kwargs):
     [2.0, 3.0, 2.0, 3.0]
     >>> extent(Geometry("LINESTRING (0 0, 0 2, 3 2)")).tolist()
     [0.0, 0.0, 3.0, 2.0]
-    >>> extent(Geometry("POLYGON EMPTY"))
+    >>> extent(Geometry("POLYGON EMPTY")).tolist()
     [nan, nan, nan, nan]
-    >>> extent(None)
+    >>> extent(None).tolist()
     [nan, nan, nan, nan]
     """
     return lib.extent(geometry, **kwargs)
