@@ -934,6 +934,63 @@ static void create_collection_func(char **args, npy_intp *dimensions,
 static PyUFuncGenericFunction create_collection_funcs[1] = {&create_collection_func};
 
 
+static char extent_dtypes[2] = {NPY_OBJECT, NPY_DOUBLE};
+static void extent_func(char **args, npy_intp *dimensions,
+                        npy_intp *steps, void *data)
+{
+    void *context = geos_context[0];
+    GEOSGeometry *envelope, *in1;
+    const GEOSGeometry *ring;
+    const GEOSCoordSequence *coord_seq;
+    int size;
+    char *ip1 = args[0], *op1 = args[1];
+    npy_intp is1 = steps[0], os1 = steps[1], cs1 = steps[2];
+    npy_intp n = dimensions[0], i;
+
+    for(i = 0; i < n; i++, ip1 += is1, op1 += os1) {
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (in1 != NULL) {
+            envelope = GEOSEnvelope_r(context, in1);
+            if (envelope == NULL) { return; }
+            size = GEOSGetNumCoordinates_r(context, envelope);
+            if (size == 0) {  /* Envelope is empty */
+                in1 = NULL;
+            } else if (size == 1) {  /* Envelope is a point */
+                if (!GEOSGeomGetX_r(context, envelope, (double *)(op1))) { goto fail; }
+                if (!GEOSGeomGetY_r(context, envelope, (double *)(op1 + cs1))) { goto fail; }
+                *(double *)(op1 + 2 * cs1) = *(double *)(op1);
+                *(double *)(op1 + 3 * cs1) = *(double *)(op1 + cs1);
+            } else if (size == 5) {  /* Envelope is a box */
+                ring = GEOSGetExteriorRing_r(context, envelope);
+                if (ring == NULL) { goto fail; }
+                coord_seq = GEOSGeom_getCoordSeq_r(context, ring);
+                if (coord_seq == NULL) { goto fail; }
+                if (!GEOSCoordSeq_getX_r(context, coord_seq, 0, (double *)(op1))) { goto fail; }
+                if (!GEOSCoordSeq_getY_r(context, coord_seq, 0, (double *)(op1 + cs1))) { goto fail; }
+                if (!GEOSCoordSeq_getX_r(context, coord_seq, 2, (double *)(op1 + 2 * cs1))) { goto fail; }
+                if (!GEOSCoordSeq_getY_r(context, coord_seq, 2, (double *)(op1 + 3 * cs1))) { goto fail; }
+            } else {
+                PyErr_Format(PyExc_ValueError, "Could not determine extent from an envelope with %d coordinate pairs", size);
+                goto fail;
+            }
+            GEOSGeom_destroy_r(context, envelope);
+        }
+        if (in1 == NULL) {
+            *(double *)(op1) = NPY_NAN;
+            *(double *)(op1 + cs1) = NPY_NAN;
+            *(double *)(op1 + 2 * cs1) = NPY_NAN;
+            *(double *)(op1 + 3 * cs1) = NPY_NAN;
+        }
+    }
+
+    return;
+    fail:
+        GEOSGeom_destroy_r(context, envelope);
+        return;
+}
+static PyUFuncGenericFunction extent_funcs[1] = {&extent_func};
+
+
 
 /* Define the object -> geom functions (O_Y) */
 
@@ -1323,6 +1380,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_GENERALIZED(points, 1, "(d)->()");
     DEFINE_GENERALIZED(linestrings, 1, "(i, d)->()");
     DEFINE_GENERALIZED(linearrings, 1, "(i, d)->()");
+    DEFINE_GENERALIZED(extent, 1, "()->(4)");
     DEFINE_Y_Y (polygons_without_holes);
     DEFINE_GENERALIZED(polygons_with_holes, 2, "(),(i)->()");
     DEFINE_GENERALIZED(create_collection, 2, "(i),()->()");
