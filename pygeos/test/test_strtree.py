@@ -3,23 +3,7 @@ from pygeos import box
 import pytest
 import numpy as np
 from numpy.testing import assert_array_equal
-import sys
-from contextlib import contextmanager
-from .common import point, empty
-
-
-@contextmanager
-def assert_increases_refcount(obj):
-    before = sys.getrefcount(obj)
-    yield
-    assert sys.getrefcount(obj) == before + 1
-
-
-@contextmanager
-def assert_decreases_refcount(obj):
-    before = sys.getrefcount(obj)
-    yield
-    assert sys.getrefcount(obj) == before - 1
+from .common import point, empty, assert_increases_refcount, assert_decreases_refcount
 
 
 @pytest.fixture
@@ -34,13 +18,29 @@ def test_init_with_none():
 
 def test_init_increases_refcount():
     arr = np.array([point])
-    with assert_increases_refcount(point):
+    with assert_increases_refcount(point), assert_increases_refcount(arr):
         _ = pygeos.STRtree(arr)
 
 
 def test_del_decreases_refcount():
     arr = np.array([point])
     tree = pygeos.STRtree(arr)
+    with assert_decreases_refcount(point), assert_decreases_refcount(arr):
+        del tree
+
+
+def test_geometries_property():
+    arr = np.array([point])
+    tree = pygeos.STRtree(arr)
+    assert arr is tree.geometries
+
+
+def test_flush_geometries(tree):
+    arr = np.array([point])
+    tree = pygeos.STRtree(arr)
+    # You shouldn't change this array inplace
+    arr[:] = None
+    # But still it does not lead to a memory leak
     with assert_decreases_refcount(point):
         del tree
 

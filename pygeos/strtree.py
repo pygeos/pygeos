@@ -22,3 +22,7 @@ class STRtree:
         envelope : Geometry
         """
         return self._tree.query(envelope)
+
+    @property
+    def geometries(self):
+        return self._tree.geometries
