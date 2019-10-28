@@ -17,6 +17,16 @@
 #include "kvec.h"
 
 
+void strtree_insert(GEOSContextHandle_t context, GEOSSTRtree *tree, GEOSGeometry *geometry, GeometryObject *obj, npy_intp i)
+{
+    STRtreeElem *elem;
+    elem = malloc(sizeof(STRtreeElem));
+    elem->i = i;
+    elem->geometry = (PyObject *) obj;
+    Py_INCREF(obj);   /* STRtree holds a reference to each GeometryObject */
+    GEOSSTRtree_insert_r(context, tree, geometry, elem );
+}
+
 static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
                              PyObject *kwds)
 {
@@ -58,8 +68,7 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         if (!get_geom(obj, &geom)) { continue; }
         if (geom == NULL) { continue; }
         /* perform the insert */
-        Py_INCREF(obj);   /* STRtree holds a reference to each GeometryObject */
-        GEOSSTRtree_insert_r(context, tree, geom, (void *) obj );
+        strtree_insert(context, tree, geom, obj, i);
     }
 
     STRtree *self = (STRtree *) type->tp_alloc(type, 0);
@@ -68,12 +77,17 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         return NULL;
     }
     self->ptr = tree;
+    Py_INCREF(arr);
+    self->geometries = arr;
     return (PyObject *) self;
 }
 
+
 void strtree_dealloc_callback(void *item, void *vec)
 {
-    Py_XDECREF((PyObject *) item);
+    STRtreeElem *elem = item;
+    Py_XDECREF(elem->geometry);
+    free(elem);
 }
 
 static void STRtree_dealloc(STRtree *self)
@@ -84,6 +98,7 @@ static void STRtree_dealloc(STRtree *self)
         GEOSSTRtree_iterate_r(context, self->ptr, strtree_dealloc_callback, NULL);
         GEOSSTRtree_destroy_r(context, self->ptr);
     }
+    Py_XDECREF(self->geometries);
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -93,16 +108,16 @@ static void STRtree_dealloc(STRtree *self)
 
 void strtree_query_callback(void *item, void *user_data)
 {
-    kv_push(PyObject *, *(geom_array *)user_data, (PyObject *) item);
+    STRtreeElem *elem = item;
+    kv_push(npy_intp, *(npy_intp_vec *)user_data, elem->i);
 }
 
 static PyObject *STRtree_query(STRtree *self, PyObject *envelope) {
     GEOSContextHandle_t context = geos_context[0];
     GEOSGeometry *geom;
-    geom_array arr; // Resizable array for matches for each geometry
+    npy_intp_vec arr; // Resizable array for matches for each geometry
     npy_intp i, size;
-    PyObject *obj;
-    PyObject **ptr;
+    npy_intp *ptr;
 
     if (self->ptr == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
@@ -120,16 +135,15 @@ static PyObject *STRtree_query(STRtree *self, PyObject *envelope) {
     kv_init(arr);
     GEOSSTRtree_query_r(context, self->ptr, geom, strtree_query_callback, &arr);
 
-    /* create a geometry array with the appropriate dimensions */
+    /* create an index array with the appropriate dimensions */
     size = kv_size(arr);
     npy_intp dims[1] = {size};
-    PyArrayObject *result = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_OBJECT);
+    PyArrayObject *result = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_INTP);
     if (result == NULL) { kv_destroy(arr); return NULL; }
-    for (i = 0; i < size; i++) {
+    /* insert values starting from array end to preserve order */
+    for (i = size - 1; i >= 0; i--) {
         ptr = PyArray_GETPTR1(result, i);
-        obj = kv_pop(arr);
-        Py_INCREF(obj);
-        *(PyObject **) ptr = obj;
+        *ptr = kv_pop(arr);
     }
     kv_destroy(arr);
     return (PyObject *) result;
@@ -139,6 +153,7 @@ static PyObject *STRtree_query(STRtree *self, PyObject *envelope) {
 
 static PyMemberDef STRtree_members[] = {
     {"_ptr", T_PYSSIZET, offsetof(STRtree, ptr), READONLY, "Pointer to GEOSSTRtree"},
+    {"geometries", T_OBJECT_EX, offsetof(STRtree, geometries), READONLY, "Geometries used to construct the GEOSSTRtree"},
     {NULL}  /* Sentinel */
 };
 

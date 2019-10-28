@@ -2,6 +2,7 @@ import pygeos
 from pygeos import box
 import pytest
 import numpy as np
+from numpy.testing import assert_array_equal
 import sys
 from contextlib import contextmanager
 from .common import point, empty
@@ -58,18 +59,11 @@ def test_query_empty(tree):
     assert tree.query(empty).size == 0
 
 
-def test_query_increases_refcount():
-    arr = np.array([point])
-    tree = pygeos.STRtree(arr)
-    with assert_increases_refcount(point):
-        _ = tree.query(box(0, 0, 10, 10))
-
-
-@pytest.mark.parametrize("envelope,expected_n", [
-    (pygeos.points(1, 1), 1),
-    (box(0, 0, 1, 1), 2),
-    (box(5, 5, 15, 15), 5),
-    (pygeos.multipoints([[0, 10], [10, 0]]), 10),  # it queries by envelope
+@pytest.mark.parametrize("envelope,expected", [
+    (pygeos.points(1, 1), [1]),
+    (box(0, 0, 1, 1), [0, 1]),
+    (box(5, 5, 15, 15), [5, 6, 7, 8, 9]),
+    (pygeos.multipoints([[5, 7], [7, 5]]), [5, 6, 7]),  # query by envelope
 ])
-def test_query(tree, envelope, expected_n):
-    assert tree.query(envelope).size == expected_n
+def test_query(tree, envelope, expected):
+    assert_array_equal(tree.query(envelope), expected)

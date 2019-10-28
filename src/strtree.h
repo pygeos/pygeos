@@ -8,15 +8,21 @@
 typedef struct {
     PyObject_HEAD
     void *ptr;
+    PyObject *geometries;
 } STRtree;
 
-/* A resizable vector with geometry objects */
+/* A resizable vector with numpy indices */
 typedef struct
 {
     size_t n, m;
-    PyObject **a;
-} geom_array;
+    npy_intp *a;
+} npy_intp_vec;
 
+/* An element in the tree */
+typedef struct {
+    npy_intp i;
+    PyObject *geometry;
+} STRtreeElem;
 
 PyTypeObject STRtreeType;
 
