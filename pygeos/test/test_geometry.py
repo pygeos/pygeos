@@ -191,12 +191,12 @@ def test_getattr_doc():
 
 def test_getattr_non_existing_raises():
     with pytest.raises(AttributeError):
-        assert not point.non_existing
+        point.non_existing
 
 
 def test_getattr_non_callable():
     with pytest.raises(AttributeError):
-        assert not point.geos_version
+        point.geos_version
 
 
 def test_getattr_is_empty():
