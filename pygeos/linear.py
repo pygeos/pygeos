@@ -1,7 +1,7 @@
 from . import lib
 from . import Geometry  # NOQA
 
-__all__ = ["line_interpolate_point", "line_locate_point", "line_merge"]
+__all__ = ["line_interpolate_point", "line_locate_point", "line_merge", "shared_paths"]
 
 
 def line_interpolate_point(line, distance, normalize=False):
@@ -87,3 +87,9 @@ def line_merge(line):
     <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>
     """
     return lib.line_merge(line)
+
+def shared_paths(a, b=None, axis=0):
+     if b is None:
+         return lib.shared_paths.reduce(a, axis=axis)
+     else:		
+         return lib.shared_paths(a, b)
