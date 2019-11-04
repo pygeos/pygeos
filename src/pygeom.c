@@ -110,7 +110,10 @@ static PyObject* GeometryObject_dir(PyObject *o, PyObject *attr_name) {
     PyObject *m = PyImport_ImportModule("pygeos.geometry");
     PyObject *dirfun = PyObject_GetAttrString(m, "_geometry_dir");
     if (dirfun == NULL) { return NULL; }
-    return PyObject_CallFunctionObjArgs(dirfun, o, NULL);
+    PyObject *result = PyObject_CallFunctionObjArgs(dirfun, o, NULL);
+    Py_XDECREF(m);
+    Py_XDECREF(dirfun);
+    return result;
 };
 
 static PyObject* GeometryObject_getattr(PyObject *o, PyObject *attr_name) {
