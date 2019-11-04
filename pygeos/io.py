@@ -2,7 +2,7 @@ import numpy as np
 
 from . import Geometry  # noqa
 from . import lib
-from . import geos_version
+from . import geos_capi_version
 
 try:
     from shapely.geos import geos_version_string as shapely_geos_version
@@ -196,18 +196,20 @@ def from_shapely(geometry, **kwargs):
     Examples
     --------
     >>> from shapely.geometry import Point   # doctest: +SKIP
-    >>> from_wkt(Point(1, 2))   # doctest: +SKIP
+    >>> from_shapely(Point(1, 2))   # doctest: +SKIP
     <pygeos.Geometry POINT (1 2)>
     """
     if shapely_geos_version is None:
         raise ImportError("This function requires shapely")
 
     # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
-    # pygeos has something like: "3.6.2"
-    if not shapely_geos_version.startswith(geos_version):
+    # pygeos has something like: "3.6.2-CAPI-1.10.2"
+    if not shapely_geos_version.startswith(geos_capi_version):
         raise ImportError(
-            "The shapely GEOS version ({}) is "
-            "incompatible".format(shapely_geos_version)
+            "The shapely GEOS version ({}) is incompatible with the GEOS "
+            "version PyGEOS was compiled with ({})".format(
+                shapely_geos_version, geos_capi_version
+            )
         )
 
     if isinstance(geometry, ShapelyGeometry):
