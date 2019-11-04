@@ -37,43 +37,18 @@ static PyMemberDef GeometryObject_members[] = {
     {NULL}  /* Sentinel */
 };
 
-static PyObject *GeometryObject_ToWKT(GeometryObject *obj, char *format)
-{
-    void *context_handle = geos_context[0];
-    char *wkt;
-    PyObject *result;
-    if (obj->ptr == NULL) {
-        Py_INCREF(Py_None);
-        return Py_None;
-    }
-    GEOSWKTWriter *writer = GEOSWKTWriter_create_r(context_handle);
-    if (writer == NULL) {
-        return NULL;
-    }
-
-    char trim = 1;
-    int precision = 3;
-    int dimension = 3;
-    int use_old_3d = 0;
-    GEOSWKTWriter_setRoundingPrecision_r(context_handle, writer, precision);
-    GEOSWKTWriter_setTrim_r(context_handle, writer, trim);
-    GEOSWKTWriter_setOutputDimension_r(context_handle, writer, dimension);
-    GEOSWKTWriter_setOld3D_r(context_handle, writer, use_old_3d);
-    wkt = GEOSWKTWriter_write_r(context_handle, writer, obj->ptr);
-    result = PyUnicode_FromFormat(format, wkt);
-    GEOSFree_r(context_handle, wkt);
-    GEOSWKTWriter_destroy_r(context_handle, writer);
-    return result;
-}
-
 static PyObject *GeometryObject_repr(GeometryObject *self)
 {
-    return GeometryObject_ToWKT(self, "<pygeos.Geometry %s>");
+    PyObject *wkt = PyObject_CallMethod((PyObject *) self, "to_wkt", NULL);
+    if ((wkt == NULL) | (wkt == Py_None)) {
+        return wkt;
+    }
+    return PyUnicode_FromFormat("<pygeos.Geometry %U>", wkt);
 }
 
 static PyObject *GeometryObject_str(GeometryObject *self)
 {
-    return GeometryObject_ToWKT(self, "%s");
+    return PyObject_CallMethod((PyObject *) self, "to_wkt", NULL);
 }
 
 static PyObject *GeometryObject_FromWKT(PyTypeObject *type, PyObject *value)
@@ -131,13 +106,39 @@ static PyObject *GeometryObject_new(PyTypeObject *type, PyObject *args,
     }
 }
 
+static PyObject* GeometryObject_dir(PyObject *o, PyObject *attr_name) {
+    PyObject *m = PyImport_ImportModule("pygeos.geometry");
+    PyObject *dirfun = PyObject_GetAttrString(m, "_geometry_dir");
+    if (dirfun == NULL) { return NULL; }
+    return PyObject_CallFunctionObjArgs(dirfun, o, NULL);
+};
+
+static PyObject* GeometryObject_getattr(PyObject *o, PyObject *attr_name) {
+    PyObject *attr;
+    attr = PyObject_GenericGetAttr(o, attr_name);
+    if (attr != NULL) { return attr; }
+    /* PyObject_GenericGetAttr sets an error: we don't want that */
+    PyErr_Clear();
+
+    PyObject *m = PyImport_ImportModule("pygeos.geometry");
+    PyObject *curry = PyObject_GetAttrString(m, "_geometry_getattr");
+    if (curry == NULL) { return NULL; }
+    attr = PyObject_CallFunctionObjArgs(curry, o, attr_name, NULL);
+    Py_XDECREF(m);
+    Py_XDECREF(curry);
+    return attr;
+};
+
+
 static PyMethodDef GeometryObject_methods[] = {
+    {"__dir__", GeometryObject_dir, METH_NOARGS, "__dir__() -> list\nextended dir() implementation"},
     {NULL}  /* Sentinel */
 };
 
+
 PyTypeObject GeometryType = {
     PyVarObject_HEAD_INIT(NULL, 0)
-    .tp_name = "pygeos.lib.GEOSGeometry",
+    .tp_name = "pygeos.lib.Geometry",
     .tp_doc = "Geometry type",
     .tp_basicsize = sizeof(GeometryObject),
     .tp_itemsize = 0,
@@ -148,6 +149,7 @@ PyTypeObject GeometryType = {
     .tp_methods = GeometryObject_methods,
     .tp_repr = (reprfunc) GeometryObject_repr,
     .tp_str = (reprfunc) GeometryObject_str,
+    .tp_getattro = (getattrofunc) GeometryObject_getattr,
 };
 
 

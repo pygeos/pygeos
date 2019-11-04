@@ -166,3 +166,63 @@ def test_adapt_ptr_raises():
     point = pygeos.Geometry("POINT (2 2)")
     with pytest.raises(AttributeError):
         point._ptr += 1
+
+
+def test_repr():
+    assert repr(point) == "<pygeos.Geometry POINT (2 3)>"
+
+
+def test_str():
+    assert str(point) == "POINT (2 3)"
+
+
+def test_dir():
+    actual = dir(point)
+    assert "is_empty" in actual
+    assert "Geometry" not in actual
+
+
+# Geometry.__getattr__
+
+
+def test_getattr_doc():
+    assert point.is_empty.__doc__ == pygeos.is_empty.__doc__
+
+
+def test_getattr_non_existing_raises():
+    with pytest.raises(AttributeError):
+        assert not point.non_existing
+
+
+def test_getattr_non_callable():
+    with pytest.raises(AttributeError):
+        assert not point.geos_version
+
+
+def test_getattr_is_empty():
+    assert not point.is_empty()
+
+
+def test_getattr_get_num_coordinates():
+    assert point.get_num_coordinates() == 1
+
+
+def test_getattr_contains():
+    assert not polygon.contains(point)
+
+
+def test_getattr_intersection():
+    assert pygeos.is_empty(polygon.intersection(point))
+
+
+def test_getattr_distance():
+    assert point.distance(polygon) == 1.0
+
+
+def test_getattr_to_wkt():
+    assert point.to_wkt(rounding_precision=1, trim=False) == "POINT (2.0 3.0)"
+
+
+def test_getattr_raises():
+    with pytest.raises(pygeos.GEOSException):
+        point.line_locate_point(polygon)

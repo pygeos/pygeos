@@ -1,5 +1,6 @@
 from enum import IntEnum
 import numpy as np
+from functools import wraps
 from . import lib
 from . import Geometry  # NOQA
 
@@ -38,6 +39,41 @@ class GeometryType(IntEnum):
 
 
 # generic
+
+
+def _is_geometry_func(attr):
+    """Checks if an object is eligible for a Geometry().<attr> binding"""
+    if not callable(attr):
+        return False
+    # filter attributes starting with _ or a capital
+    return attr.__name__[0].islower()
+
+
+def _geometry_dir(geometry):
+    """This function extends the default __dir__ with functions in pygeos."""
+    import pygeos
+
+    builtin_dir = object.__dir__(geometry)
+    pygeos_dir = [k for k, v in pygeos.__dict__.items() if _is_geometry_func(v)]
+    return sorted(builtin_dir + pygeos_dir)
+
+
+def _geometry_getattr(geometry, attr_name):
+    """This function is called on Geometry.__getattr__ and wraps any function
+    in the pygeos package."""
+    import pygeos
+
+    pygeos_func = getattr(pygeos, attr_name, None)
+    if not _is_geometry_func(pygeos_func):
+        raise AttributeError(
+            "'pygeos.lib.Geometry' has no attribute '{}'".format(attr_name)
+        )
+
+    @wraps(pygeos_func)
+    def geometry_func(*args, **kwargs):
+        return pygeos_func(geometry, *args, **kwargs)
+
+    return geometry_func
 
 
 def get_type_id(geometry):
