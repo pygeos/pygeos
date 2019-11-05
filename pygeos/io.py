@@ -2,7 +2,7 @@ import numpy as np
 
 from . import Geometry  # noqa
 from . import lib
-from . import geos_capi_version
+from . import geos_capi_version_string
 
 try:
     from shapely.geos import geos_version_string as shapely_geos_version
@@ -204,11 +204,11 @@ def from_shapely(geometry, **kwargs):
 
     # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
     # pygeos has something like: "3.6.2-CAPI-1.10.2"
-    if not shapely_geos_version.startswith(geos_capi_version):
+    if not shapely_geos_version.startswith(geos_capi_version_string):
         raise ImportError(
             "The shapely GEOS version ({}) is incompatible with the GEOS "
             "version PyGEOS was compiled with ({})".format(
-                shapely_geos_version, geos_capi_version
+                shapely_geos_version, geos_capi_version_string
             )
         )
 
