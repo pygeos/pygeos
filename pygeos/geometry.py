@@ -4,6 +4,8 @@ from functools import wraps
 from . import lib
 from . import Geometry  # NOQA
 
+import pygeos
+
 __all__ = [
     "GeometryType",
     "get_type_id",
@@ -27,7 +29,7 @@ __all__ = [
 class GeometryType(IntEnum):
     """The enumeration of GEOS geometry types"""
 
-    NAG = -1
+    MISSING = -1
     POINT = 0
     LINESTRING = 1
     LINEARRING = 2
@@ -41,39 +43,63 @@ class GeometryType(IntEnum):
 # generic
 
 
-def _is_geometry_func(attr):
-    """Checks if an object is eligible for a Geometry().<attr> binding"""
-    if not callable(attr):
-        return False
-    # filter attributes starting with _ or a capital
-    return attr.__name__[0].islower()
+class _DummyGeometry:
+    """This object extends pygeos.lib.Geometry"""
+    def __init__(self, geometry):
+        self.geometry = geometry
+
+    @staticmethod
+    def _is_geometry_func(attr):
+        """Check if an object is eligible for a Geometry().<attr> binding"""
+        if not callable(attr):
+            return False
+        # return False for attributes starting with _ or a capital
+        return attr.__name__[0].islower()
+
+    def __dir__(self):
+        """Append the builtin __dir__ with all geometry functions in pygeos"""
+        builtin_dir = object.__dir__(self.geometry)
+        pygeos_dir = [
+            k for k, v in pygeos.__dict__.items() if self._is_geometry_func(v)
+        ]
+        return sorted(builtin_dir + pygeos_dir)
+
+    def __getattr__(self, attr_name):
+        """Append __getattr__ with all geometry functions in pygeos"""
+        pygeos_func = getattr(pygeos, attr_name, None)
+        if not self._is_geometry_func(pygeos_func):
+            raise AttributeError(
+                "'pygeos.lib.Geometry' has no attribute '{}'".format(attr_name)
+            )
+
+        # self.geometry is passed as the first argument in the function
+        @wraps(pygeos_func)  # maintains the __doc__
+        def geometry_func(*args, **kwargs):
+            return pygeos_func(self.geometry, *args, **kwargs)
+
+        return geometry_func
 
 
 def _geometry_dir(geometry):
-    """This function extends the default __dir__ with functions in pygeos."""
-    import pygeos
+    """This function implements the __dir__ method of pygeos.lib.Geometry
 
-    builtin_dir = object.__dir__(geometry)
-    pygeos_dir = [k for k, v in pygeos.__dict__.items() if _is_geometry_func(v)]
-    return sorted(builtin_dir + pygeos_dir)
+    It is called from the compiled C code.
+    """
+    return dir(_DummyGeometry(geometry))
 
 
 def _geometry_getattr(geometry, attr_name):
-    """This function is called on Geometry.__getattr__ and wraps any function
-    in the pygeos package."""
-    import pygeos
+    """This function extends the __getattr__ method of pygeos.lib.Geometry
 
-    pygeos_func = getattr(pygeos, attr_name, None)
-    if not _is_geometry_func(pygeos_func):
+    It is called from the compiled C code if no attribute was found.
+    """
+    try:
+        return getattr(_DummyGeometry(geometry), attr_name)
+    except AttributeError:
+        # reraise referring to the real Geometry object
         raise AttributeError(
             "'pygeos.lib.Geometry' has no attribute '{}'".format(attr_name)
         )
-
-    @wraps(pygeos_func)
-    def geometry_func(*args, **kwargs):
-        return pygeos_func(geometry, *args, **kwargs)
-
-    return geometry_func
 
 
 def get_type_id(geometry):
