@@ -17,38 +17,12 @@
 #include "kvec.h"
 
 
-void strtree_dealloc_callback(void *item, void *vec)
-{
-    STRtreeElem *elem = item;
-    Py_XDECREF(elem->geometry);
-    free(elem);
-}
-
-void GEOSSTRtree_dealloc(GEOSContextHandle_t context, GEOSSTRtree *tree)
-{
-    if (tree != NULL) {
-        /* Decrease the refcount of each GeometryObject in the STRTree */
-        GEOSSTRtree_iterate_r(context, tree, strtree_dealloc_callback, NULL);
-        GEOSSTRtree_destroy_r(context, tree);
-    }
-}
-
 static void STRtree_dealloc(STRtreeObject *self)
 {
     void *context = geos_context[0];
-    GEOSSTRtree_dealloc(context, self->ptr);
+    if (self->ptr != NULL) { GEOSSTRtree_destroy_r(context, self->ptr); }
     Py_XDECREF(self->geometries);
     Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-void strtree_insert(GEOSContextHandle_t context, GEOSSTRtree *tree, GEOSGeometry *geometry, GeometryObject *obj, npy_intp i)
-{
-    STRtreeElem *elem;
-    elem = malloc(sizeof(STRtreeElem));
-    elem->i = i;
-    elem->geometry = (PyObject *) obj;
-    Py_INCREF(obj);   /* STRtree holds a reference to each GeometryObject */
-    GEOSSTRtree_insert_r(context, tree, geometry, elem );
 }
 
 static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
@@ -90,13 +64,13 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         obj = *(GeometryObject **) ptr;
         /* fail and cleanup incase obj was no geometry */
         if (!get_geom(obj, &geom)) {
-            GEOSSTRtree_dealloc(context, tree);
+            GEOSSTRtree_destroy_r(context, tree);
             return NULL;
         }
         /* skip incase obj was None */
         if (geom == NULL) { continue; }
         /* perform the insert */
-        strtree_insert(context, tree, geom, obj, i);
+        GEOSSTRtree_insert_r(context, tree, geom, (void *) i );
     }
 
     STRtreeObject *self = (STRtreeObject *) type->tp_alloc(type, 0);
@@ -112,12 +86,11 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
 
 /* Callback to give to strtree_query
  * Given the value returned from each intersecting geometry it inserts that
- * value (typically an index) into the given size_vector */
+ * value (the index) into the given size_vector */
 
 void strtree_query_callback(void *item, void *user_data)
 {
-    STRtreeElem *elem = item;
-    kv_push(npy_intp, *(npy_intp_vec *)user_data, elem->i);
+    kv_push(npy_intp, *(npy_intp_vec *)user_data, (npy_intp) item);
 }
 
 static PyObject *STRtree_query(STRtreeObject *self, PyObject *envelope) {

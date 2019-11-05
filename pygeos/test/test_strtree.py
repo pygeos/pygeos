@@ -23,14 +23,14 @@ def test_init_with_no_geometry():
 
 def test_init_increases_refcount():
     arr = np.array([point])
-    with assert_increases_refcount(point), assert_increases_refcount(arr):
+    with assert_increases_refcount(arr):
         _ = pygeos.STRtree(arr)
 
 
 def test_del_decreases_refcount():
     arr = np.array([point])
     tree = pygeos.STRtree(arr)
-    with assert_decreases_refcount(point), assert_decreases_refcount(arr):
+    with assert_decreases_refcount(arr):
         del tree
 
 
@@ -41,13 +41,12 @@ def test_geometries_property():
 
 
 def test_flush_geometries(tree):
-    arr = np.array([point])
+    arr = pygeos.points(np.arange(10), np.arange(10))
     tree = pygeos.STRtree(arr)
-    # You shouldn't change this array inplace
+    # Dereference geometries
     arr[:] = None
-    # But still it does not lead to a memory leak
-    with assert_decreases_refcount(point):
-        del tree
+    # Still it does not lead to a segfault
+    tree.query(point)
 
 
 def test_query_no_geom(tree):

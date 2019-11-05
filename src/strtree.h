@@ -18,12 +18,6 @@ typedef struct
     npy_intp *a;
 } npy_intp_vec;
 
-/* An element in the tree */
-typedef struct {
-    npy_intp i;
-    PyObject *geometry;
-} STRtreeElem;
-
 PyTypeObject STRtreeType;
 
 int init_strtree_type(PyObject *m);
