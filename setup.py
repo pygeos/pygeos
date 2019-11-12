@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import sysconfig
 from distutils.version import LooseVersion
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
@@ -110,7 +111,8 @@ class build_ext(_build_ext):
 module_lib = Extension(
     "pygeos.lib",
     sources=["src/lib.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c"],
-    **get_geos_paths()
+    **get_geos_paths(),
+    extra_compile_args=sysconfig.get_config_var('CFLAGS').split() + ["-fcommon"]
 )
 
 
