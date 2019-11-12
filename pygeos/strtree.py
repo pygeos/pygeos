@@ -8,7 +8,22 @@ class STRtree:
     """A query-only R-tree created using the Sort-Tile-Recursive (STR)
     algorithm.
 
-    For two-dimensional spatial data.
+    For two-dimensional spatial data. The actual tree will be constructed at the first
+    query.
+
+    Parameters
+    ----------
+    geometries : array_like
+    leafsize : int
+        the maximum number of child nodes that a node can have
+
+    Examples
+    --------
+    >>> import pygeos
+    >>> geoms = pygeos.points(np.arange(10), np.arange(10))
+    >>> tree = pygeos.STRtree(geoms)
+    >>> tree.query(pygeos.box(2, 2, 4, 4)).tolist()
+    [2, 3, 4]
     """
 
     def __init__(self, geometries, leafsize=5):
