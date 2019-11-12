@@ -106,7 +106,7 @@ def buffer(
     >>> buffer(Geometry("POINT (10 10)"), 2, quadsegs=1)
     <pygeos.Geometry POLYGON ((12 10, 10 8, 8 10, 10 12, 12 10))>
     >>> buffer(Geometry("POINT (10 10)"), 2, quadsegs=2)
-    <pygeos.Geometry POLYGON ((12 10, 11.4 8.59, 10 8, 8.59 8.59, 8 10, 8.59 11.4, 10 12, 11.4 11.4, 12 10))>
+    <pygeos.Geometry POLYGON ((12 10, 11.4142 8.58579, 10 8, 8.58579 8.58579, 8 10, 8.58579 11.4142, 10 12, 11.4142 11.4142, 12 10))>
     >>> buffer(Geometry("POINT (10 10)"), -2, quadsegs=1)
     <pygeos.Geometry POLYGON EMPTY>
     >>> line = Geometry("LINESTRING (10 10, 20 10)")
