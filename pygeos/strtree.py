@@ -35,6 +35,7 @@ class STRtree:
         Parameters
         ----------
         envelope : Geometry
+            The envelope of the geometry is taken automatically.
         """
         return self._tree.query(envelope)
 
