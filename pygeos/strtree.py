@@ -29,6 +29,9 @@ class STRtree:
     def __init__(self, geometries, leafsize=5):
         self._tree = lib.STRtree(np.asarray(geometries, dtype=np.object), leafsize)
 
+    def __len__(self):
+        return self._tree.count
+
     def query(self, envelope):
         """Return all items whose extent intersect the given envelope.
 

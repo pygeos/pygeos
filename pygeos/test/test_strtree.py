@@ -14,7 +14,7 @@ def tree():
 
 def test_init_with_none():
     tree = pygeos.STRtree(np.array([None]))
-    #assert tree.query(point).size == 0
+    assert tree.query(point).size == 0
 
 
 def test_init_with_no_geometry():

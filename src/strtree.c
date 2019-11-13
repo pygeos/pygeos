@@ -32,6 +32,7 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
     PyObject *arr;
     void *tree, *ptr;
     npy_intp n, i;
+    long count;
     GEOSGeometry *geom;
     GeometryObject *obj;
     GEOSContextHandle_t context = geos_context[0];
@@ -70,6 +71,7 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         /* skip incase obj was None */
         if (geom == NULL) { continue; }
         /* perform the insert */
+        count++;
         GEOSSTRtree_insert_r(context, tree, geom, (void *) i );
     }
 
@@ -81,6 +83,7 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
     self->ptr = tree;
     Py_INCREF(arr);
     self->geometries = arr;
+    self->count = count;
     return (PyObject *) self;
 }
 
@@ -103,6 +106,10 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *envelope) {
     if (self->ptr == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
         return NULL;
+    }
+    if (self->count == 0) {
+        npy_intp dims[1] = {0};
+        return PyArray_SimpleNew(1, dims, NPY_INTP);
     }
     if (!get_geom((GeometryObject *) envelope, &geom)) {
         PyErr_SetString(PyExc_TypeError, "Invalid geometry");
@@ -133,6 +140,7 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *envelope) {
 static PyMemberDef STRtree_members[] = {
     {"_ptr", T_PYSSIZET, offsetof(STRtreeObject, ptr), READONLY, "Pointer to GEOSSTRtree"},
     {"geometries", T_OBJECT_EX, offsetof(STRtreeObject, geometries), READONLY, "Geometries used to construct the GEOSSTRtree"},
+    {"count", T_LONG, offsetof(STRtreeObject, count), READONLY, "The number of geometries inside the GEOSSTRtree"},
     {NULL}  /* Sentinel */
 };
 
