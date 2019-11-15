@@ -70,5 +70,4 @@ def test_shared_paths_linestring():
     g2 = pygeos.linestrings([(0, 0), (1, 0)])
     actual1 = pygeos.shared_paths(g1, g2)
     assert pygeos.equals(pygeos.get_geometry(actual1, 0), g2)
-    assert pygeos.shared_paths(None, None) == None
-    assert len(pygeos.shared_paths([[g1, g2], [g1, g2]], axis=1)) == 2
+    assert pygeos.shared_paths(None, None) is None
