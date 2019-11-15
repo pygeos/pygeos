@@ -65,6 +65,7 @@ def test_line_merge_geom_array():
     assert pygeos.equals(actual[0], line_string)
     assert pygeos.equals(actual[1], multi_line_string)
 
+
 def test_shared_paths_linestring():
     g1 = pygeos.linestrings([(0, 0), (1, 0), (1, 1)])
     g2 = pygeos.linestrings([(0, 0), (1, 0)])

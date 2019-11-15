@@ -88,6 +88,7 @@ def line_merge(line):
     """
     return lib.line_merge(line)
 
+
 def shared_paths(geom1, geom2):
     """Returns the shared paths between geom1 and geom2.
 
