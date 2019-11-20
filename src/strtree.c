@@ -32,7 +32,7 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
     PyObject *arr;
     void *tree, *ptr;
     npy_intp n, i;
-    long count;
+    long count = 0;
     GEOSGeometry *geom;
     GeometryObject *obj;
     GEOSContextHandle_t context = geos_context[0];
