@@ -934,8 +934,8 @@ static void create_collection_func(char **args, npy_intp *dimensions,
 static PyUFuncGenericFunction create_collection_funcs[1] = {&create_collection_func};
 
 
-static char extent_dtypes[2] = {NPY_OBJECT, NPY_DOUBLE};
-static void extent_func(char **args, npy_intp *dimensions,
+static char bounds_dtypes[2] = {NPY_OBJECT, NPY_DOUBLE};
+static void bounds_func(char **args, npy_intp *dimensions,
                         npy_intp *steps, void *data)
 {
     void *context = geos_context[0];
@@ -984,7 +984,7 @@ static void extent_func(char **args, npy_intp *dimensions,
                 if (!GEOSCoordSeq_getX_r(context, coord_seq, 2, x2)) { goto fail; }
                 if (!GEOSCoordSeq_getY_r(context, coord_seq, 2, y2)) { goto fail; }
             } else {
-                PyErr_Format(PyExc_ValueError, "Could not determine extent from an envelope with %d coordinate pairs", size);
+                PyErr_Format(PyExc_ValueError, "Could not determine bounds from an envelope with %d coordinate pairs", size);
                 goto fail;
             }
             GEOSGeom_destroy_r(context, envelope);
@@ -996,7 +996,7 @@ static void extent_func(char **args, npy_intp *dimensions,
         GEOSGeom_destroy_r(context, envelope);
         return;
 }
-static PyUFuncGenericFunction extent_funcs[1] = {&extent_func};
+static PyUFuncGenericFunction bounds_funcs[1] = {&bounds_func};
 
 
 
@@ -1388,7 +1388,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_GENERALIZED(points, 1, "(d)->()");
     DEFINE_GENERALIZED(linestrings, 1, "(i, d)->()");
     DEFINE_GENERALIZED(linearrings, 1, "(i, d)->()");
-    DEFINE_GENERALIZED(extent, 1, "()->(4)");
+    DEFINE_GENERALIZED(bounds, 1, "()->(4)");
     DEFINE_Y_Y (polygons_without_holes);
     DEFINE_GENERALIZED(polygons_with_holes, 2, "(),(i)->()");
     DEFINE_GENERALIZED(create_collection, 2, "(i),()->()");

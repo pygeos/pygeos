@@ -1,7 +1,7 @@
 from . import lib
 from . import Geometry  # NOQA
 
-__all__ = ["area", "distance", "extent", "length", "hausdorff_distance"]
+__all__ = ["area", "distance", "bounds", "length", "hausdorff_distance"]
 
 
 def area(geometry, **kwargs):
@@ -49,8 +49,8 @@ def distance(a, b, **kwargs):
     return lib.distance(a, b, **kwargs)
 
 
-def extent(geometry, **kwargs):
-    """Computes the extent (bounds) of a geometry.
+def bounds(geometry, **kwargs):
+    """Computes the bounds (extent) of a geometry.
 
     For each geometry these 4 numbers are returned: min x, min y, max x, max y.
 
@@ -60,16 +60,16 @@ def extent(geometry, **kwargs):
 
     Examples
     --------
-    >>> extent(Geometry("POINT (2 3)")).tolist()
+    >>> bounds(Geometry("POINT (2 3)")).tolist()
     [2.0, 3.0, 2.0, 3.0]
-    >>> extent(Geometry("LINESTRING (0 0, 0 2, 3 2)")).tolist()
+    >>> bounds(Geometry("LINESTRING (0 0, 0 2, 3 2)")).tolist()
     [0.0, 0.0, 3.0, 2.0]
-    >>> extent(Geometry("POLYGON EMPTY")).tolist()
+    >>> bounds(Geometry("POLYGON EMPTY")).tolist()
     [nan, nan, nan, nan]
-    >>> extent(None).tolist()
+    >>> bounds(None).tolist()
     [nan, nan, nan, nan]
     """
-    return lib.extent(geometry, **kwargs)
+    return lib.bounds(geometry, **kwargs)
 
 
 def length(geometry, **kwargs):
