@@ -1,3 +1,5 @@
+import numpy as np
+
 from . import lib
 from . import Geometry  # NOQA
 
@@ -69,7 +71,9 @@ def bounds(geometry, **kwargs):
     >>> bounds(None).tolist()
     [nan, nan, nan, nan]
     """
-    return lib.bounds(geometry, **kwargs)
+    geometry_arr = np.asarray(geometry, dtype=np.object)
+    out = np.empty(geometry_arr.shape + (4,), dtype="float64")
+    return lib.bounds(geometry_arr, out=out, **kwargs)
 
 
 def length(geometry, **kwargs):

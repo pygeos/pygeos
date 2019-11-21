@@ -1388,7 +1388,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_GENERALIZED(points, 1, "(d)->()");
     DEFINE_GENERALIZED(linestrings, 1, "(i, d)->()");
     DEFINE_GENERALIZED(linearrings, 1, "(i, d)->()");
-    DEFINE_GENERALIZED(bounds, 1, "()->(4)");
+    DEFINE_GENERALIZED(bounds, 1, "()->(n)");
     DEFINE_Y_Y (polygons_without_holes);
     DEFINE_GENERALIZED(polygons_with_holes, 2, "(),(i)->()");
     DEFINE_GENERALIZED(create_collection, 2, "(i),()->()");
