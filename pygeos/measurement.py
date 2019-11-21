@@ -71,6 +71,8 @@ def bounds(geometry, **kwargs):
     >>> bounds(None).tolist()
     [nan, nan, nan, nan]
     """
+    # We need to provide the `out` argument here for compatibility with
+    # numpy < 1.16. See https://github.com/numpy/numpy/issues/14949
     geometry_arr = np.asarray(geometry, dtype=np.object)
     out = np.empty(geometry_arr.shape + (4,), dtype="float64")
     return lib.bounds(geometry_arr, out=out, **kwargs)
