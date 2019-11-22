@@ -150,7 +150,6 @@ PyTypeObject GeometryType = {
     .tp_str = (reprfunc) GeometryObject_str,
 };
 
-
 /* Get a GEOSGeometry pointer from a GeometryObject, or NULL if the input is
 Py_None. Returns 0 on error, 1 on success. */
 char get_geom(GeometryObject *obj, GEOSGeometry **out) {
@@ -162,6 +161,32 @@ char get_geom(GeometryObject *obj, GEOSGeometry **out) {
             PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
             return 0;
         }
+    } else {
+        *out = obj->ptr;
+        return 1;
+    }
+}
+
+/* Check if the input is a GeometryObject or Py_None. Returns 0 on error, 1 on success. */
+char check_geom(GeometryObject *obj) {
+    if (!PyObject_IsInstance((PyObject *) obj, (PyObject *) &GeometryType)) {
+        if ((PyObject *) obj == Py_None) {
+            return 1;
+        } else {
+            PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
+            return 0;
+        }
+    } else {
+        return 1;
+    }
+}
+
+/* Get a GEOSGeometry pointer from a GeometryObject, or NULL if the input is
+Py_None. Does no checking of the input, assumes this is already done. */
+char get_geom_nogil(GeometryObject *obj, GEOSGeometry **out) {
+    if (obj == Py_None) {
+        *out = NULL;
+        return 1;
     } else {
         *out = obj->ptr;
         return 1;

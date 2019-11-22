@@ -543,11 +543,32 @@ static void YY_d_func(char **args, npy_intp *dimensions,
     void *context_handle = geos_context[0];
     GEOSGeometry *in1, *in2;
 
-    BINARY_LOOP {
-        /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) { return; }
-        if ((in1 == NULL) | (in2 == NULL)) {
+    // BINARY_LOOP
+    char *ip1 = args[0], *ip2 = args[1], *op1 = args[2];
+    npy_intp is1 = steps[0], is2 = steps[1], os1 = steps[2];
+    npy_intp n = dimensions[0];
+    npy_intp i;
+
+    /* first pass over the data to validate */
+    for(i = 0; i < n; i++, ip1 += is1, ip2 += is2) {
+        if (!check_geom(*(GeometryObject **)ip1)) { return; }
+        if (!check_geom(*(GeometryObject **)ip2)) { return; }
+    }
+
+    /* reset */
+    ip1 = args[0], ip2 = args[1];
+
+    /* release the GIL */
+    NPY_BEGIN_THREADS_DEF;
+    NPY_BEGIN_THREADS;
+
+    for(i = 0; i < n; i++, ip1 += is1, ip2 += is2, op1 += os1) {
+        /* get the geometries in a second pass in "unsafe" way -> we already
+        checked that the input is either a GeometryObject or either None */
+        get_geom_nogil(*(GeometryObject **)ip1, &in1);
+        get_geom_nogil(*(GeometryObject **)ip2, &in2);
+
+        if ((in1 == 0) | (in2 == 0)) {
             /* in case of a missing value: return NaN */
             *(double *)op1 = NPY_NAN;
         } else {
@@ -561,6 +582,8 @@ static void YY_d_func(char **args, npy_intp *dimensions,
             }
         }
     }
+    /* reacquire the GIL */
+    NPY_END_THREADS;
 }
 static PyUFuncGenericFunction YY_d_funcs[1] = {&YY_d_func};
 
