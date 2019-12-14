@@ -13,7 +13,6 @@
 #include "pygeom.h"
 #include "coords.h"
 #include "ufuncs.h"
-#include "strtree.h"
 
 
 /* This tells Python what methods this module has. */
