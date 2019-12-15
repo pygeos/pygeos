@@ -20,6 +20,7 @@ __all__ = [
     "get_point",
     "get_interior_ring",
     "get_geometry",
+    "prepare",
 ]
 
 
@@ -434,3 +435,7 @@ def get_num_geometries(geometry):
     1
     """
     return lib.get_num_geometries(geometry)
+
+
+def prepare(geometry):
+    return lib.prepare(geometry)

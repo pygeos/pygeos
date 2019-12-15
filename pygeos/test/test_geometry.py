@@ -166,3 +166,9 @@ def test_adapt_ptr_raises():
     point = pygeos.Geometry("POINT (2 2)")
     with pytest.raises(AttributeError):
         point._ptr += 1
+
+
+def test_prepare():
+    point = pygeos.Geometry("POINT (2 2)")
+    prepared = pygeos.prepare(point)
+    print(type(prepared))

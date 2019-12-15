@@ -36,6 +36,13 @@
     Py_XDECREF(*out);\
     *out = ret
 
+#define OUTPUT_Yp\
+    PyObject *ret = PreparedGeometryObject_FromGEOSPreparedGeometry(&PreparedGeometryType, ret_ptr);\
+    PyObject **out = (PyObject **)op1;\
+    Py_XDECREF(*out);\
+    *out = ret
+
+
 /* Define the geom -> bool functions (Y_b) */
 static void *is_empty_data[1] = {GEOSisEmpty_r};
 /* the GEOSisSimple_r function fails on geometrycollections */
@@ -222,6 +229,35 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
     }
 }
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
+
+/* Define the geom -> prepared geom functions (Y_Yp) */
+static void *prepare_data[1] = {GEOSPrepare_r};
+typedef void *FuncGEOS_Y_Yp(void *context, void *a);
+static char Y_Yp_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static void Y_Yp_func(char **args, npy_intp *dimensions,
+                      npy_intp *steps, void *data)
+{
+    FuncGEOS_Y_Yp *func = (FuncGEOS_Y_Yp *)data;
+    void *context_handle = geos_context[0];
+    GEOSGeometry *in1;
+    GEOSPreparedGeometry *ret_ptr;
+
+    UNARY_LOOP {
+        /* get the geometry: return on error */
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+
+        if (in1 == NULL) {
+            /* in case of a missing value: return NULL (NaG) */
+            ret_ptr = NULL;
+        } else {
+            ret_ptr = func(context_handle, in1);
+            /* trust that GEOS calls HandleGEOSError on error */
+        }
+        OUTPUT_Yp;
+    }
+}
+static PyUFuncGenericFunction Y_Yp_funcs[1] = {&Y_Yp_func};
+
 
 /* Define the geom, double -> geom functions (Yd_Y) */
 
@@ -1206,7 +1242,7 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { goto finish; }
         PyObject **out = (PyObject **)op1;
 
-        if (in1 == NULL) {  
+        if (in1 == NULL) {
             Py_XDECREF(*out);
             Py_INCREF(Py_None);
             *out = Py_None;
@@ -1267,7 +1303,7 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { goto finish; }
         PyObject **out = (PyObject **)op1;
 
-        if (in1 == NULL) {  
+        if (in1 == NULL) {
             Py_XDECREF(*out);
             Py_INCREF(Py_None);
             *out = Py_None;
@@ -1311,6 +1347,10 @@ TODO relate functions
 #define DEFINE_Y_Y(NAME)\
     ufunc = PyUFunc_FromFuncAndData(Y_Y_funcs, NAME ##_data, Y_Y_dtypes, 1, 1, 1, PyUFunc_None, # NAME, "", 0);\
     PyDict_SetItemString(d, # NAME, ufunc)
+
+#define DEFINE_Y_Yp(NAME)\
+    ufunc = PyUFunc_FromFuncAndData(Y_Yp_funcs, NAME##_data, Y_Yp_dtypes, 1, 1, 1, PyUFunc_None, #NAME, "", 0);\
+    PyDict_SetItemString(d, #NAME, ufunc)
 
 #define DEFINE_Yi_Y(NAME)\
     ufunc = PyUFunc_FromFuncAndData(Yi_Y_funcs, NAME ##_data, Yi_Y_dtypes, 1, 2, 1, PyUFunc_None, # NAME, "", 0);\
@@ -1384,6 +1424,8 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_Y_Y (line_merge);
     DEFINE_Y_Y (extract_unique_points);
     DEFINE_Y_Y (get_exterior_ring);
+
+    DEFINE_Y_Yp(prepare);
 
     DEFINE_Yi_Y (get_point);
     DEFINE_Yi_Y (get_interior_ring);

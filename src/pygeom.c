@@ -7,7 +7,7 @@
 #include "pygeom.h"
 #include "geos.h"
 
-/* Initializes a new geometry object */
+/* Initializes a new geometry object from a GEOSGeometry */
 PyObject *GeometryObject_FromGEOS(PyTypeObject *type, GEOSGeometry *ptr)
 {
     if (ptr == NULL) {
@@ -175,3 +175,69 @@ init_geom_type(PyObject *m)
     PyModule_AddObject(m, "Geometry", (PyObject *) &GeometryType);
     return 0;
 }
+
+
+/*****  Prepared Geometries *****/
+
+/* Initializes a new geometry object from a GEOSPreparedGeometry */
+PyObject *PreparedGeometryObject_FromGEOSPreparedGeometry(PyTypeObject *type, GEOSPreparedGeometry *ptr)
+{
+    if (ptr == NULL) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+    PreparedGeometryObject *self = (PreparedGeometryObject *) type->tp_alloc(type, 0);
+    if (self == NULL) {
+        return NULL;
+    } else {
+        self->ptr = ptr;
+        return (PyObject *) self;
+    }
+}
+
+static void PreparedGeometryObject_dealloc(PreparedGeometryObject *self)
+{
+    void *context_handle = geos_context[0];
+    if (self->ptr != NULL) {
+        GEOSPreparedGeom_destroy_r(context_handle, self->ptr);
+    }
+    Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyMemberDef PreparedGeometryObject_members[] = {
+    {"_ptr", T_PYSSIZET, offsetof(PreparedGeometryObject, ptr), READONLY, "pointer to GEOSPreparedGeometry"},
+    {NULL}  /* Sentinel */
+};
+
+static PyMethodDef PreparedGeometryObject_methods[] = {
+    {NULL}  /* Sentinel */
+};
+
+static PyObject *PreparedGeometryObject_repr(PreparedGeometryObject *self)
+{
+    return PyUnicode_FromString("<pygeos.PreparedGeometry>");
+    // TODO: do this for underlying geometry?
+    // return GeometryObject_ToWKT(self, "<pygeos.Geometry %s>");
+}
+
+static PyObject *PreparedGeometryObject_str(PreparedGeometryObject *self)
+{
+    return PyUnicode_FromString("<pygeos.PreparedGeometry>");
+    // TODO: do this for underlying geometry?
+    // return GeometryObject_ToWKT(self, "%s");
+}
+
+PyTypeObject PreparedGeometryType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    .tp_name = "pygeos.lib.GEOSPreparedGeometry",
+    .tp_doc = "Prepared geometry type",
+    .tp_basicsize = sizeof(PreparedGeometryObject),
+    .tp_itemsize = 0,
+    .tp_flags = Py_TPFLAGS_DEFAULT,
+    // .tp_new = PreparedGeometryObject_new, // TODO
+    .tp_dealloc = (destructor) PreparedGeometryObject_dealloc,
+    .tp_members = PreparedGeometryObject_members,
+    .tp_methods = PreparedGeometryObject_methods,
+    .tp_repr = (reprfunc) PreparedGeometryObject_repr,
+    .tp_str = (reprfunc) PreparedGeometryObject_str,
+};
