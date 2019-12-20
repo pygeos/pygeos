@@ -122,7 +122,7 @@ def buffer(
     >>> buffer(line2, 2, cap_style="flat", join_style="mitre")
     <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 22 8, 10 8, 10 12, 18 12))>
     >>> buffer(line2, 2, cap_style="flat", join_style="mitre", mitre_limit=1)
-    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 21.8 9, 21 8.17, 10 8, 10 12, 18 12))>
+    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 21.8284 9, 21 8.17157, 10 8, 10 12, 18 12))>
     >>> square = Geometry("POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))")
     >>> buffer(square, 2, join_style="mitre")
     <pygeos.Geometry POLYGON ((-2 -2, -2 12, 12 12, 12 -2, -2 -2))>
