@@ -1,7 +1,23 @@
-from pygeos import lib
+from enum import IntEnum
 import numpy as np
+from pygeos import lib
+
 
 __all__ = ["STRtree"]
+
+
+class UnaryPredicate(IntEnum):
+    """The enumeration of GEOS unary predicates types"""
+
+    intersects = 1
+    within = 2
+    contains = 3
+    overlaps = 4
+    crosses = 5
+    touches = 6
+
+
+VALID_PREDICATES = {e.name for e in UnaryPredicate}
 
 
 class STRtree:
@@ -32,15 +48,36 @@ class STRtree:
     def __len__(self):
         return self._tree.count
 
-    def query(self, envelope):
-        """Return all items whose extent intersect the given envelope.
+    def query(self, geometry, predicate=None):
+        """Return all items whose extent intersect the envelope of the input
+        geometry.  If predicate is provided, these items are limited to those
+        that satisfy the predicate operation when compared against the input
+        geometry.
 
         Parameters
         ----------
-        envelope : Geometry
-            The envelope of the geometry is taken automatically.
+        geometry : Geometry
+            The envelope of the geometry is taken automatically for
+            querying the tree.
+        predicate : str, optional (default: None)
+            The predicate to use for testing geometries from the tree
+            that are within the input geometry's envelope.
         """
-        return self._tree.query(envelope)
+
+        if predicate is None:
+            predicate = 0
+
+        else:
+            if not predicate in VALID_PREDICATES:
+                raise ValueError(
+                    "Predicate {} is not valid; must be one of {}".format(
+                        predicate, ", ".join(VALID_PREDICATES)
+                    )
+                )
+
+            predicate = UnaryPredicate[predicate].value
+
+        return self._tree.query(geometry, predicate)
 
     @property
     def geometries(self):
