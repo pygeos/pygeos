@@ -54,6 +54,8 @@ class STRtree:
         that satisfy the predicate operation when compared against the input
         geometry.
 
+        If geometry is None, an empty array is returned.
+
         Parameters
         ----------
         geometry : Geometry
@@ -63,6 +65,9 @@ class STRtree:
             The predicate to use for testing geometries from the tree
             that are within the input geometry's envelope.
         """
+
+        if geometry is None:
+            return np.array([], dtype="int")
 
         if predicate is None:
             predicate = 0
