@@ -16,23 +16,26 @@
 #include "pygeom.h"
 #include "kvec.h"
 
-/* GEOS function that takes two geometries and returns bool value */
+/* GEOS function that takes a prepared geometry and a regular geometry
+ * and returns bool value */
 
-typedef char FuncGEOS_YY_b(void *context, void *a, void *b);
+typedef char FuncGEOS_YpY_b(void *context, const GEOSPreparedGeometry *a,
+                            const GEOSGeometry *b);
 
 
 /* Copy values from arr to a new numpy integer array.
  * The order of values from arr is inverted, because arr is created by pushing
  * values onto the end. */
 
-static PyObject *copy_kvec_to_npy(npy_intp_vec *arr)
+static PyArrayObject *copy_kvec_to_npy(npy_intp_vec *arr)
 {
     npy_intp i;
     npy_intp size = kv_size(*arr);
     npy_intp *ptr;
 
-    // size = kv_size(arr2);
     npy_intp dims[1] = {size};
+    // the following raises a compiler warning based on how the macro is defined
+    // in numpy.  There doesn't appear to be anything we can do to avoid it.
     PyArrayObject *result = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_INTP);
     if (result == NULL) {
         return NULL;
@@ -44,7 +47,7 @@ static PyObject *copy_kvec_to_npy(npy_intp_vec *arr)
         *ptr = (npy_intp)kv_a(npy_intp, *arr, i);
     }
 
-    return (PyObject *) result;
+    return (PyArrayObject *) result;
 }
 
 static void STRtree_dealloc(STRtreeObject *self)
@@ -134,16 +137,16 @@ void query_callback(void *item, void *user_data)
  * If predicate function is provided, only the index of those geometries that
  * satisfy the predicate function are returned. */
 
-static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
+static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
     GEOSContextHandle_t context = geos_context[0];
     GeometryObject *geometry, *target_geometry;
-    const int predicate;
+    int predicate = 0; // default no predicate
     GEOSGeometry *geom, *target_geom;
+    const GEOSPreparedGeometry *pgeom;
     npy_intp_vec arr, arr2; // Resizable array for matches for each geometry
-    npy_intp i, size;
-    npy_intp *geom_ptr, *index_ptr;
-    FuncGEOS_YY_b *predicate_func;
-    char passes;
+    npy_intp i, size, index;
+    npy_intp *geom_ptr;
+    FuncGEOS_YpY_b *predicate_func;
     PyArrayObject *result;
 
     if (self->ptr == NULL) {
@@ -171,37 +174,38 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         GEOSSTRtree_query_r(context, self->ptr, geom, query_callback, &arr);
     }
 
-    if (predicate == 0) {
-        // No predicate function provided, return all geometry indexes from
-        // query
+    // No predicate function provided, return all geometry indexes from
+    // query.
+    // If array is empty, return an empty numpy array
+    if (predicate == 0 || kv_size(arr) == 0) {
         result = copy_kvec_to_npy(&arr);
         kv_destroy(arr);
-        return (PyObject *) result;
+        return (PyArrayObject *) result;
     }
 
     switch (predicate) {
         case 1: {  // intersects
-            predicate_func = (FuncGEOS_YY_b *)GEOSIntersects_r;
+            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedIntersects_r;
             break;
         }
         case 2: { // within
-            predicate_func = (FuncGEOS_YY_b *)GEOSWithin_r;
+            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedWithin_r;
             break;
         }
         case 3: { // contains
-            predicate_func = (FuncGEOS_YY_b *)GEOSContains_r;
+            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedContains_r;
             break;
         }
         case 4: { // overlaps
-            predicate_func = (FuncGEOS_YY_b *)GEOSOverlaps_r;
+            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedOverlaps_r;
             break;
         }
         case 5: { // crosses
-            predicate_func = (FuncGEOS_YY_b *)GEOSCrosses_r;
+            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedCrosses_r;
             break;
         }
         case 6: { // touches
-            predicate_func = (FuncGEOS_YY_b *)GEOSTouches_r;
+            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedTouches_r;
             break;
         }
         default: { // unknown predicate
@@ -210,31 +214,38 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         }
     }
 
+    pgeom = GEOSPrepare_r(context, geom);
+    if (pgeom == NULL) {
+        kv_destroy(arr);
+        return NULL;
+    }
+
     size = kv_size(arr);
     kv_init(arr2);
     for (i = 0; i < size; i++) {
-        index_ptr = (npy_intp)kv_a(npy_intp, arr, i);
+        // get index for right geometries from arr
+        index = kv_A(arr, i);
 
-        // get pygeos geometries from tree at position from index_ptr (not i)
-        geom_ptr = PyArray_GETPTR1((PyArrayObject *) self->geometries,
-                                   (npy_intp)index_ptr);
+        // get pygeos geometries from tree at index (not i)
+        geom_ptr = PyArray_GETPTR1((PyArrayObject *) self->geometries, index);
 
         // get GEOS geometry from pygeos geometry
         target_geometry = *(GeometryObject **) geom_ptr;
         get_geom(target_geometry, &target_geom);
 
         // keep the index value if it passes the predicate
-        if (predicate_func(context, geom, target_geom)) {
-            kv_push(npy_intp, arr2, index_ptr);
+        if (predicate_func(context, pgeom, target_geom)) {
+            kv_push(npy_intp, arr2, index);
         }
     }
 
-    kv_destroy(arr);
-
     result = copy_kvec_to_npy(&arr2);
+
+    GEOSPreparedGeom_destroy_r(context, pgeom);
+    kv_destroy(arr);
     kv_destroy(arr2);
 
-    return (PyObject *) result;
+    return (PyArrayObject *) result;
 }
 
 
