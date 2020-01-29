@@ -19,6 +19,7 @@ PyObject *GeometryObject_FromGEOS(PyTypeObject *type, GEOSGeometry *ptr)
         return NULL;
     } else {
         self->ptr = ptr;
+        self->ptr_prepared = NULL;
         return (PyObject *) self;
     }
 }
@@ -29,11 +30,15 @@ static void GeometryObject_dealloc(GeometryObject *self)
     if (self->ptr != NULL) {
         GEOSGeom_destroy_r(context_handle, self->ptr);
     }
+    if (self->ptr_prepared != NULL) {
+        GEOSPreparedGeom_destroy_r(context_handle, self->ptr_prepared);
+    }
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
 static PyMemberDef GeometryObject_members[] = {
     {"_ptr", T_PYSSIZET, offsetof(GeometryObject, ptr), READONLY, "pointer to GEOSGeometry"},
+    {"_ptr_prepared", T_PYSSIZET, offsetof(GeometryObject, ptr_prepared), READONLY, "pointer to PreparedGEOSGeometry"},
     {NULL}  /* Sentinel */
 };
 
@@ -163,6 +168,24 @@ char get_geom(GeometryObject *obj, GEOSGeometry **out) {
         return 1;
     }
 }
+
+/* Get a GEOSPreparedGeometry pointer from a GeometryObject, or NULL if the input is
+Py_None. Returns 0 on error, 1 on success. */
+char get_geom_prepared(GeometryObject *obj, GEOSPreparedGeometry **out) {
+    if (!PyObject_IsInstance((PyObject *) obj, (PyObject *) &GeometryType)) {
+        if ((PyObject *) obj == Py_None) {
+            *out = NULL;
+            return 1;
+        } else {
+            PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
+            return 0;
+        }
+    } else {
+        *out = obj->ptr_prepared;
+        return 1;
+    }
+}
+
 
 int
 init_geom_type(PyObject *m)

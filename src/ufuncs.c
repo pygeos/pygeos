@@ -161,6 +161,44 @@ static void YY_b_func(char **args, npy_intp *dimensions,
 }
 static PyUFuncGenericFunction YY_b_funcs[1] = {&YY_b_func};
 
+
+/* Define the geom, geom -> bool functions (YY_b) prepared */
+static void *intersects_prepared_data[1] = {GEOSIntersects_r};
+typedef char FuncGEOS_YY_b_p(void *context, void *a, void *b);
+static char YY_b_p_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_BOOL};
+static void YY_b_p_func(char **args, npy_intp *dimensions,
+                      npy_intp *steps, void *data)
+{
+    FuncGEOS_YY_b_p *func = (FuncGEOS_YY_b_p *)data;
+    void *context_handle = geos_context[0];
+    GEOSGeometry *in1, *in2;
+    GEOSPreparedGeometry *in1_prepared;
+    char ret;
+
+    BINARY_LOOP {
+        /* get the geometries: return on error */
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip2, &in2)) { return; }
+        if (!get_geom_prepared(*(GeometryObject **)ip1, &in1_prepared)) { return; }
+        if ((in1 == NULL) | (in2 == NULL)) {
+            /* in case of a missing value: return 0 (False) */
+            ret = 0;
+        } else {
+            if (in1_prepared == NULL) {
+                ret = GEOSIntersects_r(context_handle, in1, in2);
+            } else {
+                ret = GEOSPreparedIntersects_r(context_handle, in1_prepared, in2);
+            }
+            /* return for illegal values (trust HandleGEOSError for SetErr) */
+            if (ret == 2) { return; }
+        }
+        *(npy_bool *)op1 = ret;
+    }
+}
+static PyUFuncGenericFunction YY_b_p_funcs[1] = {&YY_b_p_func};
+
+
+
 /* Define the geom -> geom functions (Y_Y) */
 static void *envelope_data[1] = {GEOSEnvelope_r};
 static void *convex_hull_data[1] = {GEOSConvexHull_r};
@@ -222,6 +260,40 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
     }
 }
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
+
+
+/* Define the geom -> prepared geom functions (Y_Yp) */
+static void *prepare_data[1] = {GEOSPrepare_r};
+typedef void *FuncGEOS_Y_Yp(void *context, void *a);
+static char Y_Yp_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static void Y_Yp_func(char **args, npy_intp *dimensions,
+                      npy_intp *steps, void *data)
+{
+    FuncGEOS_Y_Yp *func = (FuncGEOS_Y_Yp *)data;
+    void *context_handle = geos_context[0];
+    GEOSGeometry *in1;
+    GEOSPreparedGeometry *ret_ptr;
+
+    UNARY_LOOP {
+        /* get the geometry: return on error */
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+
+        if (in1 == NULL) {
+            ret_ptr = NULL;
+        } else {
+            ret_ptr = func(context_handle, in1);
+            /* trust that GEOS calls HandleGEOSError on error */
+        }
+    GeometryObject *geom_obj = *(GeometryObject **)ip1;
+    geom_obj->ptr_prepared = ret_ptr;
+    /* TODO check if nout can be 0 for ufuncs (because in principle we don't need to return something here) */
+    PyObject **out = (PyObject **)op1;
+    Py_XDECREF(*out);
+    *out = geom_obj;
+    }
+}
+static PyUFuncGenericFunction Y_Yp_funcs[1] = {&Y_Yp_func};
+
 
 /* Define the geom, double -> geom functions (Yd_Y) */
 
@@ -1309,9 +1381,17 @@ TODO relate functions
     ufunc = PyUFunc_FromFuncAndData(YY_b_funcs, NAME ##_data, YY_b_dtypes, 1, 2, 1, PyUFunc_None, # NAME, "", 0);\
     PyDict_SetItemString(d, # NAME, ufunc)
 
+#define DEFINE_YY_b_p(NAME)\
+    ufunc = PyUFunc_FromFuncAndData(YY_b_p_funcs, NAME ##_data, YY_b_p_dtypes, 1, 2, 1, PyUFunc_None, # NAME, "", 0);\
+    PyDict_SetItemString(d, # NAME, ufunc)
+
 #define DEFINE_Y_Y(NAME)\
     ufunc = PyUFunc_FromFuncAndData(Y_Y_funcs, NAME ##_data, Y_Y_dtypes, 1, 1, 1, PyUFunc_None, # NAME, "", 0);\
     PyDict_SetItemString(d, # NAME, ufunc)
+
+#define DEFINE_Y_Yp(NAME)\
+    ufunc = PyUFunc_FromFuncAndData(Y_Yp_funcs, NAME##_data, Y_Yp_dtypes, 1, 1, 1, PyUFunc_None, #NAME, "", 0);\
+    PyDict_SetItemString(d, #NAME, ufunc)
 
 #define DEFINE_Yi_Y(NAME)\
     ufunc = PyUFunc_FromFuncAndData(Yi_Y_funcs, NAME ##_data, Yi_Y_dtypes, 1, 2, 1, PyUFunc_None, # NAME, "", 0);\
@@ -1376,6 +1456,8 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_YY_b (covers);
     DEFINE_YY_b (covered_by);
 
+    DEFINE_YY_b_p (intersects_prepared);
+
     DEFINE_Y_Y (envelope);
     DEFINE_Y_Y (convex_hull);
     DEFINE_Y_Y (boundary);
@@ -1385,6 +1467,8 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_Y_Y (line_merge);
     DEFINE_Y_Y (extract_unique_points);
     DEFINE_Y_Y (get_exterior_ring);
+
+    DEFINE_Y_Yp(prepare);
 
     DEFINE_Yi_Y (get_point);
     DEFINE_Yi_Y (get_interior_ring);
