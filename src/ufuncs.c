@@ -265,7 +265,7 @@ static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 /* Define the geom -> prepared geom functions (Y_Yp) */
 static void *prepare_data[1] = {GEOSPrepare_r};
 typedef void *FuncGEOS_Y_Yp(void *context, void *a);
-static char Y_Yp_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static char Y_Yp_dtypes[2] = {NPY_OBJECT};
 static void Y_Yp_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
@@ -274,7 +274,11 @@ static void Y_Yp_func(char **args, npy_intp *dimensions,
     GEOSGeometry *in1;
     GEOSPreparedGeometry *ret_ptr;
 
-    UNARY_LOOP {
+    char *ip1 = args[0];
+    npy_intp is1 = steps[0];
+    npy_intp n = dimensions[0];
+    npy_intp i;
+    for (i = 0; i < n; i++, ip1 += is1) {
         /* get the geometry: return on error */
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
 
@@ -286,10 +290,6 @@ static void Y_Yp_func(char **args, npy_intp *dimensions,
         }
     GeometryObject *geom_obj = *(GeometryObject **)ip1;
     geom_obj->ptr_prepared = ret_ptr;
-    /* TODO check if nout can be 0 for ufuncs (because in principle we don't need to return something here) */
-    PyObject **out = (PyObject **)op1;
-    Py_XDECREF(*out);
-    *out = geom_obj;
     }
 }
 static PyUFuncGenericFunction Y_Yp_funcs[1] = {&Y_Yp_func};
@@ -1390,7 +1390,7 @@ TODO relate functions
     PyDict_SetItemString(d, # NAME, ufunc)
 
 #define DEFINE_Y_Yp(NAME)\
-    ufunc = PyUFunc_FromFuncAndData(Y_Yp_funcs, NAME##_data, Y_Yp_dtypes, 1, 1, 1, PyUFunc_None, #NAME, "", 0);\
+    ufunc = PyUFunc_FromFuncAndData(Y_Yp_funcs, NAME##_data, Y_Yp_dtypes, 1, 1, 0, PyUFunc_None, #NAME, "", 0);\
     PyDict_SetItemString(d, #NAME, ufunc)
 
 #define DEFINE_Yi_Y(NAME)\
