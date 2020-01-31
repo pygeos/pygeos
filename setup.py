@@ -7,6 +7,8 @@ from setuptools.command.build_ext import build_ext as _build_ext
 import logging
 import versioneer
 
+from Cython.Build import cythonize
+
 log = logging.getLogger(__name__)
 ch = logging.StreamHandler()
 log.addHandler(ch)
@@ -37,7 +39,7 @@ def get_geos_config(option):
     return result
 
 
-def get_geos_paths():
+def get_geos_paths(include_src=False):
     """Obtain the paths for compiling and linking with the GEOS C-API
 
     First the presence of the GEOS_INCLUDE_PATH and GEOS_INCLUDE_PATH environment
@@ -86,6 +88,8 @@ def get_geos_paths():
             libraries.append(item[2:])
         else:
             extra_link_args.append(item)
+    if include_src:
+        include_dirs.append("./src")
     return {
         "include_dirs": include_dirs,
         "library_dirs": library_dirs,
@@ -112,6 +116,11 @@ module_lib = Extension(
     sources=["src/lib.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c", "src/strtree.c"],
     **get_geos_paths()
 )
+
+
+cython_modules = cythonize([
+    Extension("pygeos.flatcoords", ["pygeos/flatcoords.pyx"], **get_geos_paths(include_src=True))
+])
 
 
 try:
@@ -141,7 +150,7 @@ setup(
     },
     python_requires=">=3",
     include_package_data=True,
-    ext_modules=[module_lib],
+    ext_modules=[module_lib] + cython_modules,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Development Status :: 1 - Planning",
