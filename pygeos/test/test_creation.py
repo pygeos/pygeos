@@ -140,3 +140,11 @@ def test_box_multiple():
     actual = pygeos.box(0, 0, [1, 2], [1, 2])
     assert str(actual[0]) == "POLYGON ((1 0, 1 1, 0 1, 0 0, 1 0))"
     assert str(actual[1]) == "POLYGON ((2 0, 2 2, 0 2, 0 0, 2 0))"
+
+
+def test_prepare():
+    arr = np.array([pygeos.points(1, 1), None, pygeos.box(0, 0, 1, 1)])
+    pygeos.lib.prepare(arr)
+    assert arr[0]._ptr_prepared != 0
+    assert arr[1] is None
+    assert arr[2]._ptr_prepared != 0

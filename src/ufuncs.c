@@ -262,14 +262,14 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
 
-/* Define the geom -> prepared geom functions (Y_Yp) */
+/* Define the geom -> no return value functions (Y) */
 static void *prepare_data[1] = {GEOSPrepare_r};
-typedef void *FuncGEOS_Y_Yp(void *context, void *a);
-static char Y_Yp_dtypes[2] = {NPY_OBJECT};
-static void Y_Yp_func(char **args, npy_intp *dimensions,
+typedef void *FuncGEOS_Y(void *context, void *a);
+static char Y_dtypes[2] = {NPY_OBJECT};
+static void Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
-    FuncGEOS_Y_Yp *func = (FuncGEOS_Y_Yp *)data;
+    FuncGEOS_Y *func = (FuncGEOS_Y *)data;
     void *context_handle = geos_context[0];
     GEOSGeometry *in1;
     GEOSPreparedGeometry *ret_ptr;
@@ -282,17 +282,16 @@ static void Y_Yp_func(char **args, npy_intp *dimensions,
         /* get the geometry: return on error */
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
 
-        if (in1 == NULL) {
-            ret_ptr = NULL;
-        } else {
-            ret_ptr = func(context_handle, in1);
-            /* trust that GEOS calls HandleGEOSError on error */
+        if (in1 != NULL) {
+            GeometryObject *geom_obj = *(GeometryObject **)ip1;
+            if (geom_obj->ptr_prepared == NULL) {
+                ret_ptr = func(context_handle, in1);
+                geom_obj->ptr_prepared = ret_ptr;
+            }
         }
-    GeometryObject *geom_obj = *(GeometryObject **)ip1;
-    geom_obj->ptr_prepared = ret_ptr;
     }
 }
-static PyUFuncGenericFunction Y_Yp_funcs[1] = {&Y_Yp_func};
+static PyUFuncGenericFunction Y_funcs[1] = {&Y_func};
 
 
 /* Define the geom, double -> geom functions (Yd_Y) */
@@ -1389,8 +1388,8 @@ TODO relate functions
     ufunc = PyUFunc_FromFuncAndData(Y_Y_funcs, NAME ##_data, Y_Y_dtypes, 1, 1, 1, PyUFunc_None, # NAME, "", 0);\
     PyDict_SetItemString(d, # NAME, ufunc)
 
-#define DEFINE_Y_Yp(NAME)\
-    ufunc = PyUFunc_FromFuncAndData(Y_Yp_funcs, NAME##_data, Y_Yp_dtypes, 1, 1, 0, PyUFunc_None, #NAME, "", 0);\
+#define DEFINE_Y(NAME)\
+    ufunc = PyUFunc_FromFuncAndData(Y_funcs, NAME##_data, Y_dtypes, 1, 1, 0, PyUFunc_None, #NAME, "", 0);\
     PyDict_SetItemString(d, #NAME, ufunc)
 
 #define DEFINE_Yi_Y(NAME)\
@@ -1468,7 +1467,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_Y_Y (extract_unique_points);
     DEFINE_Y_Y (get_exterior_ring);
 
-    DEFINE_Y_Yp(prepare);
+    DEFINE_Y(prepare);
 
     DEFINE_Yi_Y (get_point);
     DEFINE_Yi_Y (get_interior_ring);
