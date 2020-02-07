@@ -125,7 +125,6 @@ static PyUFuncGenericFunction O_b_funcs[1] = {&O_b_func};
 /* Define the geom, geom -> bool functions (YY_b) */
 static void *disjoint_data[1] = {GEOSDisjoint_r};
 static void *touches_data[1] = {GEOSTouches_r};
-static void *intersects_data[1] = {GEOSIntersects_r};
 static void *crosses_data[1] = {GEOSCrosses_r};
 static void *within_data[1] = {GEOSWithin_r};
 static void *contains_data[1] = {GEOSContains_r};
@@ -163,13 +162,18 @@ static PyUFuncGenericFunction YY_b_funcs[1] = {&YY_b_func};
 
 
 /* Define the geom, geom -> bool functions (YY_b) prepared */
-static void *intersects_prepared_data[1] = {GEOSIntersects_r};
+static void *intersects_data[2] = {GEOSIntersects_r, GEOSPreparedIntersects_r};
 typedef char FuncGEOS_YY_b_p(void *context, void *a, void *b);
 static char YY_b_p_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_BOOL};
 static void YY_b_p_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
-    FuncGEOS_YY_b_p *func = (FuncGEOS_YY_b_p *)data;
+    // TODO extract functions from the data
+    // FuncGEOS_YY_b_p *func = (FuncGEOS_YY_b_p *)data;
+    // FuncGEOS_YY_b_p *func_prepared = (FuncGEOS_YY_b_p *)((char *)data + 1);
+    FuncGEOS_YY_b_p *func = (FuncGEOS_YY_b *)GEOSIntersects_r;
+    FuncGEOS_YY_b_p *func_prepared = (FuncGEOS_YY_b *)GEOSPreparedIntersects_r;
+
     void *context_handle = geos_context[0];
     GEOSGeometry *in1, *in2;
     GEOSPreparedGeometry *in1_prepared;
@@ -185,9 +189,11 @@ static void YY_b_p_func(char **args, npy_intp *dimensions,
             ret = 0;
         } else {
             if (in1_prepared == NULL) {
-                ret = GEOSIntersects_r(context_handle, in1, in2);
+                /* call the GEOS function */
+                ret = func(context_handle, in1, in2);
             } else {
-                ret = GEOSPreparedIntersects_r(context_handle, in1_prepared, in2);
+                /* call the prepared GEOS function */
+                ret = func_prepared(context_handle, in1_prepared, in2);
             }
             /* return for illegal values (trust HandleGEOSError for SetErr) */
             if (ret == 2) { return; }
@@ -196,7 +202,6 @@ static void YY_b_p_func(char **args, npy_intp *dimensions,
     }
 }
 static PyUFuncGenericFunction YY_b_p_funcs[1] = {&YY_b_p_func};
-
 
 
 /* Define the geom -> geom functions (Y_Y) */
@@ -1446,7 +1451,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
 
     DEFINE_YY_b (disjoint);
     DEFINE_YY_b (touches);
-    DEFINE_YY_b (intersects);
+    DEFINE_YY_b_p (intersects);
     DEFINE_YY_b (crosses);
     DEFINE_YY_b (within);
     DEFINE_YY_b (contains);
@@ -1454,8 +1459,6 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_YY_b (equals);
     DEFINE_YY_b (covers);
     DEFINE_YY_b (covered_by);
-
-    DEFINE_YY_b_p (intersects_prepared);
 
     DEFINE_Y_Y (envelope);
     DEFINE_Y_Y (convex_hull);

@@ -90,3 +90,12 @@ def test_equals_exact_tolerance():
     # default value for tolerance
     assert pygeos.equals_exact(p1, p1).item() is True
     assert pygeos.equals_exact(p1, p2).item() is False
+
+
+@pytest.mark.parametrize("a", all_types)
+@pytest.mark.parametrize("func", [pygeos.intersects])
+def test_binary_prepared(a, func):
+    actual = func(a, point)
+    pygeos.lib.prepare(a)
+    result = func(a, point)
+    assert actual == result
