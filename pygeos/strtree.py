@@ -6,8 +6,8 @@ from pygeos import lib
 __all__ = ["STRtree"]
 
 
-class UnaryPredicate(IntEnum):
-    """The enumeration of GEOS unary predicates types"""
+class BinaryPredicate(IntEnum):
+    """The enumeration of GEOS binary predicates types"""
 
     intersects = 1
     within = 2
@@ -17,7 +17,7 @@ class UnaryPredicate(IntEnum):
     touches = 6
 
 
-VALID_PREDICATES = {e.name for e in UnaryPredicate}
+VALID_PREDICATES = {e.name for e in BinaryPredicate}
 
 
 class STRtree:
@@ -50,9 +50,12 @@ class STRtree:
 
     def query(self, geometry, predicate=None):
         """Return all items whose extent intersect the envelope of the input
-        geometry.  If predicate is provided, these items are limited to those
-        that satisfy the predicate operation when compared against the input
         geometry.
+
+        If predicate is provided, a prepared version of the input geometry
+        is tested using that predicate function against each item whose
+        extent intersects the envelope of the input geometry:
+        predicate(geometry, tree_geometry).
 
         If geometry is None, an empty array is returned.
 
@@ -67,7 +70,7 @@ class STRtree:
         """
 
         if geometry is None:
-            return np.array([], dtype="int")
+            return np.array([], dtype=np.intp)
 
         if predicate is None:
             predicate = 0
@@ -80,7 +83,7 @@ class STRtree:
                     )
                 )
 
-            predicate = UnaryPredicate[predicate].value
+            predicate = BinaryPredicate[predicate].value
 
         return self._tree.query(geometry, predicate)
 

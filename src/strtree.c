@@ -41,10 +41,9 @@ static PyArrayObject *copy_kvec_to_npy(npy_intp_vec *arr)
         return NULL;
     }
 
-    // iterate from last value to first to get back original order
-    for (i = size - 1; i >= 0; i--) {
+    for (i = 0; i<size; i++) {
         ptr = PyArray_GETPTR1(result, i);
-        *ptr = (npy_intp)kv_a(npy_intp, *arr, i);
+        *ptr = kv_A(*arr, i);
     }
 
     return (PyArrayObject *) result;
@@ -222,6 +221,7 @@ static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
 
     size = kv_size(arr);
     kv_init(arr2);
+
     for (i = 0; i < size; i++) {
         // get index for right geometries from arr
         index = kv_A(arr, i);
