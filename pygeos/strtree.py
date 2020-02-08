@@ -38,8 +38,14 @@ class STRtree:
     >>> import pygeos
     >>> geoms = pygeos.points(np.arange(10), np.arange(10))
     >>> tree = pygeos.STRtree(geoms)
-    >>> tree.query(pygeos.box(2, 2, 4, 4)).tolist()
+    >>> geom = pygeos.box(2, 2, 4, 4)
+    >>> # Query geometries that overlap envelope of `geom`:
+    >>> tree.query(geom).tolist()
     [2, 3, 4]
+    >>> # Query geometries that overlap envelope of `geom`
+    >>> # and are contained by `geom`:
+    >>> tree.query(geom, predicate='contains').tolist()
+    [3]
     """
 
     def __init__(self, geometries, leafsize=5):
@@ -53,7 +59,7 @@ class STRtree:
         geometry.
 
         If predicate is provided, a prepared version of the input geometry
-        is tested using that predicate function against each item whose
+        is tested using the predicate function against each item whose
         extent intersects the envelope of the input geometry:
         predicate(geometry, tree_geometry).
 
@@ -64,7 +70,7 @@ class STRtree:
         geometry : Geometry
             The envelope of the geometry is taken automatically for
             querying the tree.
-        predicate : str, optional (default: None)
+        predicate : {None, 'intersects', 'within', 'contains', 'overlaps', 'crosses', 'touches'}, optional
             The predicate to use for testing geometries from the tree
             that are within the input geometry's envelope.
         """
@@ -89,4 +95,5 @@ class STRtree:
 
     @property
     def geometries(self):
+        """Return the array_like of geometries used to construct the STRtree."""
         return self._tree.geometries
