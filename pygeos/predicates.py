@@ -2,6 +2,7 @@ import warnings
 
 from . import lib
 from . import Geometry  # NOQA
+from .geometry import GeometryType, register_geometry_method
 
 __all__ = [
     "has_z",
@@ -28,6 +29,7 @@ __all__ = [
 ]
 
 
+@register_geometry_method
 def has_z(geometry, **kwargs):
     """Returns True if a geometry has a Z coordinate.
 
@@ -45,6 +47,7 @@ def has_z(geometry, **kwargs):
     return lib.has_z(geometry, **kwargs)
 
 
+@register_geometry_method([GeometryType.LINESTRING])
 def is_closed(geometry, **kwargs):
     """Returns True if a linestring's first and last points are equal.
 
@@ -69,6 +72,7 @@ def is_closed(geometry, **kwargs):
     return lib.is_closed(geometry, **kwargs)
 
 
+@register_geometry_method
 def is_empty(geometry, **kwargs):
     """Returns True if a geometry is an empty point, polygon, etc.
 
@@ -93,6 +97,7 @@ def is_empty(geometry, **kwargs):
     return lib.is_empty(geometry, **kwargs)
 
 
+@register_geometry_method
 def is_geometry(geometry, **kwargs):
     """Returns True if the object is a geometry
 
@@ -119,6 +124,7 @@ def is_geometry(geometry, **kwargs):
     return lib.is_geometry(geometry, **kwargs)
 
 
+@register_geometry_method
 def is_missing(geometry, **kwargs):
     """Returns True if the object is not a geometry (None)
 
@@ -146,6 +152,7 @@ def is_missing(geometry, **kwargs):
     return lib.is_missing(geometry, **kwargs)
 
 
+@register_geometry_method
 def is_valid_input(geometry, **kwargs):
     """Returns True if the object is a geometry or None
 
@@ -174,6 +181,7 @@ def is_valid_input(geometry, **kwargs):
     return lib.is_valid_input(geometry, **kwargs)
 
 
+@register_geometry_method([GeometryType.LINESTRING])
 def is_ring(geometry, **kwargs):
     """Returns True if a linestring is closed and simple.
 
@@ -204,6 +212,7 @@ def is_ring(geometry, **kwargs):
     return lib.is_ring(geometry, **kwargs)
 
 
+@register_geometry_method
 def is_simple(geometry, **kwargs):
     """Returns True if a Geometry has no anomalous geometric points, such as
     self-intersections or self tangency.
@@ -229,6 +238,7 @@ def is_simple(geometry, **kwargs):
     return lib.is_simple(geometry, **kwargs)
 
 
+@register_geometry_method
 def is_valid(geometry, **kwargs):
     """Returns True if a geometry is well formed.
 
@@ -259,6 +269,7 @@ def is_valid(geometry, **kwargs):
     return result
 
 
+@register_geometry_method
 def is_valid_reason(geometry, **kwargs):
     """Returns a string stating if a geometry is valid and if not, why.
 
@@ -283,6 +294,7 @@ def is_valid_reason(geometry, **kwargs):
     return lib.is_valid_reason(geometry, **kwargs)
 
 
+@register_geometry_method
 def crosses(a, b, **kwargs):
     """Returns True if the intersection of two geometries spatially crosses.
 
@@ -320,6 +332,7 @@ def crosses(a, b, **kwargs):
     return lib.crosses(a, b, **kwargs)
 
 
+@register_geometry_method
 def contains(a, b, **kwargs):
     """Returns True if geometry B is completely inside geometry A.
 
@@ -363,6 +376,7 @@ def contains(a, b, **kwargs):
     return lib.contains(a, b, **kwargs)
 
 
+@register_geometry_method
 def covered_by(a, b, **kwargs):
     """Returns True if no point in geometry A is outside geometry B.
 
@@ -403,6 +417,7 @@ def covered_by(a, b, **kwargs):
     return lib.covered_by(a, b, **kwargs)
 
 
+@register_geometry_method
 def covers(a, b, **kwargs):
     """Returns True if no point in geometry B is outside geometry A.
 
@@ -443,6 +458,7 @@ def covers(a, b, **kwargs):
     return lib.covers(a, b, **kwargs)
 
 
+@register_geometry_method
 def disjoint(a, b, **kwargs):
     """Returns True if A and B do not share any point in space.
 
@@ -479,6 +495,7 @@ def disjoint(a, b, **kwargs):
     return lib.disjoint(a, b, **kwargs)
 
 
+@register_geometry_method
 def equals(a, b, **kwargs):
     """Returns True if A and B are spatially equal.
 
@@ -507,6 +524,7 @@ def equals(a, b, **kwargs):
     return lib.equals(a, b, **kwargs)
 
 
+@register_geometry_method
 def intersects(a, b, **kwargs):
     """Returns True if A and B share any portion of space.
 
@@ -535,6 +553,7 @@ def intersects(a, b, **kwargs):
     return lib.intersects(a, b, **kwargs)
 
 
+@register_geometry_method
 def overlaps(a, b, **kwargs):
     """Returns True if A and B intersect, but one does not completely contain
     the other.
@@ -560,6 +579,7 @@ def overlaps(a, b, **kwargs):
     return lib.overlaps(a, b, **kwargs)
 
 
+@register_geometry_method
 def touches(a, b, **kwargs):
     """Returns True if the only points shared between A and B are on the
     boundary of A and B.
@@ -592,6 +612,7 @@ def touches(a, b, **kwargs):
     return lib.touches(a, b, **kwargs)
 
 
+@register_geometry_method
 def within(a, b, **kwargs):
     """Returns True if geometry A is completely inside geometry B.
 
@@ -635,6 +656,7 @@ def within(a, b, **kwargs):
     return lib.within(a, b, **kwargs)
 
 
+@register_geometry_method
 def equals_exact(a, b, tolerance=0.0, **kwargs):
     """Returns True if A and B are structurally equal.
 

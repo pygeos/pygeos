@@ -1,9 +1,11 @@
 from . import lib, Geometry
 import numpy as np
+from .geometry import register_geometry_method
 
 __all__ = ["apply", "count_coordinates", "get_coordinates", "set_coordinates"]
 
 
+@register_geometry_method
 def apply(geometry, transformation):
     """Returns a copy of a geometry array with a function applied to its
     coordinates.
@@ -52,6 +54,7 @@ def apply(geometry, transformation):
     return geometry_arr
 
 
+@register_geometry_method
 def count_coordinates(geometry):
     """Counts the number of coordinate pairs in a geometry array.
 
@@ -73,6 +76,7 @@ def count_coordinates(geometry):
     return lib.count_coordinates(np.asarray(geometry, dtype=np.object))
 
 
+@register_geometry_method
 def get_coordinates(geometry):
     """Gets coordinates from a geometry array as an array of floats.
 
@@ -95,6 +99,7 @@ def get_coordinates(geometry):
     return lib.get_coordinates(np.asarray(geometry, dtype=np.object))
 
 
+@register_geometry_method
 def set_coordinates(geometry, coordinates):
     """Returns a copy of a geometry array with different coordinates.
 

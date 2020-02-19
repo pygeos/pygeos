@@ -4,8 +4,6 @@ from functools import wraps
 from . import lib
 from . import Geometry  # NOQA
 
-import pygeos
-
 __all__ = [
     "GeometryType",
     "get_type_id",
@@ -42,35 +40,49 @@ class GeometryType(IntEnum):
 
 # generic
 
+def register_geometry_method(func_or_types):
+    """Use this decorator to make the decorated function a Geometry method.
+
+    Optionally, provide a list of geometry types to only register the function
+    for these geometry types.
+    """
+    if callable(func_or_types):  # for usage without arguments
+        func = func_or_types
+        _DummyGeometry.registered_methods["__all__"][func.__name__] = func
+        return func
+    else:  # for usage with a list of geometry types as argument
+        def wrapper(func):
+            for typ in func_or_types:
+                _DummyGeometry.registered_methods[typ][func.__name__] = func
+            return func
+        return wrapper
+
 
 class _DummyGeometry:
     """This object extends pygeos.lib.Geometry"""
+    registered_methods = {x: {} for x in GeometryType}
+    registered_methods["__all__"] = {}
+
     def __init__(self, geometry):
         self.geometry = geometry
-
-    @staticmethod
-    def _is_geometry_func(attr):
-        """Check if an object is eligible for a Geometry().<attr> binding"""
-        if not callable(attr):
-            return False
-        # return False for attributes starting with _ or a capital
-        return attr.__name__[0].islower()
+        self.type_id = lib.get_type_id(geometry)
 
     def __dir__(self):
         """Append the builtin __dir__ with all geometry functions in pygeos"""
         builtin_dir = object.__dir__(self.geometry)
-        pygeos_dir = [
-            k for k, v in pygeos.__dict__.items() if self._is_geometry_func(v)
-        ]
-        return sorted(builtin_dir + pygeos_dir)
+        return sorted(
+            builtin_dir +
+            list(self.registered_methods["__all__"].keys()) +
+            list(self.registered_methods[self.type_id].keys())
+        )
 
     def __getattr__(self, attr_name):
         """Append __getattr__ with all geometry functions in pygeos"""
-        pygeos_func = getattr(pygeos, attr_name, None)
-        if not self._is_geometry_func(pygeos_func):
-            raise AttributeError(
-                "'pygeos.lib.Geometry' has no attribute '{}'".format(attr_name)
-            )
+        pygeos_func = self.registered_methods["__all__"].get(attr_name)
+        if pygeos_func is None:
+            pygeos_func = self.registered_methods[self.type_id].get(attr_name)
+            if pygeos_func is None:
+                raise AttributeError
 
         # self.geometry is passed as the first argument in the function
         @wraps(pygeos_func)  # maintains the __doc__
@@ -93,6 +105,13 @@ def _geometry_getattr(geometry, attr_name):
 
     It is called from the compiled C code if no attribute was found.
     """
+    # ufuncs access __array_struct__ and __array_interface__. As we call
+    # get_type_id inside this function, it will lead to infinite recursion if
+    # we proceed without checking. We just disallow all functions with "__".
+    if attr_name.startswith("__"):
+        raise AttributeError(
+            "'pygeos.lib.Geometry' has no attribute '{}'".format(attr_name)
+        )
     try:
         return getattr(_DummyGeometry(geometry), attr_name)
     except AttributeError:
@@ -133,6 +152,7 @@ def get_type_id(geometry):
     return lib.get_type_id(geometry)
 
 
+@register_geometry_method
 def get_dimensions(geometry):
     """Returns the inherent dimensionality of a geometry.
 
@@ -160,6 +180,7 @@ def get_dimensions(geometry):
     return lib.get_dimensions(geometry)
 
 
+@register_geometry_method
 def get_coordinate_dimensions(geometry):
     """Returns the dimensionality of the coordinates in a geometry (2 or 3).
 
@@ -181,6 +202,7 @@ def get_coordinate_dimensions(geometry):
     return lib.get_coordinate_dimensions(geometry)
 
 
+@register_geometry_method
 def get_num_coordinates(geometry):
     """Returns the total number of coordinates in a geometry.
 
@@ -204,6 +226,7 @@ def get_num_coordinates(geometry):
     return lib.get_num_coordinates(geometry)
 
 
+@register_geometry_method
 def get_srid(geometry):
     """Returns the SRID of a geometry.
 
@@ -229,6 +252,7 @@ def get_srid(geometry):
     return lib.get_srid(geometry)
 
 
+@register_geometry_method
 def set_srid(geometry, srid):
     """Returns a geometry with its SRID set.
 
@@ -256,6 +280,7 @@ def set_srid(geometry, srid):
 # points
 
 
+@register_geometry_method([GeometryType.POINT])
 def get_x(point):
     """Returns the x-coordinate of a point
 
@@ -278,6 +303,7 @@ def get_x(point):
     return lib.get_x(point)
 
 
+@register_geometry_method([GeometryType.POINT])
 def get_y(point):
     """Returns the y-coordinate of a point
 
@@ -303,6 +329,7 @@ def get_y(point):
 # linestrings
 
 
+@register_geometry_method([GeometryType.LINESTRING, GeometryType.LINEARRING])
 def get_point(geometry, index):
     """Returns the nth point of a linestring or linearring.
 
@@ -335,6 +362,7 @@ def get_point(geometry, index):
     return lib.get_point(geometry, np.intc(index))
 
 
+@register_geometry_method([GeometryType.LINESTRING, GeometryType.LINEARRING])
 def get_num_points(geometry):
     """Returns number of points in a linestring or linearring.
 
@@ -363,6 +391,7 @@ def get_num_points(geometry):
 # polygons
 
 
+@register_geometry_method([GeometryType.POLYGON])
 def get_exterior_ring(geometry):
     """Returns the exterior ring of a polygon.
 
@@ -384,6 +413,7 @@ def get_exterior_ring(geometry):
     return lib.get_exterior_ring(geometry)
 
 
+@register_geometry_method([GeometryType.POLYGON])
 def get_interior_ring(geometry, index):
     """Returns the nth interior ring of a polygon.
 
@@ -409,6 +439,7 @@ def get_interior_ring(geometry, index):
     return lib.get_interior_ring(geometry, np.intc(index))
 
 
+@register_geometry_method([GeometryType.POLYGON])
 def get_num_interior_rings(geometry):
     """Returns number of internal rings in a polygon
 
@@ -439,6 +470,7 @@ def get_num_interior_rings(geometry):
 # collections
 
 
+@register_geometry_method([GeometryType.MULTIPOINT, GeometryType.MULTILINESTRING, GeometryType.MULTIPOLYGON, GeometryType.GEOMETRYCOLLECTION])
 def get_geometry(geometry, index):
     """Returns the nth geometry from a collection of geometries.
 
@@ -474,6 +506,7 @@ def get_geometry(geometry, index):
     return lib.get_geometry(geometry, np.intc(index))
 
 
+@register_geometry_method([GeometryType.MULTIPOINT, GeometryType.MULTILINESTRING, GeometryType.MULTIPOLYGON, GeometryType.GEOMETRYCOLLECTION])
 def get_num_geometries(geometry):
     """Returns number of geometries in a collection.
 

@@ -2,6 +2,7 @@ from enum import IntEnum
 import numpy as np
 from . import Geometry  # NOQA
 from . import lib
+from .geometry import register_geometry_method
 
 
 __all__ = [
@@ -33,6 +34,7 @@ class BufferJoinStyles(IntEnum):
     BEVEL = 3
 
 
+@register_geometry_method
 def boundary(geometry, **kwargs):
     """Returns the topological boundary of a geometry.
 
@@ -57,6 +59,7 @@ def boundary(geometry, **kwargs):
     return lib.boundary(geometry, **kwargs)
 
 
+@register_geometry_method
 def buffer(
     geometry,
     radius,
@@ -159,6 +162,7 @@ def buffer(
     )
 
 
+@register_geometry_method
 def centroid(geometry, **kwargs):
     """Computes the geometric center (center-of-mass) of a geometry.
 
@@ -185,6 +189,7 @@ def centroid(geometry, **kwargs):
     return lib.centroid(geometry, **kwargs)
 
 
+@register_geometry_method
 def convex_hull(geometry, **kwargs):
     """Computes the minimum convex geometry that encloses an input geometry.
 
@@ -202,6 +207,7 @@ def convex_hull(geometry, **kwargs):
     return lib.convex_hull(geometry, **kwargs)
 
 
+@register_geometry_method
 def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     """Computes a Delaunay triangulation around the vertices of an input
     geometry.
@@ -238,6 +244,7 @@ def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     return lib.delaunay_triangles(geometry, tolerance, only_edges, **kwargs)
 
 
+@register_geometry_method
 def envelope(geometry, **kwargs):
     """Computes the minimum bounding box that encloses an input geometry.
 
@@ -259,6 +266,7 @@ def envelope(geometry, **kwargs):
     return lib.envelope(geometry, **kwargs)
 
 
+@register_geometry_method
 def extract_unique_points(geometry, **kwargs):
     """Returns all distinct vertices of an input geometry as a multipoint.
 
@@ -285,6 +293,7 @@ def extract_unique_points(geometry, **kwargs):
     return lib.extract_unique_points(geometry, **kwargs)
 
 
+@register_geometry_method
 def point_on_surface(geometry, **kwargs):
     """Returns a point that intersects an input geometry.
 
@@ -306,6 +315,7 @@ def point_on_surface(geometry, **kwargs):
     return lib.point_on_surface(geometry, **kwargs)
 
 
+@register_geometry_method
 def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
     """Returns a simplified version of an input geometry using the
     Douglas-Peucker algorithm.
@@ -338,6 +348,7 @@ def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
         return lib.simplify(geometry, tolerance, **kwargs)
 
 
+@register_geometry_method
 def snap(geometry, reference, tolerance, **kwargs):
     """Snaps an input geometry to reference geometry's vertices.
 
@@ -367,6 +378,7 @@ def snap(geometry, reference, tolerance, **kwargs):
     return lib.snap(geometry, reference, tolerance, **kwargs)
 
 
+@register_geometry_method
 def voronoi_polygons(
     geometry, tolerance=0.0, extend_to=None, only_edges=False, **kwargs
 ):

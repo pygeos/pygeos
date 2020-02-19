@@ -2,6 +2,8 @@ import numpy as np
 import pygeos
 import pytest
 
+from pygeos.geometry import register_geometry_method
+
 from .common import point
 from .common import line_string
 from .common import linear_ring
@@ -223,6 +225,32 @@ def test_getattr_to_wkt():
     assert point.to_wkt(rounding_precision=1, trim=False) == "POINT (2.0 3.0)"
 
 
-def test_getattr_raises():
-    with pytest.raises(pygeos.GEOSException):
+def test_getattr_line_method():
+    with pytest.raises(AttributeError):
         point.line_locate_point(polygon)
+
+
+def test_getattr_register_custom():
+    @register_geometry_method
+    def what_is_the_answer(geometry):
+        return 42
+
+    assert point.what_is_the_answer() == 42
+
+
+def test_getattr_raises():
+    @register_geometry_method
+    def raise_runtimeerror(geometry):
+        raise RuntimeError()
+
+    with pytest.raises(RuntimeError):
+        point.raise_runtimeerror()
+
+
+def test_getattr_wrong_number_arguments():
+    @register_geometry_method
+    def raise_typeerror():
+        pass
+
+    with pytest.raises(TypeError):
+        point.raise_typeerror()

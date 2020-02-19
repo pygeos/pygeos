@@ -3,6 +3,7 @@ import numpy as np
 from . import Geometry  # noqa
 from . import lib
 from . import geos_capi_version_string
+from .geometry import register_geometry_method
 
 try:
     from shapely.geos import geos_version_string as shapely_geos_version
@@ -15,6 +16,7 @@ except ImportError:
 __all__ = ["from_shapely", "from_wkb", "from_wkt", "to_wkb", "to_wkt"]
 
 
+@register_geometry_method
 def to_wkt(
     geometry,
     rounding_precision=6,
@@ -88,6 +90,7 @@ def to_wkt(
     )
 
 
+@register_geometry_method
 def to_wkb(
     geometry, hex=False, output_dimension=3, byte_order=-1, include_srid=False, **kwargs
 ):

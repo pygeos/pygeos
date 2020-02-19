@@ -1,5 +1,6 @@
 import numpy as np
 from . import lib, Geometry, GeometryType
+from .geometry import register_geometry_method
 
 __all__ = [
     "difference",
@@ -12,6 +13,7 @@ __all__ = [
 ]
 
 
+@register_geometry_method
 def difference(a, b, **kwargs):
     """Returns the part of geometry A that does not intersect with geometry B.
 
@@ -33,6 +35,7 @@ def difference(a, b, **kwargs):
     return lib.difference(a, b, **kwargs)
 
 
+@register_geometry_method
 def intersection(a, b, **kwargs):
     """Returns the geometry that is shared between input geometries.
 
@@ -54,6 +57,7 @@ def intersection(a, b, **kwargs):
     return lib.intersection(a, b, **kwargs)
 
 
+@register_geometry_method
 def intersection_all(geometries, axis=0, **kwargs):
     """Returns the intersection of multiple geometries.
 
@@ -82,6 +86,7 @@ def intersection_all(geometries, axis=0, **kwargs):
     return lib.intersection.reduce(geometries, axis=axis, **kwargs)
 
 
+@register_geometry_method
 def symmetric_difference(a, b, **kwargs):
     """Returns the geometry that represents the portions of input geometries
     that do not intersect.
@@ -104,6 +109,7 @@ def symmetric_difference(a, b, **kwargs):
     return lib.symmetric_difference(a, b, **kwargs)
 
 
+@register_geometry_method
 def symmetric_difference_all(geometries, axis=0, **kwargs):
     """Returns the symmetric difference of multiple geometries.
 
@@ -132,6 +138,7 @@ def symmetric_difference_all(geometries, axis=0, **kwargs):
     return lib.symmetric_difference.reduce(geometries, axis=axis, **kwargs)
 
 
+@register_geometry_method
 def union(a, b, **kwargs):
     """Merges geometries into one.
 
@@ -155,6 +162,7 @@ def union(a, b, **kwargs):
     return lib.union(a, b, **kwargs)
 
 
+@register_geometry_method
 def union_all(geometries, axis=0, **kwargs):
     """Returns the union of multiple geometries.
 

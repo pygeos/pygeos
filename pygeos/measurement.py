@@ -2,10 +2,12 @@ import numpy as np
 
 from . import lib
 from . import Geometry  # NOQA
+from .geometry import GeometryType, register_geometry_method
 
 __all__ = ["area", "distance", "bounds", "length", "hausdorff_distance"]
 
 
+@register_geometry_method([GeometryType.POLYGON, GeometryType.MULTIPOLYGON])
 def area(geometry, **kwargs):
     """Computes the area of a (multi)polygon.
 
@@ -27,6 +29,7 @@ def area(geometry, **kwargs):
     return lib.area(geometry, **kwargs)
 
 
+@register_geometry_method
 def distance(a, b, **kwargs):
     """Computes the Cartesian distance between two geometries.
 
@@ -51,6 +54,7 @@ def distance(a, b, **kwargs):
     return lib.distance(a, b, **kwargs)
 
 
+@register_geometry_method
 def bounds(geometry, **kwargs):
     """Computes the bounds (extent) of a geometry.
 
@@ -78,6 +82,7 @@ def bounds(geometry, **kwargs):
     return lib.bounds(geometry_arr, out=out, **kwargs)
 
 
+@register_geometry_method([GeometryType.LINESTRING, GeometryType.POLYGON, GeometryType.MULTILINESTRING, GeometryType.MULTIPOLYGON])
 def length(geometry, **kwargs):
     """Computes the length of a (multi)linestring or polygon perimeter.
 
@@ -101,6 +106,7 @@ def length(geometry, **kwargs):
     return lib.length(geometry, **kwargs)
 
 
+@register_geometry_method
 def hausdorff_distance(a, b, densify=None, **kwargs):
     """Compute the discrete Haussdorf distance between two geometries.
 

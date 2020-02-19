@@ -1,9 +1,11 @@
 from . import lib
 from . import Geometry  # NOQA
+from .geometry import GeometryType, register_geometry_method
 
 __all__ = ["line_interpolate_point", "line_locate_point", "line_merge", "shared_paths"]
 
 
+@register_geometry_method([GeometryType.LINESTRING])
 def line_interpolate_point(line, distance, normalize=False):
     """Returns a point interpolated at given distance on a line.
 
@@ -37,6 +39,7 @@ def line_interpolate_point(line, distance, normalize=False):
         return lib.line_interpolate_point(line, distance)
 
 
+@register_geometry_method([GeometryType.LINESTRING])
 def line_locate_point(line, other, normalize=False):
     """Returns the distance to the line origin of given point.
 
@@ -69,6 +72,7 @@ def line_locate_point(line, other, normalize=False):
         return lib.line_locate_point(line, other)
 
 
+@register_geometry_method([GeometryType.LINESTRING])
 def line_merge(line):
     """Returns (multi)linestrings formed by combining the lines in a
     multilinestrings.
@@ -89,6 +93,7 @@ def line_merge(line):
     return lib.line_merge(line)
 
 
+@register_geometry_method([GeometryType.LINESTRING])
 def shared_paths(a, b, **kwargs):
     """Returns the shared paths between geom1 and geom2.
 
