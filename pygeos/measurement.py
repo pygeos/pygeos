@@ -82,7 +82,14 @@ def bounds(geometry, **kwargs):
     return lib.bounds(geometry_arr, out=out, **kwargs)
 
 
-@register_geometry_method([GeometryType.LINESTRING, GeometryType.POLYGON, GeometryType.MULTILINESTRING, GeometryType.MULTIPOLYGON])
+@register_geometry_method(
+    [
+        GeometryType.LINESTRING,
+        GeometryType.POLYGON,
+        GeometryType.MULTILINESTRING,
+        GeometryType.MULTIPOLYGON,
+    ]
+)
 def length(geometry, **kwargs):
     """Computes the length of a (multi)linestring or polygon perimeter.
 

@@ -12,7 +12,7 @@ def box_tpl(x1, y1, x2, y2):
 def test_points_from_coords():
     actual = pygeos.points([[0, 0], [2, 2]])
     assert str(actual[0]) == "POINT (0 0)"
-    assert str(actual[1])  == "POINT (2 2)"
+    assert str(actual[1]) == "POINT (2 2)"
 
 
 def test_points_from_xy():

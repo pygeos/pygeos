@@ -40,6 +40,7 @@ class GeometryType(IntEnum):
 
 # generic
 
+
 def register_geometry_method(func_or_types):
     """Use this decorator to make the decorated function a Geometry method.
 
@@ -51,15 +52,18 @@ def register_geometry_method(func_or_types):
         _DummyGeometry.registered_methods["__all__"][func.__name__] = func
         return func
     else:  # for usage with a list of geometry types as argument
+
         def wrapper(func):
             for typ in func_or_types:
                 _DummyGeometry.registered_methods[typ][func.__name__] = func
             return func
+
         return wrapper
 
 
 class _DummyGeometry:
     """This object extends pygeos.lib.Geometry"""
+
     registered_methods = {x: {} for x in GeometryType}
     registered_methods["__all__"] = {}
 
@@ -71,9 +75,9 @@ class _DummyGeometry:
         """Append the builtin __dir__ with all geometry functions in pygeos"""
         builtin_dir = object.__dir__(self.geometry)
         return sorted(
-            builtin_dir +
-            list(self.registered_methods["__all__"].keys()) +
-            list(self.registered_methods[self.type_id].keys())
+            builtin_dir
+            + list(self.registered_methods["__all__"].keys())
+            + list(self.registered_methods[self.type_id].keys())
         )
 
     def __getattr__(self, attr_name):
@@ -470,7 +474,14 @@ def get_num_interior_rings(geometry):
 # collections
 
 
-@register_geometry_method([GeometryType.MULTIPOINT, GeometryType.MULTILINESTRING, GeometryType.MULTIPOLYGON, GeometryType.GEOMETRYCOLLECTION])
+@register_geometry_method(
+    [
+        GeometryType.MULTIPOINT,
+        GeometryType.MULTILINESTRING,
+        GeometryType.MULTIPOLYGON,
+        GeometryType.GEOMETRYCOLLECTION,
+    ]
+)
 def get_geometry(geometry, index):
     """Returns the nth geometry from a collection of geometries.
 
@@ -506,7 +517,14 @@ def get_geometry(geometry, index):
     return lib.get_geometry(geometry, np.intc(index))
 
 
-@register_geometry_method([GeometryType.MULTIPOINT, GeometryType.MULTILINESTRING, GeometryType.MULTIPOLYGON, GeometryType.GEOMETRYCOLLECTION])
+@register_geometry_method(
+    [
+        GeometryType.MULTIPOINT,
+        GeometryType.MULTILINESTRING,
+        GeometryType.MULTIPOLYGON,
+        GeometryType.GEOMETRYCOLLECTION,
+    ]
+)
 def get_num_geometries(geometry):
     """Returns number of geometries in a collection.
 
