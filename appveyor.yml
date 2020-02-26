@@ -1,15 +1,36 @@
+---
+image: Visual Studio 2017
+platform: x64
+
 environment:
+  global:
+    GEOSVERSION: "3.8.0"
+
   matrix:
-    - PYTHON_PATH: "C:\\Miniconda37"
-      PYTHON_VERSION: 3.7
-      DEPS: "numpy geos"
-
-    - PYTHON_PATH: "C:\\Miniconda37-x64"
-      PYTHON_VERSION: 3.7
-      DEPS: "numpy geos"
-
-init:
-  - "ECHO %PYTHON% %PYTHON_VERSION%"
+    - PYTHON: "C:\\Python35"
+      ARCH: x86
+      COMPILER: msvc2017
+    - PYTHON: "C:\\Python35-x64"
+      ARCH: x64
+      COMPILER: msvc2017
+    - PYTHON: "C:\\Python36"
+      ARCH: x86
+      COMPILER: msvc2017
+    - PYTHON: "C:\\Python36-x64"
+      ARCH: x64
+      COMPILER: msvc2017
+    - PYTHON: "C:\\Python37"
+      ARCH: x86
+      COMPILER: msvc2017
+    - PYTHON: "C:\\Python37-x64"
+      ARCH: x64
+      COMPILER: msvc2017
+    - PYTHON: "C:\\Python38"
+      ARCH: x86
+      COMPILER: msvc2017
+    - PYTHON: "C:\\Python38-x64"
+      ARCH: x64
+      COMPILER: msvc2017
 
 install:
   # If there is a newer build queued for the same PR, cancel this one.
@@ -22,26 +43,64 @@ install:
         Where-Object pullRequestId -eq $env:APPVEYOR_PULL_REQUEST_NUMBER)[0].buildNumber) { `
           throw "There are newer queued builds for this pull request, failing early." }
 
-  # Prepend to the PATH of this build
-  - "set PATH=%PYTHON_PATH%;%PYTHON_PATH%\\Scripts;%CONDA_ROOT%\\Library\\bin;%PATH%"
-  - conda config --set always_yes true
-  - conda update --quiet conda
+build_script:
+  - set _INITPATH=%PATH%
 
-  # See https://github.com/conda/conda/issues/8836 ("yes, this is insane")
-  - activate
-  - conda info --all
-  - conda config --append channels conda-forge
-  - conda create -n testenv --yes python=%PYTHON_VERSION% %DEPS% pytest
+  - ps: 'Write-Host "Configuring PATH with $env:PYTHON" -ForegroundColor Magenta'
+  - set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
 
-  # Do this. Don't "conda activate testenv".
-  - activate testenv
+  - ps: 'Write-Host "Configuring MSVC compiler $env:COMPILER" -ForegroundColor Magenta'
+  - if %COMPILER%==msvc2017 ( call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" %ARCH% )
 
-build: false
+  - ps: 'Write-Host "Cached dependency folder" -ForegroundColor Magenta'
+  - if not exist C:\projects\deps mkdir C:\projects\deps
+  - dir C:\projects\deps
 
-before_test:
-  - "set GEOS_LIBRARY_PATH=%CONDA_PREFIX%\\Library\\lib"
-  - "set GEOS_INCLUDE_PATH=%CONDA_PREFIX%\\Library\\include"
-  - "%CMD_IN_ENV% python setup.py build_ext --inplace"
+  - set GEOSINSTALL=C:\projects\deps\geos-%GEOSVERSION%-%COMPILER%-%ARCH%
+  - ps: 'Write-Host "Checking GEOS build $env:GEOSINSTALL" -ForegroundColor Magenta'
+  - call %APPVEYOR_BUILD_FOLDER%\ci\appveyor\build_geos.cmd
 
-test_script:
-  - pytest --doctest-modules
+  - ps: 'Write-Host "Copying and checking geos_c.dll" -ForegroundColor Magenta'
+  - cd %APPVEYOR_BUILD_FOLDER%\pygeos
+  - xcopy %GEOSINSTALL%\bin\geos*.dll .
+  - dumpbin /dependents geos_c.dll
+  - dumpbin /dependents %PYTHON%\python.exe
+  - python -c "import sys; print('Python ' + sys.version)"
+  - python -c "import ctypes; print(ctypes.CDLL('./geos_c.dll'))"
+  - cd ..
+
+  - ps: 'Write-Host "Installing Python requirements" -ForegroundColor Magenta'
+  - python -m pip install --upgrade pip
+  - pip install wheel numpy
+
+  - ps: 'Write-Host "Building wheel" -ForegroundColor Magenta'
+  - set GEOS_INCLUDE_PATH=%GEOSINSTALL%\include
+  - set GEOS_LIBRARY_PATH=%GEOSINSTALL%\lib
+  - python setup.py build_ext bdist_wheel
+
+  - ps: 'Write-Host "Checking pip install in a new environment" -ForegroundColor Magenta'
+  - set PATH=%_INITPATH%
+  - set GEOS_INCLUDE_PATH=
+  - set GEOS_LIBRARY_PATH=
+  - '%PYTHON%\python.exe -m venv C:\projects\venv'
+  - call C:\projects\venv\Scripts\activate.bat
+  - pip install --disable-pip-version-check numpy
+  - cd dist
+  - pip install --no-index --find-links . --no-cache-dir pygeos
+  - python -c "import pygeos; print(pygeos.__version__)"
+
+  - ps: 'Write-Host "Running pytest" -ForegroundColor Magenta'
+  - cd %APPVEYOR_BUILD_FOLDER%\pygeos
+  - xcopy test\* C:\projects\test /s /i
+  - cd C:\projects\test
+  - dir
+  - pip install --disable-pip-version-check pytest
+  - pytest
+
+
+cache:
+  - C:\projects\deps
+
+artifacts:
+  - path: dist\*.whl
+    name: wheel
