@@ -66,7 +66,8 @@ def test_geometries_property():
     assert arr is tree.geometries
 
 
-def test_flush_geometries(tree):
+@pytest.mark.parametrize("repeats", [None] * 1000)
+def test_flush_geometries(repeats):
     arr = pygeos.points(np.arange(10), np.arange(10))
     tree = pygeos.STRtree(arr)
     # Dereference geometries
