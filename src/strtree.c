@@ -240,12 +240,8 @@ static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         // get index for right geometries from arr
         index = kv_A(arr, i);
 
-        // get pygeos geometries from tree at index (not i)
-        geom_ptr = PyArray_GETPTR1((PyArrayObject *) self->geometries, index);
-
-        // get GEOS geometry from pygeos geometry
-        target_geometry = *(GeometryObject **) geom_ptr;
-        get_geom(target_geometry, &target_geom);
+        // get GEOS geometry
+        target_geom = kv_A(self->_geoms, index);
 
         // keep the index value if it passes the predicate
         if (predicate_func(context, pgeom, target_geom)) {
