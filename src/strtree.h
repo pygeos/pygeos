@@ -3,6 +3,7 @@
 
 #include <Python.h>
 #include "geos.h"
+#include "pygeom.h"
 
 
 /* A resizable vector with numpy indices */
@@ -13,11 +14,11 @@ typedef struct
 } npy_intp_vec;
 
 
-/* A resizable vector with GEOSGeometry pointers */
+/* A resizable vector with pointers */
 typedef struct
 {
     size_t n, m;
-    GEOSGeometry **a;
+    GeometryObject **a;
 } goes_geom_vec;
 
 typedef struct {

@@ -49,14 +49,14 @@ def test_init_with_no_geometry():
 
 def test_init_increases_refcount():
     arr = np.array([point])
-    with assert_increases_refcount(arr):
+    with assert_increases_refcount(point):
         _ = pygeos.STRtree(arr)
 
 
 def test_del_decreases_refcount():
     arr = np.array([point])
     tree = pygeos.STRtree(arr)
-    with assert_decreases_refcount(arr):
+    with assert_decreases_refcount(point):
         del tree
 
 
