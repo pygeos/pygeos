@@ -60,6 +60,12 @@ def test_del_decreases_refcount():
         del tree
 
 
+def test_len():
+    arr = np.array([point, None, point])
+    tree = pygeos.STRtree(arr)
+    assert len(tree) == 2
+
+
 def test_geometries_property():
     arr = np.array([point])
     tree = pygeos.STRtree(arr)

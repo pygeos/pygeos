@@ -49,11 +49,24 @@ static PyArrayObject *copy_kvec_to_npy(npy_intp_vec *arr)
     return (PyArrayObject *) result;
 }
 
+void strtree_iter_destroy_callback(void *item, void *user_data)
+{
+    kv_push(npy_intp, *(npy_intp_vec *)user_data, (npy_intp) item);
+}
+
 static void STRtree_dealloc(STRtreeObject *self)
 {
     void *context = geos_context[0];
+    size_t i, size;
+    // free the tree
     if (self->ptr != NULL) { GEOSSTRtree_destroy_r(context, self->ptr); }
-    Py_XDECREF(self->geometries);
+    // free the geometries
+    size = kv_size(self->_geoms);
+    for (i = 0; i < size; i++) {
+        GEOSGeom_destroy_r(context, kv_pop(self->_geoms));
+    }
+    kv_destroy(self->_geoms);
+    // free the PyObject
     Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
@@ -64,8 +77,8 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
     PyObject *arr;
     void *tree, *ptr;
     npy_intp n, i;
-    long count = 0;
     GEOSGeometry *geom;
+    goes_geom_vec _geoms;
     GeometryObject *obj;
     GEOSContextHandle_t context = geos_context[0];
 
@@ -91,6 +104,8 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
     }
 
     n = PyArray_SIZE((PyArrayObject *) arr);
+
+    kv_init(_geoms);
     for(i = 0; i < n; i++) {
         /* get the geometry */
         ptr = PyArray_GETPTR1((PyArrayObject *) arr, i);
@@ -103,7 +118,8 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         /* skip incase obj was None */
         if (geom == NULL) { continue; }
         /* perform the insert */
-        count++;
+        geom = GEOSGeom_clone_r(context, geom);
+        kv_push(GEOSGeometry *, _geoms, geom);
         GEOSSTRtree_insert_r(context, tree, geom, (void *) i );
     }
 
@@ -113,9 +129,7 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         return NULL;
     }
     self->ptr = tree;
-    Py_INCREF(arr);
-    self->geometries = arr;
-    self->count = count;
+    self->_geoms = _geoms;
     return (PyObject *) self;
 }
 
@@ -152,7 +166,7 @@ static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
         return NULL;
     }
-    if (self->count == 0) {
+    if (kv_size(self->_geoms) == 0) {
         npy_intp dims[1] = {0};
         return PyArray_SimpleNew(1, dims, NPY_INTP);
     }
@@ -248,11 +262,13 @@ static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
     return (PyArrayObject *) result;
 }
 
+static PyObject *STRtree_get_size(STRtreeObject *self) {
+    return PyLong_FromSsize_t(kv_size(self->_geoms));
+}
+
 
 static PyMemberDef STRtree_members[] = {
     {"_ptr", T_PYSSIZET, offsetof(STRtreeObject, ptr), READONLY, "Pointer to GEOSSTRtree"},
-    {"geometries", T_OBJECT_EX, offsetof(STRtreeObject, geometries), READONLY, "Geometries used to construct the GEOSSTRtree"},
-    {"count", T_LONG, offsetof(STRtreeObject, count), READONLY, "The number of geometries inside the GEOSSTRtree"},
     {NULL}  /* Sentinel */
 };
 
@@ -261,6 +277,8 @@ static PyMethodDef STRtree_methods[] = {
      "Queries the index for all items whose extents intersect the given search geometry, and optionally tests them "
      "against predicate function if provided. "
     },
+    {"get_size", (PyCFunction) STRtree_get_size, METH_NOARGS,
+     "The number of geometries inside the tree"},
     {NULL}  /* Sentinel */
 };
 
