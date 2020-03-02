@@ -166,3 +166,29 @@ def test_adapt_ptr_raises():
     point = pygeos.Geometry("POINT (2 2)")
     with pytest.raises(AttributeError):
         point._ptr += 1
+
+
+@pytest.mark.parametrize("geom", all_types[:-1])
+def test_hash_same_equal(geom):
+    assert hash(geom) == hash(pygeos.apply(geom, lambda x: x))
+
+
+@pytest.mark.parametrize("geom", all_types[:-1])
+def test_hash_same_not_equal(geom):
+    assert hash(geom) != hash(pygeos.apply(geom, lambda x: x + 1))
+
+
+@pytest.mark.parametrize("geom", all_types[:-1])
+def test_eq(geom):
+    assert geom == pygeos.apply(geom, lambda x: x)
+
+
+@pytest.mark.parametrize("geom", all_types[:-1])
+def test_neq(geom):
+    assert geom != pygeos.apply(geom, lambda x: x + 1)
+
+
+@pytest.mark.parametrize("geom", all_types[:-1])
+def test_set_unique(geom):
+    a = {geom, pygeos.apply(geom, lambda x: x)}
+    assert len(a) == 1
