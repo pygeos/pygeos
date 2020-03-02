@@ -49,11 +49,6 @@ static PyArrayObject *copy_kvec_to_npy(npy_intp_vec *arr)
     return (PyArrayObject *) result;
 }
 
-void strtree_iter_destroy_callback(void *item, void *user_data)
-{
-    kv_push(npy_intp, *(npy_intp_vec *)user_data, (npy_intp) item);
-}
-
 static void STRtree_dealloc(STRtreeObject *self)
 {
     void *context = geos_context[0];

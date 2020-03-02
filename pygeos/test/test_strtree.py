@@ -60,6 +60,16 @@ def test_del_decreases_refcount():
         del tree
 
 
+def test_flush_geometries():
+    arr = pygeos.points(np.arange(10), np.arange(10))
+    tree = pygeos.STRtree(arr)
+    # Dereference geometries
+    arr[:] = None
+    import gc; gc.collect()
+    # Still it does not lead to a segfault
+    tree.query(point)
+
+
 def test_len():
     arr = np.array([point, None, point])
     tree = pygeos.STRtree(arr)
@@ -70,16 +80,6 @@ def test_geometries_property():
     arr = np.array([point])
     tree = pygeos.STRtree(arr)
     assert arr is tree.geometries
-
-
-@pytest.mark.parametrize("repeats", [None] * 1000)
-def test_flush_geometries(repeats):
-    arr = pygeos.points(np.arange(10), np.arange(10))
-    tree = pygeos.STRtree(arr)
-    # Dereference geometries
-    arr[:] = None
-    # Still it does not lead to a segfault
-    tree.query(point)
 
 
 def test_query_no_geom(tree):
