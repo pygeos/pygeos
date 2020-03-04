@@ -1,10 +1,11 @@
 from enum import IntEnum
 import numpy as np
 from . import lib
-from . import Geometry  # NOQA
+from . import Geometry
 
 __all__ = [
     "GeometryType",
+    "Point",
     "get_type_id",
     "get_dimensions",
     "get_coordinate_dimensions",
@@ -36,6 +37,15 @@ class GeometryType(IntEnum):
     MULTIPOLYGON = 6
     GEOMETRYCOLLECTION = 7
 
+
+class Point(Geometry):
+    @property
+    def x(self):
+        return get_x(self)
+
+    @property
+    def y(self):
+        return get_y(self)
 
 # generic
 

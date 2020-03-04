@@ -137,7 +137,7 @@ PyTypeObject GeometryType = {
     .tp_doc = "Geometry type",
     .tp_basicsize = sizeof(GeometryObject),
     .tp_itemsize = 0,
-    .tp_flags = Py_TPFLAGS_DEFAULT,
+    .tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE,
     .tp_new = GeometryObject_new,
     .tp_dealloc = (destructor) GeometryObject_dealloc,
     .tp_members = GeometryObject_members,
@@ -150,7 +150,8 @@ PyTypeObject GeometryType = {
 /* Get a GEOSGeometry pointer from a GeometryObject, or NULL if the input is
 Py_None. Returns 0 on error, 1 on success. */
 char get_geom(GeometryObject *obj, GEOSGeometry **out) {
-    if (!PyObject_IsInstance((PyObject *) obj, (PyObject *) &GeometryType)) {
+    PyTypeObject *type = ((PyObject *)obj)->ob_type;
+    if ((type != &GeometryType) & (type->tp_base != &GeometryType)) {
         if ((PyObject *) obj == Py_None) {
             *out = NULL;
             return 1;

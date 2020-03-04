@@ -9,6 +9,11 @@ def box_tpl(x1, y1, x2, y2):
     return (x2, y1), (x2, y2), (x1, y2), (x1, y1), (x2, y1)
 
 
+def test_point_class():
+    point = pygeos.Point("POINT (1 1)")
+    assert pygeos.get_type_id(point) == pygeos.GeometryType.POINT
+
+
 def test_points_from_coords():
     actual = pygeos.points([[0, 0], [2, 2]])
     assert str(actual[0]) == "POINT (0 0)"
