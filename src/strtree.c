@@ -169,7 +169,7 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
         return NULL;
     }
-    if (kv_size(self->_geoms) == 0) {
+    if (self->count == 0) {
         npy_intp dims[1] = {0};
         return PyArray_SimpleNew(1, dims, NPY_INTP);
     }
