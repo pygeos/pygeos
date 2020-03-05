@@ -53,7 +53,7 @@ class STRtree:
         self._tree = lib.STRtree(self.geometries, leafsize)
 
     def __len__(self):
-        return self._tree.get_size()
+        return self._tree.count
 
     def query(self, geometry, predicate=None):
         """Return all items whose extent intersect the envelope of the input

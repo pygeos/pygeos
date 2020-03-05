@@ -24,6 +24,7 @@ typedef struct
 typedef struct {
     PyObject_HEAD
     void *ptr;
+    npy_intp count;
     goes_geom_vec _geoms;
 } STRtreeObject;
 

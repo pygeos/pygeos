@@ -172,6 +172,14 @@ def test_query_unsupported_predicate(tree):
         tree.query(pygeos.points(1, 1), predicate="disjoint")
 
 
+def test_query_tree_with_none():
+    # valid GEOS binary predicate, but not supported for query
+    tree = pygeos.STRtree([
+        pygeos.Geometry("POINT (0 0)"), None, pygeos.Geometry("POINT (2 2)")
+    ])
+    assert tree.query(pygeos.points(2, 2), predicate="intersects") == [2]
+
+
 ### predicate == 'intersects'
 
 # TEMPORARY xfail: MultiPoint intersects with prepared geometries does not work
@@ -192,11 +200,11 @@ def test_query_unsupported_predicate(tree):
         # same points as envelope
         (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [2, 3, 4]),
         # multipoints intersect
-        pytest.param(pygeos.multipoints([[5, 5], [7, 7]]), [5, 7], marks=pytest.mark.xfail(reason="GEOS 3.5")),
+        pytest.param(pygeos.multipoints([[5, 5], [7, 7]]), [5, 7], marks=pytest.mark.xfail(pygeos.geos_version<(3, 6, 0), reason="GEOS 3.5")),
         # envelope of points contains points, but points do not intersect
         (pygeos.multipoints([[5, 7], [7, 5]]), []),
         # only one point of multipoint intersects
-        pytest.param(pygeos.multipoints([[5, 7], [7, 7]]), [7], marks=pytest.mark.xfail(reason="GEOS 3.5")),
+        pytest.param(pygeos.multipoints([[5, 7], [7, 7]]), [7], marks=pytest.mark.xfail(pygeos.geos_version<(3, 6, 0), reason="GEOS 3.5")),
     ],
 )
 def test_query_intersects_points(tree, geometry, expected):
