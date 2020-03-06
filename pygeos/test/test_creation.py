@@ -131,9 +131,14 @@ def test_create_collection_skips_none():
     assert str(actual) == "MULTIPOINT (2 3, 2 3)"
 
 
-def test_create_collection_wrong_type():
-    a = pygeos.points(np.arange(10), np.arange(10))
-    pygeos.multipolygons(a)
+def test_create_collection_wrong_collection_type():
+    with pytest.raises(TypeError):
+        pygeos.lib.create_collection([point], 2)
+
+
+def test_create_collection_wrong_geom_type():
+    with pytest.raises(TypeError):
+        pygeos.multipolygons([point])
 
 
 def test_box():
