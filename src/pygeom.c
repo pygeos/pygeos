@@ -110,6 +110,7 @@ static Py_hash_t GeometryObject_hash(GeometryObject *self)
 
 static PyObject *GeometryObject_richcompare(GeometryObject *self, PyObject *other, int op) {
   PyObject *result = NULL;
+  void *context = geos_context[0];
   if (Py_TYPE(self)->tp_richcompare != Py_TYPE(other)->tp_richcompare) {
       result = Py_NotImplemented;
   } else {
@@ -122,10 +123,10 @@ static PyObject *GeometryObject_richcompare(GeometryObject *self, PyObject *othe
         result = Py_NotImplemented;
         break;
       case Py_EQ:
-        result = (GeometryObject_hash(self) == GeometryObject_hash(other_geom)) ? Py_True : Py_False;
+        result = GEOSEqualsExact_r(context, self->ptr, other_geom->ptr, 0) ? Py_True : Py_False;
         break;
       case Py_NE:
-        result = (GeometryObject_hash(self) != GeometryObject_hash(other_geom)) ? Py_True : Py_False;
+        result = GEOSEqualsExact_r(context, self->ptr, other_geom->ptr, 0) ? Py_False : Py_True;
         break;
       case Py_GT:
         result = Py_NotImplemented;
