@@ -23,6 +23,40 @@ typedef char FuncGEOS_YpY_b(void *context, const GEOSPreparedGeometry *a,
                             const GEOSGeometry *b);
 
 
+
+
+/* get predicate function based on ID.  See strtree.py::BinaryPredicate for
+ * lookup table of id to function name */
+
+FuncGEOS_YpY_b *get_predicate_func(int predicate_id) {
+    switch (predicate_id) {
+        case 1: {  // intersects
+            return (FuncGEOS_YpY_b *)GEOSPreparedIntersects_r;
+        }
+        case 2: { // within
+            return (FuncGEOS_YpY_b *)GEOSPreparedWithin_r;
+        }
+        case 3: { // contains
+            return (FuncGEOS_YpY_b *)GEOSPreparedContains_r;
+        }
+        case 4: { // overlaps
+            return (FuncGEOS_YpY_b *)GEOSPreparedOverlaps_r;
+        }
+        case 5: { // crosses
+            return (FuncGEOS_YpY_b *)GEOSPreparedCrosses_r;
+        }
+        case 6: { // touches
+            return (FuncGEOS_YpY_b *)GEOSPreparedTouches_r;
+        }
+        default: { // unknown predicate
+            PyErr_SetString(PyExc_ValueError, "Invalid query predicate");
+            return NULL;
+        }
+    }
+}
+
+
+
 /* Copy values from arr to a new numpy integer array.
  * The order of values from arr is inverted, because arr is created by pushing
  * values onto the end. */
@@ -136,15 +170,66 @@ void query_callback(void *item, void *user_data)
  * If predicate function is provided, only the index of those geometries that
  * satisfy the predicate function are returned. */
 
+
+/* Evaluate the predicate function against a prepared version of geom
+ * for each geometry in the tree specified by indexes in target_indexes.
+ * out_indexes is updated in place with the indexes of the geometries in the
+ * tree that meet the predicate.
+ * Returns the number of geometries that met the predicate.
+ * Returns -1 in case of error.
+ * */
+
+// TODO: pass in pointer to kvec array and add to it, return count of geoms that are true for predicate
+static int evaluate_predicate(FuncGEOS_YpY_b *predicate_func,
+                                        GEOSGeometry *geom,
+                                        PyArrayObject * tree_geometries,
+                                        npy_intp_vec *in_indexes,
+                                        npy_intp_vec *out_indexes)
+{
+    GEOSContextHandle_t context = geos_context[0];
+    GEOSGeometry *target_geom;
+    const GEOSPreparedGeometry *pgeom;
+    npy_intp i, size, index;
+    int count = 0;
+    npy_intp *geom_ptr;
+    PyArrayObject *result;
+
+    // Create prepared geometry
+    pgeom = GEOSPrepare_r(context, geom);
+    if (pgeom == NULL) {
+        return -1;
+    }
+
+    size = kv_size(*in_indexes);
+    for (i = 0; i < size; i++) {
+        // get index for right geometries from in_indexes
+        index = kv_A(*in_indexes, i);
+
+        // get GEOS geometry from pygeos geometry at index in tree geometries
+        geom_ptr = PyArray_GETPTR1(tree_geometries, index);
+        get_geom(*(GeometryObject **) geom_ptr, &target_geom);
+
+        // keep the index value if it passes the predicate
+        if (predicate_func(context, pgeom, target_geom)) {
+            kv_push(npy_intp, *out_indexes, index);
+            count++;
+        }
+    }
+
+    GEOSPreparedGeom_destroy_r(context, pgeom);
+
+    return count;
+}
+
+
 static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
     GEOSContextHandle_t context = geos_context[0];
-    GeometryObject *geometry, *target_geometry;
-    int predicate = 0; // default no predicate
-    GEOSGeometry *geom, *target_geom;
-    const GEOSPreparedGeometry *pgeom;
-    npy_intp_vec arr, arr2; // Resizable array for matches for each geometry
-    npy_intp i, size, index;
-    npy_intp *geom_ptr;
+    GeometryObject *geometry;
+    int predicate_id = 0; // default no predicate
+    int count = 0;
+    GEOSGeometry *geom;
+    npy_intp_vec query_indexes, predicate_indexes;
+    npy_intp i;
     FuncGEOS_YpY_b *predicate_func;
     PyArrayObject *result;
 
@@ -157,7 +242,7 @@ static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         return PyArray_SimpleNew(1, dims, NPY_INTP);
     }
 
-    if (!PyArg_ParseTuple(args, "O!i", &GeometryType, &geometry, &predicate)){
+    if (!PyArg_ParseTuple(args, "O!i", &GeometryType, &geometry, &predicate_id)){
         return NULL;
     }
 
@@ -168,82 +253,39 @@ static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
 
     // query the tree for indices of geometries in the tree with
     // envelopes that intersect the geometry.
-    kv_init(arr);
+    kv_init(query_indexes);
     if (geom != NULL) {
-        GEOSSTRtree_query_r(context, self->ptr, geom, query_callback, &arr);
+        GEOSSTRtree_query_r(context, self->ptr, geom, query_callback, &query_indexes);
     }
 
-    // No predicate function provided, return all geometry indexes from
-    // query.
-    // If array is empty, return an empty numpy array
-    if (predicate == 0 || kv_size(arr) == 0) {
-        result = copy_kvec_to_npy(&arr);
-        kv_destroy(arr);
+    if (predicate_id == 0 || kv_size(query_indexes) == 0) {
+        // No predicate function provided, return all geometry indexes from
+        // query.  If array is empty, return an empty numpy array
+        result = copy_kvec_to_npy(&query_indexes);
+        kv_destroy(query_indexes);
         return (PyArrayObject *) result;
     }
 
-    switch (predicate) {
-        case 1: {  // intersects
-            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedIntersects_r;
-            break;
-        }
-        case 2: { // within
-            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedWithin_r;
-            break;
-        }
-        case 3: { // contains
-            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedContains_r;
-            break;
-        }
-        case 4: { // overlaps
-            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedOverlaps_r;
-            break;
-        }
-        case 5: { // crosses
-            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedCrosses_r;
-            break;
-        }
-        case 6: { // touches
-            predicate_func = (FuncGEOS_YpY_b *)GEOSPreparedTouches_r;
-            break;
-        }
-        default: { // unknown predicate
-            PyErr_SetString(PyExc_ValueError, "Invalid query predicate");
-            return NULL;
-        }
-    }
-
-    pgeom = GEOSPrepare_r(context, geom);
-    if (pgeom == NULL) {
-        kv_destroy(arr);
+    predicate_func = get_predicate_func(predicate_id);
+    if (predicate_func == NULL) {
+        // Invalid predicate function
+        kv_destroy(query_indexes);
         return NULL;
     }
 
-    size = kv_size(arr);
-    kv_init(arr2);
-
-    for (i = 0; i < size; i++) {
-        // get index for right geometries from arr
-        index = kv_A(arr, i);
-
-        // get pygeos geometries from tree at index (not i)
-        geom_ptr = PyArray_GETPTR1((PyArrayObject *) self->geometries, index);
-
-        // get GEOS geometry from pygeos geometry
-        target_geometry = *(GeometryObject **) geom_ptr;
-        get_geom(target_geometry, &target_geom);
-
-        // keep the index value if it passes the predicate
-        if (predicate_func(context, pgeom, target_geom)) {
-            kv_push(npy_intp, arr2, index);
-        }
+    kv_init(predicate_indexes);
+    count = evaluate_predicate(predicate_func, geom, (PyArrayObject *) self->geometries, &query_indexes, &predicate_indexes);
+    if (count == -1) {
+        // error performing predicate
+        kv_destroy(query_indexes);
+        kv_destroy(predicate_indexes);
+        return NULL;
     }
 
-    result = copy_kvec_to_npy(&arr2);
+    result = copy_kvec_to_npy(&predicate_indexes);
 
-    GEOSPreparedGeom_destroy_r(context, pgeom);
-    kv_destroy(arr);
-    kv_destroy(arr2);
+    kv_destroy(query_indexes);
+    kv_destroy(predicate_indexes);
 
     return (PyArrayObject *) result;
 }
