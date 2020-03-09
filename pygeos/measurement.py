@@ -3,7 +3,7 @@ import numpy as np
 from . import lib
 from . import Geometry  # NOQA
 
-__all__ = ["area", "distance", "bounds","total_bounds", "length", "hausdorff_distance"]
+__all__ = ["area", "distance", "bounds", "total_bounds", "length", "hausdorff_distance"]
 
 
 def area(geometry, **kwargs):
@@ -99,7 +99,7 @@ def total_bounds(geometry, **kwargs):
     >>> total_bounds(Geometry("POLYGON EMPTY")).tolist()
     [nan, nan, nan, nan]
     >>> total_bounds([Geometry("POLYGON EMPTY"), Geometry("POINT (2 3)")]).tolist()
-    [nan, nan, nan, nan]
+    [2.0, 3.0, 2.0, 3.0]
     >>> total_bounds(None).tolist()
     [nan, nan, nan, nan]
     """
@@ -107,12 +107,14 @@ def total_bounds(geometry, **kwargs):
     if b.ndim == 1:
         return b
 
-    return np.array([
-        b[...,0].min(),
-        b[...,1].min(),
-        b[...,2].max(),
-        b[...,3].max()
-    ])
+    return np.array(
+        [
+            np.nanmin(b[..., 0]),
+            np.nanmin(b[..., 1]),
+            np.nanmax(b[..., 2]),
+            np.nanmax(b[..., 3]),
+        ]
+    )
 
 
 def length(geometry, **kwargs):

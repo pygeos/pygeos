@@ -58,7 +58,7 @@ def test_distance_missing():
         (multi_polygon, [0, 0, 2.2, 2.2]),
         (geometry_collection, [49, -1, 52, 2]),
         (empty, [np.nan, np.nan, np.nan, np.nan]),
-        (None, [np.nan, np.nan, np.nan, np.nan])
+        (None, [np.nan, np.nan, np.nan, np.nan]),
     ],
 )
 def test_bounds(geom, expected):
@@ -70,9 +70,9 @@ def test_bounds(geom, expected):
     [
         (point, (4,)),
         (None, (4,)),
-        ([point, multi_point], (2,4)),
-        ([[point, multi_point], [polygon, point]], (2,2,4)),
-        ([[[point, multi_point]], [[polygon, point]]], (2,1,2,4))
+        ([point, multi_point], (2, 4)),
+        ([[point, multi_point], [polygon, point]], (2, 2, 4)),
+        ([[[point, multi_point]], [[polygon, point]]], (2, 1, 2, 4)),
     ],
 )
 def test_bounds_dimensions(geom, shape):
@@ -89,7 +89,13 @@ def test_bounds_dimensions(geom, shape):
         (multi_polygon, [0, 0, 2.2, 2.2]),
         (geometry_collection, [49, -1, 52, 2]),
         (empty, [np.nan, np.nan, np.nan, np.nan]),
-        (None, [np.nan, np.nan, np.nan, np.nan])
+        (None, [np.nan, np.nan, np.nan, np.nan]),
+        ([empty, empty, None], [np.nan, np.nan, np.nan, np.nan]),
+        # mixed missing and non-missing coordinates
+        ([point, None], [2, 3, 2, 3]),
+        ([point, empty], [2, 3, 2, 3]),
+        ([point, empty, None], [2, 3, 2, 3]),
+        ([point, empty, None, multi_point], [0, 0, 2, 3]),
     ],
 )
 def test_total_bounds(geom, expected):
@@ -103,7 +109,7 @@ def test_total_bounds(geom, expected):
         None,
         [point, multi_point],
         [[point, multi_point], [polygon, point]],
-        [[[point, multi_point]], [[polygon, point]]]
+        [[[point, multi_point]], [[polygon, point]]],
     ],
 )
 def test_total_bounds_dimensions(geom):
