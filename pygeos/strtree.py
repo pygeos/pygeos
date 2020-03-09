@@ -93,6 +93,24 @@ class STRtree:
 
         return self._tree.query(geometry, predicate)
 
+    def query_bulk(self, geometries, predicate=None):
+
+        if predicate is None:
+            predicate = 0
+
+        else:
+            if not predicate in VALID_PREDICATES:
+                raise ValueError(
+                    "Predicate {} is not valid; must be one of {}".format(
+                        predicate, ", ".join(VALID_PREDICATES)
+                    )
+                )
+
+            predicate = BinaryPredicate[predicate].value
+
+        results = self._tree.query_bulk(np.asarray(geometries), predicate)
+        return results[0], results[1]
+
     @property
     def geometries(self):
         """Return the array_like of geometries used to construct the STRtree."""

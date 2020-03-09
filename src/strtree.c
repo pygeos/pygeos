@@ -57,9 +57,7 @@ FuncGEOS_YpY_b *get_predicate_func(int predicate_id) {
 
 
 
-/* Copy values from arr to a new numpy integer array.
- * The order of values from arr is inverted, because arr is created by pushing
- * values onto the end. */
+/* Copy values from arr to a new numpy integer array. */
 
 static PyArrayObject *copy_kvec_to_npy(npy_intp_vec *arr)
 {
@@ -72,16 +70,51 @@ static PyArrayObject *copy_kvec_to_npy(npy_intp_vec *arr)
     // in numpy.  There doesn't appear to be anything we can do to avoid it.
     PyArrayObject *result = (PyArrayObject *) PyArray_SimpleNew(1, dims, NPY_INTP);
     if (result == NULL) {
+        PyErr_SetString(PyExc_TypeError, "could not allocate numpy array");
         return NULL;
     }
 
     for (i = 0; i<size; i++) {
-        ptr = PyArray_GETPTR1(result, i);
-        *ptr = kv_A(*arr, i);
+        // assign value into numpy array
+        *(npy_intp *)PyArray_GETPTR1(result, i) = kv_A(*arr, i);
     }
 
     return (PyArrayObject *) result;
 }
+
+/* Copy values from arr and arr2 to a new 2D numpy integer array.
+ * arr and arr2 must be the same length.
+ */
+
+static PyArrayObject *copy_kvec_to_npy2(npy_intp_vec *arr, npy_intp_vec *arr2)
+{
+    npy_intp i;
+    npy_intp size = kv_size(*arr);
+    npy_intp *ptr;
+
+    if (size != kv_size(*arr2)) {
+        PyErr_SetString(PyExc_TypeError, "kvec arrays must be same length");
+        return NULL;
+    }
+
+    npy_intp dims[2] = {2, size};
+    // the following raises a compiler warning based on how the macro is defined
+    // in numpy.  There doesn't appear to be anything we can do to avoid it.
+    PyArrayObject *result = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_INTP);
+    if (result == NULL) {
+        PyErr_SetString(PyExc_TypeError, "could not allocate numpy array");
+        return NULL;
+    }
+
+    for (i = 0; i<size; i++) {
+        // assign value into numpy arrays
+        *(npy_intp *)PyArray_GETPTR2(result, 0, i) = kv_A(*arr, i);
+        *(npy_intp *)PyArray_GETPTR2(result, 1, i) = kv_A(*arr2, i);
+    }
+
+    return (PyArrayObject *) result;
+}
+
 
 static void STRtree_dealloc(STRtreeObject *self)
 {
@@ -163,14 +196,6 @@ void query_callback(void *item, void *user_data)
     kv_push(npy_intp, *(npy_intp_vec *)user_data, (npy_intp) item);
 }
 
-
-/* Query the tree based on input geometry and predicate function.
- * The index of each geometry in the tree whose envelope intersects the
- * envelope of the input geometry is returned by default.
- * If predicate function is provided, only the index of those geometries that
- * satisfy the predicate function are returned. */
-
-
 /* Evaluate the predicate function against a prepared version of geom
  * for each geometry in the tree specified by indexes in target_indexes.
  * out_indexes is updated in place with the indexes of the geometries in the
@@ -179,7 +204,6 @@ void query_callback(void *item, void *user_data)
  * Returns -1 in case of error.
  * */
 
-// TODO: pass in pointer to kvec array and add to it, return count of geoms that are true for predicate
 static int evaluate_predicate(FuncGEOS_YpY_b *predicate_func,
                                         GEOSGeometry *geom,
                                         PyArrayObject * tree_geometries,
@@ -221,6 +245,11 @@ static int evaluate_predicate(FuncGEOS_YpY_b *predicate_func,
     return count;
 }
 
+/* Query the tree based on input geometry and predicate function.
+ * The index of each geometry in the tree whose envelope intersects the
+ * envelope of the input geometry is returned by default.
+ * If predicate function is provided, only the index of those geometries that
+ * satisfy the predicate function are returned. */
 
 static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
     GEOSContextHandle_t context = geos_context[0];
@@ -268,7 +297,7 @@ static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
 
     predicate_func = get_predicate_func(predicate_id);
     if (predicate_func == NULL) {
-        // Invalid predicate function
+        PyErr_SetString(PyExc_RuntimeError, "Invalid predicate for query");
         kv_destroy(query_indexes);
         return NULL;
     }
@@ -290,6 +319,125 @@ static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
     return (PyArrayObject *) result;
 }
 
+/* Query the tree based on input geometries and predicate function.
+ * The index of each geometry in the tree whose envelope intersects the
+ * envelope of the input geometry is returned by default.
+ * If predicate function is provided, only the index of those geometries that
+ * satisfy the predicate function are returned.
+ * Returns two arrays of equal length: first is indexes of the source geometries
+ * and second is indexes of tree geometries that meet the above conditions.
+ * */
+
+static PyArrayObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
+    GEOSContextHandle_t context = geos_context[0];
+    PyObject *arr;
+    PyArrayObject *pg_geoms;
+    GeometryObject *pg_geom;
+    int predicate_id = 0; // default no predicate
+    int count = 0;
+    GEOSGeometry *geom;
+    npy_intp_vec query_indexes, src_indexes, target_indexes;
+    npy_intp i, j, n, size;
+    FuncGEOS_YpY_b *predicate_func;
+    PyArrayObject *source_results;
+    PyArrayObject *target_results;
+    PyArrayObject *result;
+    npy_intp *result_ptr;
+
+    if (self->ptr == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
+        return NULL;
+    }
+    if (self->count == 0) {
+        npy_intp dims[2] = {2, 0};
+        return PyArray_SimpleNew(2, dims, NPY_INTP);
+    }
+
+    if (!PyArg_ParseTuple(args, "Oi", &arr, &predicate_id)) {
+        return NULL;
+    }
+    if (!PyArray_Check(arr)) {
+        PyErr_SetString(PyExc_TypeError, "Not an ndarray");
+        return NULL;
+    }
+
+    pg_geoms = (PyArrayObject *) arr;
+    if (!PyArray_ISOBJECT(pg_geoms)) {
+        PyErr_SetString(PyExc_TypeError, "Array should be of object dtype");
+        return NULL;
+    }
+    if (PyArray_NDIM(pg_geoms) != 1) {
+        PyErr_SetString(PyExc_TypeError, "Array should be one dimensional");
+        return NULL;
+    }
+
+    if (predicate_id!=0) {
+        predicate_func = get_predicate_func(predicate_id);
+        if (predicate_func == NULL) {
+            PyErr_SetString(PyExc_RuntimeError, "Invalid predicate for query");
+            return NULL;
+        }
+    }
+
+    kv_init(src_indexes);
+    kv_init(target_indexes);
+    n = PyArray_SIZE(pg_geoms);
+
+    for(i = 0; i < n; i++) {
+        pg_geom = *(GeometryObject **) PyArray_GETPTR1(pg_geoms, i);
+        if (!get_geom(pg_geom, &geom)) {
+            PyErr_SetString(PyExc_TypeError, "Invalid geometry");
+            return NULL;
+        }
+        if (geom == NULL) {
+            continue;
+        }
+
+        kv_init(query_indexes);
+        GEOSSTRtree_query_r(context, self->ptr, geom, query_callback, &query_indexes);
+
+        if (kv_size(query_indexes) == 0) {
+            // no target geoms in query window, skip this source geom
+            kv_destroy(query_indexes);
+            continue;
+        }
+
+        if (predicate_id == 0) {
+            // no predicate, push results directly onto target_indexes
+            size = kv_size(query_indexes);
+            for (j = 0; j < size; j++) {
+                kv_push(npy_intp, src_indexes, i);
+                kv_push(npy_intp, target_indexes, kv_A(query_indexes, j));
+            }
+        } else {
+            // this pushes directly onto target_indexes
+            size = evaluate_predicate(predicate_func, geom,
+                                        (PyArrayObject *) self->geometries,
+                                        &query_indexes, &target_indexes);
+
+            if (size == -1) {
+                PyErr_SetString(PyExc_TypeError, "Error evaluating predicate function");
+                kv_destroy(query_indexes);
+                kv_destroy(src_indexes);
+                kv_destroy(target_indexes);
+                return NULL;
+            }
+
+            for (j = 0; j < size; j++) {
+                kv_push(npy_intp, src_indexes, i);
+            }
+        }
+
+        kv_destroy(query_indexes);
+    }
+
+    result = copy_kvec_to_npy2(&src_indexes, &target_indexes);
+
+    kv_destroy(src_indexes);
+    kv_destroy(target_indexes);
+    return result;
+}
+
 
 static PyMemberDef STRtree_members[] = {
     {"_ptr", T_PYSSIZET, offsetof(STRtreeObject, ptr), READONLY, "Pointer to GEOSSTRtree"},
@@ -301,6 +449,10 @@ static PyMemberDef STRtree_members[] = {
 static PyMethodDef STRtree_methods[] = {
     {"query", (PyCFunction) STRtree_query, METH_VARARGS,
      "Queries the index for all items whose extents intersect the given search geometry, and optionally tests them "
+     "against predicate function if provided. "
+    },
+    {"query_bulk", (PyCFunction) STRtree_query_bulk, METH_VARARGS,
+     "Queries the index for all items whose extents intersect the given search geometries, and optionally tests them "
      "against predicate function if provided. "
     },
     {NULL}  /* Sentinel */
