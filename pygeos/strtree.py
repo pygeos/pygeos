@@ -1,6 +1,6 @@
 from enum import IntEnum
 import numpy as np
-from pygeos import lib
+from pygeos import lib, is_empty
 
 
 __all__ = ["STRtree"]
@@ -46,6 +46,8 @@ class STRtree:
     >>> # and are contained by `geom`:
     >>> tree.query(geom, predicate='contains').tolist()
     [3]
+    >>> tree.nearest(geom)
+    2
     """
 
     def __init__(self, geometries, leafsize=5):
@@ -92,6 +94,29 @@ class STRtree:
             predicate = BinaryPredicate[predicate].value
 
         return self._tree.query(geometry, predicate)
+
+    def nearest(self, geometry):
+        """Returns the index of the nearest item in the tree to the input geometry.
+
+        Returns the lowest index of the nearest items in the tree, if multiple
+        items have the same nearest distance.  The first intersecting item
+        is returned if any items intersect the input geometry.
+
+        Returns None if the input geometry is None or empty.
+
+        Parameters
+        ----------
+        geometry : Geometry
+
+        Returns
+        -------
+        int (index) or None
+        """
+
+        if geometry is None or is_empty(geometry):
+            return None
+
+        return self._tree.nearest(geometry)
 
     @property
     def geometries(self):

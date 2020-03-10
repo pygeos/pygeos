@@ -185,11 +185,19 @@ def test_query_unsupported_predicate(tree):
         # same points as envelope
         (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [2, 3, 4]),
         # multipoints intersect
-        pytest.param(pygeos.multipoints([[5, 5], [7, 7]]), [5, 7], marks=pytest.mark.xfail(reason="GEOS 3.5")),
+        pytest.param(
+            pygeos.multipoints([[5, 5], [7, 7]]),
+            [5, 7],
+            marks=pytest.mark.xfail(reason="GEOS 3.5"),
+        ),
         # envelope of points contains points, but points do not intersect
         (pygeos.multipoints([[5, 7], [7, 5]]), []),
         # only one point of multipoint intersects
-        pytest.param(pygeos.multipoints([[5, 7], [7, 7]]), [7], marks=pytest.mark.xfail(reason="GEOS 3.5")),
+        pytest.param(
+            pygeos.multipoints([[5, 7], [7, 7]]),
+            [7],
+            marks=pytest.mark.xfail(reason="GEOS 3.5"),
+        ),
     ],
 )
 def test_query_intersects_points(tree, geometry, expected):
@@ -404,7 +412,6 @@ def test_query_contains_polygons(poly_tree, geometry, expected):
     assert_array_equal(poly_tree.query(geometry, predicate="contains"), expected)
 
 
-
 ### predicate == 'overlaps'
 # Overlaps only returns results where geometries are of same dimensions
 # and do not completely contain each other.
@@ -464,18 +471,17 @@ def test_query_overlaps_lines(line_tree, geometry, expected):
         # box overlaps 2 polygons
         (box(0, 0, 1, 1), [0, 1]),
         # larger box intersects 3 polygons and contains one
-        (box(0, 0, 2, 2), [0,2]),
+        (box(0, 0, 2, 2), [0, 2]),
         # buffer overlaps 3 polygons and contains 1
-        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [2,4]),
+        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [2, 4]),
         # larger buffer overlaps 6 polygons (touches midpoints) but contains one
-        (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [1,2,4,5]),
+        (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [1, 2, 4, 5]),
         # one of two points intersects but different dimensions
         (pygeos.multipoints([[5, 7], [7, 7]]), []),
     ],
 )
 def test_query_overlaps_polygons(poly_tree, geometry, expected):
     assert_array_equal(poly_tree.query(geometry, predicate="overlaps"), expected)
-
 
 
 ### predicate == 'crosses'
@@ -591,16 +597,86 @@ def test_query_touches_lines(line_tree, geometry, expected):
         # point within first polygon
         (pygeos.points(0, 0.5), []),
         # point is at edge of first polygon
-        (pygeos.points(HALF_UNIT_DIAG+EPS, 0), [0]),
+        (pygeos.points(HALF_UNIT_DIAG + EPS, 0), [0]),
         # box overlaps envelope of 2 polygons does not touch any at edge
         (box(0, 0, 1, 1), []),
         # box overlaps 2 polygons and touches edge of first
-        (box(HALF_UNIT_DIAG+EPS, 0, 2, 2), [0]),
+        (box(HALF_UNIT_DIAG + EPS, 0, 2, 2), [0]),
         # buffer overlaps 3 polygons but does not touch any at edge
-        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG+EPS), []),
+        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG + EPS), []),
         # only one point of multipoint within polygon but does not touch
-        (pygeos.multipoints([[0, 0], [7,7], [7, 8]]), []),
+        (pygeos.multipoints([[0, 0], [7, 7], [7, 8]]), []),
     ],
 )
 def test_query_touches_polygons(poly_tree, geometry, expected):
     assert_array_equal(poly_tree.query(geometry, predicate="touches"), expected)
+
+
+def test_nearest_no_geom(tree):
+    with pytest.raises(TypeError):
+        tree.nearest("I am not a geometry")
+
+
+def test_nearest_none(tree):
+    assert tree.nearest(None) == None
+
+
+def test_query_empty(tree):
+    assert tree.nearest(empty) == None
+
+
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        (pygeos.points(0.25, 0.25), 0),
+        (pygeos.points(0.5, 0.5), 0),
+        (pygeos.points(0.75, 0.75), 1),
+        (pygeos.points(1, 1), 1),
+        (box(0, 0, 1, 1), 0),
+        (box(0.5, 0.5, 0.75, 0.75), 1),
+        (pygeos.buffer(pygeos.points(2.5, 2.5), HALF_UNIT_DIAG), 2),
+        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), 3),
+        (pygeos.multipoints([[5, 5], [7, 7]]), 5),
+        (pygeos.multipoints([[5.5, 5], [7, 7]]), 7),
+        (pygeos.multipoints([[5, 7], [7, 5]]), 6),
+    ],
+)
+def test_nearest_points(tree, geometry, expected):
+    assert tree.nearest(geometry) == expected
+
+
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        (pygeos.points(0.5, 0.5), 0),
+        (pygeos.points(2, 2), 1),
+        (box(0, 0, 1, 1), 0),
+        (box(0.5, 0.5, 1.5, 1.5), 0),
+        (pygeos.buffer(pygeos.points(2.5, 2.5), HALF_UNIT_DIAG), 1),
+        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), 2),
+        (pygeos.multipoints([[5, 5], [7, 7]]), 4),
+        (pygeos.multipoints([[5.5, 5], [7, 7]]), 6),
+        (pygeos.multipoints([[5, 7], [7, 5]]), 5),
+    ],
+)
+def test_nearest_lines(line_tree, geometry, expected):
+    assert line_tree.nearest(geometry) == expected
+
+
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        (pygeos.points(0, 0), 0),
+        (pygeos.points(0.5, 0.5), 0),
+        (pygeos.points(2, 2), 2),
+        (box(0, 0, 1, 1), 0),
+        (box(0.5, 0.5, 1.5, 1.5), 0),
+        (pygeos.buffer(pygeos.points(2.5, 2.5), HALF_UNIT_DIAG), 2),
+        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), 2),
+        (pygeos.multipoints([[5, 5], [7, 7]]), 5),
+        (pygeos.multipoints([[5.5, 5], [7, 7]]), 5),
+        (pygeos.multipoints([[5, 7], [7, 5]]), 6),
+    ],
+)
+def test_nearest_polygons(poly_tree, geometry, expected):
+    assert poly_tree.nearest(geometry) == expected

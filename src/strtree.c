@@ -249,6 +249,52 @@ static PyArrayObject *STRtree_query(STRtreeObject *self, PyObject *args) {
 }
 
 
+/* Calculate the distance between items in the tree and the src_geom.
+ * NOTE: target_index is index into geometries in tree. */
+
+int distance_callback(const void *target_index, const void *src_geom, double *distance, void *geometries) {
+    GEOSGeometry *target_geom;
+    npy_intp *ptr;
+
+    ptr = PyArray_GETPTR1((PyArrayObject *) geometries, (npy_intp)target_index);
+    get_geom(*(GeometryObject **) ptr, &target_geom);
+
+    GEOSContextHandle_t context = geos_context[0];
+
+    // returns error code or 0
+    return GEOSDistance_r(context, src_geom, target_geom, distance);
+}
+
+
+/* Find the nearest item in the tree to the input geometry.
+ * Returns None if the tree is empty. */
+
+static PyObject *STRtree_nearest(STRtreeObject *self, PyObject *pg_geom) {
+    GEOSContextHandle_t context = geos_context[0];
+    GEOSGeometry *geom;
+    npy_intp nearest;
+
+    if (self->ptr == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
+        return NULL;
+    }
+    if (self->count == 0) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    if (!get_geom((GeometryObject *)pg_geom, &geom)) {
+        PyErr_SetString(PyExc_TypeError, "Invalid geometry");
+        return NULL;
+    }
+
+    nearest = (npy_intp)GEOSSTRtree_nearest_generic_r(context, self->ptr, geom, geom, distance_callback, self->geometries);
+    return PyInt_FromLong(nearest);
+}
+
+
+
+
 static PyMemberDef STRtree_members[] = {
     {"_ptr", T_PYSSIZET, offsetof(STRtreeObject, ptr), READONLY, "Pointer to GEOSSTRtree"},
     {"geometries", T_OBJECT_EX, offsetof(STRtreeObject, geometries), READONLY, "Geometries used to construct the GEOSSTRtree"},
@@ -260,6 +306,9 @@ static PyMethodDef STRtree_methods[] = {
     {"query", (PyCFunction) STRtree_query, METH_VARARGS,
      "Queries the index for all items whose extents intersect the given search geometry, and optionally tests them "
      "against predicate function if provided. "
+    },
+    {"nearest", (PyCFunction) STRtree_nearest, METH_O,
+     "Queries the index for the nearest item to the given search geometry"
     },
     {NULL}  /* Sentinel */
 };
