@@ -2,6 +2,7 @@ import numpy as np
 
 from . import lib
 from . import Geometry  # NOQA
+from .utils import not_writable
 
 __all__ = ["area", "distance", "bounds", "total_bounds", "length", "hausdorff_distance"]
 
@@ -48,7 +49,8 @@ def distance(a, b, **kwargs):
     >>> distance(None, point)
     nan
     """
-    return lib.distance(a, b, **kwargs)
+    with not_writable(a), not_writable(b):
+        return lib.distance(a, b, **kwargs)
 
 
 def bounds(geometry, **kwargs):
