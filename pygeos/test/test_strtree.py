@@ -617,18 +617,14 @@ def test_query_touches_polygons(poly_tree, geometry, expected):
     "geometry", [None, pygeos.points(0.5, 0.5), [[pygeos.points(0.5, 0.5)]]]
 )
 def test_query_bulk_wrong_dimemsions(tree, geometry):
-    with pytest.raises(TypeError) as ex:
+    with pytest.raises(TypeError, match="Array should be one dimensional") as ex:
         tree.query_bulk(geometry)
-
-    assert str(ex.value) == "Array should be one dimensional"
 
 
 @pytest.mark.parametrize("geometry", [[], "foo", 1])
 def test_query_bulk_wrong_type(tree, geometry):
-    with pytest.raises(TypeError) as ex:
+    with pytest.raises(TypeError, match="Array should be of object dtype") as ex:
         tree.query_bulk(geometry)
-
-    assert str(ex.value) == "Array should be of object dtype"
 
 
 @pytest.mark.parametrize(
