@@ -221,7 +221,6 @@ char get_geom(GeometryObject *obj, GEOSGeometry **out) {
             *out = NULL;
             return 1;
         } else {
-            PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
             return 0;
         }
     } else {

@@ -541,26 +541,46 @@ static void YY_d_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_YY_d *func = (FuncGEOS_YY_d *)data;
-    void *context_handle = geos_context[0];
     GEOSGeometry *in1, *in2;
+    char errstate = 0;
+
+    Py_BEGIN_ALLOW_THREADS
+    GEOSContextHandle_t ctx = GEOS_init_r();
+    // TODO: set GEOS message handlers
 
     BINARY_LOOP {
         /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = 1; goto finish; }
+        if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = 1; goto finish; }
         if ((in1 == NULL) | (in2 == NULL)) {
             /* in case of a missing value: return NaN */
             *(double *)op1 = NPY_NAN;
         } else {
             /* let the GEOS function  set op1; return on error */
-            if (func(context_handle, in1, in2, (double *) op1) == 0) { return; }
+            if (func(ctx, in1, in2, (double *) op1) == 0) { errstate = 2; goto finish; }
             /* incase the outcome is 0.0, check the inputs for emptyness */
             if (*op1 == 0.0) {
-                if (GEOSisEmpty_r(context_handle, in1) | GEOSisEmpty_r(context_handle, in2)) {
+                if (GEOSisEmpty_r(ctx, in1) | GEOSisEmpty_r(ctx, in2)) {
                     *(double *)op1 = NPY_NAN;
                 }
             }
         }
+    }
+
+    finish:
+
+    GEOS_finish_r(ctx);
+    Py_END_ALLOW_THREADS
+
+    switch (errstate)
+    {
+        case 0:
+          // success
+          break;
+        case 1:
+          PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
+        case 2:
+          RAISE_ILLEGAL_GEOS;
     }
 }
 static PyUFuncGenericFunction YY_d_funcs[1] = {&YY_d_func};
