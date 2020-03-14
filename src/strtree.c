@@ -73,7 +73,7 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
     void *tree, *ptr;
     npy_intp n, i, count = 0;
     GEOSGeometry *geom;
-    goes_geom_vec _geoms;
+    geom_obj_vec _geoms;
     GeometryObject *obj;
     GEOSContextHandle_t context = geos_context[0];
 
