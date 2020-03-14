@@ -31,7 +31,7 @@
     }
 
 #define OUTPUT_Y\
-    PyObject *ret = GeometryObject_FromGEOS(&GeometryType, ret_ptr);\
+    PyObject *ret = GeometryObject_FromGEOS(ret_ptr);\
     PyObject **out = (PyObject **)op1;\
     Py_XDECREF(*out);\
     *out = ret

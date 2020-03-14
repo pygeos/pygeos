@@ -353,7 +353,7 @@ PyObject *SetCoords(PyArrayObject *geoms, PyArrayObject *coords)
         new_geom = set_coordinates(context, geom, coords, &cursor);
         if (new_geom == NULL) { goto fail; }
         /* pack into a GeometryObject and set it to the geometry array */
-        new_obj = GeometryObject_FromGEOS(&GeometryType, new_geom);
+        new_obj = GeometryObject_FromGEOS(new_geom);
         Py_XDECREF(obj);
         *(PyObject **) dataptr[0] = new_obj;
     } while(iternext(iter));

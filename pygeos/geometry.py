@@ -47,6 +47,9 @@ class Point(Geometry):
     def y(self):
         return get_y(self)
 
+
+lib.registry[0] = Point
+
 # generic
 
 

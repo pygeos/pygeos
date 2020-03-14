@@ -7,13 +7,21 @@
 #include "pygeom.h"
 #include "geos.h"
 
+/* This initializes a global geometry type registry */
+PyObject *geom_registry[1] = {NULL};
+
 /* Initializes a new geometry object */
-PyObject *GeometryObject_FromGEOS(PyTypeObject *type, GEOSGeometry *ptr)
+PyObject *GeometryObject_FromGEOS(GEOSGeometry *ptr)
 {
+    void *context_handle = geos_context[0];
     if (ptr == NULL) {
         Py_INCREF(Py_None);
         return Py_None;
     }
+    int type_id = GEOSGeomTypeId_r(context_handle, ptr);
+    if (type_id == -1) { return NULL; }
+    PyTypeObject *type = PyList_GET_ITEM(geom_registry[0], type_id);
+    if (type == NULL) { return NULL; }
     GeometryObject *self = (GeometryObject *) type->tp_alloc(type, 0);
     if (self == NULL) {
         return NULL;
@@ -140,7 +148,7 @@ static PyObject *GeometryObject_richcompare(GeometryObject *self, PyObject *othe
   return result;
 }
 
-static PyObject *GeometryObject_FromWKT(PyTypeObject *type, PyObject *value)
+static PyObject *GeometryObject_FromWKT(PyObject *value)
 {
     void *context_handle = geos_context[0];
     PyObject *result = NULL;
@@ -166,7 +174,7 @@ static PyObject *GeometryObject_FromWKT(PyTypeObject *type, PyObject *value)
     if (geom == NULL) {
         return NULL;
     }
-    result = GeometryObject_FromGEOS(type, geom);
+    result = GeometryObject_FromGEOS(geom);
     if (result == NULL) {
         GEOSGeom_destroy_r(context_handle, geom);
         PyErr_Format(PyExc_RuntimeError, "Could not instantiate a new Geometry object");
@@ -183,7 +191,7 @@ static PyObject *GeometryObject_new(PyTypeObject *type, PyObject *args,
         return NULL;
     }
     else if (PyUnicode_Check(value)) {
-        return GeometryObject_FromWKT(type, value);
+        return GeometryObject_FromWKT(value);
     }
     else {
         PyErr_Format(PyExc_TypeError, "Expected string, got %s", value->ob_type->tp_name);
@@ -212,7 +220,6 @@ PyTypeObject GeometryType = {
     .tp_str = (reprfunc) GeometryObject_str,
 };
 
-
 /* Get a GEOSGeometry pointer from a GeometryObject, or NULL if the input is
 Py_None. Returns 0 on error, 1 on success. */
 char get_geom(GeometryObject *obj, GEOSGeometry **out) {
@@ -234,11 +241,21 @@ char get_geom(GeometryObject *obj, GEOSGeometry **out) {
 int
 init_geom_type(PyObject *m)
 {
+    Py_ssize_t i;
+    PyObject *type;
     if (PyType_Ready(&GeometryType) < 0) {
         return -1;
     }
 
-    Py_INCREF(&GeometryType);
-    PyModule_AddObject(m, "Geometry", (PyObject *) &GeometryType);
+    type = (PyObject *) &GeometryType;
+    Py_INCREF(type);
+    PyModule_AddObject(m, "Geometry", type);
+
+    geom_registry[0] = PyList_New(8);
+    for (i = 0; i < 8; i++) {
+        Py_INCREF(type);
+        PyList_SET_ITEM(geom_registry[0], i, type);
+    }
+    PyModule_AddObject(m, "registry", geom_registry[0]);
     return 0;
 }
