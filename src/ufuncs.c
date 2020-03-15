@@ -16,6 +16,12 @@
 #include "pygeom.h"
 #include "fast_loop_macros.h"
 
+enum {
+	PGERR_SUCCESS = 0,
+	PGERR_NOT_A_GEOMETRY = 1,
+	PGERR_GEOS_EXCEPTION = 2
+};
+
 #define RAISE_NO_MALLOC PyErr_Format(PyExc_MemoryError, "Could not allocate memory")
 #define CREATE_COORDSEQ(SIZE, NDIM)\
     void *coord_seq = GEOSCoordSeq_create_r(context_handle, SIZE, NDIM);\
@@ -35,6 +41,46 @@
     PyObject **out = (PyObject **)op1;\
     Py_XDECREF(*out);\
     *out = ret
+
+#define _GEOS_INIT_DEF\
+    char errstate = PGERR_SUCCESS;\
+    char last_error[1024] = "";\
+    char last_warning[1024] = "";\
+    GEOSContextHandle_t ctx
+
+#define _GEOS_INIT\
+    ctx = GEOS_init_r();\
+    GEOSContext_setErrorMessageHandler_r(ctx, geos_error_handler, last_error);\
+    GEOSContext_setNoticeMessageHandler_r(ctx, geos_notice_handler, last_warning)
+
+#define GEOS_INIT\
+    _GEOS_INIT_DEF;\
+    _GEOS_INIT
+
+#define GEOS_INIT_THREADS\
+    _GEOS_INIT_DEF;\
+    Py_BEGIN_ALLOW_THREADS\
+    _GEOS_INIT
+
+#define GEOS_HANDLE_ERR\
+    if (strlen(last_warning) > 0) { PyErr_WarnEx(PyExc_Warning, last_warning, 1); }\
+    switch (errstate) {\
+      case PGERR_SUCCESS:\
+        break;\
+      case PGERR_NOT_A_GEOMETRY:\
+        PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");\
+      case PGERR_GEOS_EXCEPTION:\
+        PyErr_Format(geos_exception[0], last_error);\
+    }
+
+#define GEOS_FINISH\
+    GEOS_finish_r(ctx);\
+    GEOS_HANDLE_ERR
+
+#define GEOS_FINISH_THREADS\
+    GEOS_finish_r(ctx);\
+    Py_END_ALLOW_THREADS\
+    GEOS_HANDLE_ERR
 
 /* Define the geom -> bool functions (Y_b) */
 static void *is_empty_data[1] = {GEOSisEmpty_r};
@@ -73,24 +119,28 @@ static void Y_b_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_Y_b *func = (FuncGEOS_Y_b *)data;
-    void *context_handle = geos_context[0];
     GEOSGeometry *in1;
     char ret;
 
+    GEOS_INIT_THREADS;
+
     UNARY_LOOP {
         /* get the geometry; return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         if (in1 == NULL) {
             /* in case of a missing value: return 0 (False) */
             ret = 0;
         } else {
             /* call the GEOS function */
-            ret = func(context_handle, in1);
-            /* return for illegal values (trust HandleGEOSError for SetErr) */
-            if (ret == 2) { return; }
+            ret = func(ctx, in1);
+            /* finish for illegal values */
+            if (ret == 2) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         *(npy_bool *)op1 = ret;
     }
+
+    finish:
+    GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction Y_b_funcs[1] = {&Y_b_func};
 
@@ -113,11 +163,11 @@ static void O_b_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_O_b *func = (FuncGEOS_O_b *)data;
-    void *context_handle = geos_context[0];
-
+    GEOS_INIT;
     UNARY_LOOP {
-        *(npy_bool *)op1 = func(context_handle, *(PyObject **)ip1);
+        *(npy_bool *)op1 = func(ctx, *(PyObject **)ip1);
     }
+    GEOS_FINISH;
 }
 static PyUFuncGenericFunction O_b_funcs[1] = {&O_b_func};
 
@@ -139,25 +189,29 @@ static void YY_b_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_YY_b *func = (FuncGEOS_YY_b *)data;
-    void *context_handle = geos_context[0];
     GEOSGeometry *in1, *in2;
     char ret;
 
+    GEOS_INIT_THREADS;
+
     BINARY_LOOP {
         /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
+        if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         if ((in1 == NULL) | (in2 == NULL)) {
             /* in case of a missing value: return 0 (False) */
             ret = 0;
         } else {
             /* call the GEOS function */
-            ret = func(context_handle, in1, in2);
-            /* return for illegal values (trust HandleGEOSError for SetErr) */
-            if (ret == 2) { return; }
+            ret = func(ctx, in1, in2);
+            /* return for illegal values */
+            if (ret == 2) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         *(npy_bool *)op1 = ret;
     }
+
+    finish:
+    GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction YY_b_funcs[1] = {&YY_b_func};
 
@@ -205,21 +259,26 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_Y_Y *func = (FuncGEOS_Y_Y *)data;
-    void *context_handle = geos_context[0];
     GEOSGeometry *in1, *ret_ptr;
+
+    GEOS_INIT;
 
     UNARY_LOOP {
         /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         if (in1 == NULL) {
-            /* in case of a missing value: return NULL (NaG) */
+            /* in case of a missing value: return NULL (None) */
             ret_ptr = NULL;
         } else {
-            ret_ptr = func(context_handle, in1);
-            /* trust that GEOS calls HandleGEOSError on error */
+            ret_ptr = func(ctx, in1);
+            // TODO distinguish a returned NULL with and without error
+            // if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         OUTPUT_Y;
     }
+
+    finish:
+    GEOS_FINISH;
 }
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
@@ -259,21 +318,25 @@ static void Yd_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_Yd_Y *func = (FuncGEOS_Yd_Y *)data;
-    void *context_handle = geos_context[0];
     GEOSGeometry *in1, *ret_ptr;
+
+    GEOS_INIT;
 
     BINARY_LOOP {
         /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         double in2 = *(double *)ip2;
         if ((in1 == NULL) | (npy_isnan(in2))) {
             ret_ptr = NULL;
         } else {
-            ret_ptr = func(context_handle, in1, in2);
-            /* trust that GEOS calls HandleGEOSError on error */
+            ret_ptr = func(ctx, in1, in2);
+            if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         OUTPUT_Y;
     }
+
+    finish:
+    GEOS_FINISH;
 }
 static PyUFuncGenericFunction Yd_Y_funcs[1] = {&Yd_Y_func};
 
@@ -368,21 +431,25 @@ static void Yi_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_Yi_Y *func = (FuncGEOS_Yi_Y *)data;
-    void *context_handle = geos_context[0];
     GEOSGeometry *in1, *ret_ptr;
+
+    GEOS_INIT;
 
     BINARY_LOOP {
         /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         int in2 = *(int *) ip2;
         if (in1 == NULL) {
             ret_ptr = NULL;
         } else {
-            ret_ptr = func(context_handle, in1, in2);
-            /* trust that GEOS calls HandleGEOSError on error */
+            ret_ptr = func(ctx, in1, in2);
+            // TODO distinguish a returned NULL with and without error
         }
         OUTPUT_Y;
     }
+
+    finish:
+    GEOS_FINISH;
 }
 static PyUFuncGenericFunction Yi_Y_funcs[1] = {&Yi_Y_func};
 
@@ -398,22 +465,26 @@ static void YY_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
-    void *context_handle = geos_context[0];
     GEOSGeometry *in1, *in2, *ret_ptr;
+
+    GEOS_INIT;
 
     BINARY_LOOP {
         /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
+        if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         if ((in1 == NULL) | (in2 == NULL)) {
-            /* in case of a missing value: return NULL (NaG) */
+            /* in case of a missing value: return NULL (None) */
             ret_ptr = NULL;
         } else {
-            ret_ptr = func(context_handle, in1, in2);
-            /* trust that GEOS calls HandleGEOSError on error */
+            ret_ptr = func(ctx, in1, in2);
+            if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         OUTPUT_Y;
     }
+
+    finish:
+    GEOS_FINISH;
 }
 static PyUFuncGenericFunction YY_Y_funcs[1] = {&YY_Y_func};
 
@@ -446,19 +517,23 @@ static void Y_d_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_Y_d *func = (FuncGEOS_Y_d *)data;
-    void *context_handle = geos_context[0];
     GEOSGeometry *in1;
+
+    GEOS_INIT;
 
     UNARY_LOOP {
         /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         if (in1 == NULL) {
             *(double *)op1 = NPY_NAN;
         } else {
             /* let the GEOS function set op1; return on error */
-            if (func(context_handle, in1, (npy_double *) op1) == 0) { return; }
+            if (func(ctx, in1, (npy_double *) op1) == 0) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
     }
+
+    finish:
+    GEOS_FINISH;
 }
 static PyUFuncGenericFunction Y_d_funcs[1] = {&Y_d_func};
 
@@ -493,20 +568,25 @@ static void Y_i_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_Y_i *func = (FuncGEOS_Y_i *)data;
-    void *context_handle = geos_context[0];
     GEOSGeometry *in1;
+
+    GEOS_INIT_THREADS;
 
     UNARY_LOOP {
         /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         if (in1 == NULL) {
-            /* NaG results in -1 */
+            /* None results in -1 */
             *(npy_int *)op1 = -1;
         } else {
-            /* trust that GEOS calls the error handler if necessary */
-            *(npy_int *)op1 = func(context_handle, in1);
+            *(npy_int *)op1 = func(ctx, in1);
+            // TODO  (sometimes -1 is an error, sometimes 0)
+            // if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
     }
+
+    finish:
+    GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction Y_i_funcs[1] = {&Y_i_func};
 
@@ -542,22 +622,19 @@ static void YY_d_func(char **args, npy_intp *dimensions,
 {
     FuncGEOS_YY_d *func = (FuncGEOS_YY_d *)data;
     GEOSGeometry *in1, *in2;
-    char errstate = 0;
 
-    Py_BEGIN_ALLOW_THREADS
-    GEOSContextHandle_t ctx = GEOS_init_r();
-    // TODO: set GEOS message handlers
+    GEOS_INIT_THREADS;
 
     BINARY_LOOP {
         /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = 1; goto finish; }
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = 1; goto finish; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
+        if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         if ((in1 == NULL) | (in2 == NULL)) {
             /* in case of a missing value: return NaN */
             *(double *)op1 = NPY_NAN;
         } else {
-            /* let the GEOS function  set op1; return on error */
-            if (func(ctx, in1, in2, (double *) op1) == 0) { errstate = 2; goto finish; }
+            /* let the GEOS function set op1; return on error */
+            if (func(ctx, in1, in2, (double *) op1) == 0) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             /* incase the outcome is 0.0, check the inputs for emptyness */
             if (*op1 == 0.0) {
                 if (GEOSisEmpty_r(ctx, in1) | GEOSisEmpty_r(ctx, in2)) {
@@ -568,20 +645,7 @@ static void YY_d_func(char **args, npy_intp *dimensions,
     }
 
     finish:
-
-    GEOS_finish_r(ctx);
-    Py_END_ALLOW_THREADS
-
-    switch (errstate)
-    {
-        case 0:
-          // success
-          break;
-        case 1:
-          PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
-        case 2:
-          RAISE_ILLEGAL_GEOS;
-    }
+    GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction YY_d_funcs[1] = {&YY_d_func};
 

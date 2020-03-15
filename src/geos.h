@@ -15,6 +15,10 @@
 #define GEOS_SINCE_380 ((GEOS_VERSION_MAJOR >= 3) && (GEOS_VERSION_MINOR >= 8))
 /* This declares a global GEOS Context */
 extern void *geos_context[1];
+extern PyObject *geos_exception[1];
+
+extern void geos_error_handler(const char *message, void *userdata);
+extern void geos_notice_handler(const char *message, void *userdata);
 
 extern int init_geos(PyObject *m);
 
