@@ -44,8 +44,8 @@ class STRtree:
     >>> tree.query(pygeos.box(2, 2, 4, 4), predicate='contains').tolist()
     [3]
     >>> # Query geometries that overlap envelopes of `geoms`
-    >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)])
-    (array([0, 0, 0, 1, 1]), array([2, 3, 4, 5, 6]))
+    >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)]).tolist()
+    [[0, 0, 0, 1, 1], [2, 3, 4, 5, 6]]
     """
 
     def __init__(self, geometries, leafsize=5):
@@ -151,11 +151,15 @@ class STRtree:
         --------
         >>> import pygeos
         >>> tree = pygeos.STRtree(pygeos.points(np.arange(10), np.arange(10)))
-        >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)])
-        (array([0, 0, 0, 1, 1]), array([2, 3, 4, 5, 6]))
+        >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)]).tolist()
+        [[0, 0, 0, 1, 1], [2, 3, 4, 5, 6]]
         >>> # Query for geometries that contain tree geometries
-        >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)], predicate='contains')
-        (array([0]), array([3]))
+        >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)], predicate='contains').tolist()
+        [[0], [3]]
+        >>> # To get an array of pairs of index of input geometry, index of tree geometry,
+        >>> # transpose the output:
+        >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)]).T.tolist()
+        [[0, 2], [0, 3], [0, 4], [1, 5], [1, 6]]
         """
 
         if predicate is None:

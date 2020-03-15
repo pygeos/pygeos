@@ -210,9 +210,7 @@ void query_callback(void *index, void *vector)
 
 static int evaluate_predicate(FuncGEOS_YpY_b *predicate_func,
                               GEOSGeometry *geom,
-                              // FIXME:
-                            //   PyArrayObject * tree_geometries,
-                            pg_geom_obj_vec *tree_geometries,
+                              pg_geom_obj_vec *tree_geometries,
                               npy_intp_vec *in_indexes,
                               npy_intp_vec *out_indexes)
 {
@@ -351,7 +349,7 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
     npy_intp_vec query_indexes, src_indexes, target_indexes;
     npy_intp i, j, n, size;
     FuncGEOS_YpY_b *predicate_func;
-    PyObject *result;
+    PyArrayObject *result;
 
     if (self->ptr == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
@@ -421,7 +419,7 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
         } else {
             // this pushes directly onto target_indexes
             size = evaluate_predicate(predicate_func, geom,&self->_geoms,
-                                        &query_indexes, &target_indexes);
+                                      &query_indexes, &target_indexes);
 
             if (size == -1) {
                 PyErr_SetString(PyExc_TypeError, "Error evaluating predicate function");
@@ -439,14 +437,26 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
         kv_destroy(query_indexes);
     }
 
-    // make tuple by converting vectors to ndarrays
-    result = PyTuple_New(2);
-    PyTuple_SetItem(result, 0, (PyObject *)copy_kvec_to_npy(&src_indexes));
-    PyTuple_SetItem(result, 1, (PyObject *)copy_kvec_to_npy(&target_indexes));
+    size = kv_size(src_indexes);
+    npy_intp dims[2] = {2, size};
+
+    // the following raises a compiler warning based on how the macro is defined
+    // in numpy.  There doesn't appear to be anything we can do to avoid it.
+    result = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_INTP);
+    if (result == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "could not allocate numpy array");
+        return NULL;
+    }
+
+    for (i = 0; i<size; i++) {
+        // assign value into numpy arrays
+        *(npy_intp *)PyArray_GETPTR2(result, 0, i) = kv_A(src_indexes, i);
+        *(npy_intp *)PyArray_GETPTR2(result, 1, i) = kv_A(target_indexes, i);
+    }
 
     kv_destroy(src_indexes);
     kv_destroy(target_indexes);
-    return result;
+    return (PyObject *) result;
 }
 
 static PyMemberDef STRtree_members[] = {
