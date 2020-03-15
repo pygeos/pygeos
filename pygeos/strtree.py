@@ -119,9 +119,10 @@ class STRtree:
         extent intersects the envelope of the input geometry:
         predicate(geometry, tree_geometry).
 
-        This returns two arrays of equal length, which correspond to the indexes
-        of the input geometries and indexes of the tree geometries associated
-        each.
+        This returns an array with shape (2,n) where the subarrays correspond
+        to the indexes of the input geometries and indexes of the tree geometries
+        associated with each.  To generate an array of pairs of input geometry
+        index and tree geometry index, simply transpose the results.
 
         In the context of a spatial join, input geometries are the "left" geometries
         that determine the order of the results, and tree geometries are "right" geometries
@@ -143,9 +144,9 @@ class STRtree:
 
         Returns
         -------
-        ndarray, ndarray
-            The first array contains input geometry indexes.
-            The second array contains tree geometry indexes.
+        ndarray with shape (2, n)
+            The first subarray contains input geometry indexes.
+            The second subarray contains tree geometry indexes.
 
         Examples
         --------
