@@ -109,8 +109,8 @@ class STRtree:
 
         return self._tree.query(geometry, predicate)
 
-    def query_bulk(self, geometries, predicate=None):
-        """Returns all combinations of input geometries and geometries in the tree
+    def query_bulk(self, geometry, predicate=None):
+        """Returns all combinations of each input geometry and geometries in the tree
         where the envelope of each input geometry intersects with the envelope of a
         tree geometry.
 
@@ -135,9 +135,9 @@ class STRtree:
 
         Parameters
         ----------
-        geometry : Geometry
-            The envelope of each geometry is taken automatically for
-            querying the tree.
+        geometry : Geometry or array_like
+            Input geometries to query the tree.  The envelope of each geometry
+            is automatically calculated for querying the tree.
         predicate : {None, 'intersects', 'within', 'contains', 'overlaps', 'crosses', 'touches'}, optional
             The predicate to use for testing geometries from the tree
             that are within the input geometry's envelope.
@@ -176,4 +176,4 @@ class STRtree:
 
             predicate = BinaryPredicate[predicate].value
 
-        return self._tree.query_bulk(np.asarray(geometries), predicate)
+        return self._tree.query_bulk(np.asarray(geometry), predicate)
