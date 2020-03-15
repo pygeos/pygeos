@@ -163,6 +163,10 @@ class STRtree:
         [[0, 2], [0, 3], [0, 4], [1, 5], [1, 6]]
         """
 
+        geometry = np.asarray(geometry)
+        if geometry.ndim == 0:
+            geometry = np.expand_dims(geometry, 0)
+
         if predicate is None:
             predicate = 0
 
@@ -176,4 +180,4 @@ class STRtree:
 
             predicate = BinaryPredicate[predicate].value
 
-        return self._tree.query_bulk(np.asarray(geometry), predicate)
+        return self._tree.query_bulk(geometry, predicate)

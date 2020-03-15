@@ -273,10 +273,6 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
         return NULL;
     }
-    if (self->count == 0) {
-        npy_intp dims[1] = {0};
-        return PyArray_SimpleNew(1, dims, NPY_INTP);
-    }
 
     if (!PyArg_ParseTuple(args, "O!i", &GeometryType, &geometry, &predicate_id)){
         return NULL;
@@ -287,10 +283,15 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         return NULL;
     }
 
+    if (self->count == 0) {
+        npy_intp dims[1] = {0};
+        return PyArray_SimpleNew(1, dims, NPY_INTP);
+    }
+
     // query the tree for indices of geometries in the tree with
     // envelopes that intersect the geometry.
     kv_init(query_indexes);
-    if (geom != NULL) {
+    if (geom != NULL && !GEOSisEmpty_r(context, geom)) {
         GEOSSTRtree_query_r(context, self->ptr, geom, query_callback, &query_indexes);
     }
 
@@ -355,14 +356,11 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
         return NULL;
     }
-    if (self->count == 0) {
-        npy_intp dims[2] = {2, 0};
-        return PyArray_SimpleNew(2, dims, NPY_INTP);
-    }
 
     if (!PyArg_ParseTuple(args, "Oi", &arr, &predicate_id)) {
         return NULL;
     }
+
     if (!PyArray_Check(arr)) {
         PyErr_SetString(PyExc_TypeError, "Not an ndarray");
         return NULL;
@@ -373,6 +371,7 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
         PyErr_SetString(PyExc_TypeError, "Array should be of object dtype");
         return NULL;
     }
+
     if (PyArray_NDIM(pg_geoms) != 1) {
         PyErr_SetString(PyExc_TypeError, "Array should be one dimensional");
         return NULL;
@@ -385,9 +384,15 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
         }
     }
 
+    n = PyArray_SIZE(pg_geoms);
+
+    if (self->count == 0 || n == 0) {
+        npy_intp dims[2] = {2, 0};
+        return PyArray_SimpleNew(2, dims, NPY_INTP);
+    }
+
     kv_init(src_indexes);
     kv_init(target_indexes);
-    n = PyArray_SIZE(pg_geoms);
 
     for(i = 0; i < n; i++) {
         // get pygeos geometry from input geometry array
@@ -396,7 +401,7 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
             PyErr_SetString(PyExc_TypeError, "Invalid geometry");
             return NULL;
         }
-        if (geom == NULL) {
+        if (geom == NULL || GEOSisEmpty_r(context, geom)) {
             continue;
         }
 
