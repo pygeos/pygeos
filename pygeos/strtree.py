@@ -46,8 +46,9 @@ class STRtree:
     >>> # Query geometries that overlap envelopes of `geoms`
     >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)]).tolist()
     [[0, 0, 0, 1, 1], [2, 3, 4, 5, 6]]
-    >>> tree.nearest(geom)
-    2
+    >>> # Find the nearest neighbor to a given set of points
+    >>> tree.nearest([pygeos.points(1,1), pygeos.points(3,5)]).tolist()
+    [[0, 1], [1, 4]]
     """
 
     def __init__(self, geometries, leafsize=5):
@@ -111,8 +112,8 @@ class STRtree:
 
         return self._tree.query(geometry, predicate)
 
-    def query_bulk(self, geometries, predicate=None):
-        """Returns all combinations of input geometries and geometries in the tree
+    def query_bulk(self, geometry, predicate=None):
+        """Returns all combinations of each input geometry and geometries in the tree
         where the envelope of each input geometry intersects with the envelope of a
         tree geometry.
 
@@ -137,9 +138,8 @@ class STRtree:
 
         Parameters
         ----------
-        geometry : Geometry
-            The envelope of each geometry is taken automatically for
-            querying the tree.
+        geometry : Geometry or array_like
+            Input geometries to query the tree.
         predicate : {None, 'intersects', 'within', 'contains', 'overlaps', 'crosses', 'touches'}, optional
             The predicate to use for testing geometries from the tree
             that are within the input geometry's envelope.
@@ -165,6 +165,10 @@ class STRtree:
         [[0, 2], [0, 3], [0, 4], [1, 5], [1, 6]]
         """
 
+        geometry = np.asarray(geometry)
+        if geometry.ndim == 0:
+            geometry = np.expand_dims(geometry, 0)
+
         if predicate is None:
             predicate = 0
 
@@ -178,23 +182,45 @@ class STRtree:
 
             predicate = BinaryPredicate[predicate].value
 
-        return self._tree.query_bulk(np.asarray(geometries), predicate)
+        return self._tree.query_bulk(geometry, predicate)
 
     def nearest(self, geometry):
-        """Returns the index of the nearest item in the tree to the input geometry.
-        Returns the lowest index of the nearest items in the tree, if multiple
-        items have the same nearest distance.  The first intersecting item
-        is returned if any items intersect the input geometry.
-        Returns None if the input geometry is None or empty.
+        """Returns the index of the nearest item in the tree for each input
+        geometry.
+
+        Indexes of tree geometries are arbitrary if there are multiple geometries
+        at the same minimum distance from the input geometry, or intersect with
+        it.  The specific indexes vary based on the leafsize of the tree among
+        other parameters.  Thus, while you can expect this function to return
+        one of the nearest neighbors, you cannot expect it to return a particular
+        one.
+
+        Any geometry that is None or empty in the input geometries is omitted from
+        the output.
+
         Parameters
         ----------
-        geometry : Geometry
+        geometry : Geometry or array_like
+            Input geometries to query the tree.
+
         Returns
         -------
-        int (index) or None
+        ndarray with shape (2, n)
+            The first subarray contains input geometry indexes.
+            The second subarray contains tree geometry indexes.
+
+        Examples
+        --------
+        >>> import pygeos
+        >>> tree = pygeos.STRtree(pygeos.points(np.arange(10), np.arange(10)))
+        >>> tree.nearest(pygeos.points(1,1)).tolist()
+        [[0], [1]]
+        >>> tree.nearest([pygeos.box(1,1,3,3)]).tolist()
+        [[0], [1]]
         """
 
-        if geometry is None or is_empty(geometry):
-            return None
+        geometry = np.asarray(geometry)
+        if geometry.ndim == 0:
+            geometry = np.expand_dims(geometry, 0)
 
         return self._tree.nearest(geometry)

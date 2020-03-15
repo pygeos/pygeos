@@ -273,10 +273,6 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
         return NULL;
     }
-    if (self->count == 0) {
-        npy_intp dims[1] = {0};
-        return PyArray_SimpleNew(1, dims, NPY_INTP);
-    }
 
     if (!PyArg_ParseTuple(args, "O!i", &GeometryType, &geometry, &predicate_id)){
         return NULL;
@@ -287,10 +283,15 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         return NULL;
     }
 
+    if (self->count == 0) {
+        npy_intp dims[1] = {0};
+        return PyArray_SimpleNew(1, dims, NPY_INTP);
+    }
+
     // query the tree for indices of geometries in the tree with
     // envelopes that intersect the geometry.
     kv_init(query_indexes);
-    if (geom != NULL) {
+    if (geom != NULL && !GEOSisEmpty_r(context, geom)) {
         GEOSSTRtree_query_r(context, self->ptr, geom, query_callback, &query_indexes);
     }
 
@@ -355,14 +356,11 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
         return NULL;
     }
-    if (self->count == 0) {
-        npy_intp dims[2] = {2, 0};
-        return PyArray_SimpleNew(2, dims, NPY_INTP);
-    }
 
     if (!PyArg_ParseTuple(args, "Oi", &arr, &predicate_id)) {
         return NULL;
     }
+
     if (!PyArray_Check(arr)) {
         PyErr_SetString(PyExc_TypeError, "Not an ndarray");
         return NULL;
@@ -373,6 +371,7 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
         PyErr_SetString(PyExc_TypeError, "Array should be of object dtype");
         return NULL;
     }
+
     if (PyArray_NDIM(pg_geoms) != 1) {
         PyErr_SetString(PyExc_TypeError, "Array should be one dimensional");
         return NULL;
@@ -385,9 +384,15 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
         }
     }
 
+    n = PyArray_SIZE(pg_geoms);
+
+    if (self->count == 0 || n == 0) {
+        npy_intp dims[2] = {2, 0};
+        return PyArray_SimpleNew(2, dims, NPY_INTP);
+    }
+
     kv_init(src_indexes);
     kv_init(target_indexes);
-    n = PyArray_SIZE(pg_geoms);
 
     for(i = 0; i < n; i++) {
         // get pygeos geometry from input geometry array
@@ -397,6 +402,9 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
             return NULL;
         }
         if (geom == NULL) {
+            continue;
+        }
+        if (GEOSisEmpty_r(context, geom)) {
             continue;
         }
 
@@ -461,52 +469,115 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
 
 
 /* Calculate the distance between items in the tree and the src_geom.
- * NOTE: target_index is index into geometries in tree. */
+ *
+ * Parameters
+ * ----------
+ * target_index: index of geometry in tree
+ * src_geom: input geometry to compare distance against
+ * distance: pointer to distance that gets updated in this function
+ * tree_geometries: dynamic vector of geometries in the tree
+ * */
 
 int distance_callback(const void *target_index, const void *src_geom,
                       double *distance, pg_geom_obj_vec *tree_geometries)
 {
+    GEOSContextHandle_t context = geos_context[0];
+
     GeometryObject *pg_geom;
     GEOSGeometry *target_geom;
 
-    // ptr = PyArray_GETPTR1((PyArrayObject *) geometries, (npy_intp)target_index);
     pg_geom = kv_A(*tree_geometries, (npy_intp)target_index);
     get_geom((GeometryObject *) pg_geom, &target_geom);
-
-    GEOSContextHandle_t context = geos_context[0];
 
     // returns error code or 0
     return GEOSDistance_r(context, src_geom, target_geom, distance);
 }
 
 
-/* Find the nearest item in the tree to the input geometry.
- * Returns None if the tree is empty. */
+/* Find the nearest item in the tree to each input geometry.
+ * Returns empty array of shape (2, 0) if tree is empty. */
 
-static PyObject *STRtree_nearest(STRtreeObject *self, PyObject *pg_geom) {
+static PyObject *STRtree_nearest(STRtreeObject *self, PyObject *arr) {
     GEOSContextHandle_t context = geos_context[0];
+    PyArrayObject *pg_geoms;
+    GeometryObject *pg_geom;
     GEOSGeometry *geom;
-    npy_intp nearest;
+    npy_intp_vec src_indexes, nearest_indexes;
+    npy_intp i, n, size, nearest;
+    PyArrayObject *result;
 
     if (self->ptr == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
         return NULL;
     }
-    if (self->count == 0) {
-        Py_INCREF(Py_None);
-        return Py_None;
-    }
-
-    if (!get_geom((GeometryObject *)pg_geom, &geom)) {
-        PyErr_SetString(PyExc_TypeError, "Invalid geometry");
+    if (!PyArray_Check(arr)) {
+        PyErr_SetString(PyExc_TypeError, "Not an ndarray");
         return NULL;
     }
 
-    nearest = (npy_intp)GEOSSTRtree_nearest_generic_r(context, self->ptr,
-                                                      geom, geom,
-                                                      distance_callback,
-                                                      &self->_geoms);
-    return PyInt_FromLong(nearest);
+    pg_geoms = (PyArrayObject *) arr;
+    if (!PyArray_ISOBJECT(pg_geoms)) {
+        PyErr_SetString(PyExc_TypeError, "Array should be of object dtype");
+        return NULL;
+    }
+
+    if (PyArray_NDIM(pg_geoms) != 1) {
+        PyErr_SetString(PyExc_TypeError, "Array should be one dimensional");
+        return NULL;
+    }
+
+    if (self->count == 0) {
+        npy_intp dims[2] = {2, 0};
+        return PyArray_SimpleNew(2, dims, NPY_INTP);
+    }
+
+    kv_init(src_indexes);
+    kv_init(nearest_indexes);
+    n = PyArray_SIZE(pg_geoms);
+
+    for(i = 0; i < n; i++) {
+        // get pygeos geometry from input geometry array
+        pg_geom = *(GeometryObject **) PyArray_GETPTR1(pg_geoms, i);
+        if (!get_geom(pg_geom, &geom)) {
+            PyErr_SetString(PyExc_TypeError, "Invalid geometry");
+            return NULL;
+        }
+        if (geom == NULL) {
+            continue;
+        }
+        if (GEOSisEmpty_r(context, geom)) {
+            continue;
+        }
+
+        nearest = (npy_intp)GEOSSTRtree_nearest_generic_r(context, self->ptr,
+                                                          geom, geom,
+                                                          distance_callback,
+                                                          &self->_geoms);
+
+        kv_push(npy_intp, src_indexes, i);
+        kv_push(npy_intp, nearest_indexes, nearest);
+    }
+
+    size = kv_size(src_indexes);
+    npy_intp dims[2] = {2, size};
+
+    // the following raises a compiler warning based on how the macro is defined
+    // in numpy.  There doesn't appear to be anything we can do to avoid it.
+    result = (PyArrayObject *) PyArray_SimpleNew(2, dims, NPY_INTP);
+    if (result == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "could not allocate numpy array");
+        return NULL;
+    }
+
+    for (i = 0; i < size; i++) {
+        // assign value into numpy arrays
+        *(npy_intp *)PyArray_GETPTR2(result, 0, i) = kv_A(src_indexes, i);
+        *(npy_intp *)PyArray_GETPTR2(result, 1, i) = kv_A(nearest_indexes, i);
+    }
+
+    kv_destroy(src_indexes);
+    kv_destroy(nearest_indexes);
+    return (PyObject *) result;
 }
 
 
@@ -528,7 +599,7 @@ static PyMethodDef STRtree_methods[] = {
      "against predicate function if provided. "
     },
     {"nearest", (PyCFunction) STRtree_nearest, METH_O,
-     "Queries the index for the nearest item to the given search geometry"
+     "Queries the index for the nearest item to each of the given search geometries"
     },
     {NULL}  /* Sentinel */
 };
