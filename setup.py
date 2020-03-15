@@ -11,7 +11,7 @@ log = logging.getLogger(__name__)
 ch = logging.StreamHandler()
 log.addHandler(ch)
 
-MIN_GEOS_VERSION = "3.5"
+MIN_GEOS_VERSION = "3.6"
 
 if "all" in sys.warnoptions:
     # show GEOS messages in console with: python -W all
@@ -109,7 +109,14 @@ class build_ext(_build_ext):
 
 module_lib = Extension(
     "pygeos.lib",
-    sources=["src/lib.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c", "src/strtree.c"],
+    sources=[
+        "src/lib.c",
+        "src/geos.c",
+        "src/pygeom.c",
+        "src/ufuncs.c",
+        "src/coords.c",
+        "src/strtree.c",
+    ],
     **get_geos_paths()
 )
 
@@ -122,7 +129,7 @@ except IOError:
 
 version = versioneer.get_version()
 cmdclass = versioneer.get_cmdclass()
-cmdclass['build_ext'] = build_ext
+cmdclass["build_ext"] = build_ext
 
 setup(
     name="pygeos",
@@ -135,10 +142,7 @@ setup(
     packages=["pygeos"],
     setup_requires=["numpy"],
     install_requires=["numpy>=1.10"],
-    extras_require={
-        "test": ["pytest"],
-        "docs": ["sphinx", "numpydoc"],
-    },
+    extras_require={"test": ["pytest"], "docs": ["sphinx", "numpydoc"],},
     python_requires=">=3",
     include_package_data=True,
     ext_modules=[module_lib],

@@ -31,6 +31,8 @@ operations are done in the open-source geometry library GEOS. PyGEOS wraps
 these operations in NumPy ufuncs providing a performance improvement when
 operating on arrays of geometries.
 
+Requires GEOS >= 3.6.
+
 Note: PyGEOS is a very young package. While the available functionality should
 be stable and working correctly, it's still possible that APIs change in upcoming
 releases. But we would love for you to try it out, give feedback or contribute!
@@ -110,7 +112,7 @@ See the documentation for more: https://pygeos.readthedocs.io
 Installation using conda
 ------------------------
 
-Pygeos requires the presence of NumPy and GEOS >= 3.5. It is recommended to install
+Pygeos requires the presence of NumPy and GEOS >= 3.6. It is recommended to install
 these using Anaconda from the conda-forge channel (which provides pre-compiled
 binaries)::
 
