@@ -631,7 +631,7 @@ def test_query_touches_polygons(poly_tree, geometry, expected):
 
 ### Bulk query tests
 def test_query_bulk_wrong_dimensions(tree):
-    with pytest.raises(TypeError, match="Array should be one dimensional") as ex:
+    with pytest.raises(TypeError, match="Array should be one dimensional"):
         tree.query_bulk([[pygeos.points(0.5, 0.5)]])
 
 
