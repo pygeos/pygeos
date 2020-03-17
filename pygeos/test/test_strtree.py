@@ -637,7 +637,7 @@ def test_query_bulk_wrong_dimensions(tree):
 
 @pytest.mark.parametrize("geometry", [[], "foo", 1])
 def test_query_bulk_wrong_type(tree, geometry):
-    with pytest.raises(TypeError, match="Array should be of object dtype") as ex:
+    with pytest.raises(TypeError, match="Array should be of object dtype"):
         tree.query_bulk(geometry)
 
 
