@@ -181,13 +181,13 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
  *
  * Parameters
  * ----------
- * index: index of intersected geometry in the tree
- * vector: pointer to dynamic vector; index is pushed onto this vector
+ * item: index of intersected geometry in the tree
+ * user_data: pointer to dynamic vector; index is pushed onto this vector
  * */
 
-void query_callback(void *index, void *vector)
+void query_callback(void *item, void *user_data)
 {
-    kv_push(npy_intp, *(npy_intp_vec *)vector, (npy_intp) index);
+    kv_push(npy_intp, *(npy_intp_vec *)user_data, (npy_intp) item);
 }
 
 /* Evaluate the predicate function against a prepared version of geom
@@ -349,7 +349,7 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
     GEOSGeometry *geom;
     npy_intp_vec query_indexes, src_indexes, target_indexes;
     npy_intp i, j, n, size;
-    FuncGEOS_YpY_b *predicate_func;
+    FuncGEOS_YpY_b *predicate_func = NULL;
     PyArrayObject *result;
 
     if (self->ptr == NULL) {

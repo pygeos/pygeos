@@ -666,6 +666,8 @@ def test_query_bulk_wrong_type(tree, geometry):
         ([pygeos.buffer(pygeos.points(3, 3), 1)], [[0, 0, 0], [2, 3, 4]]),
         # envelope of points contains points
         ([pygeos.multipoints([[5, 7], [7, 5]])], [[0, 0, 0], [5, 6, 7]]),
+        # nulls and empty should be skipped
+        ([None, empty, pygeos.points(1, 1)], [[2], [1]]),
     ],
 )
 def test_query_bulk_points(tree, geometry, expected):
