@@ -401,10 +401,7 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
             PyErr_SetString(PyExc_TypeError, "Invalid geometry");
             return NULL;
         }
-        if (geom == NULL) {
-            continue;
-        }
-        if (GEOSisEmpty_r(context, geom)) {
+        if (geom == NULL || GEOSisEmpty_r(context, geom)) {
             continue;
         }
 
