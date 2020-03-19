@@ -1,6 +1,8 @@
-# Changelog
+Changelog
+=========
 
-## Version 0.7 (2020-03-18)
+Version 0.7 (2020-03-18)
+------------------------
 
 **Highlights of this release**
 
@@ -24,7 +26,8 @@ People with a  "+" by their names contributed a patch for the first time.
 * Joris Van den Bossche
 * Mike Taves +
 
-## Version 0.6 (2020-01-31)
+Version 0.6 (2020-01-31)
+------------------------
 
 Highlights of this release:
 
@@ -40,7 +43,8 @@ Contributors:
 * mattijn +
 
 
-## Version 0.5 (2019-10-25)
+Version 0.5 (2019-10-25)
+------------------------
 
 Highlights of this release:
 
@@ -49,7 +53,8 @@ Highlights of this release:
 - Ufuncs for converting to and from the WKT and WKB formats [#45]
 - `equals_exact` has been added [PR #57]
 
-## Version 0.4 (2019-09-16)
+Version 0.4 (2019-09-16)
+------------------------
 
 This is a major release of PyGEOS and the first one with actual release notes. Most important features of this release are:
 

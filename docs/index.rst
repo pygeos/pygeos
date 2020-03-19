@@ -62,6 +62,7 @@ API Reference
    predicates
    set_operations
    strtree
+   changelog
 
 
 Indices and tables
