@@ -4,3 +4,4 @@ include versioneer.py
 include pygeos/_version.py
 include pygeos/*.dll
 include LICENSE
+include GEOS_LICENSE
