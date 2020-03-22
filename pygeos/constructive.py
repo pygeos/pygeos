@@ -2,6 +2,7 @@ from enum import IntEnum
 import numpy as np
 from . import Geometry  # NOQA
 from . import lib
+from .geometry import needs_geos_version
 
 
 __all__ = [
@@ -14,6 +15,7 @@ __all__ = [
     "delaunay_triangles",
     "envelope",
     "extract_unique_points",
+    "make_valid",
     "point_on_surface",
     "simplify",
     "snap",
@@ -283,6 +285,26 @@ def extract_unique_points(geometry, **kwargs):
     <pygeos.Geometry MULTIPOINT EMPTY>
     """
     return lib.extract_unique_points(geometry, **kwargs)
+
+
+@needs_geos_version((3, 8, 0))
+def make_valid(geometry, **kwargs):
+    """Repairs invalid geometries.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> make_valid(Geometry("POINT (0 0)"))
+    <pygeos.Geometry POINT (0 0)>
+    >>> make_valid(Geometry("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))"))
+    <pygeos.Geometry POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))>
+    >>> make_valid(None) is None
+    True
+    """
+    return lib.make_valid(geometry, **kwargs)
 
 
 def point_on_surface(geometry, **kwargs):

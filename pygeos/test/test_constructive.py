@@ -75,3 +75,26 @@ def test_snap_none():
 def test_snap_nan_float(geometry):
     actual = pygeos.snap(geometry, point, tolerance=np.nan)
     assert actual is None
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
+def test_make_valid_none():
+    actual = pygeos.make_valid(None)
+    assert actual is None
+
+
+
+@pytest.mark.skipif(pygeos.geos_version >= (3, 8, 0), reason="GEOS >= 3.8")
+def test_make_valid_importerror():
+    with pytest.raises(ImportError):
+        pygeos.make_valid(None)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
+@pytest.mark.parametrize("geom,expected", [
+    ("POINT(0 0)", "POINT(0 0)"),
+    ("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))", "POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
+])
+def test_make_valid(geom, expected):
+    actual = pygeos.make_valid("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))")
+    assert pygeos.to_wkt(actual) == expected
