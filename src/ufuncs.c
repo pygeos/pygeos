@@ -519,7 +519,7 @@ static void Y_d_func(char **args, npy_intp *dimensions,
     FuncGEOS_Y_d *func = (FuncGEOS_Y_d *)data;
     GEOSGeometry *in1;
 
-    GEOS_INIT;
+    GEOS_INIT_THREADS;
 
     UNARY_LOOP {
         /* get the geometry: return on error */
@@ -533,7 +533,7 @@ static void Y_d_func(char **args, npy_intp *dimensions,
     }
 
     finish:
-    GEOS_FINISH;
+    GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction Y_d_funcs[1] = {&Y_d_func};
 

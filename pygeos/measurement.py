@@ -2,11 +2,12 @@ import numpy as np
 
 from . import lib
 from . import Geometry  # NOQA
-from .utils import not_writable
+from .utils import multithreading_enabled
 
 __all__ = ["area", "distance", "bounds", "total_bounds", "length", "hausdorff_distance"]
 
 
+@multithreading_enabled
 def area(geometry, **kwargs):
     """Computes the area of a (multi)polygon.
 
@@ -28,6 +29,7 @@ def area(geometry, **kwargs):
     return lib.area(geometry, **kwargs)
 
 
+@multithreading_enabled
 def distance(a, b, **kwargs):
     """Computes the Cartesian distance between two geometries.
 
@@ -49,8 +51,7 @@ def distance(a, b, **kwargs):
     >>> distance(None, point)
     nan
     """
-    with not_writable(a), not_writable(b):
-        return lib.distance(a, b, **kwargs)
+    return lib.distance(a, b, **kwargs)
 
 
 def bounds(geometry, **kwargs):
@@ -119,6 +120,7 @@ def total_bounds(geometry, **kwargs):
     )
 
 
+@multithreading_enabled
 def length(geometry, **kwargs):
     """Computes the length of a (multi)linestring or polygon perimeter.
 
@@ -142,6 +144,7 @@ def length(geometry, **kwargs):
     return lib.length(geometry, **kwargs)
 
 
+@multithreading_enabled
 def hausdorff_distance(a, b, densify=None, **kwargs):
     """Compute the discrete Haussdorf distance between two geometries.
 
