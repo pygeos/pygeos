@@ -2,7 +2,7 @@ from enum import IntEnum
 import numpy as np
 from . import Geometry  # NOQA
 from . import lib
-from .geometry import needs_geos_version
+from .geos import requires_geos
 
 
 __all__ = [
@@ -287,7 +287,7 @@ def extract_unique_points(geometry, **kwargs):
     return lib.extract_unique_points(geometry, **kwargs)
 
 
-@needs_geos_version((3, 8, 0))
+@requires_geos("3.8.0")
 def make_valid(geometry, **kwargs):
     """Repairs invalid geometries.
 
@@ -297,12 +297,8 @@ def make_valid(geometry, **kwargs):
 
     Examples
     --------
-    >>> make_valid(Geometry("POINT (0 0)"))
-    <pygeos.Geometry POINT (0 0)>
     >>> make_valid(Geometry("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))"))
-    <pygeos.Geometry POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))>
-    >>> make_valid(None) is None
-    True
+    <pygeos.Geometry MULTILINESTRING ((0 0, 1 1), (1 1, 1 2))>
     """
     return lib.make_valid(geometry, **kwargs)
 

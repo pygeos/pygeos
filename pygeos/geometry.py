@@ -2,7 +2,6 @@ from enum import IntEnum
 import numpy as np
 from . import lib
 from . import Geometry  # NOQA
-from functools import wraps
 
 __all__ = [
     "GeometryType",
@@ -22,21 +21,6 @@ __all__ = [
     "get_interior_ring",
     "get_geometry",
 ]
-
-class needs_geos_version:
-    def __init__(self, min_version):
-        self.min_version = min_version
-
-    def __call__(self, func):
-        if lib.geos_version < self.min_version:
-            @wraps(func)
-            def wrapped(*args, **kwargs):
-                raise ImportError(
-                    "This function requires GEOS {}".format(self.min_version)
-                )
-            return wrapped
-        else:
-            return func
 
 
 class GeometryType(IntEnum):
