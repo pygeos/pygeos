@@ -11,6 +11,63 @@ from .common import point, empty, assert_increases_refcount, assert_decreases_re
 HALF_UNIT_DIAG = math.sqrt(2) / 2
 EPS = 1e-9
 
+def do_predicate(geometry, right, predicate):
+    """Applies predicate to a single geometry.
+    """
+    if not geometry or pygeos.is_empty(geometry):
+        return np.array([], dtype=int)
+    if predicate:
+        return np.flatnonzero(getattr(pygeos.predicates, predicate)(geometry, right))
+    else:
+        # no predicate means check extents intersection
+        extent_geo = pygeos.box(*pygeos.bounds(geometry))
+        if not pygeos.area(extent_geo): # point or points
+            extent_geo = geometry
+        extents_right = []
+        for geo_right in right:
+            extent = pygeos.box(*pygeos.bounds(geo_right))
+            if pygeos.area(extent):
+                extents_right.append(extent)
+            else:
+                extents_right.append(geo_right)
+        return np.flatnonzero(getattr(pygeos.predicates, "intersects")(extent_geo, extents_right))
+
+def brute_force_query_bulk(geometry, tree, predicate):
+    """Brute force search for nearest by checking all geometries.
+    """
+    left = np.atleast_1d(geometry)
+    right = np.atleast_1d(tree.geometries)
+    inds_left = []
+    inds_right = []
+    for ind_left, geom in enumerate(left):
+        matches = do_predicate(geom, right, predicate)
+        inds_right.extend(matches)
+        inds_left.extend(ind_left for _ in range(matches.size))
+    return np.array([inds_left, inds_right], dtype=int).reshape(2, -1)
+
+def brute_force_query(geometry, tree, predicate):
+    """Brute force search for nearest by checking all geometries.
+    """
+    if not geometry or pygeos.is_empty(geometry):
+        return None
+    right = np.atleast_1d(tree.geometries)
+    return do_predicate(geometry, right, predicate)
+    
+
+def check_query(geometry, tree, predicate=None):
+    """Compares tree results with brute force search.
+    """
+    matches = tree.query(geometry, predicate)
+    true_matches = brute_force_query(geometry, tree, predicate)
+    assert_array_equal(matches, true_matches)
+
+def check_query_bulk(geometry, tree, predicate=None):
+    """Compares tree results with brute force search.
+    """
+    matches = tree.query_bulk(geometry, predicate)
+    true_matches = brute_force_query_bulk(geometry, tree, predicate)
+    assert_array_equal(matches, true_matches)
+
 
 @pytest.fixture
 def tree():
@@ -98,69 +155,69 @@ def test_query_empty(tree):
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # points do not intersect
-        (pygeos.points(0.5, 0.5), []),
+        pygeos.points(0.5, 0.5),
         # points intersect
-        (pygeos.points(1, 1), [1]),
+        pygeos.points(1, 1),
         # box contains points
-        (box(0, 0, 1, 1), [0, 1]),
+        box(0, 0, 1, 1),
         # box contains points
-        (box(5, 5, 15, 15), [5, 6, 7, 8, 9]),
+        box(5, 5, 15, 15),
         # envelope of buffer contains points
-        (pygeos.buffer(pygeos.points(3, 3), 1), [2, 3, 4]),
+        pygeos.buffer(pygeos.points(3, 3), 1),
         # envelope of points contains points
-        (pygeos.multipoints([[5, 7], [7, 5]]), [5, 6, 7]),
+        pygeos.multipoints([[5, 7], [7, 5]]),
     ],
 )
-def test_query_points(tree, geometry, expected):
-    assert_array_equal(tree.query(geometry), expected)
+def test_query_points(tree, geometry):
+    check_query(geometry, tree)
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point intersects first line
-        (pygeos.points(0, 0), [0]),
-        (pygeos.points(0.5, 0.5), [0]),
+        pygeos.points(0, 0),
+        pygeos.points(0.5, 0.5),
         # point within envelope of first line
-        (pygeos.points(0, 0.5), [0]),
+        pygeos.points(0, 0.5),
         # point at shared vertex between 2 lines
-        (pygeos.points(1, 1), [0, 1]),
+        pygeos.points(1, 1),
         # box overlaps envelope of first 2 lines (touches edge of 1)
-        (box(0, 0, 1, 1), [0, 1]),
+        box(0, 0, 1, 1),
         # envelope of buffer overlaps envelope of 2 lines
-        (pygeos.buffer(pygeos.points(3, 3), 0.5), [2, 3]),
+        pygeos.buffer(pygeos.points(3, 3), 0.5),
         # envelope of points overlaps 5 lines (touches edge of 2 envelopes)
-        (pygeos.multipoints([[5, 7], [7, 5]]), [4, 5, 6, 7]),
+        pygeos.multipoints([[5, 7], [7, 5]]),
     ],
 )
-def test_query_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.query(geometry), expected)
+def test_query_lines(line_tree, geometry):
+    check_query(geometry, line_tree)
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point intersects edge of envelopes of 2 polygons
-        (pygeos.points(0.5, 0.5), [0, 1]),
+        pygeos.points(0.5, 0.5),
         # point intersects single polygon
-        (pygeos.points(1, 1), [1]),
+        pygeos.points(1, 1),
         # box overlaps envelope of 2 polygons
-        (box(0, 0, 1, 1), [0, 1]),
+        box(0, 0, 1, 1),
         # larger box overlaps envelope of 3 polygons
-        (box(0, 0, 1.5, 1.5), [0, 1, 2]),
+        box(0, 0, 1.5, 1.5),
         # envelope of buffer overlaps envelope of 3 polygons
-        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [2, 3, 4]),
+        pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG),
         # envelope of larger buffer overlaps envelope of 6 polygons
-        (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [1, 2, 3, 4, 5]),
+        pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG),
         # envelope of points overlaps 3 polygons
-        (pygeos.multipoints([[5, 7], [7, 5]]), [5, 6, 7]),
+        pygeos.multipoints([[5, 7], [7, 5]]),
     ],
 )
-def test_query_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.query(geometry), expected)
+def test_query_polygons(poly_tree, geometry):
+    check_query(geometry, poly_tree)
 
 
 def test_query_invalid_predicate(tree):
@@ -187,246 +244,243 @@ def test_query_tree_with_none():
 # TEMPORARY xfail: MultiPoint intersects with prepared geometries does not work
 # properly on GEOS 3.5.x; it was fixed in 3.6+
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # points do not intersect
-        (pygeos.points(0.5, 0.5), []),
+        pygeos.points(0.5, 0.5),
         # points intersect
-        (pygeos.points(1, 1), [1]),
+        pygeos.points(1, 1),
         # box contains points
-        (box(3, 3, 6, 6), [3, 4, 5, 6]),
+        box(3, 3, 6, 6),
         # envelope of buffer contains more points than intersect buffer
         # due to diagonal distance
-        (pygeos.buffer(pygeos.points(3, 3), 1), [3]),
+        pygeos.buffer(pygeos.points(3, 3), 1),
         # envelope of buffer with 1/2 distance between points should intersect
         # same points as envelope
-        (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [2, 3, 4]),
+        pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG),
         # multipoints intersect
         pytest.param(
             pygeos.multipoints([[5, 5], [7, 7]]),
-            [5, 7],
             marks=pytest.mark.xfail(pygeos.geos_version < (3, 6, 0), reason="GEOS 3.5"),
         ),
         # envelope of points contains points, but points do not intersect
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint intersects
         pytest.param(
             pygeos.multipoints([[5, 7], [7, 7]]),
-            [7],
             marks=pytest.mark.xfail(pygeos.geos_version < (3, 6, 0), reason="GEOS 3.5"),
         ),
     ],
 )
-def test_query_intersects_points(tree, geometry, expected):
-    assert_array_equal(tree.query(geometry, predicate="intersects"), expected)
-
+def test_query_intersects_points(tree, geometry):
+    check_query(geometry, tree, predicate="intersects")
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point intersects first line
-        (pygeos.points(0, 0), [0]),
-        (pygeos.points(0.5, 0.5), [0]),
+        pygeos.points(0, 0),
+        pygeos.points(0.5, 0.5),
         # point within envelope of first line but does not intersect
-        (pygeos.points(0, 0.5), []),
+        pygeos.points(0, 0.5),
         # point at shared vertex between 2 lines
-        (pygeos.points(1, 1), [0, 1]),
+        pygeos.points(1, 1),
         # box overlaps envelope of first 2 lines (touches edge of 1)
-        (box(0, 0, 1, 1), [0, 1]),
+        box(0, 0, 1, 1),
         # buffer intersects 2 lines
-        (pygeos.buffer(pygeos.points(3, 3), 0.5), [2, 3]),
+        pygeos.buffer(pygeos.points(3, 3), 0.5),
         # buffer intersects midpoint of line at tangent
-        (pygeos.buffer(pygeos.points(2, 1), HALF_UNIT_DIAG), [1]),
+        pygeos.buffer(pygeos.points(2, 1), HALF_UNIT_DIAG),
         # envelope of points overlaps lines but intersects none
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint intersects
-        (pygeos.multipoints([[5, 7], [7, 7]]), [6, 7]),
+        pygeos.multipoints([[5, 7], [7, 7]]),
     ],
 )
-def test_query_intersects_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.query(geometry, predicate="intersects"), expected)
+def test_query_intersects_lines(line_tree, geometry):
+    check_query(geometry, line_tree, predicate="intersects")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point within first polygon
-        (pygeos.points(0, 0.5), [0]),
-        (pygeos.points(0.5, 0), [0]),
+        pygeos.points(0, 0.5),
+        pygeos.points(0.5, 0),
         # midpoint between two polygons intersects both
-        (pygeos.points(0.5, 0.5), [0, 1]),
+        pygeos.points(0.5, 0.5),
         # point intersects single polygon
-        (pygeos.points(1, 1), [1]),
+        pygeos.points(1, 1),
         # box overlaps envelope of 2 polygons
-        (box(0, 0, 1, 1), [0, 1]),
+        box(0, 0, 1, 1),
         # larger box intersects 3 polygons
-        (box(0, 0, 1.5, 1.5), [0, 1, 2]),
+        box(0, 0, 1.5, 1.5),
         # buffer overlaps 3 polygons
-        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [2, 3, 4]),
+        pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG),
         # larger buffer overlaps 6 polygons (touches midpoints)
-        (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [1, 2, 3, 4, 5]),
+        pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG),
         # envelope of points overlaps polygons, but points do not intersect
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint within polygon
-        (pygeos.multipoints([[5, 7], [7, 7]]), [7]),
+        pygeos.multipoints([[5, 7], [7, 7]]),
     ],
 )
-def test_query_intersects_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.query(geometry, predicate="intersects"), expected)
+def test_query_intersects_polygons(poly_tree, geometry):
+    check_query(geometry, poly_tree, predicate="intersects")
 
 
 ### predicate == 'within'
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # points do not intersect
-        (pygeos.points(0.5, 0.5), []),
+        pygeos.points(0.5, 0.5),
         # points intersect
-        (pygeos.points(1, 1), [1]),
+        pygeos.points(1, 1),
         # box not within points
-        (box(3, 3, 6, 6), []),
+        box(3, 3, 6, 6),
         # envelope of buffer not within points
-        (pygeos.buffer(pygeos.points(3, 3), 1), []),
+        pygeos.buffer(pygeos.points(3, 3), 1),
         # multipoints intersect but are not within points in tree
-        (pygeos.multipoints([[5, 5], [7, 7]]), []),
+        pygeos.multipoints([[5, 5], [7, 7]]),
         # only one point of multipoint intersects, but multipoints are not
         # within any points in tree
-        (pygeos.multipoints([[5, 7], [7, 7]]), []),
+        pygeos.multipoints([[5, 7], [7, 7]]),
         # envelope of points contains points, but points do not intersect
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
     ],
 )
-def test_query_within_points(tree, geometry, expected):
-    assert_array_equal(tree.query(geometry, predicate="within"), expected)
+def test_query_within_points(tree, geometry):
+    check_query(geometry, tree, predicate="within")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # endpoint not within first line
-        (pygeos.points(0, 0), []),
+        pygeos.points(0, 0),
         # point within first line
-        (pygeos.points(0.5, 0.5), [0]),
+        pygeos.points(0.5, 0.5),
         # point within envelope of first line but does not intersect
-        (pygeos.points(0, 0.5), []),
+        pygeos.points(0, 0.5),
         # point at shared vertex between 2 lines (but within neither)
-        (pygeos.points(1, 1), []),
+        pygeos.points(1, 1),
         # box not within line
-        (box(0, 0, 1, 1), []),
+        box(0, 0, 1, 1),
         # buffer intersects 2 lines but not within either
-        (pygeos.buffer(pygeos.points(3, 3), 0.5), []),
+        pygeos.buffer(pygeos.points(3, 3), 0.5),
         # envelope of points overlaps lines but intersects none
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint intersects, but both are not within line
-        (pygeos.multipoints([[5, 7], [7, 7]]), []),
-        (pygeos.multipoints([[6.5, 6.5], [7, 7]]), [6]),
+        pygeos.multipoints([[5, 7], [7, 7]]),
+        pygeos.multipoints([[6.5, 6.5], [7, 7]]),
     ],
 )
-def test_query_within_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.query(geometry, predicate="within"), expected)
+def test_query_within_lines(line_tree, geometry):
+    check_query(geometry, line_tree, predicate="within")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point within first polygon
-        (pygeos.points(0, 0.5), [0]),
-        (pygeos.points(0.5, 0), [0]),
+        pygeos.points(0, 0.5),
+        pygeos.points(0.5, 0),
         # midpoint between two polygons intersects both
-        (pygeos.points(0.5, 0.5), [0, 1]),
+        pygeos.points(0.5, 0.5),
         # point intersects single polygon
-        (pygeos.points(1, 1), [1]),
+        pygeos.points(1, 1),
         # box overlaps envelope of 2 polygons but within neither
-        (box(0, 0, 1, 1), []),
+        box(0, 0, 1, 1),
         # box within polygon
-        (box(0, 0, 0.5, 0.5), [0]),
+        box(0, 0, 0.5, 0.5),
         # larger box intersects 3 polygons but within none
-        (box(0, 0, 1.5, 1.5), []),
+        box(0, 0, 1.5, 1.5),
         # buffer intersects 3 polygons but only within one
-        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [3]),
+        pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG),
         # larger buffer overlaps 6 polygons (touches midpoints) but within none
-        (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), []),
+        pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG),
         # envelope of points overlaps polygons, but points do not intersect
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint within polygon
-        (pygeos.multipoints([[5, 7], [7, 7]]), []),
+        pygeos.multipoints([[5, 7], [7, 7]]),
         # both points in multipoint within polygon
-        (pygeos.multipoints([[5.25, 5.5], [5.25, 5.0]]), [5]),
+        pygeos.multipoints([[5.25, 5.5], [5.25, 5.0]]),
     ],
 )
-def test_query_within_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.query(geometry, predicate="within"), expected)
+def test_query_within_polygons(poly_tree, geometry):
+    check_query(geometry, poly_tree, predicate="within")
 
 
 ### predicate == 'contains'
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # points do not intersect
-        (pygeos.points(0.5, 0.5), []),
+        pygeos.points(0.5, 0.5),
         # points intersect
-        (pygeos.points(1, 1), [1]),
+        pygeos.points(1, 1),
         # box contains points (2 are at edges and not contained)
-        (box(3, 3, 6, 6), [4, 5]),
+        box(3, 3, 6, 6),
         # envelope of buffer contains more points than within buffer
         # due to diagonal distance
-        (pygeos.buffer(pygeos.points(3, 3), 1), [3]),
+        pygeos.buffer(pygeos.points(3, 3), 1),
         # envelope of buffer with 1/2 distance between points should intersect
         # same points as envelope
-        (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [2, 3, 4]),
+        pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG),
         # multipoints intersect
-        (pygeos.multipoints([[5, 5], [7, 7]]), [5, 7]),
+        pygeos.multipoints([[5, 5], [7, 7]]),
         # envelope of points contains points, but points do not intersect
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint intersects
-        (pygeos.multipoints([[5, 7], [7, 7]]), [7]),
+        pygeos.multipoints([[5, 7], [7, 7]]),
     ],
 )
-def test_query_contains_points(tree, geometry, expected):
-    assert_array_equal(tree.query(geometry, predicate="contains"), expected)
+def test_query_contains_points(tree, geometry):
+    check_query(geometry, tree, predicate="contains")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point does not contain any lines (not valid relation)
-        (pygeos.points(0, 0), []),
+        pygeos.points(0, 0),
         # box contains first line (touches edge of 1 but does not contain it)
-        (box(0, 0, 1, 1), [0]),
+        box(0, 0, 1, 1),
         # buffer intersects 2 lines but contains neither
-        (pygeos.buffer(pygeos.points(3, 3), 0.5), []),
+        pygeos.buffer(pygeos.points(3, 3), 0.5),
         # envelope of points overlaps lines but intersects none
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint intersects
-        (pygeos.multipoints([[5, 7], [7, 7]]), []),
+        pygeos.multipoints([[5, 7], [7, 7]]),
         # both points intersect but do not contain any lines (not valid relation)
-        (pygeos.multipoints([[5, 5], [6, 6]]), []),
+        pygeos.multipoints([[5, 5], [6, 6]]),
     ],
 )
-def test_query_contains_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.query(geometry, predicate="contains"), expected)
+def test_query_contains_lines(line_tree, geometry):
+    check_query(geometry, line_tree, predicate="contains")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point does not contain any polygs (not valid relation)
-        (pygeos.points(0, 0), []),
+        pygeos.points(0, 0),
         # box overlaps envelope of 2 polygons but contains neither
-        (box(0, 0, 1, 1), []),
+        box(0, 0, 1, 1),
         # larger box intersects 3 polygons but contains only one
-        (box(0, 0, 2, 2), [1]),
+        box(0, 0, 2, 2),
         # buffer overlaps 3 polygons but contains none
-        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), []),
+        pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG),
         # larger buffer overlaps 6 polygons (touches midpoints) but contains one
-        (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [3]),
+        pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG),
         # envelope of points overlaps polygons, but points do not intersect
         # (not valid relation)
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
     ],
 )
-def test_query_contains_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.query(geometry, predicate="contains"), expected)
+def test_query_contains_polygons(poly_tree, geometry):
+    check_query(geometry, poly_tree, predicate="contains")
 
 
 ### predicate == 'overlaps'
@@ -434,199 +488,199 @@ def test_query_contains_polygons(poly_tree, geometry, expected):
 # and do not completely contain each other.
 # See: https://postgis.net/docs/ST_Overlaps.html
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # points do not intersect
-        (pygeos.points(0.5, 0.5), []),
+        pygeos.points(0.5, 0.5),
         # points intersect but do not overlap
-        (pygeos.points(1, 1), []),
+        pygeos.points(1, 1),
         # box overlaps points including those at edge but does not overlap
         # (completely contains all points)
-        (box(3, 3, 6, 6), []),
+        box(3, 3, 6, 6),
         # envelope of buffer contains points, but does not overlap
-        (pygeos.buffer(pygeos.points(3, 3), 1), []),
+        pygeos.buffer(pygeos.points(3, 3), 1),
         # multipoints intersect but do not overlap (both completely contain each other)
-        (pygeos.multipoints([[5, 5], [7, 7]]), []),
+        pygeos.multipoints([[5, 5], [7, 7]]),
         # envelope of points contains points in tree, but points do not intersect
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint intersects but does not overlap
         # the intersecting point from multipoint completely contains point in tree
-        (pygeos.multipoints([[5, 7], [7, 7]]), []),
+        pygeos.multipoints([[5, 7], [7, 7]]),
     ],
 )
-def test_query_overlaps_points(tree, geometry, expected):
-    assert_array_equal(tree.query(geometry, predicate="overlaps"), expected)
+def test_query_overlaps_points(tree, geometry):
+    check_query(geometry, tree, predicate="overlaps")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point intersects line but is completely contained by it
-        (pygeos.points(0, 0), []),
+        pygeos.points(0, 0),
         # box overlaps second line (contains first line)
         # but of different dimensions so does not overlap
-        (box(0, 0, 1.5, 1.5), []),
+        box(0, 0, 1.5, 1.5),
         # buffer intersects 2 lines but of different dimensions so does not overlap
-        (pygeos.buffer(pygeos.points(3, 3), 0.5), []),
+        pygeos.buffer(pygeos.points(3, 3), 0.5),
         # envelope of points overlaps lines but intersects none
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint intersects
-        (pygeos.multipoints([[5, 7], [7, 7]]), []),
+        pygeos.multipoints([[5, 7], [7, 7]]),
         # both points intersect but different dimensions
-        (pygeos.multipoints([[5, 5], [6, 6]]), []),
+        pygeos.multipoints([[5, 5], [6, 6]]),
     ],
 )
-def test_query_overlaps_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.query(geometry, predicate="overlaps"), expected)
+def test_query_overlaps_lines(line_tree, geometry):
+    check_query(geometry, line_tree, predicate="overlaps")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point does not overlap any polygons (different dimensions)
-        (pygeos.points(0, 0), []),
+        pygeos.points(0, 0),
         # box overlaps 2 polygons
-        (box(0, 0, 1, 1), [0, 1]),
+        box(0, 0, 1, 1),
         # larger box intersects 3 polygons and contains one
-        (box(0, 0, 2, 2), [0, 2]),
+        box(0, 0, 2, 2),
         # buffer overlaps 3 polygons and contains 1
-        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [2, 4]),
+        pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG),
         # larger buffer overlaps 6 polygons (touches midpoints) but contains one
-        (pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG), [1, 2, 4, 5]),
+        pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG),
         # one of two points intersects but different dimensions
-        (pygeos.multipoints([[5, 7], [7, 7]]), []),
+        pygeos.multipoints([[5, 7], [7, 7]]),
     ],
 )
-def test_query_overlaps_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.query(geometry, predicate="overlaps"), expected)
+def test_query_overlaps_polygons(poly_tree, geometry):
+    check_query(geometry, poly_tree, predicate="overlaps")
 
 
 ### predicate == 'crosses'
 # Only valid for certain geometry combinations
 # See: https://postgis.net/docs/ST_Crosses.html
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # points intersect but not valid relation
-        (pygeos.points(1, 1), []),
+        pygeos.points(1, 1),
         # all points of result from tree are in common with box
-        (box(3, 3, 6, 6), []),
+        box(3, 3, 6, 6),
         # all points of result from tree are in common with buffer
-        (pygeos.buffer(pygeos.points(3, 3), 1), []),
+        pygeos.buffer(pygeos.points(3, 3), 1),
         # only one point of multipoint intersects but not valid relation
-        (pygeos.multipoints([[5, 7], [7, 7]]), []),
+        pygeos.multipoints([[5, 7], [7, 7]]),
     ],
 )
-def test_query_crosses_points(tree, geometry, expected):
-    assert_array_equal(tree.query(geometry, predicate="crosses"), expected)
+def test_query_crosses_points(tree, geometry):
+    check_query(geometry, tree, predicate="crosses")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point intersects first line but is completely in common with line
-        (pygeos.points(0, 0), []),
+        pygeos.points(0, 0),
         # box overlaps envelope of first 2 lines, contains first and crosses second
-        (box(0, 0, 1.5, 1.5), [1]),
+        box(0, 0, 1.5, 1.5),
         # buffer intersects 2 lines
-        (pygeos.buffer(pygeos.points(3, 3), 0.5), [2, 3]),
+        pygeos.buffer(pygeos.points(3, 3), 0.5),
         # buffer crosses line
-        (pygeos.buffer(pygeos.points(2, 1), 1), [1]),
+        pygeos.buffer(pygeos.points(2, 1), 1),
         # envelope of points overlaps lines but intersects none
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint intersects
-        (pygeos.multipoints([[5, 7], [7, 7], [7, 8]]), []),
+        pygeos.multipoints([[5, 7], [7, 7], [7, 8]]),
     ],
 )
-def test_query_crosses_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.query(geometry, predicate="crosses"), expected)
+def test_query_crosses_lines(line_tree, geometry):
+    check_query(geometry, line_tree, predicate="crosses")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point within first polygon but not valid relation
-        (pygeos.points(0, 0.5), []),
+        pygeos.points(0, 0.5),
         # box overlaps 2 polygons but not valid relation
-        (box(0, 0, 1.5, 1.5), []),
+        box(0, 0, 1.5, 1.5),
         # buffer overlaps 3 polygons but not valid relation
-        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), []),
+        pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG),
         # only one point of multipoint within
-        (pygeos.multipoints([[5, 7], [7, 7], [7, 8]]), [7]),
+        pygeos.multipoints([[5, 7], [7, 7], [7, 8]]),
     ],
 )
-def test_query_crosses_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.query(geometry, predicate="crosses"), expected)
+def test_query_crosses_polygons(poly_tree, geometry):
+    check_query(geometry, poly_tree, predicate="crosses")
 
 
 ### predicate == 'touches'
 # See: https://postgis.net/docs/ST_Touches.html
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # points do not intersect
-        (pygeos.points(0.5, 0.5), []),
+        pygeos.points(0.5, 0.5),
         # points intersect but not valid relation
-        (pygeos.points(1, 1), []),
+        pygeos.points(1, 1),
         # box contains points but touches only those at edges
-        (box(3, 3, 6, 6), [3, 6]),
+        box(3, 3, 6, 6),
         # buffer completely contains point in tree
-        (pygeos.buffer(pygeos.points(3, 3), 1), []),
+        pygeos.buffer(pygeos.points(3, 3), 1),
         # buffer intersects 2 points but touches only one
-        (pygeos.buffer(pygeos.points(0, 1), 1), [1]),
+        pygeos.buffer(pygeos.points(0, 1), 1),
         # multipoints intersect but not valid relation
-        (pygeos.multipoints([[5, 5], [7, 7]]), []),
+        pygeos.multipoints([[5, 5], [7, 7]]),
     ],
 )
-def test_query_touches_points(tree, geometry, expected):
-    assert_array_equal(tree.query(geometry, predicate="touches"), expected)
+def test_query_touches_points(tree, geometry):
+    check_query(geometry, tree, predicate="touches")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point intersects first line
-        (pygeos.points(0, 0), [0]),
+        pygeos.points(0, 0),
         # point is within line
-        (pygeos.points(0.5, 0.5), []),
+        pygeos.points(0.5, 0.5),
         # point at shared vertex between 2 lines
-        (pygeos.points(1, 1), [0, 1]),
+        pygeos.points(1, 1),
         # box overlaps envelope of first 2 lines (touches edge of 1)
-        (box(0, 0, 1, 1), [1]),
+        box(0, 0, 1, 1),
         # buffer intersects 2 lines but does not touch edges of either
-        (pygeos.buffer(pygeos.points(3, 3), 0.5), []),
+        pygeos.buffer(pygeos.points(3, 3), 0.5),
         # buffer intersects midpoint of line at tangent but there is a little overlap
         # due to precision issues
-        (pygeos.buffer(pygeos.points(2, 1), HALF_UNIT_DIAG), []),
+        pygeos.buffer(pygeos.points(2, 1), HALF_UNIT_DIAG),
         # envelope of points overlaps lines but intersects none
-        (pygeos.multipoints([[5, 7], [7, 5]]), []),
+        pygeos.multipoints([[5, 7], [7, 5]]),
         # only one point of multipoint intersects at vertex between lines
-        (pygeos.multipoints([[5, 7], [7, 7], [7, 8]]), [6, 7]),
+        pygeos.multipoints([[5, 7], [7, 7], [7, 8]]),
     ],
 )
-def test_query_touches_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.query(geometry, predicate="touches"), expected)
+def test_query_touches_lines(line_tree, geometry):
+    check_query(geometry, line_tree, predicate="touches")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point within first polygon
-        (pygeos.points(0, 0.5), []),
+        pygeos.points(0, 0.5),
         # point is at edge of first polygon
-        (pygeos.points(HALF_UNIT_DIAG + EPS, 0), [0]),
+        pygeos.points(HALF_UNIT_DIAG + EPS, 0),
         # box overlaps envelope of 2 polygons does not touch any at edge
-        (box(0, 0, 1, 1), []),
+        box(0, 0, 1, 1),
         # box overlaps 2 polygons and touches edge of first
-        (box(HALF_UNIT_DIAG + EPS, 0, 2, 2), [0]),
+        box(HALF_UNIT_DIAG + EPS, 0, 2, 2),
         # buffer overlaps 3 polygons but does not touch any at edge
-        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG + EPS), []),
+        pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG + EPS),
         # only one point of multipoint within polygon but does not touch
-        (pygeos.multipoints([[0, 0], [7, 7], [7, 8]]), []),
+        pygeos.multipoints([[0, 0], [7, 7], [7, 8]]),
     ],
 )
-def test_query_touches_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.query(geometry, predicate="touches"), expected)
+def test_query_touches_polygons(poly_tree, geometry):
+    check_query(geometry, poly_tree, predicate="touches")
 
 
 ### Bulk query tests
@@ -642,92 +696,80 @@ def test_query_bulk_wrong_type(tree, geometry):
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # points do not intersect
-        ([pygeos.points(0.5, 0.5)], [[], []]),
+        [pygeos.points(0.5, 0.5)],
         # points intersect
-        ([pygeos.points(1, 1)], [[0], [1]]),
+        [pygeos.points(1, 1)],
         # first and last points intersect
-        (
-            [pygeos.points(1, 1), pygeos.points(-1, -1), pygeos.points(2, 2)],
-            [[0, 2], [1, 2]],
-        ),
+        [pygeos.points(1, 1), pygeos.points(-1, -1), pygeos.points(2, 2)],
         # box contains points
-        ([box(0, 0, 1, 1)], [[0, 0], [0, 1]]),
+        [box(0, 0, 1, 1)],
         # bigger box contains more points
-        ([box(5, 5, 15, 15)], [[0, 0, 0, 0, 0], [5, 6, 7, 8, 9]]),
+        [box(5, 5, 15, 15)],
         # first and last boxes contains points
-        (
-            [box(0, 0, 1, 1), box(100, 100, 110, 110), box(5, 5, 15, 15)],
-            [[0, 0, 2, 2, 2, 2, 2], [0, 1, 5, 6, 7, 8, 9]],
-        ),
+        [box(0, 0, 1, 1), box(100, 100, 110, 110), box(5, 5, 15, 15)],
         # envelope of buffer contains points
-        ([pygeos.buffer(pygeos.points(3, 3), 1)], [[0, 0, 0], [2, 3, 4]]),
+        [pygeos.buffer(pygeos.points(3, 3), 1)],
         # envelope of points contains points
-        ([pygeos.multipoints([[5, 7], [7, 5]])], [[0, 0, 0], [5, 6, 7]]),
+        [pygeos.multipoints([[5, 7], [7, 5]])],
         # nulls and empty should be skipped
-        ([None, empty, pygeos.points(1, 1)], [[2], [1]]),
+        [None, empty, pygeos.points(1, 1)],
     ],
 )
-def test_query_bulk_points(tree, geometry, expected):
-    assert_array_equal(tree.query_bulk(geometry), expected)
+def test_query_bulk_points(tree, geometry):
+    check_query_bulk(geometry, tree)
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point intersects first line
-        ([pygeos.points(0, 0)], [[0], [0]]),
-        ([pygeos.points(0.5, 0.5)], [[0], [0]]),
+        [pygeos.points(0, 0)],
+        [pygeos.points(0.5, 0.5)],
         # point within envelope of first line
-        ([pygeos.points(0, 0.5)], [[0], [0]]),
+        [pygeos.points(0, 0.5)],
         # point at shared vertex between 2 lines
-        ([pygeos.points(1, 1)], [[0, 0], [0, 1]]),
+        [pygeos.points(1, 1)],
         # box overlaps envelope of first 2 lines (touches edge of 1)
-        ([box(0, 0, 1, 1)], [[0, 0], [0, 1]]),
+        [box(0, 0, 1, 1)],
         # envelope of buffer overlaps envelope of 2 lines
-        ([pygeos.buffer(pygeos.points(3, 3), 0.5)], [[0, 0], [2, 3]]),
+        [pygeos.buffer(pygeos.points(3, 3), 0.5)],
         # envelope of points overlaps 5 lines (touches edge of 2 envelopes)
-        ([pygeos.multipoints([[5, 7], [7, 5]])], [[0, 0, 0, 0], [4, 5, 6, 7]]),
+        [pygeos.multipoints([[5, 7], [7, 5]])],
     ],
 )
-def test_query_bulk_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.query_bulk(geometry), expected)
+def test_query_bulk_lines(line_tree, geometry):
+    check_query_bulk(geometry, line_tree)
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point intersects edge of envelopes of 2 polygons
-        ([pygeos.points(0.5, 0.5)], [[0, 0], [0, 1]]),
+        [pygeos.points(0.5, 0.5)],
         # point intersects single polygon
-        ([pygeos.points(1, 1)], [[0], [1]]),
+        [pygeos.points(1, 1)],
         # box overlaps envelope of 2 polygons
-        ([box(0, 0, 1, 1)], [[0, 0], [0, 1]]),
+        [box(0, 0, 1, 1)],
         # first and last boxes overlap envelope of 2 polyons
-        (
-            [box(0, 0, 1, 1), box(100, 100, 110, 110), box(2, 2, 3, 3)],
-            [[0, 0, 2, 2], [0, 1, 2, 3]],
-        ),
+        [box(0, 0, 1, 1), box(100, 100, 110, 110), box(2, 2, 3, 3)],
         # larger box overlaps envelope of 3 polygons
-        ([box(0, 0, 1.5, 1.5)], [[0, 0, 0], [0, 1, 2]]),
+        [box(0, 0, 1.5, 1.5)],
         # envelope of buffer overlaps envelope of 3 polygons
-        ([pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG)], [[0, 0, 0], [2, 3, 4]]),
+        [pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG)],
         # envelope of larger buffer overlaps envelope of 6 polygons
-        (
-            [pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG)],
-            [[0, 0, 0, 0, 0], [1, 2, 3, 4, 5]],
-        ),
+        [pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG)],
         # envelope of points overlaps 3 polygons
-        ([pygeos.multipoints([[5, 7], [7, 5]])], [[0, 0, 0], [5, 6, 7]]),
+        [pygeos.multipoints([[5, 7], [7, 5]])],
     ],
 )
-def test_query_bulk_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.query_bulk(geometry), expected)
+def test_query_bulk_polygons(poly_tree, geometry):
+    check_query_bulk(geometry, poly_tree)
 
 
-def test_query_invalid_predicate(tree):
+def test_query_bulk_invalid_predicate(tree):
     with pytest.raises(ValueError):
         tree.query_bulk(pygeos.points(1, 1), predicate="bad_predicate")
 
@@ -737,110 +779,93 @@ def test_query_invalid_predicate(tree):
 # TEMPORARY xfail: MultiPoint intersects with prepared geometries does not work
 # properly on GEOS 3.5.x; it was fixed in 3.6+
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # points do not intersect
-        ([pygeos.points(0.5, 0.5)], [[], []]),
+        [pygeos.points(0.5, 0.5)],
         # points intersect
-        ([pygeos.points(1, 1)], [[0], [1]]),
+        [pygeos.points(1, 1)],
         # box contains points
-        ([box(3, 3, 6, 6)], [[0, 0, 0, 0], [3, 4, 5, 6]]),
+        [box(3, 3, 6, 6)],
         # first and last boxes contain points
-        (
-            [box(0, 0, 1, 1), box(100, 100, 110, 110), box(3, 3, 6, 6)],
-            [[0, 0, 2, 2, 2, 2], [0, 1, 3, 4, 5, 6]],
-        ),
+        [box(0, 0, 1, 1), box(100, 100, 110, 110), box(3, 3, 6, 6)],
         # envelope of buffer contains more points than intersect buffer
         # due to diagonal distance
-        ([pygeos.buffer(pygeos.points(3, 3), 1)], [[0], [3]]),
+        [pygeos.buffer(pygeos.points(3, 3), 1)],
         # envelope of buffer with 1/2 distance between points should intersect
         # same points as envelope
-        (
-            [pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG)],
-            [[0, 0, 0], [2, 3, 4]],
-        ),
+        [pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG)],
         # multipoints intersect
         pytest.param(
             [pygeos.multipoints([[5, 5], [7, 7]])],
-            [[0, 0], [5, 7]],
             marks=pytest.mark.xfail(reason="GEOS 3.5"),
         ),
         # envelope of points contains points, but points do not intersect
-        ([pygeos.multipoints([[5, 7], [7, 5]])], [[], []]),
+        [pygeos.multipoints([[5, 7], [7, 5]])],
         # only one point of multipoint intersects
         pytest.param(
             [pygeos.multipoints([[5, 7], [7, 7]])],
-            [[0], [7]],
             marks=pytest.mark.xfail(reason="GEOS 3.5"),
         ),
     ],
 )
-def test_query_bulk_intersects_points(tree, geometry, expected):
-    assert_array_equal(tree.query_bulk(geometry, predicate="intersects"), expected)
+def test_query_bulk_intersects_points(tree, geometry):
+    check_query_bulk(geometry, tree, predicate="intersects")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point intersects first line
-        ([pygeos.points(0, 0)], [[0], [0]]),
-        ([pygeos.points(0.5, 0.5)], [[0], [0]]),
+        [pygeos.points(0, 0)],
+        [pygeos.points(0.5, 0.5)],
         # point within envelope of first line but does not intersect
-        ([pygeos.points(0, 0.5)], [[], []]),
+        [pygeos.points(0, 0.5)],
         # point at shared vertex between 2 lines
-        ([pygeos.points(1, 1)], [[0, 0], [0, 1]]),
+        [pygeos.points(1, 1)],
         # box overlaps envelope of first 2 lines (touches edge of 1)
-        ([box(0, 0, 1, 1)], [[0, 0], [0, 1]]),
+        [box(0, 0, 1, 1)],
         # first and last boxes overlap multiple lines each
-        (
-            [box(0, 0, 1, 1), box(100, 100, 110, 110), box(2, 2, 3, 3)],
-            [[0, 0, 2, 2, 2], [0, 1, 1, 2, 3]],
-        ),
+        [box(0, 0, 1, 1), box(100, 100, 110, 110), box(2, 2, 3, 3)],
         # buffer intersects 2 lines
-        ([pygeos.buffer(pygeos.points(3, 3), 0.5)], [[0, 0], [2, 3]]),
+        [pygeos.buffer(pygeos.points(3, 3), 0.5)],
         # buffer intersects midpoint of line at tangent
-        ([pygeos.buffer(pygeos.points(2, 1), HALF_UNIT_DIAG)], [[0], [1]]),
+        [pygeos.buffer(pygeos.points(2, 1), HALF_UNIT_DIAG)],
         # envelope of points overlaps lines but intersects none
-        ([pygeos.multipoints([[5, 7], [7, 5]])], [[], []]),
+        [pygeos.multipoints([[5, 7], [7, 5]])],
         # only one point of multipoint intersects
-        ([pygeos.multipoints([[5, 7], [7, 7]])], [[0, 0], [6, 7]]),
+        [pygeos.multipoints([[5, 7], [7, 7]])],
     ],
 )
-def test_query_bulk_intersects_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.query_bulk(geometry, predicate="intersects"), expected)
+def test_query_bulk_intersects_lines(line_tree, geometry):
+    check_query_bulk(geometry, line_tree, predicate="intersects")
 
 
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry",
     [
         # point within first polygon
-        ([pygeos.points(0, 0.5)], [[0], [0]]),
-        ([pygeos.points(0.5, 0)], [[0], [0]]),
+        [pygeos.points(0, 0.5)],
+        [pygeos.points(0.5, 0)],
         # midpoint between two polygons intersects both
-        ([pygeos.points(0.5, 0.5)], [[0, 0], [0, 1]]),
+        [pygeos.points(0.5, 0.5)],
         # point intersects single polygon
-        ([pygeos.points(1, 1)], [[0], [1]]),
+        [pygeos.points(1, 1)],
         # box overlaps envelope of 2 polygons
-        ([box(0, 0, 1, 1)], [[0, 0], [0, 1]]),
+        [box(0, 0, 1, 1)],
         # first and last boxes overlap
-        (
-            [box(0, 0, 1, 1), box(100, 100, 110, 110), box(2, 2, 3, 3)],
-            [[0, 0, 2, 2], [0, 1, 2, 3]],
-        ),
+        [box(0, 0, 1, 1), box(100, 100, 110, 110)],
         # larger box intersects 3 polygons
-        ([box(0, 0, 1.5, 1.5)], [[0, 0, 0], [0, 1, 2]]),
+        [box(0, 0, 1.5, 1.5)],
         # buffer overlaps 3 polygons
-        ([pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG)], [[0, 0, 0], [2, 3, 4]]),
+        [pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG)],
         # larger buffer overlaps 6 polygons (touches midpoints)
-        (
-            [pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG)],
-            [[0, 0, 0, 0, 0], [1, 2, 3, 4, 5]],
-        ),
+        [pygeos.buffer(pygeos.points(3, 3), 3 * HALF_UNIT_DIAG)],
         # envelope of points overlaps polygons, but points do not intersect
-        ([pygeos.multipoints([[5, 7], [7, 5]])], [[], []]),
+        [pygeos.multipoints([[5, 7], [7, 5]])],
         # only one point of multipoint within polygon
-        ([pygeos.multipoints([[5, 7], [7, 7]])], [[0], [7]]),
+        [pygeos.multipoints([[5, 7], [7, 7]])],
     ],
 )
-def test_query_bulk_intersects_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.query_bulk(geometry, predicate="intersects"), expected)
+def test_query_bulk_intersects_polygons(poly_tree, geometry):
+    check_query_bulk(geometry, poly_tree, predicate="intersects")
