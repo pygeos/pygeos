@@ -81,4 +81,5 @@ def test_shared_paths_none():
 def test_shared_paths_non_linestring():
     g1 = pygeos.linestrings([(0, 0), (1, 0), (1, 1)])
     g2 = pygeos.points(0, 1)
-    raise Exception(pygeos.shared_paths(g1, g2))
+    with pytest.raises(pygeos.GEOSException):
+        pygeos.shared_paths(g1, g2)
