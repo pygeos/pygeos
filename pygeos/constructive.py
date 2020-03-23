@@ -291,6 +291,8 @@ def extract_unique_points(geometry, **kwargs):
 def make_valid(geometry, **kwargs):
     """Repairs invalid geometries.
 
+    Requires at least GEOS 3.8.0.
+
     Parameters
     ----------
     geometry : Geometry or array_like

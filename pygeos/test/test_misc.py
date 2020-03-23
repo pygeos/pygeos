@@ -26,7 +26,7 @@ def test_geos_capi_version():
     assert pygeos.geos_capi_version_string == expected
 
 
-@pytest.mark.parametrize("version", ["3.7", "3.7.0", "3.7.1", "3.6", "3.6.2"])
+@pytest.mark.parametrize("version", ["3.7.0", "3.7.1", "3.6.2"])
 def test_requires_geos_ok(version, mocked_geos_version):
     @requires_geos(version)
     def foo():
@@ -35,7 +35,7 @@ def test_requires_geos_ok(version, mocked_geos_version):
     assert foo() == "bar"
 
 
-@pytest.mark.parametrize("version", ["3.7.2", "3.8", "3.8.0", "3.8.1"])
+@pytest.mark.parametrize("version", ["3.7.2", "3.8.0", "3.8.1"])
 def test_requires_geos_not_ok(version, mocked_geos_version):
     @requires_geos(version)
     def foo():

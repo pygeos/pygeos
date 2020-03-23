@@ -8,13 +8,13 @@ class UnsupportedGEOSOperation(ImportError):
 
 class requires_geos:
     def __init__(self, version):
-        if version.count(".") == 1:
-            version += ".0"
-        self.version = version
+        if version.count(".") != 2:
+            raise ValueError("Version must be <major>.<minor>.<patch> format")
+        self.version = tuple(int(x) for x in version.split("."))
 
     def __call__(self, func):
-        if lib.geos_version < tuple(int(x) for x in self.version.split(".")):
-            msg = "'{}' requires at least GEOS {}".format(func.__name__, self.version)
+        if lib.geos_version < self.version:
+            msg = "'{}' requires at least GEOS {}.{}.{}".format(func.__name__, *self.version)
 
             @wraps(func)
             def wrapped(*args, **kwargs):
