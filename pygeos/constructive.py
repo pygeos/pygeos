@@ -14,6 +14,7 @@ __all__ = [
     "delaunay_triangles",
     "envelope",
     "extract_unique_points",
+    "normalize",
     "point_on_surface",
     "simplify",
     "snap",
@@ -283,6 +284,24 @@ def extract_unique_points(geometry, **kwargs):
     <pygeos.Geometry MULTIPOINT EMPTY>
     """
     return lib.extract_unique_points(geometry, **kwargs)
+
+
+def normalize(geometry, **kwargs):
+    """Converts Geometry to normal form (or canonical form).
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> p = Geometry("MULTILINESTRING((0 0, 1 1),(2 2, 3 3))")
+    >>> normalize(p)
+    >>> p
+    <pygeos.Geometry MULTILINESTRING ((2 2, 3 3), (0 0, 1 1))>
+    """
+    lib.normalize(geometry, **kwargs)
+    return
 
 
 def point_on_surface(geometry, **kwargs):
