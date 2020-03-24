@@ -192,6 +192,16 @@ static void *GetExteriorRing(void *context, void *geom) {
     return ret;
 }
 static void *get_exterior_ring_data[1] = {GetExteriorRing};
+/* the normalize funcion acts inplace */
+static void *GEOSNormalize_r_with_clone(void *context, void *geom) {
+    int ret;
+    void *new_geom = GEOSGeom_clone_r(context, geom);
+    if (new_geom == NULL) { return NULL; }
+    ret = GEOSNormalize_r(context, new_geom);
+    if (ret == -1) { return NULL; }
+    return new_geom;
+}
+static void *normalize_data[1] = {GEOSNormalize_r_with_clone};
 /* a linear-ring to polygon conversion function */
 static void *GEOSLinearRingToPolygon(void *context, void *geom) {
     void *shell = GEOSGeom_clone_r(context, geom);
@@ -222,33 +232,6 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
     }
 }
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
-
-/* Define the geom -> no return value functions (Y) */
-
-static void *normalize_data[1] = {GEOSNormalize_r};
-typedef void *FuncGEOS_Y(void *context, void *a);
-static char Y_dtypes[2] = {NPY_OBJECT};
-static void Y_func(char **args, npy_intp *dimensions,
-                   npy_intp *steps, void *data)
-{
-    FuncGEOS_Y *func = (FuncGEOS_Y *)data;
-    void *context_handle = geos_context[0];
-    GEOSGeometry *in1;
-
-    char *ip1 = args[0];
-    npy_intp is1 = steps[0];
-    npy_intp n = dimensions[0];
-    npy_intp i;
-    for (i = 0; i < n; i++, ip1 += is1) {
-        /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
-
-        if (in1 != NULL) {
-            func(context_handle, in1);
-        }
-    }
-}
-static PyUFuncGenericFunction Y_funcs[1] = {&Y_func};
 
 /* Define the geom, double -> geom functions (Yd_Y) */
 
@@ -1442,8 +1425,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_Y_Y (line_merge);
     DEFINE_Y_Y (extract_unique_points);
     DEFINE_Y_Y (get_exterior_ring);
-
-    DEFINE_Y (normalize);
+    DEFINE_Y_Y (normalize);
 
     DEFINE_Yi_Y (get_point);
     DEFINE_Yi_Y (get_interior_ring);

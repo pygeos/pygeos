@@ -297,11 +297,9 @@ def normalize(geometry, **kwargs):
     --------
     >>> p = Geometry("MULTILINESTRING((0 0, 1 1),(2 2, 3 3))")
     >>> normalize(p)
-    >>> p
     <pygeos.Geometry MULTILINESTRING ((2 2, 3 3), (0 0, 1 1))>
     """
-    lib.normalize(geometry, **kwargs)
-    return
+    return lib.normalize(geometry, **kwargs)
 
 
 def point_on_surface(geometry, **kwargs):
