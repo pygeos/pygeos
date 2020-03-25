@@ -309,6 +309,10 @@ def make_valid(geometry, **kwargs):
 def normalize(geometry, **kwargs):
     """Converts Geometry to normal form (or canonical form).
 
+    This method orders the coordinates, rings of a polygon and parts of
+    multi geometries consistently. Typically useful for testing purposes
+    (for example in combination with `equals_exact`).
+
     Parameters
     ----------
     geometry : Geometry or array_like
