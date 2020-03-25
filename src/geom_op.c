@@ -189,30 +189,3 @@ PyObject *PyGetParts(PyObject *self, PyObject *arr) {
 
     return result;
 }
-
-
-// static char Y_Y_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
-// static void Y_Y_func(char **args, npy_intp *dimensions,
-//                      npy_intp *steps, void *data)
-// {
-//     FuncGEOS_Y_Y *func = (FuncGEOS_Y_Y *)data;
-//     void *context_handle = geos_context[0];
-//     GEOSGeometry *in1, *ret_ptr;
-
-//     UNARY_LOOP {
-//         /* get the geometry: return on error */
-//         if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
-//         if (in1 == NULL) {
-//             /* in case of a missing value: return NULL (NaG) */
-//             ret_ptr = NULL;
-//         } else {
-//             ret_ptr = func(context_handle, in1);
-//             /* trust that GEOS calls HandleGEOSError on error */
-//         }
-//         OUTPUT_Y;
-//     }
-// }
-// static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
-// #define DEFINE_Y_Y(NAME)\
-//     ufunc = PyUFunc_FromFuncAndData(Y_Y_funcs, NAME ##_data, Y_Y_dtypes, 1, 1, 1, PyUFunc_None, # NAME, "", 0);\
-//     PyDict_SetItemString(d, # NAME, ufunc)
