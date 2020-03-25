@@ -109,7 +109,16 @@ class build_ext(_build_ext):
 
 module_lib = Extension(
     "pygeos.lib",
-    sources=["src/lib.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c", "src/strtree.c"],
+    sources=[
+        "src/lib.c",
+        "src/geos.c",
+        "src/geom_op.c",
+        "src/pygeom.c",
+        "src/ufuncs.c",
+        "src/coords.c",
+        "src/strtree.c",
+        "src/vector.c",
+    ],
     **get_geos_paths()
 )
 
@@ -122,7 +131,7 @@ except IOError:
 
 version = versioneer.get_version()
 cmdclass = versioneer.get_cmdclass()
-cmdclass['build_ext'] = build_ext
+cmdclass["build_ext"] = build_ext
 
 setup(
     name="pygeos",
@@ -136,13 +145,10 @@ setup(
     packages=["pygeos"],
     setup_requires=["numpy"],
     install_requires=["numpy>=1.10"],
-    extras_require={
-        "test": ["pytest"],
-        "docs": ["sphinx", "numpydoc"],
-    },
+    extras_require={"test": ["pytest"], "docs": ["sphinx", "numpydoc"],},
     python_requires=">=3",
     include_package_data=True,
-    data_files=[('geos_license', ['GEOS_LICENSE'])],
+    data_files=[("geos_license", ["GEOS_LICENSE"])],
     ext_modules=[module_lib],
     classifiers=[
         "Programming Language :: Python :: 3",

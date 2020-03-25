@@ -6,6 +6,7 @@
 
 #include "pygeom.h"
 #include "geos.h"
+#include "geom_op.h"
 
 /* Initializes a new geometry object */
 PyObject *GeometryObject_FromGEOS(PyTypeObject *type, GEOSGeometry *ptr)

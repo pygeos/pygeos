@@ -13,6 +13,7 @@
 #include <numpy/npy_3kcompat.h>
 
 #include "geos.h"
+#include "geom_op.h"
 #include "pygeom.h"
 #include "fast_loop_macros.h"
 
@@ -330,29 +331,6 @@ static void *GetInteriorRingN(void *context, void *geom, int n) {
     return ret;
 }
 static void *get_interior_ring_data[1] = {GetInteriorRingN};
-static void *GetGeometryN(void *context, void *geom, int n) {
-    int size, i;
-    size = GEOSGetNumGeometries_r(context, geom);
-    if (size == -1) {
-        return NULL;
-    }
-    if (n < 0) {
-        /* Negative indexing: we get it for free */
-        i = size + n;
-    } else {
-        i = n;
-    }
-    if ((i < 0) | (i >= size)) {
-        /* Important, could give segfaults else */
-        return NULL;
-    }
-    void *ret = (void *) GEOSGetGeometryN_r(context, geom, i);
-    /* Create a copy of the obtained geometry */
-    if (ret != NULL) {
-        ret = GEOSGeom_clone_r(context, ret);
-    }
-    return ret;
-}
 static void *get_geometry_data[1] = {GetGeometryN};
 /* the set srid funcion acts inplace */
 static void *GEOSSetSRID_r_with_clone(void *context, void *geom, int srid) {

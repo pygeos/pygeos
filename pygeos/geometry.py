@@ -20,6 +20,7 @@ __all__ = [
     "get_point",
     "get_interior_ring",
     "get_geometry",
+    "get_parts",
 ]
 
 
@@ -434,3 +435,33 @@ def get_num_geometries(geometry):
     1
     """
     return lib.get_num_geometries(geometry)
+
+
+def get_parts(geometry):
+    """Gets parts of each GeometryCollection or Multi* geometry object; returns
+    a copy of each singular geometry type.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Returns
+    -------
+    tuple of (indexes, parts)
+        Returns ndarray of indexes into the source geometry array and ndarray
+        of new geometries for parts or copies of the original geometries.  Arrays
+        are of equal length.
+
+    Examples
+    --------
+    >>> idx, parts = get_parts(Geometry("MULTIPOLYGON (((0 0, 0 10, 10 10, 0 0)), ((1 1, 1 10, 10 10, 1 1)))"))
+    >>> idx.tolist()
+    [0, 0]
+    >>> parts.tolist()
+    [<pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 0 0))>, <pygeos.Geometry POLYGON ((1 1, 1 10, 10 10, 1 1))>]
+    """
+    geometry = np.asarray(geometry, dtype=np.object)
+    if geometry.ndim == 0:
+        geometry = np.expand_dims(geometry, 0)
+
+    return lib.get_parts(geometry)

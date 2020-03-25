@@ -9,11 +9,12 @@
 #include <numpy/ufuncobject.h>
 #include <numpy/npy_3kcompat.h>
 
+#include "coords.h"
+#include "geom_op.h"
 #include "geos.h"
 #include "pygeom.h"
-#include "coords.h"
-#include "ufuncs.h"
 #include "strtree.h"
+#include "ufuncs.h"
 
 
 /* This tells Python what methods this module has. */
@@ -21,6 +22,7 @@ static PyMethodDef GeosModule[] = {
     {"count_coordinates", PyCountCoords, METH_VARARGS, "Counts the total amount of coordinates in a array with geometry objects"},
     {"get_coordinates", PyGetCoords, METH_VARARGS, "Gets the coordinates as an (N, 2) shaped ndarray of floats"},
     {"set_coordinates", PySetCoords, METH_VARARGS, "Sets coordinates to a geometry array"},
+    {"get_parts", PyGetParts, METH_O, "Get parts of each GeometryCollection or Multi* geometry"},
     {NULL, NULL, 0, NULL}
 };
 

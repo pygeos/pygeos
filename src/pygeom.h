@@ -11,6 +11,7 @@ typedef struct {
 } GeometryObject;
 
 
+
 extern PyTypeObject GeometryType;
 
 /* Initializes a new geometry object */
