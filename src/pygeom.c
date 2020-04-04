@@ -13,12 +13,15 @@ PyObject *geom_registry[1] = {NULL};
 /* Initializes a new geometry object */
 PyObject *GeometryObject_FromGEOS(GEOSGeometry *ptr)
 {
-    void *context_handle = geos_context[0];
     if (ptr == NULL) {
         Py_INCREF(Py_None);
         return Py_None;
     }
-    int type_id = GEOSGeomTypeId_r(context_handle, ptr);
+
+    GEOS_INIT;
+    int type_id = GEOSGeomTypeId_r(ctx, ptr);
+    GEOS_FINISH;
+
     if (type_id == -1) { return NULL; }
     PyTypeObject *type = PyList_GET_ITEM(geom_registry[0], type_id);
     if (type == NULL) { return NULL; }
@@ -240,11 +243,22 @@ PyTypeObject GeometryType = {
     .tp_str = (reprfunc) GeometryObject_str,
 };
 
+
+int __Pyx_InBases(PyTypeObject *a, PyTypeObject *b) {
+    while (a) {
+        a = a->tp_base;
+        if (a == b)
+            return 1;
+    }
+    return b == &PyBaseObject_Type;
+}
+
+
 /* Get a GEOSGeometry pointer from a GeometryObject, or NULL if the input is
 Py_None. Returns 0 on error, 1 on success. */
 char get_geom(GeometryObject *obj, GEOSGeometry **out) {
     PyTypeObject *type = ((PyObject *)obj)->ob_type;
-    if ((type != &GeometryType) & (type->tp_base != &GeometryType)) {
+    if ((type != &GeometryType) & !(__Pyx_InBases(type, &GeometryType))) {
         if ((PyObject *) obj == Py_None) {
             *out = NULL;
             return 1;

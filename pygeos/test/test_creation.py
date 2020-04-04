@@ -18,11 +18,6 @@ def box_tpl(x1, y1, x2, y2):
     return (x2, y1), (x2, y2), (x1, y2), (x1, y1), (x2, y1)
 
 
-def test_point_class():
-    point = pygeos.Point("POINT (1 1)")
-    assert pygeos.get_type_id(point) == pygeos.GeometryType.POINT
-
-
 def test_points_from_coords():
     actual = pygeos.points([[0, 0], [2, 2]])
     assert str(actual[0]) == "POINT (0 0)"
@@ -213,3 +208,31 @@ def test_box_multiple():
     actual = pygeos.box(0, 0, [1, 2], [1, 2])
     assert str(actual[0]) == "POLYGON ((1 0, 1 1, 0 1, 0 0, 1 0))"
     assert str(actual[1]) == "POLYGON ((2 0, 2 2, 0 2, 0 0, 2 0))"
+
+
+class BaseGeometry(pygeos.Geometry):
+    @property
+    def type_id(self):
+        return pygeos.get_type_id(self)
+
+
+class Point(BaseGeometry):
+    @property
+    def x(self):
+        return pygeos.get_x(self)
+
+    @property
+    def y(self):
+        return pygeos.get_y(self)
+
+
+def test_subclasses():
+    orig = pygeos.lib.registry[0]
+    pygeos.lib.registry[0] = Point
+
+    for point in [Point("POINT (1 1)"), pygeos.points(1, 1)]:
+        assert isinstance(point, Point)
+        assert pygeos.get_type_id(point) == pygeos.GeometryType.POINT
+        assert point.x == 1
+
+    pygeos.lib.registry[0] = orig

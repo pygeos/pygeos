@@ -6,7 +6,6 @@ from .decorators import multithreading_enabled
 
 __all__ = [
     "GeometryType",
-    "Point",
     "get_type_id",
     "get_dimensions",
     "get_coordinate_dimension",
@@ -38,18 +37,6 @@ class GeometryType(IntEnum):
     MULTIPOLYGON = 6
     GEOMETRYCOLLECTION = 7
 
-
-class Point(Geometry):
-    @property
-    def x(self):
-        return get_x(self)
-
-    @property
-    def y(self):
-        return get_y(self)
-
-
-lib.registry[0] = Point
 
 # generic
 

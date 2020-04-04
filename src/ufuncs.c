@@ -59,7 +59,7 @@ static void geom_arr_to_npy(GEOSGeometry **array, char *ptr, npy_intp stride, np
     PyObject **out;
 
     for(i = 0; i < count; i++, ptr += stride) {
-        ret = GeometryObject_FromGEOS(&GeometryType, array[i]);
+        ret = GeometryObject_FromGEOS(array[i]);
         out = (PyObject **)ptr;
         Py_XDECREF(*out);
         *out = ret;
