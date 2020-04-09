@@ -198,7 +198,10 @@ static void *GEOSNormalize_r_with_clone(void *context, void *geom) {
     void *new_geom = GEOSGeom_clone_r(context, geom);
     if (new_geom == NULL) { return NULL; }
     ret = GEOSNormalize_r(context, new_geom);
-    if (ret == -1) { return NULL; }
+    if (ret == -1) {
+        GEOSGeom_destroy_r(context, new_geom);
+        return NULL;
+    }
     return new_geom;
 }
 static void *normalize_data[1] = {GEOSNormalize_r_with_clone};
