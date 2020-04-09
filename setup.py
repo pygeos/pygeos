@@ -140,6 +140,7 @@ setup(
     long_description=descr,
     url="https://github.com/pygeos/pygeos",
     author="Casper van der Wel",
+    author_email="caspervdw@gmail.com",
     license="BSD 3-Clause",
     packages=["pygeos"],
     setup_requires=["numpy"],
@@ -150,6 +151,7 @@ setup(
     },
     python_requires=">=3",
     include_package_data=True,
+    data_files=[('geos_license', ['GEOS_LICENSE'])],
     ext_modules=[module_lib] + cython_modules,
     classifiers=[
         "Programming Language :: Python :: 3",
