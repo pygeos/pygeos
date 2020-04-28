@@ -1,5 +1,6 @@
 import numpy as np
 from . import lib, Geometry, GeometryType
+from .ufunc_tools import ufunc_attributes_wrapper, ufunc_methods_wrapper
 
 __all__ = [
     "difference",
@@ -12,6 +13,8 @@ __all__ = [
 ]
 
 
+@ufunc_attributes_wrapper(lib.difference)
+@ufunc_methods_wrapper(lib.difference)
 def difference(a, b, **kwargs):
     """Returns the part of geometry A that does not intersect with geometry B.
 
@@ -33,6 +36,8 @@ def difference(a, b, **kwargs):
     return lib.difference(a, b, **kwargs)
 
 
+@ufunc_attributes_wrapper(lib.intersection)
+@ufunc_methods_wrapper(lib.intersection)
 def intersection(a, b, **kwargs):
     """Returns the geometry that is shared between input geometries.
 
@@ -82,6 +87,8 @@ def intersection_all(geometries, axis=0, **kwargs):
     return lib.intersection.reduce(geometries, axis=axis, **kwargs)
 
 
+@ufunc_attributes_wrapper(lib.symmetric_difference)
+@ufunc_methods_wrapper(lib.symmetric_difference)
 def symmetric_difference(a, b, **kwargs):
     """Returns the geometry that represents the portions of input geometries
     that do not intersect.
@@ -132,6 +139,8 @@ def symmetric_difference_all(geometries, axis=0, **kwargs):
     return lib.symmetric_difference.reduce(geometries, axis=axis, **kwargs)
 
 
+@ufunc_attributes_wrapper(lib.union)
+@ufunc_methods_wrapper(lib.union)
 def union(a, b, **kwargs):
     """Merges geometries into one.
 

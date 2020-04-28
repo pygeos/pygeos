@@ -42,6 +42,15 @@ def test_set_operation_reduce_1dim(n, func, related_func):
         expected = related_func(expected, reduce_test_data[i])
     assert pygeos.equals(actual, expected)
 
+@pytest.mark.parametrize("n", range(1, 4))
+@pytest.mark.parametrize("func", SET_OPERATIONS)
+def test_set_operation_ufunc_reduce_1dim(n, func):
+    actual = func.reduce(reduce_test_data[:n])
+    # perform the reduction in a python loop and compare
+    expected = reduce_test_data[0]
+    for i in range(1, n):
+        expected = func(expected, reduce_test_data[i])
+    assert pygeos.equals(actual, expected)
 
 @pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS)
 def test_set_operation_reduce_axis(func, related_func):
