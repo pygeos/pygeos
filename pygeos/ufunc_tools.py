@@ -57,3 +57,15 @@ def ufunc_methods_wrapper(destination, methods=None):
             setattr(func, attribute, val or getattr(destination, attribute))
         return func
     return decorator
+
+
+class UfuncWrapper:
+
+    def __init__(self, ufunc):
+        self.ufunc = ufunc
+
+    def __call__(self, *args, **kwargs):
+        return self.ufunc(*args, **kwargs)
+
+    def reduce(self, *args, **kwargs):
+        return self.ufunc.reduce(*args, **kwargs)

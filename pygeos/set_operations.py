@@ -1,6 +1,6 @@
 import numpy as np
 from . import lib, Geometry, GeometryType
-from .ufunc_tools import ufunc_attributes_wrapper, ufunc_methods_wrapper
+from .ufunc_tools import ufunc_attributes_wrapper, ufunc_methods_wrapper, UfuncWrapper
 
 __all__ = [
     "difference",
@@ -139,9 +139,7 @@ def symmetric_difference_all(geometries, axis=0, **kwargs):
     return lib.symmetric_difference.reduce(geometries, axis=axis, **kwargs)
 
 
-@ufunc_attributes_wrapper(lib.union)
-@ufunc_methods_wrapper(lib.union)
-def union(a, b, **kwargs):
+class Union(UfuncWrapper):
     """Merges geometries into one.
 
     Parameters
@@ -161,44 +159,46 @@ def union(a, b, **kwargs):
     >>> union(line, None) is None
     True
     """
-    return lib.union(a, b, **kwargs)
+
+    def __call__(self, a, b, **kwargs):
+        return self.ufunc(a, b, **kwargs)
+
+    def reduce(self, geometries, axis=0, **kwargs):
+        """Returns the union of multiple geometries.
+
+        Parameters
+        ----------
+        geometries : array_like
+        axis : int
+            Axis along which the operation is performed. The default (zero)
+            performs the operation over the first dimension of the input array.
+            axis may be negative, in which case it counts from the last to the
+            first axis.
+
+        See also
+        --------
+        union
+
+        Examples
+        --------
+        >>> line_1 = Geometry("LINESTRING(0 0, 2 2)")
+        >>> line_2 = Geometry("LINESTRING(2 2, 3 3)")
+        >>> union_all([line_1, line_2])
+        <pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>
+        >>> union_all([[line_1, line_2, None]], axis=1).tolist()
+        [<pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>]
+        """
+        geometries = np.asarray(geometries)
+        if axis is None:
+            geometries = geometries.ravel()
+        else:
+            geometries = np.rollaxis(
+                np.asarray(geometries), axis=axis, start=geometries.ndim
+            )
+        # create_collection acts on the inner axis
+        collections = lib.create_collection(geometries, GeometryType.GEOMETRYCOLLECTION)
+        return lib.unary_union(collections, **kwargs)
 
 
-def union_all(geometries, axis=0, **kwargs):
-    """Returns the union of multiple geometries.
-
-    Parameters
-    ----------
-    geometries : array_like
-    axis : int
-        Axis along which the operation is performed. The default (zero)
-        performs the operation over the first dimension of the input array.
-        axis may be negative, in which case it counts from the last to the
-        first axis.
-
-    See also
-    --------
-    union
-
-    Examples
-    --------
-    >>> line_1 = Geometry("LINESTRING(0 0, 2 2)")
-    >>> line_2 = Geometry("LINESTRING(2 2, 3 3)")
-    >>> union_all([line_1, line_2])
-    <pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>
-    >>> union_all([[line_1, line_2, None]], axis=1).tolist()
-    [<pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>]
-    """
-    # for union_all, GEOS provides an efficient route through first creating
-    # GeometryCollections
-    # first roll the aggregation axis backwards
-    geometries = np.asarray(geometries)
-    if axis is None:
-        geometries = geometries.ravel()
-    else:
-        geometries = np.rollaxis(
-            np.asarray(geometries), axis=axis, start=geometries.ndim
-        )
-    # create_collection acts on the inner axis
-    collections = lib.create_collection(geometries, GeometryType.GEOMETRYCOLLECTION)
-    return lib.unary_union(collections, **kwargs)
+union = Union(lib.union)
+union_all = union.reduce
