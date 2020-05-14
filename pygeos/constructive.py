@@ -304,7 +304,7 @@ def build_area(geometry, **kwargs):
     Examples
     --------
     >>> build_area(Geometry("GEOMETRYCOLLECTION(POLYGON((0 0, 3 0, 3 3, 0 3, 0 0)), POLYGON((1 1, 1 2, 2 2, 1 1)))"))
-    <pygeos.Geometry POLYGON((0 0,0 3,3 3,3 0,0 0),(1 1,2 2,1 2,1 1))>
+    <pygeos.Geometry POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (1 1, 2 2, 1 2, 1 1))>
     """
     return lib.build_area(geometry, **kwargs)
 
