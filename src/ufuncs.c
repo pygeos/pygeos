@@ -530,6 +530,9 @@ static PyUFuncGenericFunction Y_i_funcs[1] = {&Y_i_func};
 /* Define the geom, geom -> double functions (YY_d) */
 static void *distance_data[1] = {GEOSDistance_r};
 static void *hausdorff_distance_data[1] = {GEOSHausdorffDistance_r};
+#if GEOS_SINCE_370
+  static void *frechet_distance_data[1] = {GEOSFrechetDistance_r};
+#endif
 /* Project and ProjectNormalize don't return error codes. wrap them. */
 static int GEOSProjectWrapped_r(void *context, void *a,  void *b, double *c) {
     /* Handle empty points (they give segfaults) */
@@ -720,6 +723,34 @@ static void haussdorf_distance_densify_func(char **args, npy_intp *dimensions,
     }
 }
 static PyUFuncGenericFunction haussdorf_distance_densify_funcs[1] = {&haussdorf_distance_densify_func};
+
+
+static char frechet_distance_densify_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_DOUBLE};
+static void frechet_distance_densify_func(char **args, npy_intp *dimensions,
+                                            npy_intp *steps, void *data)
+{
+    void *context_handle = geos_context[0];
+    GEOSGeometry *in1, *in2;
+
+    TERNARY_LOOP {
+        /* get the geometries: return on error */
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip2, &in2)) { return; }
+        double in3 = *(double *) ip3;
+        if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3)) {
+            *(double *)op1 = NPY_NAN;
+        } else {
+            /* let the GEOS function set op1; return on error */
+            if (GEOSFrechetDistanceDensify_r(context_handle, in1, in2, in3, (double *) op1) == 0) { return ; }
+            if (*op1 == 0.0) {
+                if (GEOSisEmpty_r(context_handle, in1) | GEOSisEmpty_r(context_handle, in2)) {
+                    *(double *)op1 = NPY_NAN;
+                }
+            }
+        }
+    }
+}
+static PyUFuncGenericFunction frechet_distance_densify_funcs[1] = {&frechet_distance_densify_func};
 
 
 static char delaunay_triangles_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
@@ -1485,6 +1516,12 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_CUSTOM (to_wkb, 5);
     DEFINE_CUSTOM (to_wkt, 5);
     DEFINE_CUSTOM (from_shapely, 1);
+
+    #if GEOS_SINCE_370
+      DEFINE_YY_d (frechet_distance);
+
+      DEFINE_CUSTOM (frechet_distance_densify, 3);
+    #endif
 
     #if GEOS_SINCE_380
       DEFINE_Y_Y (make_valid);
