@@ -188,6 +188,7 @@ static void *GEOSBoundaryAllTypes_r(void *context, void *geom) {
 }
 static void *boundary_data[1] = {GEOSBoundaryAllTypes_r};
 static void *unary_union_data[1] = {GEOSUnaryUnion_r};
+static void *coverage_union_data[1] = {GEOSCoverageUnion_r};
 static void *point_on_surface_data[1] = {GEOSPointOnSurface_r};
 static void *centroid_data[1] = {GEOSGetCentroid_r};
 static void *line_merge_data[1] = {GEOSLineMerge_r};
@@ -1544,6 +1545,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_Y_Y (convex_hull);
     DEFINE_Y_Y (boundary);
     DEFINE_Y_Y (unary_union);
+    DEFINE_Y_Y (coverage_union);
     DEFINE_Y_Y (point_on_surface);
     DEFINE_Y_Y (centroid);
     DEFINE_Y_Y (line_merge);
