@@ -214,3 +214,13 @@ def test_frechet_distance_missing():
 def test_frechet_densify_nan():
     actual = pygeos.frechet_distance(point, point, densify=np.nan)
     assert np.isnan(actual)
+
+
+def test_frechet_distance_empty():
+    actual = pygeos.frechet_distance(point, empty)
+    assert np.isnan(actual)
+
+
+def test_frechet_distance_densify_empty():
+    actual = pygeos.frechet_distance(point, empty, densify=0.2)
+    assert np.isnan(actual)

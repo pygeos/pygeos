@@ -531,7 +531,16 @@ static PyUFuncGenericFunction Y_i_funcs[1] = {&Y_i_func};
 static void *distance_data[1] = {GEOSDistance_r};
 static void *hausdorff_distance_data[1] = {GEOSHausdorffDistance_r};
 #if GEOS_SINCE_370
-  static void *frechet_distance_data[1] = {GEOSFrechetDistance_r};
+  static int GEOSFrechetDistanceWrapped_r(void *context, void *a,  void *b, double *c) {
+      /* Handle empty geometries (they give segfaults) */
+      if (GEOSisEmpty_r(context, a) | GEOSisEmpty_r(context, b)) {
+          *c = NPY_NAN;
+      } else {
+          return GEOSFrechetDistance_r(context, a, b, c);
+      }
+      return 1;
+  }
+  static void *frechet_distance_data[1] = {GEOSFrechetDistanceWrapped_r};
 #endif
 /* Project and ProjectNormalize don't return error codes. wrap them. */
 static int GEOSProjectWrapped_r(void *context, void *a,  void *b, double *c) {
@@ -737,16 +746,10 @@ static void frechet_distance_densify_func(char **args, npy_intp *dimensions,
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
         if (!get_geom(*(GeometryObject **)ip2, &in2)) { return; }
         double in3 = *(double *) ip3;
-        if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3)) {
+        if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3) | GEOSisEmpty_r(context_handle, in1) | GEOSisEmpty_r(context_handle, in2)) {
             *(double *)op1 = NPY_NAN;
         } else {
-            /* let the GEOS function set op1; return on error */
-            if (GEOSFrechetDistanceDensify_r(context_handle, in1, in2, in3, (double *) op1) == 0) { return ; }
-            if (*op1 == 0.0) {
-                if (GEOSisEmpty_r(context_handle, in1) | GEOSisEmpty_r(context_handle, in2)) {
-                    *(double *)op1 = NPY_NAN;
-                }
-            }
+            return GEOSFrechetDistanceDensify_r(context_handle, in1, in2, in3, (double *) op1);
         }
     }
 }

@@ -204,6 +204,8 @@ def frechet_distance(a, b, densify=None, **kwargs):
     70.71...
     >>> frechet_distance(line_1, line_2, densify=0.5)
     50.0
+    >>> frechet_distance(line_1, Geometry("LINESTRING EMPTY"))
+    nan
     >>> frechet_distance(line_1, None)
     nan
     """
