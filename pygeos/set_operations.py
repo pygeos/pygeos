@@ -223,9 +223,11 @@ def coverage_union(a, b, **kwargs):
     >>> equals(actual, expected)
     True
 
+    Union with None returns same polygon
+    >>> equals(coverage_union(polygon, None), polygon)
+    True
+
     Overlapping polygons raise an error
-    >>> coverage_union(polygon, None)
-    <pygeos.Geometry POLYGON ((1 1, 1 0, 0 0, 0 1, 1 1))>
     >>> coverage_union(polygon, Geometry("POLYGON ((1 0, 0.9 1, 2 1, 2 0, 1 0))"))
     Traceback (most recent call last):
         ...
