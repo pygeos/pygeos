@@ -17,23 +17,23 @@
 #include "fast_loop_macros.h"
 
 enum {
-	PGERR_SUCCESS = 0,
-	PGERR_NOT_A_GEOMETRY = 1,
-	PGERR_GEOS_EXCEPTION = 2,
-    PGERR_NO_MALLOC = 3,
-    PGERR_GEOMETY_TYPE = 4
+	PGERR_SUCCESS,
+	PGERR_NOT_A_GEOMETRY,
+	PGERR_GEOS_EXCEPTION,
+    PGERR_NO_MALLOC,
+    PGERR_GEOMETRY_TYPE
 };
 
 #define CREATE_COORDSEQ(SIZE, NDIM)\
-    void *coord_seq = GEOSCoordSeq_create_r(context_handle, SIZE, NDIM);\
+    void *coord_seq = GEOSCoordSeq_create_r(ctx, SIZE, NDIM);\
     if (coord_seq == NULL) {\
         errstate = PGERR_GEOS_EXCEPTION;\
         goto finish;\
     }
 
 #define SET_COORD(N, DIM)\
-    if (!GEOSCoordSeq_setOrdinate_r(context_handle, coord_seq, N, DIM, coord)) {\
-        GEOSCoordSeq_destroy_r(context_handle, coord_seq);\
+    if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, N, DIM, coord)) {\
+        GEOSCoordSeq_destroy_r(ctx, coord_seq);\
         errstate = PGERR_GEOS_EXCEPTION;\
         goto finish;\
     }
@@ -73,17 +73,20 @@ enum {
 
 #define GEOS_HANDLE_ERR\
     if (strlen(last_warning) > 0) { PyErr_WarnEx(PyExc_Warning, last_warning, 1); }\
+    if ((errstate != PGERR_GEOS_EXCEPTION) && (strlen(last_error) > 0)) { PyErr_WarnEx(PyExc_Warning, last_error, 1); }\
     switch (errstate) {\
       case PGERR_SUCCESS:\
         break;\
       case PGERR_NOT_A_GEOMETRY:\
-        PyErr_Format(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");\
+        PyErr_SetString(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects."); break;\
       case PGERR_GEOS_EXCEPTION:\
-        PyErr_Format(geos_exception[0], last_error);\
+        PyErr_SetString(geos_exception[0], last_error); break;\
       case PGERR_NO_MALLOC:\
-        PyErr_Format(PyExc_MemoryError, "Could not allocate memory");\
-      case PGERR_GEOMETY_TYPE:\
-        PyErr_Format(PyExc_TypeError, "One of the Geometry inputs is of incorrect geometry type.");\
+        PyErr_SetString(PyExc_MemoryError, "Could not allocate memory"); break;\
+      case PGERR_GEOMETRY_TYPE:\
+        PyErr_SetString(PyExc_TypeError, "One of the Geometry inputs is of incorrect geometry type."); break;\
+      default:\
+        PyErr_Format(PyExc_RuntimeError, "Pygeos ufunc returned with unknown error state code %d.", errstate); break;\
     }
 
 #define GEOS_FINISH\
@@ -663,7 +666,7 @@ static PyUFuncGenericFunction YY_d_funcs[1] = {&YY_d_func};
 
 /* Define functions with unique call signatures */
 static void *null_data[1] = {NULL};
-static char buffer_inner(void *context_handle, GEOSBufferParams *params, void *ip1, void *ip2, void *op1) {
+static char buffer_inner(void *ctx, GEOSBufferParams *params, void *ip1, void *ip2, void *op1) {
     GEOSGeometry *in1, *ret_ptr;
 
     /* get the geometry: return on error */
@@ -673,7 +676,7 @@ static char buffer_inner(void *context_handle, GEOSBufferParams *params, void *i
     if ((in1 == NULL) | npy_isnan(in2)) {
         ret_ptr = NULL;
     } else {
-        ret_ptr = GEOSBufferWithParams_r(context_handle, in1, params, in2);
+        ret_ptr = GEOSBufferWithParams_r(ctx, in1, params, in2);
         if (ret_ptr == NULL) { return PGERR_GEOS_EXCEPTION; }
     }
     OUTPUT_Y;
@@ -715,7 +718,7 @@ static void buffer_func(char **args, npy_intp *dimensions,
     }
 
     for(i = 0; i < n; i++, ip1 += is1, ip2 += is2, op1 += os1) {
-        errstate = buffer_inner(context_handle, params, ip1, ip2, op1)
+        errstate = buffer_inner(ctx, params, ip1, ip2, op1);
         if (errstate != PGERR_SUCCESS) { goto finish; }
     }
 
@@ -865,7 +868,7 @@ static void voronoi_polygons_func(char **args, npy_intp *dimensions,
             /* propagate NULL geometries; in3 = NULL is actually supported */
             ret_ptr = NULL;
         } else {
-            ret_ptr = GEOSVoronoiDiagram_r(context_handle, in1, in3, in2, (int) in4);
+            ret_ptr = GEOSVoronoiDiagram_r(ctx, in1, in3, in2, (int) in4);
             if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         OUTPUT_Y;
@@ -895,12 +898,12 @@ static void is_valid_reason_func(char **args, npy_intp *dimensions,
             Py_INCREF(Py_None);
             *out = Py_None;
         } else {
-            reason = GEOSisValidReason_r(context_handle, in1);
+            reason = GEOSisValidReason_r(ctx, in1);
             if (reason == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             /* convert to python string and set to out */
             Py_XDECREF(*out);
             *out = PyUnicode_FromString(reason);
-            GEOSFree_r(context_handle, reason);
+            GEOSFree_r(ctx, reason);
         }
     }
 
@@ -1014,14 +1017,14 @@ static void polygons_with_holes_func(char **args, npy_intp *dimensions,
 
     BINARY_SINGLE_COREDIM_LOOP_OUTER {
         if (!get_geom(*(GeometryObject **)ip1, &shell)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
-        shell_copy = GEOSGeom_clone_r(context_handle, shell);
+        shell_copy = GEOSGeom_clone_r(ctx, shell);
         if (shell_copy == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         n_holes = 0;
         cp1 = ip2;
         BINARY_SINGLE_COREDIM_LOOP_INNER {
             if (!get_geom(*(GeometryObject **)cp1, &hole)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
             if (hole == NULL) { continue; }
-            hole_copy = GEOSGeom_clone_r(context_handle, hole);
+            hole_copy = GEOSGeom_clone_r(ctx, hole);
             if (hole_copy == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             holes[n_holes] = hole_copy;
             n_holes++;
@@ -1048,7 +1051,7 @@ static void create_collection_func(char **args, npy_intp *dimensions,
     GEOS_INIT;
 
     GEOSGeometry **geoms = malloc(sizeof(void *) * dimensions[1]);
-    if (holes == NULL) { errstate = PGERR_NO_MALLOC; goto finish; }
+    if (geoms == NULL) { errstate = PGERR_NO_MALLOC; goto finish; }
 
     BINARY_SINGLE_COREDIM_LOOP_OUTER {
         type = *(int *) ip2;
@@ -1233,18 +1236,17 @@ static char from_wkt_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
 static void from_wkt_func(char **args, npy_intp *dimensions,
                           npy_intp *steps, void *data)
 {
-    void *context_handle = geos_context[0];
     GEOSGeometry *ret_ptr;
     PyObject *in1;
 
     GEOSWKTReader *reader;
     const char *wkt;
 
+    GEOS_INIT;
+
     /* Create the WKT reader */
-    reader = GEOSWKTReader_create_r(context_handle);
-    if (reader == NULL) {
-        return;
-    }
+    reader = GEOSWKTReader_create_r(ctx);
+    if (reader == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
 
     UNARY_LOOP {
         /* ip1 is pointer to array element PyObject* */
@@ -1258,27 +1260,26 @@ static void from_wkt_func(char **args, npy_intp *dimensions,
             /* Cast the PyObject (bytes or str) to char* */
             if (PyBytes_Check(in1)) {
                 wkt = PyBytes_AsString(in1);
-                if (wkt == NULL) { goto finish; }
+                if (wkt == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             }
             else if (PyUnicode_Check(in1)) {
                 wkt = PyUnicode_AsUTF8(in1);
-                if (wkt == NULL) { goto finish; }
+                if (wkt == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             } else {
                 PyErr_Format(PyExc_TypeError, "Expected bytes, got %s", Py_TYPE(in1)->tp_name);
                 goto finish;
             }
 
             /* Read the WKT */
-            ret_ptr = GEOSWKTReader_read_r(context_handle, reader, wkt);
-            if (ret_ptr == NULL) {
-                goto finish;
-            }
+            ret_ptr = GEOSWKTReader_read_r(ctx, reader, wkt);
+            if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         OUTPUT_Y;
     }
-    goto finish;
 
-    finish: GEOSWKTReader_destroy_r(context_handle, reader);
+    finish:
+      GEOSWKTReader_destroy_r(ctx, reader);
+      GEOS_FINISH;
 }
 static PyUFuncGenericFunction from_wkt_funcs[1] = {&from_wkt_func};
 
@@ -1286,9 +1287,10 @@ static char from_shapely_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
 static void from_shapely_func(char **args, npy_intp *dimensions,
                               npy_intp *steps, void *data)
 {
-    void *context_handle = geos_context[0];
     GEOSGeometry *in_ptr, *ret_ptr;
     PyObject *in1, *attr;
+
+    GEOS_INIT;
 
     UNARY_LOOP {
         /* ip1 is pointer to array element PyObject* */
@@ -1315,11 +1317,14 @@ static void from_shapely_func(char **args, npy_intp *dimensions,
             in_ptr = PyLong_AsVoidPtr(attr);
             Py_XDECREF(attr);
             /* Clone the geometry and finish */
-            ret_ptr = GEOSGeom_clone_r(context_handle, in_ptr);
-            if (ret_ptr == NULL) { return; }
+            ret_ptr = GEOSGeom_clone_r(ctx, in_ptr);
+            if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         OUTPUT_Y;
     }
+
+    finish:
+      GEOS_FINISH;
 }
 static PyUFuncGenericFunction from_shapely_funcs[1] = {&from_shapely_func};
 
@@ -1327,7 +1332,6 @@ static char to_wkb_dtypes[6] = {NPY_OBJECT, NPY_BOOL, NPY_INT, NPY_INT, NPY_BOOL
 static void to_wkb_func(char **args, npy_intp *dimensions,
                         npy_intp *steps, void *data)
 {
-    void *context_handle = geos_context[0];
     char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4], *op1 = args[5];
     npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4], os1 = steps[5];
     npy_intp n = dimensions[0];
@@ -1343,22 +1347,22 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
         return;
     }
 
+    GEOS_INIT;
+
     /* Create the WKB writer */
-    writer = GEOSWKBWriter_create_r(context_handle);
-    if (writer == NULL) {
-        return;
-    }
+    writer = GEOSWKBWriter_create_r(ctx);
+    if (writer == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
 
     char hex = *(npy_bool *) ip2;
-    GEOSWKBWriter_setOutputDimension_r(context_handle, writer, *(int *) ip3);
+    GEOSWKBWriter_setOutputDimension_r(ctx, writer, *(int *) ip3);
     int byte_order = *(int *) ip4;
     if (byte_order != -1) {
-        GEOSWKBWriter_setByteOrder_r(context_handle, writer, *(int *) ip4);
+        GEOSWKBWriter_setByteOrder_r(ctx, writer, *(int *) ip4);
     }
-    GEOSWKBWriter_setIncludeSRID_r(context_handle, writer, *(npy_bool *) ip5);
+    GEOSWKBWriter_setIncludeSRID_r(ctx, writer, *(npy_bool *) ip5);
 
     for(i = 0; i < n; i++, ip1 += is1, op1 += os1) {
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { goto finish; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         PyObject **out = (PyObject **)op1;
 
         if (in1 == NULL) {
@@ -1367,25 +1371,24 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
             *out = Py_None;
         } else {
             if (hex) {
-                wkb = GEOSWKBWriter_writeHEX_r(context_handle, writer, in1, &size);
+                wkb = GEOSWKBWriter_writeHEX_r(ctx, writer, in1, &size);
             } else {
-                wkb = GEOSWKBWriter_write_r(context_handle, writer, in1, &size);
+                wkb = GEOSWKBWriter_write_r(ctx, writer, in1, &size);
             }
-            if (wkb == NULL) {
-                goto finish;
-            }
+            if (wkb == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             Py_XDECREF(*out);
             if (hex) {
                 *out = PyUnicode_FromStringAndSize((char *) wkb, size);
             } else {
                 *out = PyBytes_FromStringAndSize((char *) wkb, size);
             }
-            GEOSFree_r(context_handle, wkb);
+            GEOSFree_r(ctx, wkb);
         }
     }
-    goto finish;
 
-    finish: GEOSWKBWriter_destroy_r(context_handle, writer);
+    finish:
+      GEOSWKBWriter_destroy_r(ctx, writer);
+      GEOS_FINISH;
 }
 static PyUFuncGenericFunction to_wkb_funcs[1] = {&to_wkb_func};
 
@@ -1393,7 +1396,6 @@ static char to_wkt_dtypes[6] = {NPY_OBJECT, NPY_INT, NPY_BOOL, NPY_INT, NPY_BOOL
 static void to_wkt_func(char **args, npy_intp *dimensions,
                         npy_intp *steps, void *data)
 {
-    void *context_handle = geos_context[0];
     char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4], *op1 = args[5];
     npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4], os1 = steps[5];
     npy_intp n = dimensions[0];
@@ -1408,18 +1410,18 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
         return;
     }
 
+    GEOS_INIT;
+
     /* Create the WKT writer */
-    writer = GEOSWKTWriter_create_r(context_handle);
-    if (writer == NULL) {
-        return;
-    }
-    GEOSWKTWriter_setRoundingPrecision_r(context_handle, writer, *(int *) ip2);
-    GEOSWKTWriter_setTrim_r(context_handle, writer, *(npy_bool *) ip3);
-    GEOSWKTWriter_setOutputDimension_r(context_handle, writer, *(int *) ip4);
-    GEOSWKTWriter_setOld3D_r(context_handle, writer, *(npy_bool *) ip5);
+    writer = GEOSWKTWriter_create_r(ctx);
+    if (writer == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+    GEOSWKTWriter_setRoundingPrecision_r(ctx, writer, *(int *) ip2);
+    GEOSWKTWriter_setTrim_r(ctx, writer, *(npy_bool *) ip3);
+    GEOSWKTWriter_setOutputDimension_r(ctx, writer, *(int *) ip4);
+    GEOSWKTWriter_setOld3D_r(ctx, writer, *(npy_bool *) ip5);
 
     for(i = 0; i < n; i++, ip1 += is1, op1 += os1) {
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { goto finish; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         PyObject **out = (PyObject **)op1;
 
         if (in1 == NULL) {
@@ -1427,18 +1429,17 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
             Py_INCREF(Py_None);
             *out = Py_None;
         } else {
-            wkt = GEOSWKTWriter_write_r(context_handle, writer, in1);
-            if (wkt == NULL) {
-                goto finish;
-            }
+            wkt = GEOSWKTWriter_write_r(ctx, writer, in1);
+            if (wkt == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             Py_XDECREF(*out);
             *out = PyUnicode_FromString(wkt);
-            GEOSFree_r(context_handle, wkt);
+            GEOSFree_r(ctx, wkt);
         }
     }
-    goto finish;
 
-    finish: GEOSWKTWriter_destroy_r(context_handle, writer);
+    finish:
+      GEOSWKTWriter_destroy_r(ctx, writer);
+      GEOS_FINISH;
 }
 static PyUFuncGenericFunction to_wkt_funcs[1] = {&to_wkt_func};
 
