@@ -216,11 +216,13 @@ def test_frechet_densify_nan():
     assert np.isnan(actual)
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
 def test_frechet_distance_empty():
     actual = pygeos.frechet_distance(point, empty)
     assert np.isnan(actual)
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
 def test_frechet_distance_densify_empty():
     actual = pygeos.frechet_distance(point, empty, densify=0.2)
     assert np.isnan(actual)
