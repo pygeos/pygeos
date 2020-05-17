@@ -535,10 +535,9 @@ static void *hausdorff_distance_data[1] = {GEOSHausdorffDistance_r};
       /* Handle empty geometries (they give segfaults) */
       if (GEOSisEmpty_r(context, a) | GEOSisEmpty_r(context, b)) {
           *c = NPY_NAN;
-      } else {
-          return GEOSFrechetDistance_r(context, a, b, c);
+          return 1;
       }
-      return 1;
+      return GEOSFrechetDistance_r(context, a, b, c);
   }
   static void *frechet_distance_data[1] = {GEOSFrechetDistanceWrapped_r};
 #endif

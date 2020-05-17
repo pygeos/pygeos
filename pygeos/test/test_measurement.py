@@ -178,47 +178,72 @@ def test_haussdorf_distance_densify_empty():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
-def test_frechet_distance():
-    # example from GEOS docs
-    a = pygeos.linestrings([[0, 0], [50, 200], [100, 0], [150, 200], [200, 0]])
-    b = pygeos.linestrings([[0, 200], [200, 150], [0, 100], [200, 50], [0, 0]])
-    actual = pygeos.frechet_distance(a, b)
-    assert actual == pytest.approx(200, abs=1e-7)
-    c = pygeos.linestrings([[0, 0], [200, 50], [0, 100], [200, 150], [0, 200]])
-    actual = pygeos.frechet_distance(a, c)
-    assert actual == pytest.approx(282.842712474619, abs=1e-12)
-
-    # example from GEOS tests
-    a = pygeos.linestrings([[0, 0], [100, 0]])
-    b = pygeos.linestrings([[0, 0], [50, 50], [100, 0]])
-    actual = pygeos.frechet_distance(a, b)
-    assert actual == pytest.approx(70.7106781186548, abs=1e-12)
+@pytest.mark.parametrize(
+    "geom1, geom2, expected",
+    [
+        # example from GEOS docs
+        (
+            pygeos.linestrings([[0, 0], [50, 200], [100, 0], [150, 200], [200, 0]]),
+            pygeos.linestrings([[0, 200], [200, 150], [0, 100], [200, 50], [0, 0]]),
+            200
+        ),
+        # another example from GEOS docs
+        (
+            pygeos.linestrings([[0, 0], [50, 200], [100, 0], [150, 200], [200, 0]]),
+            pygeos.linestrings([[0, 0], [200, 50], [0, 100], [200, 150], [0, 200]]),
+            282.842712474619
+        ),
+        # example from GEOS tests
+        (
+            pygeos.linestrings([[0, 0], [100, 0]]),
+            pygeos.linestrings([[0, 0], [50, 50], [100, 0]]),
+            70.7106781186548
+        ),
+    ],
+)
+def test_frechet_distance(geom1, geom2, expected):
+    actual = pygeos.frechet_distance(geom1, geom2)
+    assert actual == pytest.approx(expected, abs=1e-12)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
-def test_frechet_distance_densify():
-    # example from GEOS tests
-    a = pygeos.linestrings([[0, 0], [100, 0]])
-    b = pygeos.linestrings([[0, 0], [50, 50], [100, 0]])
-    actual = pygeos.frechet_distance(a, b, densify=0.001)
-    assert actual == pytest.approx(50, abs=0.1)
+@pytest.mark.parametrize(
+    "geom1, geom2, densify, expected",
+    [
+        # example from GEOS tests
+        (
+            pygeos.linestrings([[0, 0], [100, 0]]),
+            pygeos.linestrings([[0, 0], [50, 50], [100, 0]]),
+            0.001,
+            50
+        ),
+    ],
+)
+def test_frechet_distance_densify(geom1, geom2, densify, expected):
+    actual = pygeos.frechet_distance(geom1, geom2, densify=densify)
+    assert actual == pytest.approx(expected, abs=1e-12)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
-def test_frechet_distance_missing():
-    actual = pygeos.frechet_distance(point, None)
+@pytest.mark.parametrize(
+    "geom1, geom2",
+    [
+        (point, None),
+        (None, point),
+        (None, None),
+        (point, empty),
+        (empty, point),
+        (empty, empty),
+    ],
+)
+def test_frechet_distance_nan_for_invalid_geometry_inputs(geom1, geom2):
+    actual = pygeos.frechet_distance(geom1, geom2)
     assert np.isnan(actual)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
 def test_frechet_densify_nan():
     actual = pygeos.frechet_distance(point, point, densify=np.nan)
-    assert np.isnan(actual)
-
-
-@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
-def test_frechet_distance_empty():
-    actual = pygeos.frechet_distance(point, empty)
     assert np.isnan(actual)
 
 
