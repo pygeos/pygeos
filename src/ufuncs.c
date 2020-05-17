@@ -260,6 +260,19 @@ static void *GetExteriorRing(void *context, void *geom) {
     return ret;
 }
 static void *get_exterior_ring_data[1] = {GetExteriorRing};
+/* the normalize funcion acts inplace */
+static void *GEOSNormalize_r_with_clone(void *context, void *geom) {
+    int ret;
+    void *new_geom = GEOSGeom_clone_r(context, geom);
+    if (new_geom == NULL) { return NULL; }
+    ret = GEOSNormalize_r(context, new_geom);
+    if (ret == -1) {
+        GEOSGeom_destroy_r(context, new_geom);
+        return NULL;
+    }
+    return new_geom;
+}
+static void *normalize_data[1] = {GEOSNormalize_r_with_clone};
 /* a linear-ring to polygon conversion function */
 static void *GEOSLinearRingToPolygon(void *context, void *geom) {
     void *shell = GEOSGeom_clone_r(context, geom);
@@ -267,6 +280,10 @@ static void *GEOSLinearRingToPolygon(void *context, void *geom) {
     return GEOSGeom_createPolygon_r(context, shell, NULL, 0);
 }
 static void *polygons_without_holes_data[1] = {GEOSLinearRingToPolygon};
+#if GEOS_SINCE_380
+  static void *build_area_data[1] = {GEOSBuildArea_r};
+  static void *make_valid_data[1] = {GEOSMakeValid_r};
+#endif
 typedef void *FuncGEOS_Y_Y(void *context, void *a);
 static char Y_Y_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
 static void Y_Y_func(char **args, npy_intp *dimensions,
@@ -891,7 +908,7 @@ static void is_valid_reason_func(char **args, npy_intp *dimensions,
         PyObject **out = (PyObject **)op1;
         /* get the geometry return on error */
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
-        if ((in1 == NULL)) {
+        if (in1 == NULL) {
             /* Missing geometries give None */
             Py_XDECREF(*out);
             Py_INCREF(Py_None);
@@ -1545,6 +1562,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_Y_Y (line_merge);
     DEFINE_Y_Y (extract_unique_points);
     DEFINE_Y_Y (get_exterior_ring);
+    DEFINE_Y_Y (normalize);
 
     DEFINE_Yi_Y (get_point);
     DEFINE_Yi_Y (get_interior_ring);
@@ -1601,6 +1619,11 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_CUSTOM (to_wkb, 5);
     DEFINE_CUSTOM (to_wkt, 5);
     DEFINE_CUSTOM (from_shapely, 1);
+
+    #if GEOS_SINCE_380
+      DEFINE_Y_Y (make_valid);
+      DEFINE_Y_Y (build_area);
+    #endif
 
     Py_DECREF(ufunc);
     return 0;
