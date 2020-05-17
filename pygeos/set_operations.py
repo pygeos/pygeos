@@ -218,7 +218,7 @@ def coverage_union(a, b, **kwargs):
     --------
     >>> polygon = Geometry("POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))")
     >>> actual = coverage_union(polygon, Geometry("POLYGON ((1 0, 1 1, 2 1, 2 0, 1 0))"))
-    >>> from .predicates import equals
+    >>> from pygeos.predicates import equals
     >>> expected = Geometry("POLYGON ((0 0, 0 1, 1 1, 2 1, 2 0, 1 0, 0 0))")
     >>> equals(actual, expected)
     True
@@ -268,7 +268,7 @@ def coverage_union_all(geometries, axis=0, **kwargs):
     >>> polygon_1 = Geometry("POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))")
     >>> polygon_2 = Geometry("POLYGON ((1 0, 1 1, 2 1, 2 0, 1 0))")
     >>> actual = coverage_union_all([polygon_1, polygon_2])
-    >>> from .predicates import equals
+    >>> from pygeos.predicates import equals
     >>> expected = Geometry("POLYGON ((0 0, 0 1, 1 1, 2 1, 2 0, 1 0, 0 0))")
     >>> equals(actual, expected)
     True
