@@ -72,8 +72,7 @@ enum {
     _GEOS_INIT
 
 #define GEOS_HANDLE_ERR\
-    if (strlen(last_warning) > 0) { PyErr_WarnEx(PyExc_Warning, last_warning, 1); }\
-    if ((errstate != PGERR_GEOS_EXCEPTION) && (strlen(last_error) > 0)) { PyErr_WarnEx(PyExc_Warning, last_error, 1); }\
+    if (last_warning[0] != 0) { PyErr_WarnEx(PyExc_Warning, last_warning, 0); }\
     switch (errstate) {\
       case PGERR_SUCCESS:\
         break;\
@@ -1361,6 +1360,9 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
     }
     GEOSWKBWriter_setIncludeSRID_r(ctx, writer, *(npy_bool *) ip5);
 
+    // Check if the above functions caused a GEOS exception
+    if (last_error[0] != 0) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+
     for(i = 0; i < n; i++, ip1 += is1, op1 += os1) {
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         PyObject **out = (PyObject **)op1;
@@ -1419,6 +1421,9 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
     GEOSWKTWriter_setTrim_r(ctx, writer, *(npy_bool *) ip3);
     GEOSWKTWriter_setOutputDimension_r(ctx, writer, *(int *) ip4);
     GEOSWKTWriter_setOld3D_r(ctx, writer, *(npy_bool *) ip5);
+
+    // Check if the above functions caused a GEOS exception
+    if (last_error[0] != 0) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
 
     for(i = 0; i < n; i++, ip1 += is1, op1 += os1) {
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
