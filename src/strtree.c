@@ -89,10 +89,14 @@ static PyArrayObject *copy_kvec_to_npy(npy_intp_vec *arr)
 
 static void STRtree_dealloc(STRtreeObject *self)
 {
-    void *context = geos_context[0];
     size_t i, size;
+
     // free the tree
-    if (self->ptr != NULL) { GEOSSTRtree_destroy_r(context, self->ptr); }
+    if (self->ptr != NULL) {
+        GEOS_INIT;
+        GEOSSTRtree_destroy_r(ctx, self->ptr);
+        GEOS_FINISH;        
+    }
     // free the geometries
     size = kv_size(self->_geoms);
     for (i = 0; i < size; i++) {
@@ -113,7 +117,6 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
     GEOSGeometry *geom;
     pg_geom_obj_vec _geoms;
     GeometryObject *obj;
-    GEOSContextHandle_t context = geos_context[0];
 
     if (!PyArg_ParseTuple(args, "Oi", &arr, &node_capacity)) {
         return NULL;
@@ -131,9 +134,13 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         return NULL;
     }
 
-    tree = GEOSSTRtree_create_r(context, (size_t) node_capacity);
+    GEOS_INIT;
+
+    tree = GEOSSTRtree_create_r(ctx, (size_t) node_capacity);
     if (tree == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
         return NULL;
+        GEOS_FINISH;
     }
 
     n = PyArray_SIZE((PyArrayObject *) arr);
@@ -145,11 +152,13 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         obj = *(GeometryObject **) ptr;
         /* fail and cleanup incase obj was no geometry */
         if (!get_geom(obj, &geom)) {
-            GEOSSTRtree_destroy_r(context, tree);
+            errstate = PGERR_NOT_A_GEOMETRY;
+            GEOSSTRtree_destroy_r(ctx, tree);
             // free the geometries
             count = kv_size(_geoms);
             for (i = 0; i < count; i++) { Py_XDECREF(kv_A(_geoms, i)); }
             kv_destroy(_geoms);
+            GEOS_FINISH;
             return NULL;
         }
         /* skip incase obj was None */
@@ -160,18 +169,19 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
             Py_INCREF(obj);
             kv_push(GeometryObject *, _geoms, obj);
             count++;
-            GEOSSTRtree_insert_r(context, tree, geom, (void *) i );
+            GEOSSTRtree_insert_r(ctx, tree, geom, (void *) i );
         }
     }
 
     STRtreeObject *self = (STRtreeObject *) type->tp_alloc(type, 0);
     if (self == NULL) {
-        GEOSSTRtree_destroy_r(context, tree);
+        GEOSSTRtree_destroy_r(ctx, tree);
+        GEOS_FINISH;
         return NULL;
     }
     self->ptr = tree;
     self->count = count;
-    self->_geoms = _geoms;
+    self->_geoms = _geoms;    
     return (PyObject *) self;
 }
 
@@ -208,23 +218,22 @@ void query_callback(void *item, void *user_data)
  * Returns the number of geometries that met the predicate or -1 in case of error.
  * */
 
-static int evaluate_predicate(FuncGEOS_YpY_b *predicate_func,
+static char evaluate_predicate(void* context,
+                              FuncGEOS_YpY_b *predicate_func,
                               GEOSGeometry *geom,
                               pg_geom_obj_vec *tree_geometries,
                               npy_intp_vec *in_indexes,
-                              npy_intp_vec *out_indexes)
+                              npy_intp_vec *out_indexes,
+                              npy_intp* count)
 {
-    GEOSContextHandle_t context = geos_context[0];
     GeometryObject *pg_geom;
     GEOSGeometry *target_geom;
     const GEOSPreparedGeometry *prepared_geom;
-    npy_intp i, size, index, count = 0;
+    npy_intp i, size, index;
 
     // Create prepared geometry
     prepared_geom = GEOSPrepare_r(context, geom);
-    if (prepared_geom == NULL) {
-        return -1;
-    }
+    if (prepared_geom == NULL) { return PGERR_GEOS_EXCEPTION; }
 
     size = kv_size(*in_indexes);
     for (i = 0; i < size; i++) {
@@ -245,7 +254,7 @@ static int evaluate_predicate(FuncGEOS_YpY_b *predicate_func,
 
     GEOSPreparedGeom_destroy_r(context, prepared_geom);
 
-    return count;
+    return PGERR_SUCCESS;
 }
 
 /* Query the tree based on input geometry and predicate function.
@@ -260,13 +269,12 @@ static int evaluate_predicate(FuncGEOS_YpY_b *predicate_func,
  * */
 
 static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
-    GEOSContextHandle_t context = geos_context[0];
     GeometryObject *geometry;
     int predicate_id = 0; // default no predicate
     GEOSGeometry *geom;
     npy_intp_vec query_indexes, predicate_indexes; // Resizable array for matches for each geometry
     npy_intp count;
-    FuncGEOS_YpY_b *predicate_func;
+    FuncGEOS_YpY_b *predicate_func = NULL;
     PyArrayObject *result;
 
     if (self->ptr == NULL) {
@@ -288,11 +296,20 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         return PyArray_SimpleNew(1, dims, NPY_INTP);
     }
 
+    if (predicate_id != 0) {
+        predicate_func = get_predicate_func(predicate_id);
+        if (predicate_func == NULL) {
+            return NULL;
+        }
+    }
+
+    GEOS_INIT;
+
     // query the tree for indices of geometries in the tree with
     // envelopes that intersect the geometry.
     kv_init(query_indexes);
-    if (geom != NULL && !GEOSisEmpty_r(context, geom)) {
-        GEOSSTRtree_query_r(context, self->ptr, geom, query_callback, &query_indexes);
+    if (geom != NULL && !GEOSisEmpty_r(ctx, geom)) {
+        GEOSSTRtree_query_r(ctx, self->ptr, geom, query_callback, &query_indexes);
     }
 
     if (predicate_id == 0 || kv_size(query_indexes) == 0) {
@@ -300,21 +317,17 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
         // query.  If array is empty, return an empty numpy array
         result = copy_kvec_to_npy(&query_indexes);
         kv_destroy(query_indexes);
+        GEOS_FINISH;
         return (PyObject *) result;
     }
 
-    predicate_func = get_predicate_func(predicate_id);
-    if (predicate_func == NULL) {
-        kv_destroy(query_indexes);
-        return NULL;
-    }
-
     kv_init(predicate_indexes);
-    count = evaluate_predicate(predicate_func, geom, &self->_geoms, &query_indexes, &predicate_indexes);
-    if (count == -1) {
+    errstate = evaluate_predicate(ctx, predicate_func, geom, &self->_geoms, &query_indexes, &predicate_indexes, &count);
+    if (errstate != PGERR_SUCCESS) {
         // error performing predicate
         kv_destroy(query_indexes);
         kv_destroy(predicate_indexes);
+        GEOS_FINISH;
         return NULL;
     }
 
@@ -322,7 +335,7 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
 
     kv_destroy(query_indexes);
     kv_destroy(predicate_indexes);
-
+    GEOS_FINISH;
     return (PyObject *) result;
 }
 
@@ -341,14 +354,13 @@ static PyObject *STRtree_query(STRtreeObject *self, PyObject *args) {
  * */
 
 static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
-    GEOSContextHandle_t context = geos_context[0];
     PyObject *arr;
     PyArrayObject *pg_geoms;
     GeometryObject *pg_geom;
     int predicate_id = 0; // default no predicate
     GEOSGeometry *geom;
     npy_intp_vec query_indexes, src_indexes, target_indexes;
-    npy_intp i, j, n, size;
+    npy_intp i, j, n, size = 0;
     FuncGEOS_YpY_b *predicate_func = NULL;
     PyArrayObject *result;
 
@@ -394,19 +406,22 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
     kv_init(src_indexes);
     kv_init(target_indexes);
 
+    GEOS_INIT;
+
     for(i = 0; i < n; i++) {
         // get pygeos geometry from input geometry array
         pg_geom = *(GeometryObject **) PyArray_GETPTR1(pg_geoms, i);
         if (!get_geom(pg_geom, &geom)) {
-            PyErr_SetString(PyExc_TypeError, "Invalid geometry");
+            errstate = PGERR_NOT_A_GEOMETRY;
+            GEOS_FINISH;
             return NULL;
         }
-        if (geom == NULL || GEOSisEmpty_r(context, geom)) {
+        if (geom == NULL || GEOSisEmpty_r(ctx, geom)) {
             continue;
         }
 
         kv_init(query_indexes);
-        GEOSSTRtree_query_r(context, self->ptr, geom, query_callback, &query_indexes);
+        GEOSSTRtree_query_r(ctx, self->ptr, geom, query_callback, &query_indexes);
 
         if (kv_size(query_indexes) == 0) {
             // no target geoms in query window, skip this source geom
@@ -423,14 +438,14 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
             }
         } else {
             // this pushes directly onto target_indexes
-            size = evaluate_predicate(predicate_func, geom,&self->_geoms,
-                                      &query_indexes, &target_indexes);
+            errstate = evaluate_predicate(ctx, predicate_func, geom,&self->_geoms,
+                                          &query_indexes, &target_indexes, &size);
 
-            if (size == -1) {
-                PyErr_SetString(PyExc_TypeError, "Error evaluating predicate function");
+            if (errstate != PGERR_SUCCESS) {
                 kv_destroy(query_indexes);
                 kv_destroy(src_indexes);
                 kv_destroy(target_indexes);
+                GEOS_FINISH;
                 return NULL;
             }
 
@@ -441,6 +456,8 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
 
         kv_destroy(query_indexes);
     }
+
+    GEOS_FINISH;
 
     size = kv_size(src_indexes);
     npy_intp dims[2] = {2, size};

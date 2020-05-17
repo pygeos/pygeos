@@ -16,14 +16,6 @@
 #include "pygeom.h"
 #include "fast_loop_macros.h"
 
-enum {
-	PGERR_SUCCESS,
-	PGERR_NOT_A_GEOMETRY,
-	PGERR_GEOS_EXCEPTION,
-    PGERR_NO_MALLOC,
-    PGERR_GEOMETRY_TYPE
-};
-
 #define CREATE_COORDSEQ(SIZE, NDIM)\
     void *coord_seq = GEOSCoordSeq_create_r(ctx, SIZE, NDIM);\
     if (coord_seq == NULL) {\
@@ -50,52 +42,6 @@ enum {
     PyObject **out = (PyObject **)op1;\
     Py_XDECREF(*out);\
     *out = ret
-
-#define _GEOS_INIT_DEF\
-    char errstate = PGERR_SUCCESS;\
-    char last_error[1024] = "";\
-    char last_warning[1024] = "";\
-    GEOSContextHandle_t ctx
-
-#define _GEOS_INIT\
-    ctx = GEOS_init_r();\
-    GEOSContext_setErrorMessageHandler_r(ctx, geos_error_handler, last_error);\
-    GEOSContext_setNoticeMessageHandler_r(ctx, geos_notice_handler, last_warning)
-
-#define GEOS_INIT\
-    _GEOS_INIT_DEF;\
-    _GEOS_INIT
-
-#define GEOS_INIT_THREADS\
-    _GEOS_INIT_DEF;\
-    Py_BEGIN_ALLOW_THREADS\
-    _GEOS_INIT
-
-#define GEOS_HANDLE_ERR\
-    if (last_warning[0] != 0) { PyErr_WarnEx(PyExc_Warning, last_warning, 0); }\
-    switch (errstate) {\
-      case PGERR_SUCCESS:\
-        break;\
-      case PGERR_NOT_A_GEOMETRY:\
-        PyErr_SetString(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects."); break;\
-      case PGERR_GEOS_EXCEPTION:\
-        PyErr_SetString(geos_exception[0], last_error); break;\
-      case PGERR_NO_MALLOC:\
-        PyErr_SetString(PyExc_MemoryError, "Could not allocate memory"); break;\
-      case PGERR_GEOMETRY_TYPE:\
-        PyErr_SetString(PyExc_TypeError, "One of the Geometry inputs is of incorrect geometry type."); break;\
-      default:\
-        PyErr_Format(PyExc_RuntimeError, "Pygeos ufunc returned with unknown error state code %d.", errstate); break;\
-    }
-
-#define GEOS_FINISH\
-    GEOS_finish_r(ctx);\
-    GEOS_HANDLE_ERR
-
-#define GEOS_FINISH_THREADS\
-    GEOS_finish_r(ctx);\
-    Py_END_ALLOW_THREADS\
-    GEOS_HANDLE_ERR
 
 /* Define the geom -> bool functions (Y_b) */
 static void *is_empty_data[1] = {GEOSisEmpty_r};
