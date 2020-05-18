@@ -54,6 +54,7 @@ def distance(a, b, **kwargs):
     return lib.distance(a, b, **kwargs)
 
 
+@multithreading_enabled
 def bounds(geometry, **kwargs):
     """Computes the bounds (extent) of a geometry.
 
