@@ -36,8 +36,8 @@ enum {
 	PGERR_SUCCESS,
 	PGERR_NOT_A_GEOMETRY,
 	PGERR_GEOS_EXCEPTION,
-    PGERR_NO_MALLOC,
-    PGERR_GEOMETRY_TYPE
+  PGERR_NO_MALLOC,
+  PGERR_GEOMETRY_TYPE
 };
 
 // Define how the states are handled by CPython
