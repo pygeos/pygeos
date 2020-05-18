@@ -236,6 +236,7 @@ static char evaluate_predicate(void* context,
     if (prepared_geom == NULL) { return PGERR_GEOS_EXCEPTION; }
 
     size = kv_size(*in_indexes);
+    *count = 0;
     for (i = 0; i < size; i++) {
         // get index for right geometries from in_indexes
         index = kv_A(*in_indexes, i);
@@ -248,7 +249,7 @@ static char evaluate_predicate(void* context,
         // keep the index value if it passes the predicate
         if (predicate_func(context, prepared_geom, target_geom)) {
             kv_push(npy_intp, *out_indexes, index);
-            count++;
+            (*count)++;
         }
     }
 
@@ -360,7 +361,7 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
     int predicate_id = 0; // default no predicate
     GEOSGeometry *geom;
     npy_intp_vec query_indexes, src_indexes, target_indexes;
-    npy_intp i, j, n, size = 0;
+    npy_intp i, j, n, size;
     FuncGEOS_YpY_b *predicate_func = NULL;
     PyArrayObject *result;
 
