@@ -255,9 +255,19 @@ def test_frechet_distance_nan_for_invalid_geometry_inputs(geom1, geom2):
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
-def test_frechet_densify_nan():
-    actual = pygeos.frechet_distance(point, point, densify=np.nan)
-    assert np.isnan(actual)
+@pytest.mark.parametrize(
+    "densify",
+    [
+        np.nan,
+        0,
+        -1,
+        2,
+        "0.5"
+    ]
+)
+def test_frechet_densify_invalid_values(densify):
+    with pytest.raises(ValueError):
+        actual = pygeos.frechet_distance(point, point, densify=densify)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
