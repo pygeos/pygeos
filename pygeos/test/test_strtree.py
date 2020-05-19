@@ -648,6 +648,34 @@ def test_query_touches_polygons(poly_tree, geometry, expected):
 
 
 ### Bulk query tests
+@pytest.mark.parametrize(
+    "tree_geometry,geometry,expected",
+    [
+        # Empty tree returns no results
+        ([], [None], (2, 0)),
+        ([], [point], (2, 0)),
+        # None is ignored when constructing and querying the tree
+        ([None], [None], (2, 0)),
+        ([point], [None], (2, 0)),
+        ([None], [point], (2, 0)),
+        # Empty is included in the tree, but ignored when querying the tree
+        ([empty], [empty], (2, 0)),
+        ([empty], [point], (2, 0)),
+        ([point, empty], [empty], (2, 0)),
+        # Only the non-empty geometry gets hits
+        ([point, empty], [point, empty], (2, 1)),
+        (
+            [point, empty, empty_point, empty_line_string],
+            [point, empty, empty_point, empty_line_string],
+            (2, 1),
+        ),
+    ],
+)
+def test_query_bulk(tree_geometry, geometry, expected):
+    tree = pygeos.STRtree(np.array(tree_geometry))
+    assert tree.query_bulk(np.array(geometry)).shape == expected
+
+
 def test_query_bulk_wrong_dimensions(tree):
     with pytest.raises(TypeError, match="Array should be one dimensional"):
         tree.query_bulk([[pygeos.points(0.5, 0.5)]])
