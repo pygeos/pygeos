@@ -2,7 +2,7 @@ from enum import IntEnum
 import numpy as np
 from . import lib
 from . import Geometry  # NOQA
-from .utils import multithreading_enabled
+from .decorators import multithreading_enabled
 
 __all__ = [
     "GeometryType",

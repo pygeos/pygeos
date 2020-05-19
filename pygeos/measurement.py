@@ -2,7 +2,7 @@ import numpy as np
 
 from . import lib
 from . import Geometry  # NOQA
-from .utils import multithreading_enabled
+from .decorators import multithreading_enabled
 
 __all__ = ["area", "distance", "bounds", "total_bounds", "length", "hausdorff_distance"]
 
