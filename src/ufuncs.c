@@ -248,8 +248,7 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
             ret_ptr = NULL;
         } else {
             ret_ptr = func(ctx, in1);
-            // TODO distinguish a returned NULL with and without error
-            // if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            if ((ret_ptr == NULL) && (last_error[0] != 0)) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         OUTPUT_Y;
     }
@@ -420,7 +419,7 @@ static void Yi_Y_func(char **args, npy_intp *dimensions,
             ret_ptr = NULL;
         } else {
             ret_ptr = func(ctx, in1, in2);
-            // TODO distinguish a returned NULL with and without error
+            if ((ret_ptr == NULL) && (last_error[0] != 0)) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         OUTPUT_Y;
     }
@@ -546,6 +545,15 @@ static void Y_i_func(char **args, npy_intp *dimensions,
 {
     FuncGEOS_Y_i *func = (FuncGEOS_Y_i *)data;
     GEOSGeometry *in1;
+    int result;
+
+    // In the GEOS CAPI, sometimes -1 is an error, sometimes 0
+    int errcode;
+    if (((void *) func == GEOSGeom_getDimensions_r) || ((void *) func == GEOSGetSRID_r)) {
+        errcode = 0;
+    } else {
+        errcode = -1;
+    }
 
     GEOS_INIT_THREADS;
 
@@ -556,9 +564,9 @@ static void Y_i_func(char **args, npy_intp *dimensions,
             /* None results in -1 */
             *(npy_int *)op1 = -1;
         } else {
-            *(npy_int *)op1 = func(ctx, in1);
-            // TODO  (sometimes -1 is an error, sometimes 0)
-            // if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            result = func(ctx, in1);
+            if ((result == errcode) && (last_error[0] != 0)) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            *(npy_int *)op1 = result;
         }
     }
 
