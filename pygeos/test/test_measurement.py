@@ -181,11 +181,24 @@ def test_haussdorf_distance_densify_empty():
 @pytest.mark.parametrize(
     "geom1, geom2, expected",
     [
+        # identical geometries should have 0 distance
+        (
+            pygeos.linestrings([[0, 0], [100, 0]]),
+            pygeos.linestrings([[0, 0], [100, 0]]),
+            0,
+        ),
         # example from GEOS docs
         (
             pygeos.linestrings([[0, 0], [50, 200], [100, 0], [150, 200], [200, 0]]),
             pygeos.linestrings([[0, 200], [200, 150], [0, 100], [200, 50], [0, 0]]),
             200
+        ),
+        # same geometries but different curve direction results in maximum
+        # distance between vertices on the lines.
+        (
+            pygeos.linestrings([[0, 0], [50, 200], [100, 0], [150, 200], [200, 0]]),
+            pygeos.linestrings([[200, 0], [150, 200], [100, 0], [50, 200], [0, 0]]),
+            200,
         ),
         # another example from GEOS docs
         (
