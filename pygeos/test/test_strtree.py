@@ -116,6 +116,21 @@ def test_query_empty(tree, geometry):
 
 
 @pytest.mark.parametrize(
+    "tree_geometry, geometry,expected",
+    [
+        ([point], box(0, 0, 10, 10), [0]),
+        # None is ignored in the tree, but the index of the valid geometry should
+        # be retained.
+        ([None, point], box(0, 0, 10, 10), [1]),
+        ([None, empty, point], box(0, 0, 10, 10), [2]),
+    ],
+)
+def test_query(tree_geometry, geometry, expected):
+    tree = pygeos.STRtree(np.array(tree_geometry))
+    assert_array_equal(tree.query(geometry), expected)
+
+
+@pytest.mark.parametrize(
     "geometry,expected",
     [
         # points do not intersect
