@@ -53,10 +53,10 @@ def poly_tree():
         # None geometries are ignored when creating tree
         ([None], 0, 0),
         ([point, None], 1, 1),
-        # empty geometry should be counted but have no hits
-        ([empty, empty_point, empty_line_string], 3, 0),
+        # empty geometries are ignored when creating tree
+        ([empty, empty_point, empty_line_string], 0, 0),
         # only the valid geometry should have a hit
-        ([empty, point, empty_point, empty_line_string], 4, 1),
+        ([empty, point, empty_point, empty_line_string], 1, 1),
     ],
 )
 def test_init(geometry, count, hits):
