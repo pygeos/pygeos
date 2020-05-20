@@ -748,6 +748,10 @@ static void frechet_distance_densify_func(char **args, npy_intp *dimensions,
         if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3) | GEOSisEmpty_r(context_handle, in1) | GEOSisEmpty_r(context_handle, in2)) {
             *(double *)op1 = NPY_NAN;
         } else {
+            if ((in3 <= 0) | (in3 > 1)) {
+                PyErr_Format(PyExc_ValueError, "Densify must be in range (0.0 - 1.0], got %f instead", in3);
+                return;
+            }
             GEOSFrechetDistanceDensify_r(context_handle, in1, in2, in3, (double *) op1);
         }
     }

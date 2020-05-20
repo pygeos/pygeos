@@ -255,14 +255,29 @@ def test_frechet_distance_nan_for_invalid_geometry_inputs(geom1, geom2):
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+def test_frechet_densify_ndarray():
+    actual = pygeos.frechet_distance(
+        pygeos.linestrings([[0, 0], [100, 0]]),
+        pygeos.linestrings([[0, 0], [50, 50], [100, 0]]),
+        densify=[0.1, 0.2, 1]
+    )
+    expected = np.array([50, 50.99019514, 70.7106781186548])
+    np.testing.assert_array_almost_equal(actual, expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+def test_frechet_densify_nan():
+    actual = pygeos.frechet_distance(line_string, line_string, densify=np.nan)
+    assert np.isnan(actual)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
 @pytest.mark.parametrize(
     "densify",
     [
-        np.nan,
         0,
         -1,
         2,
-        "0.5"
     ]
 )
 def test_frechet_densify_invalid_values(densify):

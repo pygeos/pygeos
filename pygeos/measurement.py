@@ -211,10 +211,4 @@ def frechet_distance(a, b, densify=None, **kwargs):
     """
     if densify is None:
         return lib.frechet_distance(a, b, **kwargs)
-
-    if not isinstance(densify, (int, float)) or np.isnan(densify) or densify <= 0 or densify > 1:
-        raise ValueError(
-                "Densify must be in range (0.0 - 1.0], got {} instead".format(densify)
-            )
-
     return lib.frechet_distance_densify(a, b, densify, **kwargs)
