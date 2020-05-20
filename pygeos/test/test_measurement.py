@@ -241,11 +241,11 @@ def test_frechet_distance_densify(geom1, geom2, densify, expected):
 @pytest.mark.parametrize(
     "geom1, geom2",
     [
-        (point, None),
-        (None, point),
+        (line_string, None),
+        (None, line_string),
         (None, None),
-        (point, empty),
-        (empty, point),
+        (line_string, empty),
+        (empty, line_string),
         (empty, empty),
     ],
 )
@@ -266,11 +266,11 @@ def test_frechet_distance_nan_for_invalid_geometry_inputs(geom1, geom2):
     ]
 )
 def test_frechet_densify_invalid_values(densify):
-    with pytest.raises(ValueError):
-        actual = pygeos.frechet_distance(point, point, densify=densify)
+    with pytest.raises(ValueError, match=r"Densify must be in range \(0.0 - 1.0], got .* instead"):
+        actual = pygeos.frechet_distance(line_string, line_string, densify=densify)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
 def test_frechet_distance_densify_empty():
-    actual = pygeos.frechet_distance(point, empty, densify=0.2)
+    actual = pygeos.frechet_distance(line_string, empty, densify=0.2)
     assert np.isnan(actual)
