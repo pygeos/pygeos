@@ -164,7 +164,7 @@ static PyObject *STRtree_new(PyTypeObject *type, PyObject *args,
         /* If geometry is None or empty, do not add it to the tree or count.
          * Set it as NULL for the internal geometries used for predicate tests.
          */
-        if (geom == NULL || GEOSisEmpty_r(context, geom)) {
+        if (geom == NULL || GEOSisEmpty_r(ctx, geom)) {
             kv_push(GeometryObject *, _geoms, NULL);
         } else {
         /* perform the insert */
