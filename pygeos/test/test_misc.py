@@ -49,10 +49,10 @@ def test_requires_geos_not_ok(version, mocked_geos_version):
 
 
 @multithreading_enabled
-def set_first_element(*args, **kwargs):
+def set_first_element(value, *args, **kwargs):
     for arg in chain(args, kwargs.values()):
         if hasattr(arg, "__setitem__"):
-            arg[0] = 42
+            arg[0] = value
             return arg
 
 
@@ -61,7 +61,7 @@ def test_multithreading_enabled_raises_arg():
 
     # set_first_element cannot change the input array
     with pytest.raises(ValueError):
-        set_first_element(arr)
+        set_first_element(42, arr)
 
     # afterwards, we can
     arr[0] = 42
@@ -73,7 +73,7 @@ def test_multithreading_enabled_raises_kwarg():
 
     # set_first_element cannot change the input array
     with pytest.raises(ValueError):
-        set_first_element(arr=arr)
+        set_first_element(42, arr=arr)
 
     # writable flag goes to original state
     assert arr.flags.writeable
@@ -85,7 +85,7 @@ def test_multithreading_enabled_preserves_flag():
 
     # set_first_element cannot change the input array
     with pytest.raises(ValueError):
-        set_first_element(arr)
+        set_first_element(42, arr)
 
     # writable flag goes to original state
     assert not arr.flags.writeable
@@ -106,5 +106,5 @@ def test_multithreading_enabled_preserves_flag():
     ],
 )
 def test_multithreading_enabled_ok(args, kwargs):
-    result = set_first_element(*args, **kwargs)
+    result = set_first_element(42, *args, **kwargs)
     assert result[0] == 42

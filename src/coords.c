@@ -242,12 +242,20 @@ npy_intp CountCoords(PyArrayObject *arr)
     do {
         /* get the geometry */
         obj = *(GeometryObject **) dataptr[0];
-        if (!get_geom(obj, &geom)) { errstate = PGERR_NOT_A_GEOMETRY; result = -1; goto finish; }
+        if (!get_geom(obj, &geom)) {
+            errstate = PGERR_NOT_A_GEOMETRY;
+            result = -1;
+            goto finish;
+        }
         /* skip incase obj was None */
         if (geom == NULL) { continue; }
         /* count coordinates */
         ret = GEOSGetNumCoordinates_r(ctx, geom);
-        if (ret < 0) { errstate = PGERR_GEOS_EXCEPTION; result = -1; goto finish; }
+        if (ret < 0) {
+            errstate = PGERR_GEOS_EXCEPTION;
+            result = -1;
+            goto finish;
+        }
         result += ret;
     } while(iternext(iter));
 
@@ -311,11 +319,11 @@ PyObject *GetCoords(PyArrayObject *arr)
         GEOS_FINISH;
         NpyIter_Deallocate(iter);
 
-        if (errstate == PGERR_SUCCESS ) {
-            return (PyObject *) result; 
-        } else {
+        if (errstate != PGERR_SUCCESS ) {
             Py_DECREF(result);
             return NULL;
+        } else {
+            return (PyObject *) result; 
         }
 }
 

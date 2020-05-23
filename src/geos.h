@@ -17,7 +17,14 @@
 
 Typical PyGEOS pattern in a function that uses GEOS:
 
+
+// GEOS_INIT will do three things:
+// 1. Make the GEOS context available in the variable ``ctx``
+// 2. Initialize a variable ``errstate`` to PGERR_SUCCESS.
+// 3. Set up GEOS error and warning buffers, respectively ``last_error`` and ``last_warning``
+
 GEOS_INIT;   // or GEOS_INIT_THREADS if you use no CPython calls
+
 
 // call a GEOS function using the context 'ctx'
 result = SomeGEOSFunc(ctx, ...);
@@ -25,6 +32,9 @@ result = SomeGEOSFunc(ctx, ...);
 // handle an error state
 if (result == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
 
+
+// GEOS_FINISH will remove the GEOS context and set python errors in case
+// errstate != PGERR_SUCCESS.
 
 finish:
   GEOS_FINISH;  //  or GEOS_FINISH_THREADS if you use no CPython calls

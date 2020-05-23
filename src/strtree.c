@@ -214,8 +214,10 @@ void query_callback(void *item, void *user_data)
  * in_indexes: dynamic vector of indexes of tree geometries that have overlapping envelopes
  *             with envelope of input geometry.
  * out_indexes: dynamic vector of indexes of tree geometries that meet predicate function.
+ * count: pointer to an integer where the number of geometries that met the predicate will
+ *        be written
  *
- * Returns the number of geometries that met the predicate or -1 in case of error.
+ * Returns PGERR_GEOS_EXCEPTION if an error was encountered or PGERR_SUCCESS otherwise
  * */
 
 static char evaluate_predicate(void* context,
