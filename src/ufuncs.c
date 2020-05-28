@@ -645,6 +645,43 @@ static void YY_d_func(char **args, npy_intp *dimensions,
 }
 static PyUFuncGenericFunction YY_d_funcs[1] = {&YY_d_func};
 
+
+/* Define the geom, geom, double -> double functions (YYd_d) */
+static void *hausdorff_distance_densify_data[1] = {GEOSHausdorffDistanceDensify_r};
+#if GEOS_SINCE_3_7_0
+  static void *frechet_distance_densify_data[1] = {GEOSFrechetDistanceDensify_r};
+#endif
+typedef int FuncGEOS_YYd_d(void *context, void *a,  void *b, double c, double *d);
+static char YYd_d_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_DOUBLE};
+static void YYd_d_func(char **args, npy_intp *dimensions,
+                       npy_intp *steps, void *data)
+{
+    FuncGEOS_YYd_d *func = (FuncGEOS_YYd_d *)data;
+    GEOSGeometry *in1, *in2;
+
+    GEOS_INIT_THREADS;
+
+    TERNARY_LOOP {
+        /* get the geometries: return on error */
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
+        if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
+        double in3 = *(double *) ip3;
+        if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3) | GEOSisEmpty_r(ctx, in1) | GEOSisEmpty_r(ctx, in2)) {
+            *(double *)op1 = NPY_NAN;
+        } else {
+            /* let the GEOS function set op1; return on error */
+            if (func(ctx, in1, in2, in3, (double *) op1) == 0) {
+                 errstate = PGERR_GEOS_EXCEPTION; goto finish;
+            }
+        }
+    }
+
+    finish:
+        GEOS_FINISH_THREADS;
+}
+static PyUFuncGenericFunction YYd_d_funcs[1] = {&YYd_d_func};
+
+
 /* Define functions with unique call signatures */
 static void *null_data[1] = {NULL};
 static char buffer_inner(void *ctx, GEOSBufferParams *params, void *ip1, void *ip2, void *op1) {
@@ -766,67 +803,6 @@ static void equals_exact_func(char **args, npy_intp *dimensions,
         GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction equals_exact_funcs[1] = {&equals_exact_func};
-
-
-static char hausdorff_distance_densify_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_DOUBLE};
-static void hausdorff_distance_densify_func(char **args, npy_intp *dimensions,
-                                            npy_intp *steps, void *data)
-{
-    GEOSGeometry *in1, *in2;
-
-    GEOS_INIT_THREADS;
-
-    TERNARY_LOOP {
-        /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
-        double in3 = *(double *) ip3;
-        if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3)) {
-            *(double *)op1 = NPY_NAN;
-        } else {
-            /* let the GEOS function set op1; return on error */
-            if (GEOSHausdorffDistanceDensify_r(ctx, in1, in2, in3, (double *) op1) == 0) {
-                 errstate = PGERR_GEOS_EXCEPTION; goto finish;
-            }
-            if (*op1 == 0.0) {
-                if (GEOSisEmpty_r(ctx, in1) | GEOSisEmpty_r(ctx, in2)) {
-                    *(double *)op1 = NPY_NAN;
-                }
-            }
-        }
-    }
-
-    finish:
-        GEOS_FINISH_THREADS;
-}
-static PyUFuncGenericFunction hausdorff_distance_densify_funcs[1] = {&hausdorff_distance_densify_func};
-
-
-static char frechet_distance_densify_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_DOUBLE};
-static void frechet_distance_densify_func(char **args, npy_intp *dimensions,
-                                            npy_intp *steps, void *data)
-{
-    void *context_handle = geos_context[0];
-    GEOSGeometry *in1, *in2;
-
-    TERNARY_LOOP {
-        /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) { return; }
-        double in3 = *(double *) ip3;
-        if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3) | GEOSisEmpty_r(context_handle, in1) | GEOSisEmpty_r(context_handle, in2)) {
-            *(double *)op1 = NPY_NAN;
-        } else {
-            if ((in3 <= 0) | (in3 > 1)) {
-                PyErr_Format(PyExc_ValueError, "Densify must be in range (0.0 - 1.0], got %f instead", in3);
-                return;
-            }
-            GEOSFrechetDistanceDensify_r(context_handle, in1, in2, in3, (double *) op1);
-        }
-    }
-}
-static PyUFuncGenericFunction frechet_distance_densify_funcs[1] = {&frechet_distance_densify_func};
-
 
 static char delaunay_triangles_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
 static void delaunay_triangles_func(char **args, npy_intp *dimensions,
@@ -1509,6 +1485,10 @@ TODO relate functions
     ufunc = PyUFunc_FromFuncAndData(YY_d_funcs, NAME ##_data, YY_d_dtypes, 1, 2, 1, PyUFunc_None, # NAME, "", 0);\
     PyDict_SetItemString(d, # NAME, ufunc)
 
+#define DEFINE_YYd_d(NAME)\
+    ufunc = PyUFunc_FromFuncAndData(YYd_d_funcs, NAME ##_data, YYd_d_dtypes, 1, 3, 1, PyUFunc_None, # NAME, "", 0);\
+    PyDict_SetItemString(d, # NAME, ufunc)
+
 #define DEFINE_CUSTOM(NAME, N_IN)\
     ufunc = PyUFunc_FromFuncAndData(NAME ##_funcs, null_data, NAME ##_dtypes, 1, N_IN, 1, PyUFunc_None, # NAME, "", 0);\
     PyDict_SetItemString(d, # NAME, ufunc)
@@ -1590,10 +1570,12 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_YY_d (line_locate_point);
     DEFINE_YY_d (line_locate_point_normalized);
 
+    DEFINE_YYd_d (hausdorff_distance_densify);
+
     DEFINE_CUSTOM (buffer, 7);
     DEFINE_CUSTOM (snap, 3);
     DEFINE_CUSTOM (equals_exact, 3);
-    DEFINE_CUSTOM (hausdorff_distance_densify, 3);
+    
     DEFINE_CUSTOM (delaunay_triangles, 3);
     DEFINE_CUSTOM (voronoi_polygons, 4);
     DEFINE_CUSTOM (is_valid_reason, 1);
@@ -1613,8 +1595,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
 
     #if GEOS_SINCE_3_7_0
       DEFINE_YY_d (frechet_distance);
-
-      DEFINE_CUSTOM (frechet_distance_densify, 3);
+      DEFINE_YYd_d (frechet_distance_densify);
     #endif
 
     #if GEOS_SINCE_3_8_0
