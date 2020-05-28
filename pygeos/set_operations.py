@@ -222,7 +222,7 @@ def coverage_union(a, b, **kwargs):
 
     Union with None returns same polygon
     >>> coverage_union(polygon, None)
-    <pygeos.Geometry POLYGON ((1 1, 1 0, 0 0, 0 1, 1 1))>
+    <pygeos.Geometry POLYGON ((1 0, 0 0, 0 1, 1 1, 1 0))>
     """
     return coverage_union_all([a, b], **kwargs)
 
