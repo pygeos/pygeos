@@ -216,8 +216,8 @@ def coverage_union(a, b, **kwargs):
 
     Examples
     --------
-    >>> polygon = Geometry("POLYGON ((1 1, 1 0, 0 0, 0 1, 1 1))")
-    >>> coverage_union(polygon, Geometry("POLYGON ((2 1, 2 0, 1 0, 1 1, 2 1))"))
+    >>> polygon = Geometry("POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))")
+    >>> coverage_union(polygon, Geometry("POLYGON ((1 0, 1 1, 2 1, 2 0, 1 0))"))
     <pygeos.Geometry POLYGON ((2 1, 2 0, 1 0, 0 0, 0 1, 1 1, 2 1))>
 
     Union with None returns same polygon
@@ -250,8 +250,8 @@ def coverage_union_all(geometries, axis=0, **kwargs):
 
     Examples
     --------
-    >>> polygon_1 = Geometry("POLYGON ((1 1, 1 0, 0 0, 0 1, 1 1))")
-    >>> polygon_2 = Geometry("POLYGON ((2 1, 2 0, 1 0, 1 1, 2 1))")
+    >>> polygon_1 = Geometry("POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))")
+    >>> polygon_2 = Geometry("POLYGON ((1 0, 1 1, 2 1, 2 0, 1 0))")
     >>> coverage_union_all([polygon_1, polygon_2])
     <pygeos.Geometry POLYGON ((2 1, 2 0, 1 0, 0 0, 0 1, 1 1, 2 1))>
     """
