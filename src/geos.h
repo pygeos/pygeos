@@ -43,11 +43,11 @@ finish:
 
 // Define the error states
 enum {
-	PGERR_SUCCESS,
-	PGERR_NOT_A_GEOMETRY,
-	PGERR_GEOS_EXCEPTION,
-  PGERR_NO_MALLOC,
-  PGERR_GEOMETRY_TYPE
+    PGERR_SUCCESS,
+    PGERR_NOT_A_GEOMETRY,
+    PGERR_GEOS_EXCEPTION,
+    PGERR_NO_MALLOC,
+    PGERR_GEOMETRY_TYPE
 };
 
 // Define how the states are handled by CPython
@@ -99,7 +99,6 @@ enum {
     Py_END_ALLOW_THREADS\
     GEOS_HANDLE_ERR
 
-#define RAISE_ILLEGAL_GEOS if (!PyErr_Occurred()) {PyErr_Format(PyExc_RuntimeError, "Uncaught GEOS exception");}
 #define GEOS_SINCE_3_5_0 ((GEOS_VERSION_MAJOR >= 3) && (GEOS_VERSION_MINOR >= 5))
 #define GEOS_SINCE_3_6_0 ((GEOS_VERSION_MAJOR >= 3) && (GEOS_VERSION_MINOR >= 6))
 #define GEOS_SINCE_3_7_0 ((GEOS_VERSION_MAJOR >= 3) && (GEOS_VERSION_MINOR >= 7))

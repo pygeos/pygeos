@@ -49,7 +49,7 @@ static void *is_empty_data[1] = {GEOSisEmpty_r};
 static char GEOSisSimpleAllTypes_r(void *context, void *geom) {
     int type = GEOSGeomTypeId_r(context, geom);
     if (type == -1) {
-        return 2;
+        return 2;  // Predicates use a return value of 2 for errors
     } else if (type == 7) {
         return 0;
     } else {
@@ -63,8 +63,7 @@ static void *has_z_data[1] = {GEOSHasZ_r};
 static char GEOSisClosedAllTypes_r(void *context, void *geom) {
     int type = GEOSGeomTypeId_r(context, geom);
     if (type == -1) {
-        /* do not SetErr: trust HandleGEOSError */
-        return 2;
+        return 2;  // Predicates use a return value of 2 for errors
     } else if ((type == 1) | (type == 5)) {
         return GEOSisClosed_r(context, geom);
     } else {
@@ -248,7 +247,12 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
             ret_ptr = NULL;
         } else {
             ret_ptr = func(ctx, in1);
-            if ((ret_ptr == NULL) && (last_error[0] != 0)) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            // Check last_error if the result is NULL.
+            // We can't be sure otherwise if it is an exception or a 'missing' geometry
+            if ((ret_ptr == NULL) && (last_error[0] != 0)) {
+                errstate = PGERR_GEOS_EXCEPTION;
+                goto finish;
+            }
         }
         OUTPUT_Y;
     }
@@ -419,7 +423,12 @@ static void Yi_Y_func(char **args, npy_intp *dimensions,
             ret_ptr = NULL;
         } else {
             ret_ptr = func(ctx, in1, in2);
-            if ((ret_ptr == NULL) && (last_error[0] != 0)) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            // Check last_error if the result is NULL.
+            // We can't be sure otherwise if it is an exception or a 'missing' geometry
+            if ((ret_ptr == NULL) && (last_error[0] != 0)) {
+                errstate = PGERR_GEOS_EXCEPTION;
+                goto finish;
+            }
         }
         OUTPUT_Y;
     }
@@ -565,7 +574,12 @@ static void Y_i_func(char **args, npy_intp *dimensions,
             *(npy_int *)op1 = -1;
         } else {
             result = func(ctx, in1);
-            if ((result == errcode) && (last_error[0] != 0)) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            // Check last_error if the result equals errcode.
+            // Otherwise we can't be sure if it is an exception
+            if ((result == errcode) && (last_error[0] != 0)) {
+                errstate = PGERR_GEOS_EXCEPTION;
+                goto finish;
+            }
             *(npy_int *)op1 = result;
         }
     }

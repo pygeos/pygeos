@@ -260,9 +260,9 @@ npy_intp CountCoords(PyArrayObject *arr)
     } while(iternext(iter));
 
     finish:
-    GEOS_FINISH;
-    NpyIter_Deallocate(iter);
-    return result;
+        GEOS_FINISH;
+        NpyIter_Deallocate(iter);
+        return result;
 }
 
 
@@ -315,7 +315,6 @@ PyObject *GetCoords(PyArrayObject *arr)
 
     
     finish:
-
         GEOS_FINISH;
         NpyIter_Deallocate(iter);
 
