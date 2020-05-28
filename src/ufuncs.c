@@ -226,7 +226,7 @@ static void *GEOSLinearRingToPolygon(void *context, void *geom) {
     return GEOSGeom_createPolygon_r(context, shell, NULL, 0);
 }
 static void *polygons_without_holes_data[1] = {GEOSLinearRingToPolygon};
-#if GEOS_SINCE_380
+#if GEOS_SINCE_3_8_0
   static void *build_area_data[1] = {GEOSBuildArea_r};
   static void *make_valid_data[1] = {GEOSMakeValid_r};
 #endif
@@ -262,7 +262,7 @@ static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
 /* GEOS < 3.8 gives segfault for empty linestrings, this is fixed since
    https://github.com/libgeos/geos/commit/18505af1103cdafb2178f2f0eb8e1a10cfa16d2d */
-#if GEOS_SINCE_380
+#if GEOS_SINCE_3_8_0
     static void *line_interpolate_point_data[1] = {GEOSInterpolate_r};
     static void *line_interpolate_point_normalized_data[1] = {GEOSInterpolateNormalized_r};
 #else
@@ -578,6 +578,17 @@ static PyUFuncGenericFunction Y_i_funcs[1] = {&Y_i_func};
 /* Define the geom, geom -> double functions (YY_d) */
 static void *distance_data[1] = {GEOSDistance_r};
 static void *hausdorff_distance_data[1] = {GEOSHausdorffDistance_r};
+#if GEOS_SINCE_3_7_0
+  static int GEOSFrechetDistanceWrapped_r(void *context, void *a,  void *b, double *c) {
+      /* Handle empty geometries (they give segfaults) */
+      if (GEOSisEmpty_r(context, a) | GEOSisEmpty_r(context, b)) {
+          *c = NPY_NAN;
+          return 1;
+      }
+      return GEOSFrechetDistance_r(context, a, b, c);
+  }
+  static void *frechet_distance_data[1] = {GEOSFrechetDistanceWrapped_r};
+#endif
 /* Project and ProjectNormalize don't return error codes. wrap them. */
 static int GEOSProjectWrapped_r(void *context, void *a,  void *b, double *c) {
     /* Handle empty points (they give segfaults) */
@@ -757,8 +768,8 @@ static void equals_exact_func(char **args, npy_intp *dimensions,
 static PyUFuncGenericFunction equals_exact_funcs[1] = {&equals_exact_func};
 
 
-static char haussdorf_distance_densify_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_DOUBLE};
-static void haussdorf_distance_densify_func(char **args, npy_intp *dimensions,
+static char hausdorff_distance_densify_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_DOUBLE};
+static void hausdorff_distance_densify_func(char **args, npy_intp *dimensions,
                                             npy_intp *steps, void *data)
 {
     GEOSGeometry *in1, *in2;
@@ -788,7 +799,33 @@ static void haussdorf_distance_densify_func(char **args, npy_intp *dimensions,
     finish:
         GEOS_FINISH_THREADS;
 }
-static PyUFuncGenericFunction haussdorf_distance_densify_funcs[1] = {&haussdorf_distance_densify_func};
+static PyUFuncGenericFunction hausdorff_distance_densify_funcs[1] = {&hausdorff_distance_densify_func};
+
+
+static char frechet_distance_densify_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_DOUBLE};
+static void frechet_distance_densify_func(char **args, npy_intp *dimensions,
+                                            npy_intp *steps, void *data)
+{
+    void *context_handle = geos_context[0];
+    GEOSGeometry *in1, *in2;
+
+    TERNARY_LOOP {
+        /* get the geometries: return on error */
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) { return; }
+        if (!get_geom(*(GeometryObject **)ip2, &in2)) { return; }
+        double in3 = *(double *) ip3;
+        if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3) | GEOSisEmpty_r(context_handle, in1) | GEOSisEmpty_r(context_handle, in2)) {
+            *(double *)op1 = NPY_NAN;
+        } else {
+            if ((in3 <= 0) | (in3 > 1)) {
+                PyErr_Format(PyExc_ValueError, "Densify must be in range (0.0 - 1.0], got %f instead", in3);
+                return;
+            }
+            GEOSFrechetDistanceDensify_r(context_handle, in1, in2, in3, (double *) op1);
+        }
+    }
+}
+static PyUFuncGenericFunction frechet_distance_densify_funcs[1] = {&frechet_distance_densify_func};
 
 
 static char delaunay_triangles_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
@@ -1556,7 +1593,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_CUSTOM (buffer, 7);
     DEFINE_CUSTOM (snap, 3);
     DEFINE_CUSTOM (equals_exact, 3);
-    DEFINE_CUSTOM (haussdorf_distance_densify, 3);
+    DEFINE_CUSTOM (hausdorff_distance_densify, 3);
     DEFINE_CUSTOM (delaunay_triangles, 3);
     DEFINE_CUSTOM (voronoi_polygons, 4);
     DEFINE_CUSTOM (is_valid_reason, 1);
@@ -1574,7 +1611,13 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_CUSTOM (to_wkt, 5);
     DEFINE_CUSTOM (from_shapely, 1);
 
-    #if GEOS_SINCE_380
+    #if GEOS_SINCE_3_7_0
+      DEFINE_YY_d (frechet_distance);
+
+      DEFINE_CUSTOM (frechet_distance_densify, 3);
+    #endif
+
+    #if GEOS_SINCE_3_8_0
       DEFINE_Y_Y (make_valid);
       DEFINE_Y_Y (build_area);
     #endif
