@@ -216,28 +216,13 @@ def coverage_union(a, b, **kwargs):
 
     Examples
     --------
-    >>> polygon = Geometry("POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))")
-    >>> actual = coverage_union(polygon, Geometry("POLYGON ((1 0, 1 1, 2 1, 2 0, 1 0))"))
-    >>> from pygeos.predicates import equals
-    >>> expected = Geometry("POLYGON ((0 0, 0 1, 1 1, 2 1, 2 0, 1 0, 0 0))")
-    >>> equals(actual, expected)
-    True
+    >>> polygon = Geometry("POLYGON ((1 1, 1 0, 0 0, 0 1, 1 1))")
+    >>> coverage_union(polygon, Geometry("POLYGON ((2 1, 2 0, 1 0, 1 1, 2 1))"))
+    <pygeos.Geometry POLYGON ((2 1, 2 0, 1 0, 0 0, 0 1, 1 1, 2 1))>
 
     Union with None returns same polygon
-    >>> equals(coverage_union(polygon, None), polygon)
-    True
-
-    Overlapping polygons raise an error
-    >>> coverage_union(polygon, Geometry("POLYGON ((1 0, 0.9 1, 2 1, 2 0, 1 0))"))
-    Traceback (most recent call last):
-        ...
-    pygeos.GEOSException: TopologyException: CoverageUnion cannot process incorrectly noded inputs.
-
-    Non polygon geometries raise an error
-    >>> coverage_union(polygon, Geometry("LINESTRING(0 0, 2 2)"))
-    Traceback (most recent call last):
-        ...
-    pygeos.GEOSException: IllegalArgumentException: Unhandled geometry type in CoverageUnion.
+    >>> coverage_union(polygon, None)
+    <pygeos.Geometry POLYGON ((1 1, 1 0, 0 0, 0 1, 1 1))>
     """
     return coverage_union_all([a, b], **kwargs)
 
@@ -265,28 +250,10 @@ def coverage_union_all(geometries, axis=0, **kwargs):
 
     Examples
     --------
-    >>> polygon_1 = Geometry("POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))")
-    >>> polygon_2 = Geometry("POLYGON ((1 0, 1 1, 2 1, 2 0, 1 0))")
-    >>> actual = coverage_union_all([polygon_1, polygon_2])
-    >>> from pygeos.predicates import equals
-    >>> expected = Geometry("POLYGON ((0 0, 0 1, 1 1, 2 1, 2 0, 1 0, 0 0))")
-    >>> equals(actual, expected)
-    True
-
-    Overlapping polygons raise an error
-    >>> polygon_2 = Geometry("POLYGON ((1 0, 0.9 1, 2 1, 2 0, 1 0))")
+    >>> polygon_1 = Geometry("POLYGON ((1 1, 1 0, 0 0, 0 1, 1 1))")
+    >>> polygon_2 = Geometry("POLYGON ((2 1, 2 0, 1 0, 1 1, 2 1))")
     >>> coverage_union_all([polygon_1, polygon_2])
-    Traceback (most recent call last):
-        ...
-    pygeos.GEOSException: TopologyException: CoverageUnion cannot process incorrectly noded inputs.
-
-    Non polygon geometries raise an error
-    >>> line_1 = Geometry("LINESTRING(0 0, 2 2)")
-    >>> line_2 = Geometry("LINESTRING(2 2, 3 3)")
-    >>> coverage_union_all([line_1, line_2])
-    Traceback (most recent call last):
-        ...
-    pygeos.GEOSException: IllegalArgumentException: Unhandled geometry type in CoverageUnion.
+    <pygeos.Geometry POLYGON ((2 1, 2 0, 1 0, 0 0, 0 1, 1 1, 2 1))>
     """
     # coverage union in GEOS works over GeometryCollections
     # first roll the aggregation axis backwards
