@@ -180,7 +180,7 @@ static void *convex_hull_data[1] = {GEOSConvexHull_r};
 static void *GEOSBoundaryAllTypes_r(void *context, void *geom) {
     char typ = GEOSGeomTypeId_r(context, geom);
     if (typ > 3) {
-        /* return NaG for geometrycollections */
+        /* return None for geometrycollections */
         return NULL;
     } else {
         return GEOSBoundary_r(context, geom);
@@ -247,8 +247,9 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
             ret_ptr = NULL;
         } else {
             ret_ptr = func(ctx, in1);
-            // Check last_error if the result is NULL.
-            // We can't be sure otherwise if it is an exception or a 'missing' geometry
+            // NULL means: exception, but for some functions it may also indicate a
+            // "missing value" (None) (GetExteriorRing, GEOSBoundaryAllTypes_r)
+            // So: check the last_error before setting error state
             if ((ret_ptr == NULL) && (last_error[0] != 0)) {
                 errstate = PGERR_GEOS_EXCEPTION;
                 goto finish;
@@ -423,8 +424,9 @@ static void Yi_Y_func(char **args, npy_intp *dimensions,
             ret_ptr = NULL;
         } else {
             ret_ptr = func(ctx, in1, in2);
-            // Check last_error if the result is NULL.
-            // We can't be sure otherwise if it is an exception or a 'missing' geometry
+            // NULL means: exception, but for some functions it may also indicate a
+            // "missing value" (None) (GetPointN, GetInteriorRingN, GetGeometryN)
+            // So: check the last_error before setting error state
             if ((ret_ptr == NULL) && (last_error[0] != 0)) {
                 errstate = PGERR_GEOS_EXCEPTION;
                 goto finish;
