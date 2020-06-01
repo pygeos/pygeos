@@ -43,6 +43,13 @@
     Py_XDECREF(*out);\
     *out = ret
 
+#define DESTROY_RESULT\
+    for(i = 0; i < n; i++, op1 += os1) {\
+        if (result[i] != NULL) {\
+            GEOSGeom_destroy_r(ctx, result[i]);\
+        }\
+    }
+
 /* Define the geom -> bool functions (Y_b) */
 static void *is_empty_data[1] = {GEOSisEmpty_r};
 /* the GEOSisSimple_r function fails on geometrycollections */
@@ -235,30 +242,52 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_Y_Y *func = (FuncGEOS_Y_Y *)data;
-    GEOSGeometry *in1, *ret_ptr;
+    GEOSGeometry *in1;
 
-    GEOS_INIT;
+    GEOS_INIT_THREADS;
+
+    // allocate a temporary array for the results
+    GEOSGeometry **result = malloc(sizeof(void *) * dimensions[0]);
+    if (result == NULL) { errstate = PGERR_NO_MALLOC; goto finish; }
 
     UNARY_LOOP {
         /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) {
+            errstate = PGERR_NOT_A_GEOMETRY;
+            DESTROY_RESULT;
+            break;
+        }
         if (in1 == NULL) {
             /* in case of a missing value: return NULL (None) */
-            ret_ptr = NULL;
+            result[i] = NULL;
         } else {
-            ret_ptr = func(ctx, in1);
+            result[i] = func(ctx, in1);
             // NULL means: exception, but for some functions it may also indicate a
             // "missing value" (None) (GetExteriorRing, GEOSBoundaryAllTypes_r)
             // So: check the last_error before setting error state
-            if ((ret_ptr == NULL) && (last_error[0] != 0)) {
+            if ((result[i] == NULL) && (last_error[0] != 0)) {
                 errstate = PGERR_GEOS_EXCEPTION;
-                goto finish;
+                DESTROY_RESULT;
+                break;
             }
         }
-        OUTPUT_Y;
     }
 
-    finish:
+    GEOS_FINISH_THREADS;
+
+    if (errstate == PGERR_SUCCESS) {
+        for(i = 0; i < n; i++, op1 += os1) {
+            PyObject *ret = GeometryObject_FromGEOS(&GeometryType, result[i]);
+            PyObject **out = (PyObject **)op1;
+            Py_XDECREF(*out);
+            *out = ret;
+        }
+    }
+
+    if (result != NULL) {
+        free(result);
+    }
+
     GEOS_FINISH;
 }
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
