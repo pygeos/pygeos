@@ -43,12 +43,28 @@
     Py_XDECREF(*out);\
     *out = ret
 
-#define DESTROY_RESULT\
-    for(i = 0; i < n; i++, op1 += os1) {\
-        if (result[i] != NULL) {\
-            GEOSGeom_destroy_r(ctx, result[i]);\
-        }\
+
+static void destroy_geom_arr(void *context, GEOSGeometry **array, npy_intp length) {
+    npy_intp i;
+    for(i = 0; i < length; i++) {
+        if (array[i] != NULL) {
+            GEOSGeom_destroy_r(context, array[i]);
+        }
     }
+}
+
+static void geom_arr_to_npy(GEOSGeometry **array, char *ptr, npy_intp stride, npy_intp count) {
+    npy_intp i;
+    PyObject *ret;
+    PyObject **out;
+
+    for(i = 0; i < count; i++, ptr += stride) {
+        ret = GeometryObject_FromGEOS(&GeometryType, array[i]);
+        out = (PyObject **)ptr;
+        Py_XDECREF(*out);
+        *out = ret;
+    }
+}
 
 /* Define the geom -> bool functions (Y_b) */
 static void *is_empty_data[1] = {GEOSisEmpty_r};
@@ -244,51 +260,47 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
     FuncGEOS_Y_Y *func = (FuncGEOS_Y_Y *)data;
     GEOSGeometry *in1;
 
+    // allocate a temporary array to store output GEOSGeometry objects
+    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+
     GEOS_INIT_THREADS;
 
-    // allocate a temporary array for the results
-    GEOSGeometry **result = malloc(sizeof(void *) * dimensions[0]);
-    if (result == NULL) { errstate = PGERR_NO_MALLOC; goto finish; }
-
-    UNARY_LOOP {
-        /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) {
-            errstate = PGERR_NOT_A_GEOMETRY;
-            DESTROY_RESULT;
-            break;
-        }
-        if (in1 == NULL) {
-            /* in case of a missing value: return NULL (None) */
-            result[i] = NULL;
-        } else {
-            result[i] = func(ctx, in1);
-            // NULL means: exception, but for some functions it may also indicate a
-            // "missing value" (None) (GetExteriorRing, GEOSBoundaryAllTypes_r)
-            // So: check the last_error before setting error state
-            if ((result[i] == NULL) && (last_error[0] != 0)) {
-                errstate = PGERR_GEOS_EXCEPTION;
-                DESTROY_RESULT;
+    if (geom_arr != NULL) {
+        UNARY_LOOP {
+            /* get the geometry: return on error */
+            if (!get_geom(*(GeometryObject **)ip1, &in1)) {
+                errstate = PGERR_NOT_A_GEOMETRY;
+                destroy_geom_arr(ctx, geom_arr, i - 1);
                 break;
             }
+            if (in1 == NULL) {
+                /* in case of a missing value: return NULL (None) */
+                geom_arr[i] = NULL;
+            } else {
+                geom_arr[i] = func(ctx, in1);
+                // NULL means: exception, but for some functions it may also indicate a
+                // "missing value" (None) (GetExteriorRing, GEOSBoundaryAllTypes_r)
+                // So: check the last_error before setting error state
+                if ((geom_arr[i] == NULL) && (last_error[0] != 0)) {
+                    errstate = PGERR_GEOS_EXCEPTION;
+                    destroy_geom_arr(ctx, geom_arr, i - 1);
+                    break;
+                }
+            }
         }
+    } else {
+        errstate = PGERR_NO_MALLOC;
     }
 
     GEOS_FINISH_THREADS;
 
-    if (errstate == PGERR_SUCCESS) {
-        for(i = 0; i < n; i++, op1 += os1) {
-            PyObject *ret = GeometryObject_FromGEOS(&GeometryType, result[i]);
-            PyObject **out = (PyObject **)op1;
-            Py_XDECREF(*out);
-            *out = ret;
+    // fill the numpy array with PyObjects while holding the GIL
+    if (geom_arr != NULL) {
+        if (errstate == PGERR_SUCCESS) {
+            geom_arr_to_npy(geom_arr, args[1], steps[1], dimensions[0]);
         }
+        free(geom_arr);
     }
-
-    if (result != NULL) {
-        free(result);
-    }
-
-    GEOS_FINISH;
 }
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
