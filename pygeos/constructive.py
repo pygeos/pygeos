@@ -60,7 +60,7 @@ def boundary(geometry, **kwargs):
     """
     return lib.boundary(geometry, **kwargs)
 
-
+@multithreading_enabled
 def buffer(
     geometry,
     radius,

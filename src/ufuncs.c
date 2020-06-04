@@ -781,20 +781,23 @@ static PyUFuncGenericFunction YYd_d_funcs[1] = {&YYd_d_func};
 
 /* Define functions with unique call signatures */
 static void *null_data[1] = {NULL};
-static char buffer_inner(void *ctx, GEOSBufferParams *params, void *ip1, void *ip2, void *op1) {
-    GEOSGeometry *in1, *ret_ptr;
+static char buffer_inner(void *ctx, GEOSBufferParams *params, void *ip1, void *ip2, GEOSGeometry **geom_arr, npy_intp i) {
+    GEOSGeometry *in1;
 
     /* get the geometry: return on error */
-    if (!get_geom(*(GeometryObject **)ip1, &in1)) { return PGERR_NOT_A_GEOMETRY; }
+    if (!get_geom(*(GeometryObject **)ip1, &in1)) {
+        return PGERR_NOT_A_GEOMETRY;
+    }
     double in2 = *(double *) ip2;
      /* handle NULL geometries or NaN buffer width */
     if ((in1 == NULL) | npy_isnan(in2)) {
-        ret_ptr = NULL;
+        geom_arr[i] = NULL;
     } else {
-        ret_ptr = GEOSBufferWithParams_r(ctx, in1, params, in2);
-        if (ret_ptr == NULL) { return PGERR_GEOS_EXCEPTION; }
+        geom_arr[i] = GEOSBufferWithParams_r(ctx, in1, params, in2);
+        if (geom_arr[i] == NULL) {
+            return PGERR_GEOS_EXCEPTION;
+        }
     }
-    OUTPUT_Y;
     return PGERR_SUCCESS;
 }
 
@@ -802,8 +805,8 @@ static char buffer_dtypes[8] = {NPY_OBJECT, NPY_DOUBLE, NPY_INT, NPY_INT, NPY_IN
 static void buffer_func(char **args, npy_intp *dimensions,
                         npy_intp *steps, void *data)
 {
-    char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4], *ip6 = args[5], *ip7 = args[6], *op1 = args[7];
-    npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4], is6 = steps[5], is7 = steps[6], os1 = steps[7];
+    char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4], *ip6 = args[5], *ip7 = args[6];
+    npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4], is6 = steps[5], is7 = steps[6];
     npy_intp n = dimensions[0];
     npy_intp i;
 
@@ -812,34 +815,60 @@ static void buffer_func(char **args, npy_intp *dimensions,
         return;
     }
 
-    GEOS_INIT;
+    // allocate a temporary array to store output GEOSGeometry objects
+    GEOSGeometry **geom_arr = malloc(sizeof(void *) * n);
+
+    GEOS_INIT_THREADS;
+
+    if (geom_arr == NULL) {
+        errstate = PGERR_NO_MALLOC;
+    }
 
     GEOSBufferParams *params = GEOSBufferParams_create_r(ctx);
-    if (params == 0) { return; }
-    if (!GEOSBufferParams_setQuadrantSegments_r(ctx, params, *(int *) ip3)) {
-        errstate = PGERR_GEOS_EXCEPTION; goto finish;
-    }
-    if (!GEOSBufferParams_setEndCapStyle_r(ctx, params, *(int *) ip4)) {
-        errstate = PGERR_GEOS_EXCEPTION; goto finish;
-    }
-    if (!GEOSBufferParams_setJoinStyle_r(ctx, params, *(int *) ip5)) {
-        errstate = PGERR_GEOS_EXCEPTION; goto finish;
-    }
-    if (!GEOSBufferParams_setMitreLimit_r(ctx, params, *(double *) ip6)) {
-        errstate = PGERR_GEOS_EXCEPTION; goto finish;
-    }
-    if (!GEOSBufferParams_setSingleSided_r(ctx, params, *(npy_bool *) ip7)) {
-        errstate = PGERR_GEOS_EXCEPTION; goto finish;
-    }
-
-    for(i = 0; i < n; i++, ip1 += is1, ip2 += is2, op1 += os1) {
-        errstate = buffer_inner(ctx, params, ip1, ip2, op1);
-        if (errstate != PGERR_SUCCESS) { goto finish; }
+    if (params != 0) {
+        if (!GEOSBufferParams_setQuadrantSegments_r(ctx, params, *(int *) ip3)) {
+            errstate = PGERR_GEOS_EXCEPTION;
+        }
+        if (!GEOSBufferParams_setEndCapStyle_r(ctx, params, *(int *) ip4)) {
+            errstate = PGERR_GEOS_EXCEPTION;
+        }
+        if (!GEOSBufferParams_setJoinStyle_r(ctx, params, *(int *) ip5)) {
+            errstate = PGERR_GEOS_EXCEPTION;
+        }
+        if (!GEOSBufferParams_setMitreLimit_r(ctx, params, *(double *) ip6)) {
+            errstate = PGERR_GEOS_EXCEPTION;
+        }
+        if (!GEOSBufferParams_setSingleSided_r(ctx, params, *(npy_bool *) ip7)) {
+            errstate = PGERR_GEOS_EXCEPTION;
+        }
+    } else {
+        errstate = PGERR_GEOS_EXCEPTION;
     }
 
-    finish:
+    if (errstate == PGERR_SUCCESS) {
+        for(i = 0; i < n; i++, ip1 += is1, ip2 += is2) {
+            errstate = buffer_inner(ctx, params, ip1, ip2, geom_arr, i);
+            if (errstate != PGERR_SUCCESS) {
+                destroy_geom_arr(ctx, geom_arr, i - 1);
+                break;
+            }
+        }
+    }
+
+    if (params != 0) {
         GEOSBufferParams_destroy_r(ctx, params);
-        GEOS_FINISH;
+    }
+    
+    GEOS_FINISH_THREADS;
+
+    // fill the numpy array with PyObjects while holding the GIL
+    if (geom_arr != NULL) {
+        if (errstate == PGERR_SUCCESS) {
+            geom_arr_to_npy(geom_arr, args[7], steps[7], dimensions[0]);
+        }
+        free(geom_arr);
+    }
+
 }
 static PyUFuncGenericFunction buffer_funcs[1] = {&buffer_func};
 
