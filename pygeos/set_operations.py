@@ -1,6 +1,6 @@
 import numpy as np
 from . import lib, Geometry, GeometryType
-from .geos import requires_geos
+from .decorators import requires_geos
 
 __all__ = [
     "difference",
