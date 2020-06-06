@@ -44,6 +44,29 @@
     *out = ret
 
 
+// free_three_arr frees 3 arrays, accounting for the possibility they are the same //
+static void free_three_arr(GEOSGeometry **array1, GEOSGeometry **array2, GEOSGeometry **array3) {
+    char free1 = 1, free2 = 1, free3 = 1;
+    if (array1 == array2) {
+        free2 = 0;
+    }
+    if (array1 == array3) {
+        free3 = 0;
+    }
+    if (array2 == array3) {
+        free3 = 0;
+    }
+    if (free1) {
+        free(array1);
+    }
+    if (free2) {
+        free(array2);
+    }
+    if (free3) {
+        free(array3);
+    }
+};
+
 static void destroy_geom_arr(void *context, GEOSGeometry **array, npy_intp length) {
     npy_intp i;
     for(i = 0; i < length; i++) {
@@ -58,7 +81,7 @@ static void geom_arr_to_npy(GEOSGeometry **array, char *ptr, npy_intp stride, np
     PyObject *ret;
     PyObject **out;
 
-    for(i = 0; i < count; i++, ptr += stride) {
+    for(i = 0; i < (stride == 0 ? 1 : count); i++, ptr += stride) {
         ret = GeometryObject_FromGEOS(&GeometryType, array[i]);
         out = (PyObject **)ptr;
         Py_XDECREF(*out);
@@ -528,44 +551,81 @@ static void YY_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
-    GEOSGeometry *in1, *in2;
+    GEOSGeometry *in1, *in2, *out;
+    char *ip1 = args[0], *ip2 = args[1], *op1 = args[2];
+    npy_intp is1 = steps[0], is2 = steps[1], os1 = steps[2];
+    npy_intp n = dimensions[0];
+    npy_intp i;
+    GEOSGeometry **geom_in1, **geom_in2, **geom_out;
 
-    // allocate a temporary array to store output GEOSGeometry objects
-    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
-    if (geom_arr == NULL) {
+    // allocate temporary arrays to store input GEOSGeometry objects
+    // account for the possibilities that arrays could be identical or length-1
+    geom_in1 = malloc(sizeof(void *) * (is1 == 0 ? 1 : n));
+    if (ip2 == ip1) {
+        geom_in2 = geom_in1;
+    } else {
+        geom_in2 = malloc(sizeof(void *) * (is2 == 0 ? 1 : n));
+    }        
+    if (op1 == ip1 ) {
+        geom_out = geom_in1;
+    } else if (op1 == ip2) {
+        geom_out = geom_in2;
+    } else {
+        geom_out = malloc(sizeof(void *) * (os1 == 0 ? 1 : n));
+    }   
+    if ((geom_in1 == NULL) | (geom_in2 == NULL) | (geom_out == NULL)) {
+        free_three_arr(geom_in1, geom_in2, geom_out);
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
         return;
+    }
+    // fill input arrays
+    for(i = 0; i < (is1 == 0 ? 1 : n); i++, ip1 += is1) {
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) {
+            free_three_arr(geom_in1, geom_in2, geom_out);
+            PyErr_SetString(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
+            return;
+        }
+        geom_in1[i] = in1;
+    }
+    if (geom_in1 != geom_in2) {
+        for(i = 0; i < (is2 == 0 ? 1 : n); i++, ip2 += is2) {
+            if (!get_geom(*(GeometryObject **)ip2, &in2)) {
+                free_three_arr(geom_in1, geom_in2, geom_out);
+                PyErr_SetString(PyExc_TypeError, "One of the arguments is of incorrect type. Please provide only Geometry objects.");
+                return;
+            }
+            geom_in2[i] = in2;
+        }
     }
 
     GEOS_INIT_THREADS;
 
-    BINARY_LOOP {
-        /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1) || !get_geom(*(GeometryObject **)ip2, &in2)) {
-            errstate = PGERR_NOT_A_GEOMETRY;
-            destroy_geom_arr(ctx, geom_arr, i - 1);
-            break;
-        }
+    for (i = 0; i < n; i++) {
+        in1 = geom_in1[is1 == 0 ? 0 : i];
+        in2 = geom_in2[is2 == 0 ? 0 : i];
         if ((in1 == NULL) | (in2 == NULL)) {
-            /* in case of a missing value: return NULL (None) */
-            geom_arr[i] = NULL;
+            // in case of a missing value: return NULL (None)
+            out = NULL;
         } else {
-            geom_arr[i] = func(ctx, in1, in2);
-            if (geom_arr[i] == NULL) {
+            out = func(ctx, in1, in2);
+            if (out == NULL) {
                 errstate = PGERR_GEOS_EXCEPTION;
-                destroy_geom_arr(ctx, geom_arr, i - 1);
+                if (os1 > 0) {
+                    destroy_geom_arr(ctx, geom_out, i - 1);
+                }
                 break;
             }
         }
+        geom_out[os1 == 0 ? 0 : i] = out;
     }
 
     GEOS_FINISH_THREADS;
 
     // fill the numpy array with PyObjects while holding the GIL
     if (errstate == PGERR_SUCCESS) {
-        geom_arr_to_npy(geom_arr, args[2], steps[2], dimensions[0]);
+        geom_arr_to_npy(geom_out, args[2], steps[2], dimensions[0]);
     }
-    free(geom_arr);
+    free_three_arr(geom_in1, geom_in2, geom_out);
 }
 static PyUFuncGenericFunction YY_Y_funcs[1] = {&YY_Y_func};
 
