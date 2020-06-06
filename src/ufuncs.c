@@ -262,44 +262,43 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
 
     // allocate a temporary array to store output GEOSGeometry objects
     GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    if (geom_arr == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
+        return;
+    }
 
     GEOS_INIT_THREADS;
 
-    if (geom_arr != NULL) {
-        UNARY_LOOP {
-            // get the geometry: return on error
-            if (!get_geom(*(GeometryObject **)ip1, &in1)) {
-                errstate = PGERR_NOT_A_GEOMETRY;
+    UNARY_LOOP {
+        // get the geometry: return on error
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) {
+            errstate = PGERR_NOT_A_GEOMETRY;
+            destroy_geom_arr(ctx, geom_arr, i - 1);
+            break;
+        }
+        if (in1 == NULL) {
+            // in case of a missing value: return NULL (None)
+            geom_arr[i] = NULL;
+        } else {
+            geom_arr[i] = func(ctx, in1);
+            // NULL means: exception, but for some functions it may also indicate a
+            // "missing value" (None) (GetExteriorRing, GEOSBoundaryAllTypes_r)
+            // So: check the last_error before setting error state
+            if ((geom_arr[i] == NULL) && (last_error[0] != 0)) {
+                errstate = PGERR_GEOS_EXCEPTION;
                 destroy_geom_arr(ctx, geom_arr, i - 1);
                 break;
             }
-            if (in1 == NULL) {
-                // in case of a missing value: return NULL (None)
-                geom_arr[i] = NULL;
-            } else {
-                geom_arr[i] = func(ctx, in1);
-                // NULL means: exception, but for some functions it may also indicate a
-                // "missing value" (None) (GetExteriorRing, GEOSBoundaryAllTypes_r)
-                // So: check the last_error before setting error state
-                if ((geom_arr[i] == NULL) && (last_error[0] != 0)) {
-                    errstate = PGERR_GEOS_EXCEPTION;
-                    destroy_geom_arr(ctx, geom_arr, i - 1);
-                    break;
-                }
-            }
         }
-    }
-    
+    }   
 
     GEOS_FINISH_THREADS;
 
     // fill the numpy array with PyObjects while holding the GIL
-    if (geom_arr != NULL) {
-        if (errstate == PGERR_SUCCESS) {
-            geom_arr_to_npy(geom_arr, args[1], steps[1], dimensions[0]);
-        }
-        free(geom_arr);
+    if (errstate == PGERR_SUCCESS) {
+        geom_arr_to_npy(geom_arr, args[1], steps[1], dimensions[0]);
     }
+    free(geom_arr);
 }
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
@@ -343,43 +342,41 @@ static void Yd_Y_func(char **args, npy_intp *dimensions,
 
     // allocate a temporary array to store output GEOSGeometry objects
     GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    if (geom_arr == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
+        return;
+    }
 
     GEOS_INIT_THREADS;
 
-    if (geom_arr != NULL) {
-        BINARY_LOOP {
-            // get the geometry: return on error
-            if (!get_geom(*(GeometryObject **)ip1, &in1)) {
-                errstate = PGERR_NOT_A_GEOMETRY;
+    BINARY_LOOP {
+        // get the geometry: return on error
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) {
+            errstate = PGERR_NOT_A_GEOMETRY;
+            destroy_geom_arr(ctx, geom_arr, i - 1);
+            break;
+        }
+        double in2 = *(double *)ip2;
+        if ((in1 == NULL) | (npy_isnan(in2))) {
+            // in case of a missing value: return NULL (None)
+            geom_arr[i] = NULL;
+        } else {
+            geom_arr[i] = func(ctx, in1, in2);
+            if (geom_arr[i] == NULL) {
+                errstate = PGERR_GEOS_EXCEPTION;
                 destroy_geom_arr(ctx, geom_arr, i - 1);
                 break;
             }
-            double in2 = *(double *)ip2;
-            if ((in1 == NULL) | (npy_isnan(in2))) {
-                // in case of a missing value: return NULL (None)
-                geom_arr[i] = NULL;
-            } else {
-                geom_arr[i] = func(ctx, in1, in2);
-                if (geom_arr[i] == NULL) {
-                    errstate = PGERR_GEOS_EXCEPTION;
-                    destroy_geom_arr(ctx, geom_arr, i - 1);
-                    break;
-                }
-            }
         }
-    } else {
-        errstate = PGERR_NO_MALLOC;
     }
 
     GEOS_FINISH_THREADS;
 
     // fill the numpy array with PyObjects while holding the GIL
-    if (geom_arr != NULL) {
-        if (errstate == PGERR_SUCCESS) {
-            geom_arr_to_npy(geom_arr, args[2], steps[2], dimensions[0]);
-        }
-        free(geom_arr);
+    if (errstate == PGERR_SUCCESS) {
+        geom_arr_to_npy(geom_arr, args[2], steps[2], dimensions[0]);
     }
+    free(geom_arr);
 }
 static PyUFuncGenericFunction Yd_Y_funcs[1] = {&Yd_Y_func};
 
@@ -478,46 +475,44 @@ static void Yi_Y_func(char **args, npy_intp *dimensions,
 
     // allocate a temporary array to store output GEOSGeometry objects
     GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    if (geom_arr == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
+        return;
+    }
 
     GEOS_INIT_THREADS;
 
-    if (geom_arr != NULL) {
-        BINARY_LOOP {
-            // get the geometry: return on error
-            if (!get_geom(*(GeometryObject **)ip1, &in1)) {
-                errstate = PGERR_NOT_A_GEOMETRY;
+    BINARY_LOOP {
+        // get the geometry: return on error
+        if (!get_geom(*(GeometryObject **)ip1, &in1)) {
+            errstate = PGERR_NOT_A_GEOMETRY;
+            destroy_geom_arr(ctx, geom_arr, i - 1);
+            break;
+        }
+        int in2 = *(int *) ip2;
+        if (in1 == NULL) {
+            // in case of a missing value: return NULL (None)
+            geom_arr[i] = NULL;
+        } else {
+            geom_arr[i] = func(ctx, in1, in2);
+            // NULL means: exception, but for some functions it may also indicate a
+            // "missing value" (None) (GetPointN, GetInteriorRingN, GetGeometryN)
+            // So: check the last_error before setting error state
+            if ((geom_arr[i] == NULL) && (last_error[0] != 0)) {
+                errstate = PGERR_GEOS_EXCEPTION;
                 destroy_geom_arr(ctx, geom_arr, i - 1);
                 break;
             }
-            int in2 = *(int *) ip2;
-            if (in1 == NULL) {
-                // in case of a missing value: return NULL (None)
-                geom_arr[i] = NULL;
-            } else {
-                geom_arr[i] = func(ctx, in1, in2);
-                // NULL means: exception, but for some functions it may also indicate a
-                // "missing value" (None) (GetPointN, GetInteriorRingN, GetGeometryN)
-                // So: check the last_error before setting error state
-                if ((geom_arr[i] == NULL) && (last_error[0] != 0)) {
-                    errstate = PGERR_GEOS_EXCEPTION;
-                    destroy_geom_arr(ctx, geom_arr, i - 1);
-                    break;
-                }
-            }
         }
-    } else {
-        errstate = PGERR_NO_MALLOC;
     }
 
     GEOS_FINISH_THREADS;
 
     // fill the numpy array with PyObjects while holding the GIL
-    if (geom_arr != NULL) {
-        if (errstate == PGERR_SUCCESS) {
-            geom_arr_to_npy(geom_arr, args[2], steps[2], dimensions[0]);
-        }
-        free(geom_arr);
+    if (errstate == PGERR_SUCCESS) {
+        geom_arr_to_npy(geom_arr, args[2], steps[2], dimensions[0]);
     }
+    free(geom_arr);
 }
 static PyUFuncGenericFunction Yi_Y_funcs[1] = {&Yi_Y_func};
 
@@ -817,12 +812,12 @@ static void buffer_func(char **args, npy_intp *dimensions,
 
     // allocate a temporary array to store output GEOSGeometry objects
     GEOSGeometry **geom_arr = malloc(sizeof(void *) * n);
+    if (geom_arr == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
+        return;
+    }
 
     GEOS_INIT_THREADS;
-
-    if (geom_arr == NULL) {
-        errstate = PGERR_NO_MALLOC;
-    }
 
     GEOSBufferParams *params = GEOSBufferParams_create_r(ctx);
     if (params != 0) {
@@ -862,13 +857,10 @@ static void buffer_func(char **args, npy_intp *dimensions,
     GEOS_FINISH_THREADS;
 
     // fill the numpy array with PyObjects while holding the GIL
-    if (geom_arr != NULL) {
-        if (errstate == PGERR_SUCCESS) {
-            geom_arr_to_npy(geom_arr, args[7], steps[7], dimensions[0]);
-        }
-        free(geom_arr);
+    if (errstate == PGERR_SUCCESS) {
+        geom_arr_to_npy(geom_arr, args[7], steps[7], dimensions[0]);
     }
-
+    free(geom_arr);
 }
 static PyUFuncGenericFunction buffer_funcs[1] = {&buffer_func};
 
