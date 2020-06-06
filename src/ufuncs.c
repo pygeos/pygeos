@@ -528,26 +528,44 @@ static void YY_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
-    GEOSGeometry *in1, *in2, *ret_ptr;
+    GEOSGeometry *in1, *in2;
 
-    GEOS_INIT;
-
-        BINARY_LOOP {
-        /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
-            if ((in1 == NULL) | (in2 == NULL)) {
-            /* in case of a missing value: return NULL (None) */
-            ret_ptr = NULL;
-            } else {
-            ret_ptr = func(ctx, in1, in2);
-            if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
-        }
-        OUTPUT_Y;
+    // allocate a temporary array to store output GEOSGeometry objects
+    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    if (geom_arr == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
+        return;
     }
 
-    finish:
-    GEOS_FINISH;
+    GEOS_INIT_THREADS;
+
+    BINARY_LOOP {
+        /* get the geometries: return on error */
+        if (!get_geom(*(GeometryObject **)ip1, &in1) || !get_geom(*(GeometryObject **)ip2, &in2)) {
+            errstate = PGERR_NOT_A_GEOMETRY;
+            destroy_geom_arr(ctx, geom_arr, i - 1);
+            break;
+        }
+        if ((in1 == NULL) | (in2 == NULL)) {
+            /* in case of a missing value: return NULL (None) */
+            geom_arr[i] = NULL;
+        } else {
+            geom_arr[i] = func(ctx, in1, in2);
+            if (geom_arr[i] == NULL) {
+                errstate = PGERR_GEOS_EXCEPTION;
+                destroy_geom_arr(ctx, geom_arr, i - 1);
+                break;
+            }
+        }
+    }
+
+    GEOS_FINISH_THREADS;
+
+    // fill the numpy array with PyObjects while holding the GIL
+    if (errstate == PGERR_SUCCESS) {
+        geom_arr_to_npy(geom_arr, args[2], steps[2], dimensions[0]);
+    }
+    free(geom_arr);
 }
 static PyUFuncGenericFunction YY_Y_funcs[1] = {&YY_Y_func};
 
