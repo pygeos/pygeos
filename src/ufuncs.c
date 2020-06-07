@@ -529,14 +529,9 @@ static void YY_Y_func(char **args, npy_intp *dimensions,
 {
     FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
     GEOSGeometry *in1, *in2;
-    GEOSGeometry **geom_arr;
-    npy_intp out_i;
-    char is_reduce = steps[2] == 0;
 
     // allocate a temporary array to store output GEOSGeometry objects
-    // note that if the output step is 0, the length is always 1
-    // this happens for ufunc.reduce operations
-    geom_arr = malloc(sizeof(void *) * (is_reduce ? 1 : dimensions[0]));
+    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
     if (geom_arr == NULL) {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
         return;
@@ -545,40 +540,20 @@ static void YY_Y_func(char **args, npy_intp *dimensions,
     GEOS_INIT_THREADS;
 
     BINARY_LOOP {
-        // the index (out_i) into the output array is either 0 or i
-        out_i = is_reduce ? 0 : i;
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) {
+        /* get the geometries: return on error */
+        if (!get_geom(*(GeometryObject **)ip1, &in1) || !get_geom(*(GeometryObject **)ip2, &in2)) {
             errstate = PGERR_NOT_A_GEOMETRY;
-            destroy_geom_arr(ctx, geom_arr, out_i - 1);
+            destroy_geom_arr(ctx, geom_arr, i - 1);
             break;
         }
-        // For some ufunc.reduce operations the output stride is 0. In that case we
-        // the previous output is the input, except for the first step.
-        if (is_reduce && (i > 0)) {
-            in1 = geom_arr[0];
-        } else {
-            if (!get_geom(*(GeometryObject **)ip1, &in1)) {
-                errstate = PGERR_NOT_A_GEOMETRY;
-                destroy_geom_arr(ctx, geom_arr, out_i - 1);
-                break;
-            }
-        }
         if ((in1 == NULL) | (in2 == NULL)) {
-            // in case of a missing value: return NULL (None)
-            geom_arr[out_i] = NULL;
-            // we can break the loop as we know the NULL will propagate
-            if (is_reduce) {
-                break;
-            }
+            /* in case of a missing value: return NULL (None) */
+            geom_arr[i] = NULL;
         } else {
-            geom_arr[out_i] = func(ctx, in1, in2);
-            if (is_reduce && (i > 0)) {
-                // in1 was intermediate; clean it up
-                GEOSGeom_destroy_r(ctx, in1);
-            }
-            if (geom_arr[out_i] == NULL) {
+            geom_arr[i] = func(ctx, in1, in2);
+            if (geom_arr[i] == NULL) {
                 errstate = PGERR_GEOS_EXCEPTION;
-                destroy_geom_arr(ctx, geom_arr, out_i - 1);
+                destroy_geom_arr(ctx, geom_arr, i - 1);
                 break;
             }
         }
@@ -587,10 +562,8 @@ static void YY_Y_func(char **args, npy_intp *dimensions,
     GEOS_FINISH_THREADS;
 
     // fill the numpy array with PyObjects while holding the GIL
-    // if step[2] == 0 and dimensions[0] > 1 we would make several PyObjects that own the same
-    // GEOSGeometry, which would lead to multiple deallocations of GEOSGeometry later
     if (errstate == PGERR_SUCCESS) {
-        geom_arr_to_npy(geom_arr, args[2], steps[2], is_reduce ? 1 : dimensions[0]);
+        geom_arr_to_npy(geom_arr, args[2], steps[2], dimensions[0]);
     }
     free(geom_arr);
 }
