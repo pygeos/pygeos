@@ -430,7 +430,7 @@ def snap(geometry, reference, tolerance, **kwargs):
     """
     return lib.snap(geometry, reference, tolerance, **kwargs)
 
-
+@multithreading_enabled
 def voronoi_polygons(
     geometry, tolerance=0.0, extend_to=None, only_edges=False, **kwargs
 ):

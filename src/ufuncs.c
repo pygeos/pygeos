@@ -1081,28 +1081,51 @@ static char voronoi_polygons_dtypes[5] = {NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT, NP
 static void voronoi_polygons_func(char **args, npy_intp *dimensions,
                                   npy_intp *steps, void *data)
 {
-    GEOSGeometry *in1, *in3, *ret_ptr;
+    GEOSGeometry *in1, *in3;
 
-    GEOS_INIT;
+    if ((steps[4] == 0) && (dimensions[0] > 1)) {
+        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], args[4], steps[0], steps[1], steps[2], steps[3], steps[4], dimensions[0]);
+        return;
+    }
+
+    // allocate a temporary array to store output GEOSGeometry objects
+    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    if (geom_arr == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
+        return;
+    }
+
+    GEOS_INIT_THREADS;
 
     QUATERNARY_LOOP {
-        /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
+        // get the geometry: return on error
+        if (!get_geom(*(GeometryObject **)ip1, &in1) || !get_geom(*(GeometryObject **)ip3, &in3)) {
+            errstate = PGERR_NOT_A_GEOMETRY;
+            destroy_geom_arr(ctx, geom_arr, i - 1);
+            break;
+        }
         double in2 = *(double *) ip2;
-        if (!get_geom(*(GeometryObject **)ip3, &in3)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         npy_bool in4 = *(npy_bool *) ip4;
         if ((in1 == NULL) | npy_isnan(in2)) {
             /* propagate NULL geometries; in3 = NULL is actually supported */
-            ret_ptr = NULL;
+            geom_arr[i] = NULL;
         } else {
-            ret_ptr = GEOSVoronoiDiagram_r(ctx, in1, in3, in2, (int) in4);
-            if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            geom_arr[i] = GEOSVoronoiDiagram_r(ctx, in1, in3, in2, (int) in4);
+            if (geom_arr[i] == NULL) {
+                errstate = PGERR_GEOS_EXCEPTION;
+                destroy_geom_arr(ctx, geom_arr, i - 1);
+                break;
+            }
         }
-        OUTPUT_Y;
     }
 
-    finish:
-        GEOS_FINISH;
+    GEOS_FINISH_THREADS;
+
+    // fill the numpy array with PyObjects while holding the GIL
+    if (errstate == PGERR_SUCCESS) {
+        geom_arr_to_npy(geom_arr, args[4], steps[4], dimensions[0]);
+    }
+    free(geom_arr);
 }
 static PyUFuncGenericFunction voronoi_polygons_funcs[1] = {&voronoi_polygons_func};
 
