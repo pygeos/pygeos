@@ -260,6 +260,11 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
     FuncGEOS_Y_Y *func = (FuncGEOS_Y_Y *)data;
     GEOSGeometry *in1;
 
+    if ((steps[1] == 0) && (dimensions[0] > 1)) {
+        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p], steps=[%ld, %ld], dimensions=[%ld].", args[0], args[1], steps[0], steps[1], dimensions[0]);
+        return;
+    }
+
     // allocate a temporary array to store output GEOSGeometry objects
     GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
     if (geom_arr == NULL) {
@@ -339,6 +344,11 @@ static void Yd_Y_func(char **args, npy_intp *dimensions,
 {
     FuncGEOS_Yd_Y *func = (FuncGEOS_Yd_Y *)data;
     GEOSGeometry *in1;
+
+    if ((steps[2] == 0) && (dimensions[0] > 1)) {
+        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
+        return;
+    }
 
     // allocate a temporary array to store output GEOSGeometry objects
     GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
@@ -473,6 +483,11 @@ static void Yi_Y_func(char **args, npy_intp *dimensions,
     FuncGEOS_Yi_Y *func = (FuncGEOS_Yi_Y *)data;
     GEOSGeometry *in1;
 
+    if ((steps[2] == 0) && (dimensions[0] > 1)) {
+        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
+        return;
+    }
+
     // allocate a temporary array to store output GEOSGeometry objects
     GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
     if (geom_arr == NULL) {
@@ -524,9 +539,73 @@ static void *union_data[1] = {GEOSUnion_r};
 static void *shared_paths_data[1] = {GEOSSharedPaths_r};
 typedef void *FuncGEOS_YY_Y(void *context, void *a, void *b);
 static char YY_Y_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT};
+
+/* There are two inner loop functions for the YY_Y. This is because this
+ * pattern allows for ufunc.reduce.
+ * A reduce operation requires special attention, because we output the
+ * result in a temporary array. NumPy expects that the output array is
+ * filled during the inner loop, so that it can take the first input of
+ * the reduction operation to be the output array. Easiest to show by
+ * example:
+
+ * function called:         out = intersection.reduce(in)
+ * initialization by numpy: out[0] = in[0]; in1 = out; in2[:] = in[:]
+ * first loop:              out[0] = func(out[0], in[1])
+ * second loop:             out[0] = func(out[0], in[2])
+ */
+static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
+                             npy_intp *steps, void *data)
+{
+    FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
+    GEOSGeometry *in1, *in2, *out;
+
+    GEOS_INIT_THREADS;
+
+    if (!get_geom(*(GeometryObject **)args[0], &out)) {
+        errstate = PGERR_NOT_A_GEOMETRY;
+    } else if (out != NULL) {
+        BINARY_LOOP {
+            if (!get_geom(*(GeometryObject **)ip2, &in2)) {
+                errstate = PGERR_NOT_A_GEOMETRY;
+                break;
+            }
+            if (in2 == NULL) {
+                // we can break the loop as we know the NULL will propagate
+                break;
+            } else {
+                in1 = out;
+                out = func(ctx, in1, in2);
+                if (i > 0) {
+                    // in1 was intermediate; clean it up
+                    GEOSGeom_destroy_r(ctx, in1);
+                }
+                if (out == NULL) {
+                    errstate = PGERR_GEOS_EXCEPTION;
+                    break;
+                }
+            }
+        }
+    }
+
+    GEOS_FINISH_THREADS;
+
+    // fill the numpy array with a single PyObject while holding the GIL
+    if (errstate == PGERR_SUCCESS) {
+        geom_arr_to_npy(&out, args[2], steps[2], 1);
+    }
+}
+
 static void YY_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
+    // A reduce is characterized by the step of the output array being 0:
+    if ((steps[2] == 0) && (args[0] == args[2])) {
+        return YY_Y_func_reduce(args, dimensions, steps, data);
+    } else if ((steps[2] == 0) && (dimensions[0] > 1)) {
+        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
+        return;
+    }
+
     FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
     GEOSGeometry *in1, *in2;
 
@@ -540,14 +619,14 @@ static void YY_Y_func(char **args, npy_intp *dimensions,
     GEOS_INIT_THREADS;
 
     BINARY_LOOP {
-        /* get the geometries: return on error */
+        // get the geometries: return on error
         if (!get_geom(*(GeometryObject **)ip1, &in1) || !get_geom(*(GeometryObject **)ip2, &in2)) {
             errstate = PGERR_NOT_A_GEOMETRY;
             destroy_geom_arr(ctx, geom_arr, i - 1);
             break;
         }
         if ((in1 == NULL) | (in2 == NULL)) {
-            /* in case of a missing value: return NULL (None) */
+            // in case of a missing value: return NULL (None)
             geom_arr[i] = NULL;
         } else {
             geom_arr[i] = func(ctx, in1, in2);
@@ -822,6 +901,11 @@ static void buffer_func(char **args, npy_intp *dimensions,
     npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4], is6 = steps[5], is7 = steps[6];
     npy_intp n = dimensions[0];
     npy_intp i;
+
+    if ((steps[7] == 0) && (dimensions[0] > 1)) {
+        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args[0]=%p, args[7]=%p, steps[0]=%ld, steps[7]=%ld, dimensions[0]=%ld.", args[0], args[7], steps[0], steps[7], dimensions[0]);
+        return;
+    }
 
     if ((is3 != 0) | (is4 != 0) | (is5 != 0) | (is6 != 0) | (is7 != 0)) {
         PyErr_Format(PyExc_ValueError, "Buffer function called with non-scalar parameters");
