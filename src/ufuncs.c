@@ -565,22 +565,29 @@ static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
         errstate = PGERR_NOT_A_GEOMETRY;
     } else if (out != NULL) {
         BINARY_LOOP {
+            // This is the main reduce logic: in1 becomes previous out
+            if (i > 1) {
+                // If i == 0, in1 is undefined
+                // If i == 1, in1 is the first input, which is owned by python
+                GEOSGeom_destroy_r(ctx, in1);
+            }
+            in1 = out;
+            // Get the other geometry (as normal)
             if (!get_geom(*(GeometryObject **)ip2, &in2)) {
                 errstate = PGERR_NOT_A_GEOMETRY;
+                GEOSGeom_destroy_r(ctx, out);
                 break;
             }
             if (in2 == NULL) {
-                // we can break the loop as we know the NULL will propagate
+                // We break the loop as the answer will remain NULL (None)
+                GEOSGeom_destroy_r(ctx, out);
+                out = NULL;
                 break;
             } else {
-                in1 = out;
                 out = func(ctx, in1, in2);
-                if (i > 0) {
-                    // in1 was intermediate; clean it up
-                    GEOSGeom_destroy_r(ctx, in1);
-                }
                 if (out == NULL) {
                     errstate = PGERR_GEOS_EXCEPTION;
+                    GEOSGeom_destroy_r(ctx, out);
                     break;
                 }
             }
