@@ -205,7 +205,7 @@ def convex_hull(geometry, **kwargs):
     """
     return lib.convex_hull(geometry, **kwargs)
 
-
+@multithreading_enabled
 def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     """Computes a Delaunay triangulation around the vertices of an input
     geometry.
