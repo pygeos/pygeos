@@ -259,14 +259,15 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
 {
     FuncGEOS_Y_Y *func = (FuncGEOS_Y_Y *)data;
     GEOSGeometry *in1;
+    GEOSGeometry **geom_arr;
 
     if ((steps[1] == 0) && (dimensions[0] > 1)) {
-        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p], steps=[%ld, %ld], dimensions=[%ld].", args[0], args[1], steps[0], steps[1], dimensions[0]);
+        PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p], steps=[%ld, %ld], dimensions=[%ld].", args[0], args[1], steps[0], steps[1], dimensions[0]);
         return;
     }
 
     // allocate a temporary array to store output GEOSGeometry objects
-    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    geom_arr = malloc(sizeof(void *) * dimensions[0]);
     if (geom_arr == NULL) {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
         return;
@@ -344,14 +345,15 @@ static void Yd_Y_func(char **args, npy_intp *dimensions,
 {
     FuncGEOS_Yd_Y *func = (FuncGEOS_Yd_Y *)data;
     GEOSGeometry *in1;
+    GEOSGeometry **geom_arr;
 
     if ((steps[2] == 0) && (dimensions[0] > 1)) {
-        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
+        PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
         return;
     }
 
     // allocate a temporary array to store output GEOSGeometry objects
-    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    geom_arr = malloc(sizeof(void *) * dimensions[0]);
     if (geom_arr == NULL) {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
         return;
@@ -482,14 +484,15 @@ static void Yi_Y_func(char **args, npy_intp *dimensions,
 {
     FuncGEOS_Yi_Y *func = (FuncGEOS_Yi_Y *)data;
     GEOSGeometry *in1;
+    GEOSGeometry **geom_arr;
 
     if ((steps[2] == 0) && (dimensions[0] > 1)) {
-        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
+        PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
         return;
     }
 
     // allocate a temporary array to store output GEOSGeometry objects
-    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    geom_arr = malloc(sizeof(void *) * dimensions[0]);
     if (geom_arr == NULL) {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
         return;
@@ -550,14 +553,14 @@ static char YY_Y_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT};
 
  * function called:         out = intersection.reduce(in)
  * initialization by numpy: out[0] = in[0]; in1 = out; in2[:] = in[:]
- * first loop:              out[0] = func(out[0], in[1])
- * second loop:             out[0] = func(out[0], in[2])
+ * first loop:              out[0] = func(in1[0], in2[1])  [ = func(out[0], in2[1]) ]
+ * second loop:             out[0] = func(in1[0], in2[2])  [ = func(out[0], in2[1]) ]
  */
 static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
                              npy_intp *steps, void *data)
 {
     FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
-    GEOSGeometry *in1, *in2, *out;
+    GEOSGeometry *in1 = NULL, *in2, *out;
 
     GEOS_INIT_THREADS;
 
@@ -565,34 +568,44 @@ static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
         errstate = PGERR_NOT_A_GEOMETRY;
     } else if (out != NULL) {
         BINARY_LOOP {
-            // This is the main reduce logic: in1 becomes previous out
+            // Cleanup previous in1
             if (i > 1) {
                 // If i == 0, in1 is undefined
                 // If i == 1, in1 is the first input, which is owned by python
                 GEOSGeom_destroy_r(ctx, in1);
             }
+            // This is the main reduce logic: in1 becomes previous out
             in1 = out;
             // Get the other geometry (as normal)
             if (!get_geom(*(GeometryObject **)ip2, &in2)) {
                 errstate = PGERR_NOT_A_GEOMETRY;
-                GEOSGeom_destroy_r(ctx, out);
                 break;
             }
             if (in2 == NULL) {
                 // We break the loop as the answer will remain NULL (None)
-                GEOSGeom_destroy_r(ctx, out);
                 out = NULL;
                 break;
             } else {
                 out = func(ctx, in1, in2);
                 if (out == NULL) {
                     errstate = PGERR_GEOS_EXCEPTION;
-                    GEOSGeom_destroy_r(ctx, out);
                     break;
                 }
             }
         }
+        // We need to cleanup the previous in1, but not if it is owned by python
+        // Get the first in1 from the ufunc input again (misuse in2 for that) and compare
+        get_geom(*(GeometryObject **)args[0], &in2);
+        if (in1 != in2) {
+            GEOSGeom_destroy_r(ctx, in1);
+        }
     }
+
+    // Cleanup the temporary in1 (unless owned by python)
+    // get_geom(*(GeometryObject **)args[0], &in2);
+    // if (in1 != in2) {
+    //     GEOSGeom_destroy_r(ctx, in1);
+    // }
 
     GEOS_FINISH_THREADS;
 
@@ -606,18 +619,22 @@ static void YY_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     // A reduce is characterized by the step of the output array being 0:
-    if ((steps[2] == 0) && (args[0] == args[2])) {
-        return YY_Y_func_reduce(args, dimensions, steps, data);
-    } else if ((steps[2] == 0) && (dimensions[0] > 1)) {
-        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
-        return;
+    if ((steps[2] == 0) && (dimensions[0] > 1)) {
+        if (args[0] == args[2]) {
+            YY_Y_func_reduce(args, dimensions, steps, data);
+            return;
+        } else {
+            PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
+            return;
+        }
     }
 
     FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
     GEOSGeometry *in1, *in2;
+    GEOSGeometry **geom_arr;
 
     // allocate a temporary array to store output GEOSGeometry objects
-    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    geom_arr = malloc(sizeof(void *) * dimensions[0]);
     if (geom_arr == NULL) {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
         return;
@@ -908,9 +925,10 @@ static void buffer_func(char **args, npy_intp *dimensions,
     npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4], is6 = steps[5], is7 = steps[6];
     npy_intp n = dimensions[0];
     npy_intp i;
+    GEOSGeometry **geom_arr;
 
     if ((steps[7] == 0) && (dimensions[0] > 1)) {
-        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args[0]=%p, args[7]=%p, steps[0]=%ld, steps[7]=%ld, dimensions[0]=%ld.", args[0], args[7], steps[0], steps[7], dimensions[0]);
+        PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args[0]=%p, args[7]=%p, steps[0]=%ld, steps[7]=%ld, dimensions[0]=%ld.", args[0], args[7], steps[0], steps[7], dimensions[0]);
         return;
     }
 
@@ -920,7 +938,7 @@ static void buffer_func(char **args, npy_intp *dimensions,
     }
 
     // allocate a temporary array to store output GEOSGeometry objects
-    GEOSGeometry **geom_arr = malloc(sizeof(void *) * n);
+    geom_arr = malloc(sizeof(void *) * n);
     if (geom_arr == NULL) {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
         return;
@@ -1036,14 +1054,15 @@ static void delaunay_triangles_func(char **args, npy_intp *dimensions,
                                     npy_intp *steps, void *data)
 {
     GEOSGeometry *in1;
+    GEOSGeometry **geom_arr;
 
     if ((steps[3] == 0) && (dimensions[0] > 1)) {
-        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], steps[0], steps[1], steps[2], steps[3], dimensions[0]);
+        PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], steps[0], steps[1], steps[2], steps[3], dimensions[0]);
         return;
     }
 
     // allocate a temporary array to store output GEOSGeometry objects
-    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    geom_arr = malloc(sizeof(void *) * dimensions[0]);
     if (geom_arr == NULL) {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
         return;
@@ -1089,14 +1108,15 @@ static void voronoi_polygons_func(char **args, npy_intp *dimensions,
                                   npy_intp *steps, void *data)
 {
     GEOSGeometry *in1, *in3;
+    GEOSGeometry **geom_arr;
 
     if ((steps[4] == 0) && (dimensions[0] > 1)) {
-        PyErr_Format(PyExc_NotImplementedError, "Cannot handle ufunc mode with args=[%p, %p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], args[4], steps[0], steps[1], steps[2], steps[3], steps[4], dimensions[0]);
+        PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], args[4], steps[0], steps[1], steps[2], steps[3], steps[4], dimensions[0]);
         return;
     }
 
     // allocate a temporary array to store output GEOSGeometry objects
-    GEOSGeometry **geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    geom_arr = malloc(sizeof(void *) * dimensions[0]);
     if (geom_arr == NULL) {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
         return;
