@@ -601,12 +601,6 @@ static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
         }
     }
 
-    // Cleanup the temporary in1 (unless owned by python)
-    // get_geom(*(GeometryObject **)args[0], &in2);
-    // if (in1 != in2) {
-    //     GEOSGeom_destroy_r(ctx, in1);
-    // }
-
     GEOS_FINISH_THREADS;
 
     // fill the numpy array with a single PyObject while holding the GIL
@@ -618,7 +612,8 @@ static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
 static void YY_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
-    // A reduce is characterized by the step of the output array being 0:
+    // A reduce is characterized by
+
     if ((steps[2] == 0) && (dimensions[0] > 1)) {
         if (args[0] == args[2]) {
             YY_Y_func_reduce(args, dimensions, steps, data);
