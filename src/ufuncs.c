@@ -101,7 +101,7 @@ static void Y_b_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_Y_b *func = (FuncGEOS_Y_b *)data;
-    GEOSGeometry *in1;
+    GEOSGeometry *in1 = NULL;
     char ret;
 
     GEOS_INIT_THREADS;
@@ -171,7 +171,7 @@ static void YY_b_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_YY_b *func = (FuncGEOS_YY_b *)data;
-    GEOSGeometry *in1, *in2;
+    GEOSGeometry *in1 = NULL, *in2 = NULL;
     char ret;
 
     GEOS_INIT_THREADS;
@@ -258,9 +258,10 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_Y_Y *func = (FuncGEOS_Y_Y *)data;
-    GEOSGeometry *in1;
+    GEOSGeometry *in1 = NULL;
     GEOSGeometry **geom_arr;
 
+    // Fail if inputs do not have the expected structure.
     if ((steps[1] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p], steps=[%ld, %ld], dimensions=[%ld].", args[0], args[1], steps[0], steps[1], dimensions[0]);
         return;
@@ -344,9 +345,10 @@ static void Yd_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_Yd_Y *func = (FuncGEOS_Yd_Y *)data;
-    GEOSGeometry *in1;
+    GEOSGeometry *in1 = NULL;
     GEOSGeometry **geom_arr;
 
+    // Fail if inputs do not have the expected structure.
     if ((steps[2] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
         return;
@@ -483,9 +485,10 @@ static void Yi_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_Yi_Y *func = (FuncGEOS_Yi_Y *)data;
-    GEOSGeometry *in1;
+    GEOSGeometry *in1 = NULL;
     GEOSGeometry **geom_arr;
 
+    // Fail if inputs do not have the expected structure.
     if ((steps[2] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
         return;
@@ -560,7 +563,7 @@ static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
                              npy_intp *steps, void *data)
 {
     FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
-    GEOSGeometry *in1 = NULL, *in2, *out;
+    GEOSGeometry *in1 = NULL, *in2 = NULL, *out = NULL;
 
     GEOS_INIT_THREADS;
 
@@ -619,13 +622,14 @@ static void YY_Y_func(char **args, npy_intp *dimensions,
             YY_Y_func_reduce(args, dimensions, steps, data);
             return;
         } else {
+            // Fail if inputs do not have the expected structure.
             PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
             return;
         }
     }
 
     FuncGEOS_YY_Y *func = (FuncGEOS_YY_Y *)data;
-    GEOSGeometry *in1, *in2;
+    GEOSGeometry *in1 = NULL, *in2 = NULL;
     GEOSGeometry **geom_arr;
 
     // allocate a temporary array to store output GEOSGeometry objects
@@ -696,7 +700,7 @@ static void Y_d_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_Y_d *func = (FuncGEOS_Y_d *)data;
-    GEOSGeometry *in1;
+    GEOSGeometry *in1 = NULL;
 
     GEOS_INIT_THREADS;
 
@@ -747,7 +751,7 @@ static void Y_i_func(char **args, npy_intp *dimensions,
                      npy_intp *steps, void *data)
 {
     FuncGEOS_Y_i *func = (FuncGEOS_Y_i *)data;
-    GEOSGeometry *in1;
+    GEOSGeometry *in1 = NULL;
     int result;
 
     // In the GEOS CAPI, sometimes -1 is an error, sometimes 0
@@ -825,7 +829,7 @@ static void YY_d_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
     FuncGEOS_YY_d *func = (FuncGEOS_YY_d *)data;
-    GEOSGeometry *in1, *in2;
+    GEOSGeometry *in1 = NULL, *in2 = NULL;
 
     GEOS_INIT_THREADS;
 
@@ -865,7 +869,7 @@ static void YYd_d_func(char **args, npy_intp *dimensions,
                        npy_intp *steps, void *data)
 {
     FuncGEOS_YYd_d *func = (FuncGEOS_YYd_d *)data;
-    GEOSGeometry *in1, *in2;
+    GEOSGeometry *in1 = NULL, *in2 = NULL;
 
     GEOS_INIT_THREADS;
 
@@ -893,7 +897,7 @@ static PyUFuncGenericFunction YYd_d_funcs[1] = {&YYd_d_func};
 /* Define functions with unique call signatures */
 static void *null_data[1] = {NULL};
 static char buffer_inner(void *ctx, GEOSBufferParams *params, void *ip1, void *ip2, GEOSGeometry **geom_arr, npy_intp i) {
-    GEOSGeometry *in1;
+    GEOSGeometry *in1 = NULL;
 
     /* get the geometry: return on error */
     if (!get_geom(*(GeometryObject **)ip1, &in1)) {
@@ -922,6 +926,7 @@ static void buffer_func(char **args, npy_intp *dimensions,
     npy_intp i;
     GEOSGeometry **geom_arr;
 
+    // Fail if inputs do not have the expected structure.
     if ((steps[7] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args[0]=%p, args[7]=%p, steps[0]=%ld, steps[7]=%ld, dimensions[0]=%ld.", args[0], args[7], steps[0], steps[7], dimensions[0]);
         return;
@@ -991,7 +996,7 @@ static char snap_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT};
 static void snap_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
-    GEOSGeometry *in1, *in2, *ret_ptr;
+    GEOSGeometry *in1 = NULL, *in2 = NULL, *ret_ptr;
 
     GEOS_INIT;
 
@@ -1019,7 +1024,7 @@ static char equals_exact_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_BO
 static void equals_exact_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
-    GEOSGeometry *in1, *in2;
+    GEOSGeometry *in1 = NULL, *in2 = NULL;
     npy_bool ret;
 
     GEOS_INIT_THREADS;
@@ -1048,9 +1053,10 @@ static char delaunay_triangles_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NP
 static void delaunay_triangles_func(char **args, npy_intp *dimensions,
                                     npy_intp *steps, void *data)
 {
-    GEOSGeometry *in1;
+    GEOSGeometry *in1 = NULL;
     GEOSGeometry **geom_arr;
 
+    // Fail if inputs do not have the expected structure.
     if ((steps[3] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], steps[0], steps[1], steps[2], steps[3], dimensions[0]);
         return;
@@ -1102,9 +1108,10 @@ static char voronoi_polygons_dtypes[5] = {NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT, NP
 static void voronoi_polygons_func(char **args, npy_intp *dimensions,
                                   npy_intp *steps, void *data)
 {
-    GEOSGeometry *in1, *in3;
+    GEOSGeometry *in1 = NULL, *in3 = NULL;
     GEOSGeometry **geom_arr;
 
+    // Fail if inputs do not have the expected structure.
     if ((steps[4] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], args[4], steps[0], steps[1], steps[2], steps[3], steps[4], dimensions[0]);
         return;
@@ -1156,7 +1163,7 @@ static void is_valid_reason_func(char **args, npy_intp *dimensions,
                                  npy_intp *steps, void *data)
 {
     char *reason;
-    GEOSGeometry *in1;
+    GEOSGeometry *in1 = NULL;
 
     GEOS_INIT;
 
