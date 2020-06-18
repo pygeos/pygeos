@@ -2,6 +2,7 @@ from enum import IntEnum
 import numpy as np
 from . import Geometry  # NOQA
 from . import lib
+from .decorators import requires_geos
 
 
 __all__ = [
@@ -14,6 +15,9 @@ __all__ = [
     "delaunay_triangles",
     "envelope",
     "extract_unique_points",
+    "build_area",
+    "make_valid",
+    "normalize",
     "point_on_surface",
     "simplify",
     "snap",
@@ -283,6 +287,64 @@ def extract_unique_points(geometry, **kwargs):
     <pygeos.Geometry MULTIPOINT EMPTY>
     """
     return lib.extract_unique_points(geometry, **kwargs)
+
+
+@requires_geos("3.8.0")
+def build_area(geometry, **kwargs):
+    """Creates an areal geometry formed by the constituent linework of given geometry.
+
+    Equivalent of the PostGIS ST_BuildArea() function.
+
+    Requires at least GEOS 3.8.0.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> build_area(Geometry("GEOMETRYCOLLECTION(POLYGON((0 0, 3 0, 3 3, 0 3, 0 0)), POLYGON((1 1, 1 2, 2 2, 1 1)))"))
+    <pygeos.Geometry POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (1 1, 2 2, 1 2, 1 1))>
+    """
+    return lib.build_area(geometry, **kwargs)
+
+
+@requires_geos("3.8.0")
+def make_valid(geometry, **kwargs):
+    """Repairs invalid geometries.
+
+    Requires at least GEOS 3.8.0.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> make_valid(Geometry("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))"))
+    <pygeos.Geometry MULTILINESTRING ((0 0, 1 1), (1 1, 1 2))>
+    """
+    return lib.make_valid(geometry, **kwargs)
+
+
+def normalize(geometry, **kwargs):
+    """Converts Geometry to normal form (or canonical form).
+
+    This method orders the coordinates, rings of a polygon and parts of
+    multi geometries consistently. Typically useful for testing purposes
+    (for example in combination with `equals_exact`).
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> p = Geometry("MULTILINESTRING((0 0, 1 1),(2 2, 3 3))")
+    >>> normalize(p)
+    <pygeos.Geometry MULTILINESTRING ((2 2, 3 3), (0 0, 1 1))>
+    """
+    return lib.normalize(geometry, **kwargs)
 
 
 def point_on_surface(geometry, **kwargs):
