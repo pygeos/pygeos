@@ -1,0 +1,17 @@
+FROM python:3.6-stretch
+
+RUN apt-get update && apt-get install -y valgrind libgeos-dev --no-install-recommends
+
+RUN pip install numpy pytest pytest-valgrind
+
+COPY . /code
+
+WORKDIR /code
+
+RUN python setup.py build_ext --inplace
+
+ENV PYTHONMALLOC malloc
+
+# docker build . -f ./docker/Dockerfile.valgrind -t pygeos/valgrind
+
+# docker run pygeos/valgrind:latest valgrind --show-leak-kinds=definite --log-file=/tmp/valgrind-output python -m pytest -vv --valgrind --valgrind-log=/tmp/valgrind-output
