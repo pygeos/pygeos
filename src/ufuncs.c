@@ -261,7 +261,8 @@ static void Y_Y_func(char **args, npy_intp *dimensions,
     GEOSGeometry *in1 = NULL;
     GEOSGeometry **geom_arr;
 
-    // Fail if inputs do not have the expected structure.
+    // Fail if inputs output multiple times on the same place in memory. That would
+    // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
     if ((steps[1] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p], steps=[%ld, %ld], dimensions=[%ld].", args[0], args[1], steps[0], steps[1], dimensions[0]);
         return;
@@ -348,7 +349,8 @@ static void Yd_Y_func(char **args, npy_intp *dimensions,
     GEOSGeometry *in1 = NULL;
     GEOSGeometry **geom_arr;
 
-    // Fail if inputs do not have the expected structure.
+    // Fail if inputs output multiple times on the same place in memory. That would
+    // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
     if ((steps[2] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
         return;
@@ -488,7 +490,8 @@ static void Yi_Y_func(char **args, npy_intp *dimensions,
     GEOSGeometry *in1 = NULL;
     GEOSGeometry **geom_arr;
 
-    // Fail if inputs do not have the expected structure.
+    // Fail if inputs output multiple times on the same place in memory. That would
+    // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
     if ((steps[2] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
         return;
@@ -557,7 +560,7 @@ static char YY_Y_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT};
  * function called:         out = intersection.reduce(in)
  * initialization by numpy: out[0] = in[0]; in1 = out; in2[:] = in[:]
  * first loop:              out[0] = func(in1[0], in2[1])  [ = func(out[0], in2[1]) ]
- * second loop:             out[0] = func(in1[0], in2[2])  [ = func(out[0], in2[1]) ]
+ * second loop:             out[0] = func(in1[0], in2[2])  [ = func(out[0], in2[2]) ]
  */
 static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
                              npy_intp *steps, void *data)
@@ -596,8 +599,11 @@ static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
                 }
             }
         }
-        // We need to cleanup the previous in1, but not if it is owned by python
-        // Get the first in1 from the ufunc input again (misuse in2 for that) and compare
+        // We need to cleanup the intermediate geometry stored in in1.
+        // However, in some cases the intermediate geometry equals the first input, which is
+        // 'owned' by python. Destoying that would lead to a segfault when the python object
+        // is dereferenced.
+        // We check for that situation explicitely from the ufunc input (misusing the variable 'in2').
         get_geom(*(GeometryObject **)args[0], &in2);
         if (in1 != in2) {
             GEOSGeom_destroy_r(ctx, in1);
@@ -615,8 +621,8 @@ static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
 static void YY_Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
-    // A reduce is characterized by
-
+    // A reduce is characterized by multiple iterations (dimension[0] > 1) that
+    // are output on the same place in memory (steps[2] == 0).
     if ((steps[2] == 0) && (dimensions[0] > 1)) {
         if (args[0] == args[2]) {
             YY_Y_func_reduce(args, dimensions, steps, data);
@@ -926,7 +932,8 @@ static void buffer_func(char **args, npy_intp *dimensions,
     npy_intp i;
     GEOSGeometry **geom_arr;
 
-    // Fail if inputs do not have the expected structure.
+    // Fail if inputs output multiple times on the same place in memory. That would
+    // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
     if ((steps[7] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args[0]=%p, args[7]=%p, steps[0]=%ld, steps[7]=%ld, dimensions[0]=%ld.", args[0], args[7], steps[0], steps[7], dimensions[0]);
         return;
@@ -1056,7 +1063,8 @@ static void delaunay_triangles_func(char **args, npy_intp *dimensions,
     GEOSGeometry *in1 = NULL;
     GEOSGeometry **geom_arr;
 
-    // Fail if inputs do not have the expected structure.
+    // Fail if inputs output multiple times on the same place in memory. That would
+    // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
     if ((steps[3] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], steps[0], steps[1], steps[2], steps[3], dimensions[0]);
         return;
@@ -1111,7 +1119,8 @@ static void voronoi_polygons_func(char **args, npy_intp *dimensions,
     GEOSGeometry *in1 = NULL, *in3 = NULL;
     GEOSGeometry **geom_arr;
 
-    // Fail if inputs do not have the expected structure.
+    // Fail if inputs output multiple times on the same place in memory. That would
+    // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
     if ((steps[4] == 0) && (dimensions[0] > 1)) {
         PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], args[4], steps[0], steps[1], steps[2], steps[3], steps[4], dimensions[0]);
         return;
