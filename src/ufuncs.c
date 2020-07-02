@@ -603,7 +603,7 @@ static void YY_Y_func_reduce(char **args, npy_intp *dimensions,
         // However, in some cases the intermediate geometry equals the first input, which is
         // 'owned' by python. Destoying that would lead to a segfault when the python object
         // is dereferenced.
-        // We check for that situation explicitely from the ufunc input (misusing the variable 'in2').
+        // We check for that situation explicitly from the ufunc input (misusing the variable 'in2').
         get_geom(*(GeometryObject **)args[0], &in2);
         if (in1 != in2) {
             GEOSGeom_destroy_r(ctx, in1);
