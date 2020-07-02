@@ -401,7 +401,7 @@ def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
     else:
         return lib.simplify(geometry, tolerance, **kwargs)
 
-
+@multithreading_enabled
 def snap(geometry, reference, tolerance, **kwargs):
     """Snaps an input geometry to reference geometry's vertices.
 

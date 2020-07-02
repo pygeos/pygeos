@@ -1003,27 +1003,56 @@ static char snap_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT};
 static void snap_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
-    GEOSGeometry *in1 = NULL, *in2 = NULL, *ret_ptr;
+    GEOSGeometry *in1 = NULL, *in2 = NULL;
+    GEOSGeometry **geom_arr;
 
-    GEOS_INIT;
+    // Fail if inputs output multiple times on the same place in memory. That would
+    // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
+    if ((steps[3] == 0) && (dimensions[0] > 1)) {
+        PyErr_Format(PyExc_NotImplementedError, "Unknown ufunc mode with args=[%p, %p, %p, %p], steps=[%ld, %ld, %ld, %ld], dimensions=[%ld].", args[0], args[1], args[2], args[3], steps[0], steps[1], steps[2], steps[3], dimensions[0]);
+        return;
+    }
+
+    // allocate a temporary array to store output GEOSGeometry objects
+    geom_arr = malloc(sizeof(void *) * dimensions[0]);
+    if (geom_arr == NULL) {
+        PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
+        return;
+    }
+
+    GEOS_INIT_THREADS;
 
     TERNARY_LOOP {
         /* get the geometries: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
-        if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
+        if (
+            !get_geom(*(GeometryObject **)ip1, &in1) ||
+            !get_geom(*(GeometryObject **)ip2, &in2)
+        ) {
+            errstate = PGERR_NOT_A_GEOMETRY;
+            destroy_geom_arr(ctx, geom_arr, i - 1);
+            break;
+        }
         double in3 = *(double *) ip3;
         if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3)) {
-            /* in case of a missing value: return NULL (None) */
-            ret_ptr = NULL;
+            // in case of a missing value: return NULL (None)
+            geom_arr[i] = NULL;
         } else {
-            ret_ptr = GEOSSnap_r(ctx, in1, in2, in3);
-            if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            geom_arr[i] = GEOSSnap_r(ctx, in1, in2, in3);
+            if (geom_arr[i] == NULL) {
+                errstate = PGERR_GEOS_EXCEPTION;
+                destroy_geom_arr(ctx, geom_arr, i - 1);
+                break;
+            }
         }
-        OUTPUT_Y;
     }
 
-    finish:
-        GEOS_FINISH;
+    GEOS_FINISH_THREADS;
+
+    // fill the numpy array with PyObjects while holding the GIL
+    if (errstate == PGERR_SUCCESS) {
+        geom_arr_to_npy(geom_arr, args[3], steps[3], dimensions[0]);
+    }
+    free(geom_arr);
 }
 static PyUFuncGenericFunction snap_funcs[1] = {&snap_func};
 
