@@ -5,7 +5,7 @@ from unittest import mock
 
 from .common import all_types, point
 
-
+point_empty = pygeos.Geometry("POINT EMPTY")
 POINT11_WKB = (
     b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"
 )
@@ -158,6 +158,29 @@ def test_to_wkt_exceptions():
         pygeos.to_wkt(point, output_dimension=4)
 
 
+def test_to_wkt_exceptions():
+    with pytest.raises(TypeError):
+        pygeos.to_wkt(1)
+
+    with pytest.raises(pygeos.GEOSException):
+        pygeos.to_wkt(point, output_dimension=4)
+
+
+def test_to_wkt_point_empty():
+    assert pygeos.to_wkt(point_empty) == "POINT EMPTY"
+
+
+@pytest.mark.skip("Segfault")
+def test_to_wkt_multipoint_with_point_empty():
+    multipoint = pygeos.multipoints([point_empty, point])
+    assert pygeos.to_wkt(multipoint) == "MULTIPOINT (nan nan, 2 3)"
+
+
+def test_to_wkt_geometrycollection_with_point_empty():
+    collection = pygeos.geometrycollections([point_empty, point])
+    assert pygeos.to_wkt(collection) == "GEOMETRYCOLLECTION Z (POINT EMPTY, POINT (2 3))"
+
+
 def test_to_wkb():
     point = pygeos.points(1, 1)
     actual = pygeos.to_wkb(point)
@@ -222,6 +245,26 @@ def test_to_wkb_srid():
     point_with_srid = pygeos.set_srid(point, np.int32(4326))
     result = pygeos.to_wkb(point_with_srid, include_srid=True)
     assert np.frombuffer(result[5:9], "<u4").item() == 4326
+
+
+def test_to_wkb_point_empty():
+    # empty point converts to POINT (nan, nan) in WKB
+    # this matches PostGIS behaviour
+    assert point_empty.to_wkb(hex=True) == "0101000000000000000000F87F000000000000F87F"
+
+
+@pytest.mark.parametrize("geom", [
+    point_empty,
+    pygeos.Geometry("POINT Z EMPTY"),
+    pygeos.set_srid(point_empty, 4326),
+    pygeos.multipoints([point_empty]),
+    pygeos.geometrycollections([point_empty]),
+])
+def test_to_wkb_roundtrip(geom):
+    actual = pygeos.from_wkb(pygeos.to_wkb(geom))
+    assert pygeos.get_srid(geom) == pygeos.get_srid(actual)
+    assert pygeos.get_coordinate_dimensions(geom) == pygeos.get_coordinate_dimensions(actual)
+    assert pygeos.equals_exact(geom, actual)
 
 
 @pytest.mark.parametrize("geom", all_types)
