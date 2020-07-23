@@ -35,26 +35,35 @@ Note: PyGEOS is a very young package. While the available functionality should
 be stable and working correctly, it's still possible that APIs change in upcoming
 releases. But we would love for you to try it out, give feedback or contribute!
 
-Why ufuncs?
------------
+What is a ufunc?
+----------------
 
 A universal function (or ufunc for short) is a function that operates on
 n-dimensional arrays in an element-by-element fashion, supporting array
 broadcasting. The for-loops that are involved are fully implemented in C
 diminishing the overhead of the Python interpreter.
 
+Multithreading
+--------------
+
+PyGEOS functions support multithreading. More specifically, the Global
+Interpreter Lock (GIL) is released during function execution. Normally in Python, the
+GIL prevents multiple threads from computing at the same time. PyGEOS functions
+internally releases this constraint so that the heavy lifting done by GEOS can be
+done in parallel, from a single Python process.
 
 The Geometry object
 -------------------
 
 The `pygeos.Geometry` object is a container of the actual GEOSGeometry object.
-A C pointer to this object is stored in a static attribute of the `Geometry`
-object. This keeps the python interpreter out of the ufunc inner loop. The
-Geometry object keeps track of the underlying GEOSGeometry and
+The Geometry object keeps track of the underlying GEOSGeometry and
 allows the python garbage collector to free memory when it is not
 used anymore.
 
-`Geometry` objects are immutable. Construct them as follows:
+`Geometry` objects are immutable. This means that after constructed, they cannot
+be changed inplace. Every PyGEOS operation will result in a new object being returned.
+
+Construct a Geometry from a WKT (Well-Known Text):
 
 .. code:: python
 
@@ -68,7 +77,7 @@ Or using one of the provided (vectorized) functions:
 
   >>> from pygeos import points
 
-  >>> point = points(5.2, 52.1)
+  >>> point = points([(5.2, 52.1), (5.1, 52.2)]]
 
 Examples
 --------
