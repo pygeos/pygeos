@@ -1363,7 +1363,7 @@ static void create_collection_func(char **args, npy_intp *dimensions,
 {
     GEOSGeometry *g, *g_copy;
     int n_geoms, type;
-    char actual_type, expected_type;
+    char actual_type, first_expected_type, last_expected_type;
 
     GEOS_INIT;
 
@@ -1374,16 +1374,19 @@ static void create_collection_func(char **args, npy_intp *dimensions,
         type = *(int *) ip2;
         switch (type) {
             case GEOS_MULTIPOINT:
-                expected_type = GEOS_POINT;
+                first_expected_type = GEOS_POINT;
+                last_expected_type = GEOS_POINT;
                 break;
             case GEOS_MULTILINESTRING:
-                expected_type = GEOS_LINESTRING;
+                first_expected_type = GEOS_LINESTRING;
+                last_expected_type = GEOS_LINEARRING;
                 break;
             case GEOS_MULTIPOLYGON:
-                expected_type = GEOS_POLYGON;
+                first_expected_type = GEOS_POLYGON;
+                last_expected_type = GEOS_POLYGON;
                 break;
             case GEOS_GEOMETRYCOLLECTION:
-                expected_type = -1;
+                first_expected_type = -1;
                 break;
         default:
             errstate = PGERR_GEOMETRY_TYPE;
@@ -1394,10 +1397,12 @@ static void create_collection_func(char **args, npy_intp *dimensions,
         BINARY_SINGLE_COREDIM_LOOP_INNER {
             if (!get_geom(*(GeometryObject **)cp1, &g)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
             if (g == NULL) { continue; }
-            if (expected_type != -1) {
+            if (first_expected_type != -1) {
                 actual_type = GEOSGeomTypeId_r(ctx, g);
                 if (actual_type == -1) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
-                if (actual_type != expected_type) { errstate = PGERR_GEOMETRY_TYPE; goto finish; }
+                if ((actual_type < first_expected_type) | (actual_type > last_expected_type)) {
+                    errstate = PGERR_GEOMETRY_TYPE; goto finish;
+                }
             }
             g_copy = GEOSGeom_clone_r(ctx, g);
             if (g_copy == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
