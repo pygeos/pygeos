@@ -6,8 +6,8 @@ Version 0.8 (unreleased)
 
 **Highlights of this release**
 
-* Release the GIL to allow for multithreading in functions that do not 
-  create geometries (#144)
+* Release the GIL to allow for multithreading in most functions (#113, #156)
+* Renamed lib.haussdorf_distance_densify to lib.hausdorff_distance_densify (#151)
 * Addition of a ``frechet_distance()`` function for GEOS >= 3.7 (#144)
 * Fixed segfaults when adding empty geometries to the STRtree (#147)
 * Addition of a ``build_area()`` function for GEOS >= 3.8 (#141)
