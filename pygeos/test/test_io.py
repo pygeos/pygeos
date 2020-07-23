@@ -5,7 +5,10 @@ from unittest import mock
 
 from .common import all_types, point
 
-point_empty = pygeos.Geometry("POINT EMPTY")
+
+import pygeos 
+
+point_empty = pygeos.Geometry("POINT Z EMPTY")
 POINT11_WKB = (
     b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"
 )
@@ -247,10 +250,17 @@ def test_to_wkb_srid():
     assert np.frombuffer(result[5:9], "<u4").item() == 4326
 
 
+@pytest.mark.skip("Figure out how to make a 2D empty point")
 def test_to_wkb_point_empty():
     # empty point converts to POINT (nan, nan) in WKB
     # this matches PostGIS behaviour
-    assert point_empty.to_wkb(hex=True) == "0101000000000000000000F87F000000000000F87F"
+    assert pygeos.to_wkb(point_empty, hex=True) == "0101000000000000000000F87F000000000000F87F"
+
+
+def test_to_wkb_point_z_empty():
+    # empty point converts to POINT (nan, nan) in WKB
+    # this matches PostGIS behaviour
+    assert pygeos.to_wkb(point_empty, hex=True) == "0101000000000000000000F87F000000000000F87F000000000000F87F"
 
 
 @pytest.mark.parametrize("geom", [

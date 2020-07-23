@@ -250,6 +250,41 @@ char get_geom(GeometryObject *obj, GEOSGeometry **out) {
     }
 }
 
+/* Transforms a POINT EMPTY into POINT (nan, nan) for serialization
+   
+   This preserves dimensionality and SRID.
+   If the input is not an empty point, output will equal the input.
+*/
+char point_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom, GEOSGeometry **out) {
+    int j, ndim, srid;
+    GEOSCoordSequence *coord_seq;
+
+    if (!((GEOSGeomTypeId_r(ctx, geom) == 0) & (GEOSisEmpty_r(ctx, geom)))) {
+        *out = geom;
+        return PGERR_SUCCESS;
+    }
+
+    ndim = GEOSGeom_getCoordinateDimension_r(ctx, geom);
+    if (ndim == 0) { return PGERR_GEOS_EXCEPTION; }
+    srid = GEOSGetSRID_r(ctx, geom);
+    
+    coord_seq = GEOSCoordSeq_create_r(ctx, 1, ndim);
+    if (coord_seq == NULL) { return PGERR_GEOS_EXCEPTION; }
+    for (j = 0; j < ndim; j++) {
+        if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, 0, j, Py_NAN)) {
+            GEOSCoordSeq_destroy_r(ctx, coord_seq);
+            return PGERR_GEOS_EXCEPTION;
+        }
+    }
+    *out = GEOSGeom_createPoint_r(ctx, coord_seq);
+    if (*out == NULL) {
+        GEOSCoordSeq_destroy_r(ctx, coord_seq); 
+        return PGERR_GEOS_EXCEPTION;
+    }
+    GEOSSetSRID_r(ctx, *out, srid);
+    return PGERR_SUCCESS;
+}
+
 int
 init_geom_type(PyObject *m)
 {

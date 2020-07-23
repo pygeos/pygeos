@@ -1656,7 +1656,7 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
     npy_intp n = dimensions[0];
     npy_intp i;
 
-    GEOSGeometry *in1;
+    GEOSGeometry *in1, *temp_geom;
     GEOSWKBWriter *writer;
     unsigned char *wkb;
     size_t size;
@@ -1692,10 +1692,12 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
             Py_INCREF(Py_None);
             *out = Py_None;
         } else {
+            errstate = point_empty_to_nan(ctx, in1, &temp_geom);
+            if (errstate != PGERR_SUCCESS) { goto finish; }
             if (hex) {
-                wkb = GEOSWKBWriter_writeHEX_r(ctx, writer, in1, &size);
+                wkb = GEOSWKBWriter_writeHEX_r(ctx, writer, temp_geom, &size);
             } else {
-                wkb = GEOSWKBWriter_write_r(ctx, writer, in1, &size);
+                wkb = GEOSWKBWriter_write_r(ctx, writer, temp_geom, &size);
             }
             if (wkb == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             Py_XDECREF(*out);
