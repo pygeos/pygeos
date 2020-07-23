@@ -51,18 +51,18 @@ API Reference
 =============
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Contents:
 
-   creation
-   constructive
-   coordinates
-   geometry
    io
-   linear
+   creation
+   geometry
    measurement
+   coordinates
    predicates
    set_operations
+   constructive
+   linear
    strtree
    changelog
 
