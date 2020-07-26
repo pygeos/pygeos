@@ -158,6 +158,22 @@ def test_to_wkt_exceptions():
         pygeos.to_wkt(point, output_dimension=4)
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+def test_to_wkt_multipoint_with_point_empty():
+    geom = pygeos.multipoints([point, pygeos.Geometry("POINT EMPTY")])
+    assert pygeos.to_wkt(geom) == "MULTIPOINT Z (1 1, EMPTY)"
+
+
+@pytest.mark.skipif(pygeos.geos_version >= (3, 7, 0), reason="GEOS >= 3.7")
+def test_to_wkt_multipoint_with_point_empty_errors():
+    # Test if segfault is prevented for GEOS < 3.7 
+    geom = pygeos.multipoints([point, pygeos.Geometry("POINT EMPTY")])
+    with pytest.raises(ValueError):
+        repr(geom)
+    with pytest.raises(ValueError):
+        pygeos.to_wkt(geom)
+
+
 def test_to_wkb():
     point = pygeos.points(1, 1)
     actual = pygeos.to_wkb(point)
