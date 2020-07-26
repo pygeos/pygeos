@@ -16,6 +16,39 @@ int init_geos(PyObject *m)
     return 0;
 }
 
+
+/* Checks whether the geometry is a multipoint with an empty point in it
+ * The return value is one of:
+ * - PGERR_SUCCESS  ( When GEOS >= 3.7, this is always returned )
+ * - PGERR_MULTIPOINT_WITH_POINT_EMPTY
+ * - PGERR_GEOS_EXCEPTION
+ */
+char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom) {    
+#if GEOS_SINCE_3_7_0
+    return PGERR_SUCCESS;
+#else
+    int n, i;
+    char geom_type, is_empty;
+    GEOSGeometry *sub_geom;
+
+    geom_type = GEOSGeomTypeId_r(ctx, geom);
+    if (geom_type == -1) { return PGERR_GEOS_EXCEPTION; }
+    if (geom_type != GEOS_MULTIPOINT) { return PGERR_SUCCESS; }
+    
+    n = GEOSGetNumGeometries_r(ctx, geom);
+    if (n == -1) { return 2; }
+    for(i = 0; i < n; i++) {
+        sub_geom = GEOSGetGeometryN_r(ctx, geom, i);
+        if (sub_geom == NULL) { return PGERR_GEOS_EXCEPTION; }
+        is_empty = GEOSisEmpty_r(ctx, geom);
+        if (is_empty == 2) { return PGERR_GEOS_EXCEPTION; }
+        if (is_empty == 1) { return PGERR_MULTIPOINT_WITH_POINT_EMPTY; }
+    }
+    return PGERR_SUCCESS;
+#endif
+}
+
+
 /* Define GEOS error handlers. See GEOS_INIT / GEOS_FINISH macros in geos.h*/
 void geos_error_handler(const char *message, void *userdata) {
     snprintf(userdata, 1024, "%s", message);

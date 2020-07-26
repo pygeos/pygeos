@@ -48,6 +48,10 @@ static PyObject *GeometryObject_ToWKT(GeometryObject *obj, char *format)
     }
 
     GEOS_INIT;
+
+    errstate = check_to_wkt_compatible(ctx, obj->ptr);
+    if (errstate != PGERR_SUCCESS) { goto finish; }
+
     GEOSWKTWriter *writer = GEOSWKTWriter_create_r(ctx);
     if (writer == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
 
