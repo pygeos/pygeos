@@ -185,10 +185,13 @@ def test_create_collection_skips_none(func, sub_geom):
     [
         (pygeos.multipoints, line_string),
         (pygeos.multipoints, geometry_collection),
+        (pygeos.multipoints, multi_point),
         (pygeos.multilinestrings, point),
         (pygeos.multilinestrings, polygon),
+        (pygeos.multilinestrings, multi_line_string),
         (pygeos.multipolygons, linear_ring),
         (pygeos.multipolygons, multi_point),
+        (pygeos.multipolygons, multi_polygon),
     ],
 )
 def test_create_collection_wrong_geom_type(func, sub_geom):

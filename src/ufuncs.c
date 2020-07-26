@@ -1363,7 +1363,7 @@ static void create_collection_func(char **args, npy_intp *dimensions,
 {
     GEOSGeometry *g, *g_copy;
     int n_geoms, type;
-    char actual_type, first_expected_type, last_expected_type;
+    char actual_type, expected_type, alt_expected_type;
 
     GEOS_INIT;
 
@@ -1374,19 +1374,20 @@ static void create_collection_func(char **args, npy_intp *dimensions,
         type = *(int *) ip2;
         switch (type) {
             case GEOS_MULTIPOINT:
-                first_expected_type = GEOS_POINT;
-                last_expected_type = GEOS_POINT;
+                expected_type = GEOS_POINT;
+                alt_expected_type = -1;
                 break;
             case GEOS_MULTILINESTRING:
-                first_expected_type = GEOS_LINESTRING;
-                last_expected_type = GEOS_LINEARRING;
+                expected_type = GEOS_LINESTRING;
+                alt_expected_type = GEOS_LINEARRING;
                 break;
             case GEOS_MULTIPOLYGON:
-                first_expected_type = GEOS_POLYGON;
-                last_expected_type = GEOS_POLYGON;
+                expected_type = GEOS_POLYGON;
+                alt_expected_type = -1;
                 break;
             case GEOS_GEOMETRYCOLLECTION:
-                first_expected_type = -1;
+                expected_type = -1;
+                alt_expected_type = -1;
                 break;
         default:
             errstate = PGERR_GEOMETRY_TYPE;
@@ -1397,10 +1398,10 @@ static void create_collection_func(char **args, npy_intp *dimensions,
         BINARY_SINGLE_COREDIM_LOOP_INNER {
             if (!get_geom(*(GeometryObject **)cp1, &g)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
             if (g == NULL) { continue; }
-            if (first_expected_type != -1) {
+            if (expected_type != -1) {
                 actual_type = GEOSGeomTypeId_r(ctx, g);
                 if (actual_type == -1) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
-                if ((actual_type < first_expected_type) | (actual_type > last_expected_type)) {
+                if ((actual_type != expected_type) & (actual_type != alt_expected_type)) {
                     errstate = PGERR_GEOMETRY_TYPE; goto finish;
                 }
             }
