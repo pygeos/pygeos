@@ -6,6 +6,7 @@ Version 0.8 (unreleased)
 
 **Highlights of this release**
 
+* Prevent segfault in to_wkt (and repr) with empty points in multipoints (#171)
 * Fixed bug in ``multilinestrings()``, it now accepts linearrings again (#168) 
 * Release the GIL to allow for multithreading in functions that do not 
   create geometries (#144)
