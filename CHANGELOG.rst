@@ -6,6 +6,8 @@ Version 0.8 (unreleased)
 
 **Highlights of this release**
 
+* Addition of ``coverage_union()`` and ``coverage_union_all()` functions
+  for GEOS >= 3.8 (#142)
 * Release the GIL to allow for multithreading in functions that do not 
   create geometries (#144)
 * Addition of a ``frechet_distance()`` function for GEOS >= 3.7 (#144)
