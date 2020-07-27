@@ -18,15 +18,17 @@ int init_geos(PyObject *m)
 
 
 /* Checks whether the geometry is a multipoint with an empty point in it
+ *
+ * According to https://github.com/libgeos/geos/issues/305, this check is not
+ * necessary for GEOS 3.7.3, 3.8.2, or 3.9. When these versions are out, we 
+ * should add version conditionals and test.
+ * 
  * The return value is one of:
- * - PGERR_SUCCESS  ( When GEOS >= 3.7, this is always returned )
+ * - PGERR_SUCCESS 
  * - PGERR_MULTIPOINT_WITH_POINT_EMPTY
  * - PGERR_GEOS_EXCEPTION
  */
 char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom) {    
-#if GEOS_SINCE_3_7_0
-    return PGERR_SUCCESS;
-#else
     int n, i;
     char geom_type, is_empty;
     GEOSGeometry *sub_geom;
@@ -36,16 +38,15 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
     if (geom_type != GEOS_MULTIPOINT) { return PGERR_SUCCESS; }
     
     n = GEOSGetNumGeometries_r(ctx, geom);
-    if (n == -1) { return 2; }
+    if (n == -1) { return PGERR_GEOS_EXCEPTION; }
     for(i = 0; i < n; i++) {
         sub_geom = GEOSGetGeometryN_r(ctx, geom, i);
         if (sub_geom == NULL) { return PGERR_GEOS_EXCEPTION; }
-        is_empty = GEOSisEmpty_r(ctx, geom);
+        is_empty = GEOSisEmpty_r(ctx, sub_geom);
         if (is_empty == 2) { return PGERR_GEOS_EXCEPTION; }
         if (is_empty == 1) { return PGERR_MULTIPOINT_WITH_POINT_EMPTY; }
     }
     return PGERR_SUCCESS;
-#endif
 }
 
 
