@@ -4,7 +4,7 @@ import pytest
 
 from pygeos import Geometry, GEOSException
 
-from .common import point, all_types, empty
+from .common import point, line_string, all_types, empty
 
 CONSTRUCTIVE_NO_ARGS = (
     pygeos.boundary,
@@ -12,6 +12,7 @@ CONSTRUCTIVE_NO_ARGS = (
     pygeos.convex_hull,
     pygeos.envelope,
     pygeos.extract_unique_points,
+    pygeos.normalize,
     pygeos.point_on_surface,
 )
 
@@ -78,6 +79,33 @@ def test_snap_nan_float(geometry):
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
+def test_build_area_none():
+    actual = pygeos.build_area(None)
+    assert actual is None
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
+@pytest.mark.parametrize(
+    "geom,expected",
+    [
+        (point, empty),  # a point has no area
+        (line_string, empty),  # a line string has no area
+        # geometry collection of two polygons are combined into one
+        (
+            Geometry("GEOMETRYCOLLECTION(POLYGON((0 0, 3 0, 3 3, 0 3, 0 0)), POLYGON((1 1, 1 2, 2 2, 1 1)))"),
+            Geometry("POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (1 1, 2 2, 1 2, 1 1))"),
+        ),
+        (empty, empty),
+        ([empty], [empty])
+    ],
+)
+def test_build_area(geom, expected):
+    actual = pygeos.build_area(geom)
+    assert actual is not expected
+    assert actual == expected
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
 def test_make_valid_none():
     actual = pygeos.make_valid(None)
     assert actual is None
@@ -131,3 +159,19 @@ def test_make_valid(geom, expected):
 def test_make_valid_1d(geom, expected):
     actual = pygeos.make_valid(geom)
     assert np.all(actual == expected)
+
+
+@pytest.mark.parametrize(
+    "geom,expected",
+    [
+        (point, point),  # a point is always in normalized form
+        # order coordinates of linestrings and parts of multi-linestring
+        (
+            Geometry("MULTILINESTRING ((1 1, 0 0), (1 1, 1 2))"),
+            Geometry("MULTILINESTRING ((1 1, 1 2), (0 0, 1 1))"),
+        ),
+    ],
+)
+def test_normalize(geom, expected):
+    actual = pygeos.normalize(geom)
+    assert actual == expected
