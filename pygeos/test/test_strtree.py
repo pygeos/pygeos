@@ -833,7 +833,7 @@ def test_query_contains_properly_points(tree, geometry, expected):
     [
         # None of the following conditions satisfy the relation for linestrings
         # because they have no interior:
-        # "a contains b iff no points of b lie in the exterior of a, and at least one
+        # "a contains b if no points of b lie in the exterior of a, and at least one
         # point of the interior of b lies in the interior of a"
         (pygeos.points(0, 0), []),
         (pygeos.linestrings([[0, 0], [1, 1]]), []),
@@ -977,7 +977,7 @@ def test_query_bulk_polygons(poly_tree, geometry, expected):
     assert_array_equal(poly_tree.query_bulk(geometry), expected)
 
 
-def test_query_invalid_predicate(tree):
+def test_query_bulk_invalid_predicate(tree):
     with pytest.raises(ValueError):
         tree.query_bulk(pygeos.points(1, 1), predicate="bad_predicate")
 

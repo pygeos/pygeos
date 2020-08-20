@@ -74,7 +74,8 @@ class STRtree:
         geometry : Geometry
             The envelope of the geometry is taken automatically for
             querying the tree.
-        predicate : {None, 'intersects', 'within', 'contains', 'overlaps', 'crosses', 'touches'}, optional
+        predicate : {None, 'intersects', 'within', 'contains', 'overlaps',\
+'crosses', 'touches'}, optional
             The predicate to use for testing geometries from the tree
             that are within the input geometry's envelope.
 
@@ -142,7 +143,7 @@ class STRtree:
             Input geometries to query the tree.  The envelope of each geometry
             is automatically calculated for querying the tree.
         predicate : {None, 'intersects', 'within', 'contains', 'overlaps', 'crosses',\
-            'touches', 'covers', 'covered_by', 'contains_properly'}, optional
+'touches', 'covers', 'covered_by', 'contains_properly'}, optional
             The predicate to use for testing geometries from the tree
             that are within the input geometry's envelope.
 
