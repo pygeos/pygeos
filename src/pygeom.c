@@ -252,8 +252,11 @@ char get_geom(GeometryObject *obj, GEOSGeometry **out) {
 
 /* Transforms a POINT EMPTY into POINT (nan, nan) for serialization
    
+   If the input geom is a POINT EMPTY, the output geom will contain a newly
+   created POINT (nan, nan). Else, the output will equal the input. Take this
+   logic into account when destroying the geometries.
+
    This preserves dimensionality and SRID.
-   If the input is not an empty point, output will equal the input.
 */
 char point_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom, GEOSGeometry **out) {
     int j, ndim, srid;
@@ -282,6 +285,47 @@ char point_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom, GEOSGeometr
         return PGERR_GEOS_EXCEPTION;
     }
     GEOSSetSRID_r(ctx, *out, srid);
+    return PGERR_SUCCESS;
+}
+
+/* Transforms a POINT (nan, nan[, nan)] into POINT EMPTY for deserialization
+
+   The parameter geom will change inplace. When a new POINT EMPTY is created, the old
+   POINT (nan, nan) will be destroyed by this function.
+   
+   This preserves dimensionality and SRID.
+*/
+char point_nan_to_empty(GEOSContextHandle_t ctx, GEOSGeometry **geom) {
+    int j, ndim, srid;
+    double coord;
+    const GEOSCoordSequence *coord_seq;
+
+    if (!GEOSGeomTypeId_r(ctx, *geom) == 0) {
+        return PGERR_SUCCESS;
+    }
+
+    ndim = GEOSGeom_getCoordinateDimension_r(ctx, *geom);
+    if (ndim == 0) { return PGERR_GEOS_EXCEPTION; }
+
+    coord_seq = GEOSGeom_getCoordSeq_r(ctx, *geom);
+    for (j = 0; j < ndim; j++) {
+        if (!GEOSCoordSeq_getOrdinate_r(ctx, coord_seq, 0, j, &coord)) {
+            return PGERR_GEOS_EXCEPTION;
+        }
+        if (!isnan(coord)) {
+            // Coordinate is not NaN; do not replace the geometry
+            return PGERR_SUCCESS;
+        }
+    }
+
+    // replace POINT (nan, nan) with POINT EMPTY
+    GEOSGeom_destroy_r(ctx, *geom);
+    srid = GEOSGetSRID_r(ctx, *geom);
+    *geom = GEOSGeom_createEmptyPoint_r(ctx);
+    if (*geom == NULL) {
+        return PGERR_GEOS_EXCEPTION;
+    }
+    GEOSSetSRID_r(ctx, *geom, srid);
     return PGERR_SUCCESS;
 }
 

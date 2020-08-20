@@ -1536,7 +1536,17 @@ static void from_wkb_func(char **args, npy_intp *dimensions,
             } else {
                 ret_ptr = GEOSWKBReader_read_r(ctx, reader, wkb, size);
             }
-            if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            if (ret_ptr == NULL) {
+                errstate = PGERR_GEOS_EXCEPTION;
+                goto finish;
+            }
+
+            // possibly, transform POINT (nan, nan) to POINT EMPTY
+            errstate = point_nan_to_empty(ctx, &ret_ptr);
+            if (errstate != PGERR_SUCCESS) {
+                GEOSGeom_destroy_r(ctx, ret_ptr);
+                goto finish;
+            }
         }
         OUTPUT_Y;
     }
@@ -1699,6 +1709,11 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
             } else {
                 wkb = GEOSWKBWriter_write_r(ctx, writer, temp_geom, &size);
             }
+            // destroy the temp_geom if it is different from in1
+            if (in1 != temp_geom) {
+                GEOSGeom_destroy_r(ctx, temp_geom);
+            }
+
             if (wkb == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             Py_XDECREF(*out);
             if (hex) {

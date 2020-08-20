@@ -19,6 +19,7 @@ extern PyObject *GeometryObject_FromGEOS(PyTypeObject *type, GEOSGeometry *ptr);
 extern char get_geom(GeometryObject *obj, GEOSGeometry **out);
 
 extern char point_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom, GEOSGeometry **out);
+extern char point_nan_to_empty(GEOSContextHandle_t ctx, GEOSGeometry **geom);
 
 extern int init_geom_type(PyObject *m);
 
