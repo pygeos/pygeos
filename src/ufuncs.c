@@ -699,19 +699,21 @@ static int GetY(void *context, void *a, double *b) {
     }
 }
 static void *get_y_data[1] = {GetY};
-static int GetZ(void *context, void *a, double *b) {
-    char typ = GEOSGeomTypeId_r(context, a);
-    if (typ != 0) {
-        *(double *)b = NPY_NAN;
-        return 1;
-    // } else if (GEOSGeom_getCoordinateDimension_r(context, a) != 3) {
-    //     *(double *)b = NPY_NAN;
-    //     return 0;
-    } else {
-        return GEOSGeomGetZ_r(context, a, b);
+#if GEOS_SINCE_3_7_0
+    static int GetZ(void *context, void *a, double *b) {
+        char typ = GEOSGeomTypeId_r(context, a);
+        if (typ != 0) {
+            *(double *)b = NPY_NAN;
+            return 1;
+        // } else if (GEOSGeom_getCoordinateDimension_r(context, a) != 3) {
+        //     *(double *)b = NPY_NAN;
+        //     return 0;
+        } else {
+            return GEOSGeomGetZ_r(context, a, b);
+        }
     }
-}
-static void *get_z_data[1] = {GetZ};
+    static void *get_z_data[1] = {GetZ};
+#endif
 static void *area_data[1] = {GEOSArea_r};
 static void *length_data[1] = {GEOSLength_r};
 typedef int FuncGEOS_Y_d(void *context, void *a, double *b);
@@ -1909,7 +1911,6 @@ int init_ufuncs(PyObject *m, PyObject *d)
 
     DEFINE_Y_d (get_x);
     DEFINE_Y_d (get_y);
-    DEFINE_Y_d (get_z);
     DEFINE_Y_d (area);
     DEFINE_Y_d (length);
 
@@ -1951,6 +1952,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_CUSTOM (from_shapely, 1);
 
     #if GEOS_SINCE_3_7_0
+      DEFINE_Y_d (get_z);
       DEFINE_YY_d (frechet_distance);
       DEFINE_YYd_d (frechet_distance_densify);
     #endif

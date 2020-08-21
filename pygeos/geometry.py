@@ -2,7 +2,7 @@ from enum import IntEnum
 import numpy as np
 from . import lib
 from . import Geometry  # NOQA
-from .decorators import multithreading_enabled
+from .decorators import multithreading_enabled, requires_geos
 
 __all__ = [
     "GeometryType",
@@ -248,6 +248,7 @@ def get_y(point):
     return lib.get_y(point)
 
 
+@requires_geos("3.7.0")
 @multithreading_enabled
 def get_z(point):
     """Returns the z-coordinate of a point.
