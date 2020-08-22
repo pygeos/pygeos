@@ -251,6 +251,7 @@ static void *polygons_without_holes_data[1] = {GEOSLinearRingToPolygon};
 #if GEOS_SINCE_3_8_0
   static void *build_area_data[1] = {GEOSBuildArea_r};
   static void *make_valid_data[1] = {GEOSMakeValid_r};
+  static void *coverage_union_data[1] = {GEOSCoverageUnion_r};
 #endif
 typedef void *FuncGEOS_Y_Y(void *context, void *a);
 static char Y_Y_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
@@ -729,7 +730,7 @@ static PyUFuncGenericFunction Y_d_funcs[1] = {&Y_d_func};
 /* Define the geom -> int functions (Y_i) */
 static void *get_type_id_data[1] = {GEOSGeomTypeId_r};
 static void *get_dimensions_data[1] = {GEOSGeom_getDimensions_r};
-static void *get_coordinate_dimensions_data[1] = {GEOSGeom_getCoordinateDimension_r};
+static void *get_coordinate_dimension_data[1] = {GEOSGeom_getCoordinateDimension_r};
 static void *get_srid_data[1] = {GEOSGetSRID_r};
 static int GetNumPoints(void *context, void *geom, int n) {
     char typ = GEOSGeomTypeId_r(context, geom);
@@ -1902,7 +1903,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
 
     DEFINE_Y_i (get_type_id);
     DEFINE_Y_i (get_dimensions);
-    DEFINE_Y_i (get_coordinate_dimensions);
+    DEFINE_Y_i (get_coordinate_dimension);
     DEFINE_Y_i (get_srid);
     DEFINE_Y_i (get_num_points);
     DEFINE_Y_i (get_num_interior_rings);
@@ -1945,6 +1946,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     #if GEOS_SINCE_3_8_0
       DEFINE_Y_Y (make_valid);
       DEFINE_Y_Y (build_area);
+      DEFINE_Y_Y (coverage_union);
     #endif
 
     Py_DECREF(ufunc);
