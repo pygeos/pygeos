@@ -3,7 +3,7 @@ import pygeos
 import pytest
 from unittest import mock
 
-from .common import all_types, point
+from .common import all_types, point, empty_point
 
 
 POINT11_WKB = (
@@ -158,16 +158,25 @@ def test_to_wkt_exceptions():
         pygeos.to_wkt(point, output_dimension=4)
 
 
+def test_to_wkt_point_empty():
+    assert pygeos.to_wkt(empty_point) == "POINT EMPTY"
+
+
+def test_to_wkt_geometrycollection_with_point_empty():
+    collection = pygeos.geometrycollections([empty_point, point])
+    assert pygeos.to_wkt(collection) == "GEOMETRYCOLLECTION Z (POINT EMPTY, POINT (2 3))"
+
+
 def test_to_wkt_multipoint_with_point_empty_errors():
     # Test if segfault is prevented
-    geom = pygeos.multipoints([point, pygeos.Geometry("POINT EMPTY")])
+    geom = pygeos.multipoints([point, empty_point])
     with pytest.raises(ValueError):
         pygeos.to_wkt(geom)
 
 
 def test_repr_multipoint_with_point_empty():
     # Test if segfault is prevented
-    geom = pygeos.multipoints([point, pygeos.Geometry("POINT EMPTY")])
+    geom = pygeos.multipoints([point, empty_point])
     assert repr(geom) == "<pygeos.Geometry Exception in WKT writer>"
 
 
