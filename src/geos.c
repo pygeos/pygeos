@@ -43,8 +43,9 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
         sub_geom = GEOSGetGeometryN_r(ctx, geom, i);
         if (sub_geom == NULL) { return PGERR_GEOS_EXCEPTION; }
         is_empty = GEOSisEmpty_r(ctx, sub_geom);
+        // GEOS returns 2 on exception:
         if (is_empty == 2) { return PGERR_GEOS_EXCEPTION; }
-        if (is_empty == 1) { return PGERR_MULTIPOINT_WITH_POINT_EMPTY; }
+        if (is_empty) { return PGERR_MULTIPOINT_WITH_POINT_EMPTY; }
     }
     return PGERR_SUCCESS;
 }
