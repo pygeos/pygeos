@@ -161,29 +161,6 @@ def test_to_wkt_exceptions():
         pygeos.to_wkt(point, output_dimension=4)
 
 
-def test_to_wkt_exceptions():
-    with pytest.raises(TypeError):
-        pygeos.to_wkt(1)
-
-    with pytest.raises(pygeos.GEOSException):
-        pygeos.to_wkt(point, output_dimension=4)
-
-
-def test_to_wkt_point_empty():
-    assert pygeos.to_wkt(point_empty) == "POINT EMPTY"
-
-
-@pytest.mark.skip("Segfault")
-def test_to_wkt_multipoint_with_point_empty():
-    multipoint = pygeos.multipoints([point_empty, point])
-    assert pygeos.to_wkt(multipoint) == "MULTIPOINT (nan nan, 2 3)"
-
-
-def test_to_wkt_geometrycollection_with_point_empty():
-    collection = pygeos.geometrycollections([point_empty, point])
-    assert pygeos.to_wkt(collection) == "GEOMETRYCOLLECTION Z (POINT EMPTY, POINT (2 3))"
-
-
 def test_to_wkb():
     point = pygeos.points(1, 1)
     actual = pygeos.to_wkb(point)
@@ -254,13 +231,13 @@ def test_to_wkb_srid():
 def test_to_wkb_point_empty():
     # empty point converts to POINT (nan, nan) in WKB
     # this matches PostGIS behaviour
-    assert pygeos.to_wkb(point_empty, hex=True) == "0101000000000000000000F87F000000000000F87F"
+    assert pygeos.to_wkb(pygeos.Geometry("POINT EMPTY"), hex=True) == "0101000000000000000000F87F000000000000F87F"
 
 
 def test_to_wkb_point_z_empty():
     # empty point converts to POINT (nan, nan) in WKB
     # this matches PostGIS behaviour
-    assert pygeos.to_wkb(point_empty, hex=True) == "0101000000000000000000F87F000000000000F87F000000000000F87F"
+    assert pygeos.to_wkb(pygeos.Geometry("POINT Z EMPTY"), hex=True) == "0101000000000000000000F87F000000000000F87F000000000000F87F"
 
 
 @pytest.mark.parametrize("geom", [

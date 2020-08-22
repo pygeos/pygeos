@@ -318,9 +318,9 @@ char point_nan_to_empty(GEOSContextHandle_t ctx, GEOSGeometry **geom) {
         }
     }
 
+    srid = GEOSGetSRID_r(ctx, *geom);
     // replace POINT (nan, nan) with POINT EMPTY
     GEOSGeom_destroy_r(ctx, *geom);
-    srid = GEOSGetSRID_r(ctx, *geom);
     *geom = GEOSGeom_createEmptyPoint_r(ctx);
     if (*geom == NULL) {
         return PGERR_GEOS_EXCEPTION;
