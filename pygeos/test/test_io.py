@@ -162,9 +162,13 @@ def test_to_wkt_multipoint_with_point_empty_errors():
     # Test if segfault is prevented
     geom = pygeos.multipoints([point, pygeos.Geometry("POINT EMPTY")])
     with pytest.raises(ValueError):
-        repr(geom)
-    with pytest.raises(ValueError):
         pygeos.to_wkt(geom)
+
+
+def test_repr_multipoint_with_point_empty():
+    # Test if segfault is prevented
+    geom = pygeos.multipoints([point, pygeos.Geometry("POINT EMPTY")])
+    assert repr(geom) == "<pygeos.Geometry Exception in WKT writer>"
 
 
 def test_to_wkb():
