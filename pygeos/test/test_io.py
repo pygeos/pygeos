@@ -164,7 +164,7 @@ def test_to_wkt_point_empty():
 
 def test_to_wkt_geometrycollection_with_point_empty():
     collection = pygeos.geometrycollections([empty_point, point])
-    assert pygeos.to_wkt(collection) == "GEOMETRYCOLLECTION Z (POINT EMPTY, POINT (2 3))"
+    assert pygeos.to_wkt(collection) == "GEOMETRYCOLLECTION (POINT EMPTY, POINT (2 3))"
 
 
 def test_to_wkt_multipoint_with_point_empty_errors():
