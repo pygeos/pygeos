@@ -253,6 +253,8 @@ def get_y(point):
 def get_z(point):
     """Returns the z-coordinate of a point.
 
+    Requires at least GEOS 3.7.0.
+
     Parameters
     ----------
     point : Geometry or array_like

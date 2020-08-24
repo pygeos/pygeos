@@ -705,9 +705,6 @@ static void *get_y_data[1] = {GetY};
         if (typ != 0) {
             *(double *)b = NPY_NAN;
             return 1;
-        // } else if (GEOSGeom_getCoordinateDimension_r(context, a) != 3) {
-        //     *(double *)b = NPY_NAN;
-        //     return 0;
         } else {
             return GEOSGeomGetZ_r(context, a, b);
         }
