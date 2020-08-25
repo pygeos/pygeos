@@ -21,8 +21,13 @@ PyObject *GeometryObject_FromGEOS(GEOSGeometry *ptr, GEOSContextHandle_t ctx)
     int type_id = GEOSGeomTypeId_r(ctx, ptr);
 
     if (type_id == -1) { return NULL; }
-    PyTypeObject *type = PyList_GET_ITEM(geom_registry[0], type_id);
-    if (type == NULL) { return NULL; }
+    PyObject *type_obj = PyList_GET_ITEM(geom_registry[0], type_id);
+    if (type_obj == NULL) { return NULL; }
+    if (!PyType_Check(type_obj)) {
+        PyErr_Format(PyExc_RuntimeError, "Invalid registry value");
+        return NULL;
+    }
+    PyTypeObject *type = (PyTypeObject *)type_obj;
     GeometryObject *self = (GeometryObject *) type->tp_alloc(type, 0);
     if (self == NULL) {
         return NULL;
