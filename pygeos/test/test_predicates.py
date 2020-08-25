@@ -90,3 +90,11 @@ def test_equals_exact_tolerance():
     # default value for tolerance
     assert pygeos.equals_exact(p1, p1).item() is True
     assert pygeos.equals_exact(p1, p2).item() is False
+
+
+def test_relate():
+    p1 = pygeos.points(0, 0)
+    p2 = pygeos.points(1, 1)
+    actual = pygeos.relate(p1, p2)
+    assert isinstance(actual, str)
+    assert actual == "FF0FFF0F2"
