@@ -11,16 +11,14 @@
 PyObject *geom_registry[1] = {NULL};
 
 /* Initializes a new geometry object */
-PyObject *GeometryObject_FromGEOS(GEOSGeometry *ptr)
+PyObject *GeometryObject_FromGEOS(GEOSGeometry *ptr, GEOSContextHandle_t ctx)
 {
     if (ptr == NULL) {
         Py_INCREF(Py_None);
         return Py_None;
     }
 
-    GEOS_INIT;
     int type_id = GEOSGeomTypeId_r(ctx, ptr);
-    GEOS_FINISH;
 
     if (type_id == -1) { return NULL; }
     PyTypeObject *type = PyList_GET_ITEM(geom_registry[0], type_id);
@@ -190,7 +188,7 @@ static PyObject *GeometryObject_FromWKT(PyObject *value)
     geom = GEOSWKTReader_read_r(ctx, reader, wkt);
     GEOSWKTReader_destroy_r(ctx, reader);
     if (geom == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
-    result = GeometryObject_FromGEOS(geom);
+    result = GeometryObject_FromGEOS(geom, ctx);
     if (result == NULL) {
         GEOSGeom_destroy_r(ctx, geom);
         PyErr_Format(PyExc_RuntimeError, "Could not instantiate a new Geometry object");
