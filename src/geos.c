@@ -31,7 +31,7 @@ int init_geos(PyObject *m)
 char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom) {    
     int n, i;
     char geom_type, is_empty;
-    GEOSGeometry *sub_geom;
+    const GEOSGeometry *sub_geom;
 
     geom_type = GEOSGeomTypeId_r(ctx, geom);
     if (geom_type == -1) { return PGERR_GEOS_EXCEPTION; }

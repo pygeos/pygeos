@@ -90,9 +90,8 @@ static PyObject *GeometryObject_repr(GeometryObject *self)
     if (result == NULL) {
         PyErr_Clear();
         return PyUnicode_FromFormat(repr_fmt, "Exception in WKT writer");
-    } else {
-        return result;
     }
+    return result;
 }
 
 static PyObject *GeometryObject_str(GeometryObject *self)

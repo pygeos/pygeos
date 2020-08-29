@@ -164,12 +164,14 @@ def test_to_wkt_point_empty():
 
 def test_to_wkt_geometrycollection_with_point_empty():
     collection = pygeos.geometrycollections([empty_point, point])
-    assert pygeos.to_wkt(collection) == "GEOMETRYCOLLECTION (POINT EMPTY, POINT (2 3))"
+    # do not check the full value as some GEOS versions give
+    # GEOMETRYCOLLECTION Z (...) and others give GEOMETRYCOLLECTION (...)
+    assert pygeos.to_wkt(collection).endswith("(POINT EMPTY, POINT (2 3))")
 
 
 def test_to_wkt_multipoint_with_point_empty_errors():
     # Test if segfault is prevented
-    geom = pygeos.multipoints([point, empty_point])
+    geom = pygeos.multipoints([empty_point, point])
     with pytest.raises(ValueError):
         pygeos.to_wkt(geom)
 
