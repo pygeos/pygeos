@@ -1234,16 +1234,26 @@ static char points_dtypes[2] = {NPY_DOUBLE, NPY_OBJECT};
 static void points_func(char **args, npy_intp *dimensions,
                         npy_intp *steps, void *data)
 {
+    GEOSGeometry *ret_ptr;
+
     GEOS_INIT;
 
     SINGLE_COREDIM_LOOP_OUTER {
-        CREATE_COORDSEQ(1, n_c1);
-        SINGLE_COREDIM_LOOP_INNER {
-            double coord = *(double *) cp1;
-            SET_COORD(0, i_c1);
+        if (n_c1 == 0) {
+            ret_ptr = GEOSGeom_createEmptyPoint_r(ctx);
+            if (ret_ptr == NULL) {
+                errstate = PGERR_GEOS_EXCEPTION;
+                goto finish;
+            }
+        } else {
+            CREATE_COORDSEQ(1, n_c1);
+            SINGLE_COREDIM_LOOP_INNER {
+                double coord = *(double *) cp1;
+                SET_COORD(0, i_c1);
+            }
+            ret_ptr = GEOSGeom_createPoint_r(ctx, coord_seq);
+            CHECK_RET_PTR;
         }
-        GEOSGeometry *ret_ptr = GEOSGeom_createPoint_r(ctx, coord_seq);
-        CHECK_RET_PTR;
         OUTPUT_Y;
     }
 
@@ -1487,7 +1497,7 @@ static char from_wkb_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
 static void from_wkb_func(char **args, npy_intp *dimensions,
                           npy_intp *steps, void *data)
 {
-    GEOSGeometry *ret_ptr;
+    GEOSGeometry *temp_geom, *ret_ptr;
     PyObject *in1;
 
     GEOSWKBReader *reader;
@@ -1532,20 +1542,25 @@ static void from_wkb_func(char **args, npy_intp *dimensions,
 
             /* Read the WKB */
             if (is_hex) {
-                ret_ptr = GEOSWKBReader_readHEX_r(ctx, reader, wkb, size);
+                temp_geom = GEOSWKBReader_readHEX_r(ctx, reader, wkb, size);
             } else {
-                ret_ptr = GEOSWKBReader_read_r(ctx, reader, wkb, size);
+                temp_geom = GEOSWKBReader_read_r(ctx, reader, wkb, size);
             }
-            if (ret_ptr == NULL) {
+            if (temp_geom == NULL) {
                 errstate = PGERR_GEOS_EXCEPTION;
                 goto finish;
             }
 
             // possibly, transform POINT (nan, nan) to POINT EMPTY
-            errstate = point_nan_to_empty(ctx, &ret_ptr);
-            if (errstate != PGERR_SUCCESS) {
-                GEOSGeom_destroy_r(ctx, ret_ptr);
-                goto finish;
+            if (is_point_nan(ctx, temp_geom)) {
+                ret_ptr = point_nan_to_empty(ctx, temp_geom);
+                GEOSGeom_destroy_r(ctx, temp_geom);
+                if (ret_ptr == NULL) {
+                    errstate = PGERR_GEOS_EXCEPTION;
+                    goto finish;
+                }
+            } else {
+                ret_ptr = temp_geom;
             }
         }
         OUTPUT_Y;
@@ -1702,8 +1717,12 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
             Py_INCREF(Py_None);
             *out = Py_None;
         } else {
-            errstate = point_empty_to_nan(ctx, in1, &temp_geom);
-            if (errstate != PGERR_SUCCESS) { goto finish; }
+            if (is_point_empty(ctx, in1)) {
+                temp_geom = point_empty_to_nan(ctx, in1);
+                if (temp_geom == NULL) {errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            } else {
+                temp_geom = in1;
+            }
             if (hex) {
                 wkb = GEOSWKBWriter_writeHEX_r(ctx, writer, temp_geom, &size);
             } else {
@@ -1713,7 +1732,6 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
             if (in1 != temp_geom) {
                 GEOSGeom_destroy_r(ctx, temp_geom);
             }
-
             if (wkb == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             Py_XDECREF(*out);
             if (hex) {

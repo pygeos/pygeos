@@ -250,83 +250,105 @@ char get_geom(GeometryObject *obj, GEOSGeometry **out) {
     }
 }
 
-/* Transforms a POINT EMPTY into POINT (nan, nan) for serialization
-   
-   If the input geom is a POINT EMPTY, the output geom will contain a newly
-   created POINT (nan, nan). Else, the output will equal the input. Take this
-   logic into account when destroying the geometries.
 
-   This preserves dimensionality and SRID.
+/* Returns 1 if geom is an empty point, 0 otherwise, 2 on error.
 */
-char point_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom, GEOSGeometry **out) {
-    int j, ndim, srid;
-    GEOSCoordSequence *coord_seq;
+char is_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
+    int geom_type;
 
-    if (!((GEOSGeomTypeId_r(ctx, geom) == 0) & (GEOSisEmpty_r(ctx, geom)))) {
-        *out = geom;
-        return PGERR_SUCCESS;
+    geom_type = GEOSGeomTypeId_r(ctx, geom);
+    if (geom_type >= 1) {
+        return 0;
+    } else if (geom_type == -1) {
+        return 2;  // GEOS exception
     }
 
+    return GEOSisEmpty_r(ctx, geom);
+}
+
+/* Transforms a POINT EMPTY into POINT (nan, nan[, nan]) for serialization
+
+   Returns NULL on error
+*/
+GEOSGeometry *point_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
+    int j, ndim;
+    GEOSCoordSequence *coord_seq;
+    GEOSGeometry *result;
+
     ndim = GEOSGeom_getCoordinateDimension_r(ctx, geom);
-    if (ndim == 0) { return PGERR_GEOS_EXCEPTION; }
-    srid = GEOSGetSRID_r(ctx, geom);
+    if (ndim == 0) { return NULL; }
     
     coord_seq = GEOSCoordSeq_create_r(ctx, 1, ndim);
-    if (coord_seq == NULL) { return PGERR_GEOS_EXCEPTION; }
+    if (coord_seq == NULL) { return NULL; }
     for (j = 0; j < ndim; j++) {
         if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, 0, j, Py_NAN)) {
             GEOSCoordSeq_destroy_r(ctx, coord_seq);
-            return PGERR_GEOS_EXCEPTION;
+            return NULL;
         }
     }
-    *out = GEOSGeom_createPoint_r(ctx, coord_seq);
-    if (*out == NULL) {
+    result = GEOSGeom_createPoint_r(ctx, coord_seq);
+    if (result == NULL) {
         GEOSCoordSeq_destroy_r(ctx, coord_seq); 
-        return PGERR_GEOS_EXCEPTION;
+        return NULL;
     }
-    GEOSSetSRID_r(ctx, *out, srid);
-    return PGERR_SUCCESS;
+    GEOSSetSRID_r(ctx, result, GEOSGetSRID_r(ctx, geom));
+    return result;
 }
 
-/* Transforms a POINT (nan, nan[, nan)] into POINT EMPTY for deserialization
 
-   The parameter geom will change inplace. When a new POINT EMPTY is created, the old
-   POINT (nan, nan) will be destroyed by this function.
-   
-   This preserves dimensionality and SRID.
+
+/* Returns 1 if geom is a point with only nan coordinates, 0 otherwise, 2 on error.
 */
-char point_nan_to_empty(GEOSContextHandle_t ctx, GEOSGeometry **geom) {
-    int j, ndim, srid;
+char is_point_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
+    int geom_type;
+    char is_empty;
+    int j, ndim;
     double coord;
     const GEOSCoordSequence *coord_seq;
 
-    if (!GEOSGeomTypeId_r(ctx, *geom) == 0) {
-        return PGERR_SUCCESS;
+    geom_type = GEOSGeomTypeId_r(ctx, geom);
+    if (geom_type >= 1) {
+        return 0;
+    } else if (geom_type == -1) {
+        return 2;  // GEOS exception
     }
 
-    ndim = GEOSGeom_getCoordinateDimension_r(ctx, *geom);
-    if (ndim == 0) { return PGERR_GEOS_EXCEPTION; }
+    is_empty = GEOSisEmpty_r(ctx, geom);
+    if (is_empty == 1) {
+        return 0;
+    } else if (is_empty == 2) {
+        return 2;  // GEOS exception
+    }
 
-    coord_seq = GEOSGeom_getCoordSeq_r(ctx, *geom);
+    ndim = GEOSGeom_getCoordinateDimension_r(ctx, geom);
+    if (ndim == 0) { return 2; }
+
+    coord_seq = GEOSGeom_getCoordSeq_r(ctx, geom);
     for (j = 0; j < ndim; j++) {
         if (!GEOSCoordSeq_getOrdinate_r(ctx, coord_seq, 0, j, &coord)) {
-            return PGERR_GEOS_EXCEPTION;
+            return 2;
         }
         if (!isnan(coord)) {
             // Coordinate is not NaN; do not replace the geometry
-            return PGERR_SUCCESS;
+            return 0;
         }
     }
+    return 1;
+}
 
-    srid = GEOSGetSRID_r(ctx, *geom);
-    // replace POINT (nan, nan) with POINT EMPTY
-    GEOSGeom_destroy_r(ctx, *geom);
-    *geom = GEOSGeom_createEmptyPoint_r(ctx);
-    if (*geom == NULL) {
-        return PGERR_GEOS_EXCEPTION;
+/* Transforms a POINT (nan, nan[, nan]) into POINT Z EMPTY for deserialization
+
+   Returns NULL on error
+*/
+GEOSGeometry *point_nan_to_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
+    GEOSGeometry *result;
+
+    result = GEOSGeom_createEmptyPoint_r(ctx);
+    if (result == NULL) {
+        return NULL;
     }
-    GEOSSetSRID_r(ctx, *geom, srid);
-    return PGERR_SUCCESS;
+    GEOSSetSRID_r(ctx, result, GEOSGetSRID_r(ctx, geom));
+    return result;
 }
 
 int
