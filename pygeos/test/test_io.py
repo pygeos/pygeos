@@ -266,6 +266,18 @@ def test_to_wkb_point_empty_srid():
     assert pygeos.get_srid(actual) == 4236
     
 
+@pytest.mark.parametrize("expected", [
+    pygeos.multipoints([empty_point]),
+    pygeos.geometrycollections([empty_point]),
+    pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
+    pygeos.geometrycollections([pygeos.geometrycollections([empty_point])])
+])
+def test_to_wkb_roundtrip(expected):
+    wkb = pygeos.to_wkb(expected, include_srid=True)
+    actual = pygeos.from_wkb(wkb)
+    assert pygeos.equals_exact(actual, expected)
+
+
 @pytest.mark.parametrize("geom", [
     pygeos.multipoints([empty_point]),
     pygeos.geometrycollections([empty_point]),

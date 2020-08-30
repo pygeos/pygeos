@@ -44,15 +44,6 @@
     *out = ret
 
 
-static void destroy_geom_arr(void *context, GEOSGeometry **array, npy_intp length) {
-    npy_intp i;
-    for(i = 0; i < length; i++) {
-        if (array[i] != NULL) {
-            GEOSGeom_destroy_r(context, array[i]);
-        }
-    }
-}
-
 static void geom_arr_to_npy(GEOSGeometry **array, char *ptr, npy_intp stride, npy_intp count) {
     npy_intp i;
     PyObject *ret;
@@ -1744,6 +1735,10 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
                         errstate = PGERR_GEOS_EXCEPTION;
                         goto finish; 
                     }
+                } else if (GEOSGeomTypeId_r(ctx, in1) == GEOS_MULTIPOINT) {
+                    temp_geom = multipoint_empty_to_nan(ctx, in1);
+                } else if (GEOSGeomTypeId_r(ctx, in1) == GEOS_GEOMETRYCOLLECTION) {
+                    temp_geom = geometrycollection_empty_to_nan(ctx, in1);
                 } else {
                     errstate = PGERR_WKB_INCOMPATIBLE;
                     goto finish;
