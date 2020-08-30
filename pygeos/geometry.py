@@ -2,18 +2,19 @@ from enum import IntEnum
 import numpy as np
 from . import lib
 from . import Geometry  # NOQA
-from .decorators import multithreading_enabled
+from .decorators import multithreading_enabled, requires_geos
 
 __all__ = [
     "GeometryType",
     "get_type_id",
     "get_dimensions",
-    "get_coordinate_dimensions",
+    "get_coordinate_dimension",
     "get_num_coordinates",
     "get_srid",
     "set_srid",
     "get_x",
     "get_y",
+    "get_z",
     "get_exterior_ring",
     "get_num_points",
     "get_num_interior_rings",
@@ -102,7 +103,7 @@ def get_dimensions(geometry):
 
 
 @multithreading_enabled
-def get_coordinate_dimensions(geometry):
+def get_coordinate_dimension(geometry):
     """Returns the dimensionality of the coordinates in a geometry (2 or 3).
 
     Returns -1 for not-a-geometry values.
@@ -113,14 +114,14 @@ def get_coordinate_dimensions(geometry):
 
     Examples
     --------
-    >>> get_coordinate_dimensions(Geometry("POINT (0 0)"))
+    >>> get_coordinate_dimension(Geometry("POINT (0 0)"))
     2
-    >>> get_coordinate_dimensions(Geometry("POINT Z (0 0 0)"))
+    >>> get_coordinate_dimension(Geometry("POINT Z (0 0 0)"))
     3
-    >>> get_coordinate_dimensions(None)
+    >>> get_coordinate_dimension(None)
     -1
     """
-    return lib.get_coordinate_dimensions(geometry)
+    return lib.get_coordinate_dimension(geometry)
 
 
 @multithreading_enabled
@@ -212,7 +213,7 @@ def get_x(point):
 
     See also
     --------
-    get_y
+    get_y, get_z
 
     Examples
     --------
@@ -235,7 +236,7 @@ def get_y(point):
 
     See also
     --------
-    get_x
+    get_x, get_z
 
     Examples
     --------
@@ -245,6 +246,35 @@ def get_y(point):
     nan
     """
     return lib.get_y(point)
+
+
+@requires_geos("3.7.0")
+@multithreading_enabled
+def get_z(point):
+    """Returns the z-coordinate of a point.
+
+    Requires at least GEOS 3.7.0.
+
+    Parameters
+    ----------
+    point : Geometry or array_like
+        Non-point geometries or geometries without 3rd dimension will result
+        in NaN being returned.
+
+    See also
+    --------
+    get_x, get_y
+
+    Examples
+    --------
+    >>> get_z(Geometry("POINT Z (1 2 3)"))
+    3.0
+    >>> get_z(Geometry("POINT (1 2)"))
+    nan
+    >>> get_z(Geometry("MULTIPOINT Z (1 1 1, 2 2 2)"))
+    nan
+    """
+    return lib.get_z(point)
 
 
 # linestrings

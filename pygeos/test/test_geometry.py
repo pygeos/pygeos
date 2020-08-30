@@ -127,9 +127,9 @@ def test_get_dimensions():
     assert actual == [0, 1, 1, 2, 0, 1, 2, 1, -1]
 
 
-def test_get_coordinate_dimensions():
-    actual = pygeos.get_coordinate_dimensions([point, point_z]).tolist()
-    assert actual == [2, 3]
+def test_get_coordinate_dimension():
+    actual = pygeos.get_coordinate_dimension([point, point_z, None]).tolist()
+    assert actual == [2, 3, -1]
 
 
 def test_get_num_coordinates():
@@ -143,9 +143,21 @@ def test_get_set_srid():
     assert pygeos.get_srid(actual) == 4326
 
 
-@pytest.mark.parametrize("func", [pygeos.get_x, pygeos.get_y])
+@pytest.mark.parametrize(
+    "func",
+    [
+        pygeos.get_x,
+        pygeos.get_y,
+        pytest.param(
+            pygeos.get_z,
+            marks=pytest.mark.skipif(
+                pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7"
+            ),
+        ),
+    ],
+)
 @pytest.mark.parametrize("geom", all_types[1:])
-def test_get_xy_no_point(func, geom):
+def test_get_xyz_no_point(func, geom):
     assert np.isnan(func(geom))
 
 
@@ -155,6 +167,16 @@ def test_get_x():
 
 def test_get_y():
     assert pygeos.get_y([point, point_z]).tolist() == [3.0, 1.0]
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+def test_get_z():
+    assert pygeos.get_z([point_z]).tolist() == [1.0]
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+def test_get_z_2d():
+    assert np.isnan(pygeos.get_z(point))
 
 
 @pytest.mark.parametrize("geom", all_types)

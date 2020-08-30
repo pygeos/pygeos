@@ -48,6 +48,15 @@ FuncGEOS_YpY_b *get_predicate_func(int predicate_id) {
         case 6: { // touches
             return (FuncGEOS_YpY_b *)GEOSPreparedTouches_r;
         }
+        case 7: { // covers
+            return (FuncGEOS_YpY_b *)GEOSPreparedCovers_r;
+        }
+        case 8: { // covered_by
+            return (FuncGEOS_YpY_b *)GEOSPreparedCoveredBy_r;
+        }
+        case 9: { // contains_properly
+            return (FuncGEOS_YpY_b *)GEOSPreparedContainsProperly_r;
+        }
         default: { // unknown predicate
             PyErr_SetString(PyExc_ValueError, "Invalid query predicate");
             return NULL;
@@ -412,15 +421,14 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
     kv_init(src_indexes);
     kv_init(target_indexes);
 
-    GEOS_INIT;
+    GEOS_INIT_THREADS;
 
     for(i = 0; i < n; i++) {
         // get pygeos geometry from input geometry array
         pg_geom = *(GeometryObject **) PyArray_GETPTR1(pg_geoms, i);
         if (!get_geom(pg_geom, &geom)) {
             errstate = PGERR_NOT_A_GEOMETRY;
-            GEOS_FINISH;
-            return NULL;
+            break;
         }
         if (geom == NULL || GEOSisEmpty_r(ctx, geom)) {
             continue;
@@ -451,8 +459,7 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
                 kv_destroy(query_indexes);
                 kv_destroy(src_indexes);
                 kv_destroy(target_indexes);
-                GEOS_FINISH;
-                return NULL;
+                break;
             }
 
             for (j = 0; j < size; j++) {
@@ -463,7 +470,11 @@ static PyObject *STRtree_query_bulk(STRtreeObject *self, PyObject *args) {
         kv_destroy(query_indexes);
     }
 
-    GEOS_FINISH;
+    GEOS_FINISH_THREADS;
+
+    if (errstate != PGERR_SUCCESS) {
+        return NULL;
+    }
 
     size = kv_size(src_indexes);
     npy_intp dims[2] = {2, size};

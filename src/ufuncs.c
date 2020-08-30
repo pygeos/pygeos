@@ -251,6 +251,7 @@ static void *polygons_without_holes_data[1] = {GEOSLinearRingToPolygon};
 #if GEOS_SINCE_3_8_0
   static void *build_area_data[1] = {GEOSBuildArea_r};
   static void *make_valid_data[1] = {GEOSMakeValid_r};
+  static void *coverage_union_data[1] = {GEOSCoverageUnion_r};
 #endif
 typedef void *FuncGEOS_Y_Y(void *context, void *a);
 static char Y_Y_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
@@ -698,6 +699,18 @@ static int GetY(void *context, void *a, double *b) {
     }
 }
 static void *get_y_data[1] = {GetY};
+#if GEOS_SINCE_3_7_0
+    static int GetZ(void *context, void *a, double *b) {
+        char typ = GEOSGeomTypeId_r(context, a);
+        if (typ != 0) {
+            *(double *)b = NPY_NAN;
+            return 1;
+        } else {
+            return GEOSGeomGetZ_r(context, a, b);
+        }
+    }
+    static void *get_z_data[1] = {GetZ};
+#endif
 static void *area_data[1] = {GEOSArea_r};
 static void *length_data[1] = {GEOSLength_r};
 typedef int FuncGEOS_Y_d(void *context, void *a, double *b);
@@ -729,7 +742,7 @@ static PyUFuncGenericFunction Y_d_funcs[1] = {&Y_d_func};
 /* Define the geom -> int functions (Y_i) */
 static void *get_type_id_data[1] = {GEOSGeomTypeId_r};
 static void *get_dimensions_data[1] = {GEOSGeom_getDimensions_r};
-static void *get_coordinate_dimensions_data[1] = {GEOSGeom_getCoordinateDimension_r};
+static void *get_coordinate_dimension_data[1] = {GEOSGeom_getCoordinateDimension_r};
 static void *get_srid_data[1] = {GEOSGetSRID_r};
 static int GetNumPoints(void *context, void *geom, int n) {
     char typ = GEOSGeomTypeId_r(context, geom);
@@ -1373,7 +1386,7 @@ static void create_collection_func(char **args, npy_intp *dimensions,
 {
     GEOSGeometry *g, *g_copy;
     int n_geoms, type;
-    char actual_type, expected_type;
+    char actual_type, expected_type, alt_expected_type;
 
     GEOS_INIT;
 
@@ -1385,15 +1398,19 @@ static void create_collection_func(char **args, npy_intp *dimensions,
         switch (type) {
             case GEOS_MULTIPOINT:
                 expected_type = GEOS_POINT;
+                alt_expected_type = -1;
                 break;
             case GEOS_MULTILINESTRING:
                 expected_type = GEOS_LINESTRING;
+                alt_expected_type = GEOS_LINEARRING;
                 break;
             case GEOS_MULTIPOLYGON:
                 expected_type = GEOS_POLYGON;
+                alt_expected_type = -1;
                 break;
             case GEOS_GEOMETRYCOLLECTION:
                 expected_type = -1;
+                alt_expected_type = -1;
                 break;
         default:
             errstate = PGERR_GEOMETRY_TYPE;
@@ -1407,7 +1424,9 @@ static void create_collection_func(char **args, npy_intp *dimensions,
             if (expected_type != -1) {
                 actual_type = GEOSGeomTypeId_r(ctx, g);
                 if (actual_type == -1) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
-                if (actual_type != expected_type) { errstate = PGERR_GEOMETRY_TYPE; goto finish; }
+                if ((actual_type != expected_type) & (actual_type != alt_expected_type)) {
+                    errstate = PGERR_GEOMETRY_TYPE; goto finish;
+                }
             }
             g_copy = GEOSGeom_clone_r(ctx, g);
             if (g_copy == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
@@ -1789,6 +1808,8 @@ static void to_wkt_func(char **args, npy_intp *dimensions,
             Py_INCREF(Py_None);
             *out = Py_None;
         } else {
+            errstate = check_to_wkt_compatible(ctx, in1);
+            if (errstate != PGERR_SUCCESS) { goto finish; }
             wkt = GEOSWKTWriter_write_r(ctx, writer, in1);
             if (wkt == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             Py_XDECREF(*out);
@@ -1929,7 +1950,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
 
     DEFINE_Y_i (get_type_id);
     DEFINE_Y_i (get_dimensions);
-    DEFINE_Y_i (get_coordinate_dimensions);
+    DEFINE_Y_i (get_coordinate_dimension);
     DEFINE_Y_i (get_srid);
     DEFINE_Y_i (get_num_points);
     DEFINE_Y_i (get_num_interior_rings);
@@ -1965,6 +1986,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_CUSTOM (from_shapely, 1);
 
     #if GEOS_SINCE_3_7_0
+      DEFINE_Y_d (get_z);
       DEFINE_YY_d (frechet_distance);
       DEFINE_YYd_d (frechet_distance_densify);
     #endif
@@ -1972,6 +1994,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     #if GEOS_SINCE_3_8_0
       DEFINE_Y_Y (make_valid);
       DEFINE_Y_Y (build_area);
+      DEFINE_Y_Y (coverage_union);
     #endif
 
     Py_DECREF(ufunc);
