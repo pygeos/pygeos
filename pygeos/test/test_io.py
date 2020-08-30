@@ -7,8 +7,6 @@ from unittest import mock
 from .common import all_types, point, empty_point
 
 
-import pygeos 
-
 POINT11_WKB = b'\x01\x01\x00\x00\x00' + struct.pack("<2d", 1., 1.)
 POINT3D_NAN_WKB = b'\x01\x01\x00\x00\x80' + struct.pack("<3d", float("nan"), float("nan"), float("nan"))
 

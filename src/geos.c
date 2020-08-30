@@ -55,7 +55,6 @@ char multipoint_has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
 /* Returns 1 if a geometrycollection has an empty point, 0 otherwise, 2 on error.
 Checks recursively (geometrycollections may contain multipoints / geometrycollections)
 */
-static char has_point_empty(GEOSContextHandle_t, GEOSGeometry *);  // for recursion
 char geometrycollection_has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {    
     int n, i;
     char has_empty;
@@ -178,7 +177,6 @@ GEOSGeometry *point_nan_to_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
 }
 
 
-
 /* Checks whether the geometry is a multipoint with an empty point in it
  *
  * According to https://github.com/libgeos/geos/issues/305, this check is not
@@ -206,29 +204,6 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
         return PGERR_GEOS_EXCEPTION;
     }
 }
-
-/* Checks whether the geometry contains any empty point
- *
- * Empty points cannot be serialized to WKB.
- *  
- * The return value is one of:
- * - PGERR_SUCCESS 
- * - PGERR_WKB_INCOMPATIBLE
- * - PGERR_GEOS_EXCEPTION
- */
-char check_to_wkb_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom) {    
-    char has_empty;
-
-    has_empty = has_point_empty(ctx, geom);
-    if (has_empty == 0) {
-        return PGERR_SUCCESS;
-    } else if (has_empty == 1) {
-        return PGERR_WKB_INCOMPATIBLE;
-    } else {
-        return PGERR_GEOS_EXCEPTION;
-    }
-}
-
 
 /* Define GEOS error handlers. See GEOS_INIT / GEOS_FINISH macros in geos.h*/
 void geos_error_handler(const char *message, void *userdata) {
