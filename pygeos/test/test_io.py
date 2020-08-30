@@ -8,7 +8,11 @@ from .common import all_types, point, empty_point
 
 
 POINT11_WKB = b'\x01\x01\x00\x00\x00' + struct.pack("<2d", 1., 1.)
-POINT3D_NAN_WKB = b'\x01\x01\x00\x00\x80' + struct.pack("<3d", float("nan"), float("nan"), float("nan"))
+
+if pygeos.geos_version >= (3, 8, 0):
+    POINT_NAN_WKB = b'\x01\x01\x00\x00\x00' + struct.pack("<2d", float("nan"), float("nan"))
+else:
+    POINT_NAN_WKB = b'\x01\x01\x00\x00\x80' + struct.pack("<3d", float("nan"), float("nan"), float("nan"))
 
 class ShapelyGeometryMock:
     def __init__(self, g):
@@ -244,12 +248,12 @@ def test_to_wkb_srid():
 def test_to_wkb_point_empty():
     # empty point converts to POINT (nan, nan, nan) in WKB
     # this matches PostGIS behaviour
-    assert pygeos.to_wkb(empty_point) == POINT3D_NAN_WKB
+    assert pygeos.to_wkb(empty_point) == POINT_NAN_WKB
 
 
 def test_from_wkb_point_nan():
     # WKB representation of POINT (nan, nan, nan) converts to POINT EMPTY
-    geom = pygeos.from_wkb(POINT3D_NAN_WKB)
+    geom = pygeos.from_wkb(POINT_NAN_WKB)
     assert pygeos.get_type_id(geom) == 0
     assert pygeos.is_empty(geom)
     assert pygeos.get_coordinate_dimension(geom) == 3
