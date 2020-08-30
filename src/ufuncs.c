@@ -1252,21 +1252,13 @@ static void points_func(char **args, npy_intp *dimensions,
     GEOS_INIT;
 
     SINGLE_COREDIM_LOOP_OUTER {
-        if (n_c1 == 0) {
-            ret_ptr = GEOSGeom_createEmptyPoint_r(ctx);
-            if (ret_ptr == NULL) {
-                errstate = PGERR_GEOS_EXCEPTION;
-                goto finish;
-            }
-        } else {
-            CREATE_COORDSEQ(1, n_c1);
-            SINGLE_COREDIM_LOOP_INNER {
-                double coord = *(double *) cp1;
-                SET_COORD(0, i_c1);
-            }
-            ret_ptr = GEOSGeom_createPoint_r(ctx, coord_seq);
-            CHECK_RET_PTR;
+        CREATE_COORDSEQ(1, n_c1);
+        SINGLE_COREDIM_LOOP_INNER {
+            double coord = *(double *) cp1;
+            SET_COORD(0, i_c1);
         }
+        ret_ptr = GEOSGeom_createPoint_r(ctx, coord_seq);
+        CHECK_RET_PTR;
         OUTPUT_Y;
     }
 

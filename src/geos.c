@@ -52,8 +52,10 @@ char multipoint_has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
     return 0;
 }
 
-/* Returns 1 if geometry is / has an empty point, 0 otherwise, 2 on error.
+/* Returns 1 if a geometrycollection has an empty point, 0 otherwise, 2 on error.
+Checks recursively (geometrycollections may contain multipoints / geometrycollections)
 */
+static char has_point_empty(GEOSContextHandle_t, GEOSGeometry *);  // for recursion
 char geometrycollection_has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {    
     int n, i;
     char has_empty;
@@ -92,7 +94,7 @@ char has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
     }
 }
 
-/* Creates a POINT EMPTY from a POINT (nan, nan[, nan]) template
+/* Creates a POINT (nan, nan[, nan)] from a POINT EMPTY template
 
    Returns NULL on error
 */
@@ -160,7 +162,7 @@ char is_point_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
     return 1;
 }
 
-/* Transforms a POINT (nan, nan[, nan]) into POINT Z EMPTY for deserialization
+/* Creates a POINT Z EMPTY from a POINT (nan, nan[, nan]) template
 
    Returns NULL on error
 */

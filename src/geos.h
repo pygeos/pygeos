@@ -115,7 +115,6 @@ extern PyObject *geos_exception[1];
 extern void geos_error_handler(const char *message, void *userdata);
 extern void geos_notice_handler(const char *message, void *userdata);
 extern char is_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom);
-extern char has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom);
 extern GEOSGeometry *point_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom);
 extern char is_point_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom);
 extern GEOSGeometry *point_nan_to_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom);
