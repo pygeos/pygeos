@@ -1,6 +1,7 @@
 import numpy as np
 import pygeos
 import pytest
+import struct
 from unittest import mock
 
 from .common import all_types, point, empty_point
@@ -8,11 +9,8 @@ from .common import all_types, point, empty_point
 
 import pygeos 
 
-point_empty = pygeos.Geometry("POINT Z EMPTY")
-POINT11_WKB = (
-    b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?"
-)
-
+POINT11_WKB = b'\x01\x01\x00\x00\x00' + struct.pack("<2d", 1., 1.)
+POINT3D_NAN_WKB = b'\x01\x01\x00\x00\x80' + struct.pack("<3d", float("nan"), float("nan"), float("nan"))
 
 class ShapelyGeometryMock:
     def __init__(self, g):
@@ -105,20 +103,14 @@ def test_from_wkb_all_types(geom, use_hex, byte_order):
 
 
 @pytest.mark.parametrize(
-    "wkt", ("LINESTRING EMPTY", "POLYGON EMPTY", "GEOMETRYCOLLECTION EMPTY")
+    "wkt", ("POINT EMPTY", "LINESTRING EMPTY", "POLYGON EMPTY", "GEOMETRYCOLLECTION EMPTY")
 )
 def test_from_wkb_empty(wkt):
-    wkb = pygeos.to_wkb(pygeos.from_wkt(wkt))
+    wkb = pygeos.to_wkb(pygeos.Geometry(wkt))
     geom = pygeos.from_wkb(wkb)
     assert pygeos.is_geometry(geom).all()
     assert pygeos.is_empty(geom).all()
     assert pygeos.to_wkb(geom) == wkb
-
-
-def test_from_wkb_empty_point():
-    geom = pygeos.from_wkt("POINT EMPTY")
-    with pytest.raises(pygeos.GEOSException):
-        pygeos.to_wkb(geom)
 
 
 def test_to_wkt():
@@ -251,31 +243,37 @@ def test_to_wkb_srid():
     assert np.frombuffer(result[5:9], "<u4").item() == 4326
 
 
-@pytest.mark.skip("Figure out how to make a 2D empty point")
 def test_to_wkb_point_empty():
-    # empty point converts to POINT (nan, nan) in WKB
+    # empty point converts to POINT (nan, nan, nan) in WKB
     # this matches PostGIS behaviour
-    assert pygeos.to_wkb(pygeos.Geometry("POINT EMPTY"), hex=True) == "0101000000000000000000F87F000000000000F87F"
+    assert pygeos.to_wkb(empty_point) == POINT3D_NAN_WKB
 
 
-def test_to_wkb_point_z_empty():
-    # empty point converts to POINT (nan, nan) in WKB
-    # this matches PostGIS behaviour
-    assert pygeos.to_wkb(pygeos.Geometry("POINT Z EMPTY"), hex=True) == "0101000000000000000000F87F000000000000F87F000000000000F87F"
+def test_from_wkb_point_nan():
+    # WKB representation of POINT (nan, nan, nan) converts to POINT EMPTY
+    geom = pygeos.from_wkb(POINT3D_NAN_WKB)
+    assert pygeos.get_type_id(geom) == 0
+    assert pygeos.is_empty(geom)
+    assert pygeos.get_coordinate_dimension(geom) == 3
 
+
+def test_to_wkb_point_empty_srid():
+    expected = pygeos.set_srid(empty_point, 4236)
+    wkb = pygeos.to_wkb(expected, include_srid=True)
+    actual = pygeos.from_wkb(wkb)
+    assert pygeos.get_srid(actual) == 4236
+    
 
 @pytest.mark.parametrize("geom", [
-    point_empty,
-    pygeos.Geometry("POINT Z EMPTY"),
-    pygeos.set_srid(point_empty, 4326),
-    pygeos.multipoints([point_empty]),
-    pygeos.geometrycollections([point_empty]),
+    pygeos.multipoints([empty_point]),
+    pygeos.geometrycollections([empty_point]),
+    pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
+    pygeos.geometrycollections([pygeos.geometrycollections([empty_point])])
 ])
-def test_to_wkb_roundtrip(geom):
-    actual = pygeos.from_wkb(pygeos.to_wkb(geom))
-    assert pygeos.get_srid(geom) == pygeos.get_srid(actual)
-    assert pygeos.get_coordinate_dimensions(geom) == pygeos.get_coordinate_dimensions(actual)
-    assert pygeos.equals_exact(geom, actual)
+def test_to_wkb_point_empty_in_collection_raises(geom):
+    # Collections with empty points cannot be serialized to WKB
+    with pytest.raises(ValueError, match="WKB.*"):
+        pygeos.to_wkb(geom)
 
 
 @pytest.mark.parametrize("geom", all_types)

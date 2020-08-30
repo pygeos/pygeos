@@ -48,7 +48,8 @@ enum {
     PGERR_GEOS_EXCEPTION,
     PGERR_NO_MALLOC,
     PGERR_GEOMETRY_TYPE,
-    PGERR_MULTIPOINT_WITH_POINT_EMPTY
+    PGERR_WKT_INCOMPATIBLE,
+    PGERR_WKB_INCOMPATIBLE
 };
 
 // Define how the states are handled by CPython
@@ -65,8 +66,10 @@ enum {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory"); break;\
       case PGERR_GEOMETRY_TYPE:\
         PyErr_SetString(PyExc_TypeError, "One of the Geometry inputs is of incorrect geometry type."); break;\
-      case PGERR_MULTIPOINT_WITH_POINT_EMPTY:\
+      case PGERR_WKT_INCOMPATIBLE:\
         PyErr_SetString(PyExc_ValueError, "WKT output of multipoints with an empty point is unsupported on this version of GEOS."); break;\
+      case PGERR_WKB_INCOMPATIBLE:\
+        PyErr_SetString(PyExc_ValueError, "WKB output of collections with an empty point is unsupported on this version of GEOS."); break;\
       default:\
         PyErr_Format(PyExc_RuntimeError, "Pygeos ufunc returned with unknown error state code %d.", errstate); break;\
     }
@@ -111,7 +114,14 @@ extern PyObject *geos_exception[1];
 
 extern void geos_error_handler(const char *message, void *userdata);
 extern void geos_notice_handler(const char *message, void *userdata);
+extern char is_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom);
+extern char has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom);
+extern GEOSGeometry *point_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom);
+extern char is_point_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom);
+extern GEOSGeometry *point_nan_to_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom);
 extern char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom);
+extern char check_to_wkb_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom);
+
 
 extern int init_geos(PyObject *m);
 

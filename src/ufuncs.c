@@ -1736,18 +1736,34 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
             Py_INCREF(Py_None);
             *out = Py_None;
         } else {
-            if (is_point_empty(ctx, in1)) {
-                temp_geom = point_empty_to_nan(ctx, in1);
-                if (temp_geom == NULL) {errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+            /* WKB Does not allow empty points.
+             * We check for that and patch the case of a 'simple' POINT EMPTY.
+             * Collections with POINT EMPTY in it will raise an exception
+             */
+            errstate = check_to_wkb_compatible(ctx, in1);
+            if (errstate == PGERR_WKB_INCOMPATIBLE) {
+                if (is_point_empty(ctx, in1)) {
+                    // The POINT EMPTY patch. It is replaced by POINT (nan, nan)
+                    // See: https://trac.osgeo.org/postgis/ticket/3181
+                    errstate = PGERR_SUCCESS;
+                    temp_geom = point_empty_to_nan(ctx, in1);
+                    if (temp_geom == NULL) {
+                        errstate = PGERR_GEOS_EXCEPTION;
+                        goto finish; 
+                    }
+                } else {
+                    goto finish;  // returns with PGERR_WKB_INCOMPATIBLE
+                }
             } else {
                 temp_geom = in1;
             }
+
             if (hex) {
                 wkb = GEOSWKBWriter_writeHEX_r(ctx, writer, temp_geom, &size);
             } else {
                 wkb = GEOSWKBWriter_write_r(ctx, writer, temp_geom, &size);
             }
-            // destroy the temp_geom if it is different from in1
+            // Destroy the temp_geom if it is different from in1 (POINT EMPTY patch)
             if (in1 != temp_geom) {
                 GEOSGeom_destroy_r(ctx, temp_geom);
             }
