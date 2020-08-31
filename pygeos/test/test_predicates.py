@@ -98,3 +98,8 @@ def test_relate():
     actual = pygeos.relate(p1, p2)
     assert isinstance(actual, str)
     assert actual == "FF0FFF0F2"
+
+
+@pytest.mark.parametrize("g1, g2", [(point, None), (None, point), (None, None)])
+def test_relate_none(g1, g2):
+    assert pygeos.relate(g1, g2) is None

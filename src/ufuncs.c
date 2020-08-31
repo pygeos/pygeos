@@ -1257,7 +1257,7 @@ static void relate_func(char **args, npy_intp *dimensions,
         /* get the geometries: return on error */
         if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
         if (!get_geom(*(GeometryObject **)ip2, &in2)) { errstate = PGERR_NOT_A_GEOMETRY; goto finish; }
-        if (in1 == NULL) {
+        if ((in1 == NULL) | (in2 == NULL)) {
             /* Missing geometries give None */
             Py_XDECREF(*out);
             Py_INCREF(Py_None);
