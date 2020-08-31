@@ -259,6 +259,8 @@ PyTypeObject GeometryType = {
 };
 
 
+/* Check if type `a` is a subclass of type `b`
+(copied from cython generated code) */
 int __Pyx_InBases(PyTypeObject *a, PyTypeObject *b) {
     while (a) {
         a = a->tp_base;

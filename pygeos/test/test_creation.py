@@ -226,13 +226,16 @@ class Point(BaseGeometry):
         return pygeos.get_y(self)
 
 
-def test_subclasses():
+@pytest.fixture
+def with_point_in_registry():
     orig = pygeos.lib.registry[0]
     pygeos.lib.registry[0] = Point
+    yield
+    pygeos.lib.registry[0] = orig
 
+
+def test_subclasses(with_point_in_registry):
     for point in [Point("POINT (1 1)"), pygeos.points(1, 1)]:
         assert isinstance(point, Point)
         assert pygeos.get_type_id(point) == pygeos.GeometryType.POINT
         assert point.x == 1
-
-    pygeos.lib.registry[0] = orig
