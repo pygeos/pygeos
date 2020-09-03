@@ -265,7 +265,7 @@ def test_to_wkb_point_empty_pre_geos38(geom,dims,expected):
     actual = pygeos.to_wkb(geom, output_dimension=dims)
     # Use numpy.isnan; there are many byte representations for NaN
     assert actual[:-dims * 8] == expected[:-dims * 8]
-    assert np.isnan(struct.unpack(f"<{dims}d", actual[-dims * 8:])).all()
+    assert np.isnan(struct.unpack("<{}d".format(dims), actual[-dims * 8:])).all()
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="Post GEOS 3.8.0 has 2D empty points")
