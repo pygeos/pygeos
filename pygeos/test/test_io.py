@@ -262,11 +262,13 @@ def test_to_wkb_srid():
     (pygeos.geometrycollections([pygeos.multipoints([empty_point])]), 3, NESTED_COLLECTIONZ_NAN_WKB),
 ])
 def test_to_wkb_point_empty_pre_geos38(geom,dims,expected):
-    # Pre GEOS 3.8: empty point is 3D
-    assert pygeos.to_wkb(geom, output_dimension=dims) == expected
+    actual = pygeos.to_wkb(geom, output_dimension=dims)
+    # Use numpy.isnan; there are many byte representations for NaN
+    assert actual[:-dims * 8] == expected[:-dims * 8]
+    assert np.isnan(struct.unpack(f"<{dims}d", actual[-dims * 8:])).all()
 
 
-@pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="Pre GEOS 3.8.0 has 2D empty points")
+@pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="Post GEOS 3.8.0 has 2D empty points")
 @pytest.mark.parametrize("geom,dims,expected", [
     (empty_point, 2, POINT_NAN_WKB),
     (empty_point, 3, POINT_NAN_WKB),
@@ -279,7 +281,10 @@ def test_to_wkb_point_empty_pre_geos38(geom,dims,expected):
 ])
 def test_to_wkb_point_empty_post_geos38(geom,dims,expected):
     # Post GEOS 3.8: empty point is 2D
-    assert pygeos.to_wkb(geom, output_dimension=dims) == expected
+    actual = pygeos.to_wkb(geom, output_dimension=dims)
+    # Use numpy.isnan; there are many byte representations for NaN
+    assert actual[:-2 * 8] == expected[:-2 * 8]
+    assert np.isnan(struct.unpack(f"<{2}d", actual[-2 * 8:])).all()
 
 
 @pytest.mark.parametrize("wkb,expected_type", [
