@@ -9,10 +9,15 @@ from .common import all_types, point, empty_point
 
 POINT11_WKB = b'\x01\x01\x00\x00\x00' + struct.pack("<2d", 1., 1.)
 
-if pygeos.geos_version >= (3, 8, 0):
-    POINT_NAN_WKB = b'\x01\x01\x00\x00\x00' + struct.pack("<2d", float("nan"), float("nan"))
-else:
-    POINT_NAN_WKB = b'\x01\x01\x00\x00\x80' + struct.pack("<3d", float("nan"), float("nan"), float("nan"))
+NAN = struct.pack("<d", float("nan"))
+POINT_NAN_WKB = b'\x01\x01\x00\x00\x00' + (NAN * 2)
+POINTZ_NAN_WKB = b'\x01\x01\x00\x00\x80' + (NAN * 3)
+MULTIPOINT_NAN_WKB = b'\x01\x04\x00\x00\x00\x01\x00\x00\x00\x01\x01\x00\x00\x00' + (NAN * 2)
+MULTIPOINTZ_NAN_WKB = b'\x01\x04\x00\x00\x80\x01\x00\x00\x00\x01\x01\x00\x00\x80' + (NAN * 3)
+GEOMETRYCOLLECTION_NAN_WKB = b'\x01\x07\x00\x00\x00\x01\x00\x00\x00\x01\x01\x00\x00\x00' + (NAN * 2)
+GEOMETRYCOLLECTIONZ_NAN_WKB = b'\x01\x07\x00\x00\x80\x01\x00\x00\x00\x01\x01\x00\x00\x80' + (NAN * 3)
+NESTED_COLLECTION_NAN_WKB = b'\x01\x07\x00\x00\x00\x01\x00\x00\x00\x01\x04\x00\x00\x00\x01\x00\x00\x00\x01\x01\x00\x00\x00' + (NAN * 2)
+NESTED_COLLECTIONZ_NAN_WKB = b'\x01\x07\x00\x00\x80\x01\x00\x00\x00\x01\x04\x00\x00\x80\x01\x00\x00\x00\x01\x01\x00\x00\x80' + (NAN * 3)
 
 class ShapelyGeometryMock:
     def __init__(self, g):
@@ -245,18 +250,54 @@ def test_to_wkb_srid():
     assert np.frombuffer(result[5:9], "<u4").item() == 4326
 
 
-def test_to_wkb_point_empty():
-    # empty point converts to POINT (nan, nan, nan) in WKB
-    # this matches PostGIS behaviour
-    assert pygeos.to_wkb(empty_point) == POINT_NAN_WKB
+@pytest.mark.skipif(pygeos.geos_version >= (3, 8, 0), reason="Pre GEOS 3.8.0 has 3D empty points")
+@pytest.mark.parametrize("geom,dims,expected", [
+    (empty_point, 2, POINT_NAN_WKB),
+    (empty_point, 3, POINTZ_NAN_WKB),
+    (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB),
+    (pygeos.multipoints([empty_point]), 3, MULTIPOINTZ_NAN_WKB),
+    (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB),
+    (pygeos.geometrycollections([empty_point]), 3, GEOMETRYCOLLECTIONZ_NAN_WKB),
+    (pygeos.geometrycollections([pygeos.multipoints([empty_point])]), 2, NESTED_COLLECTION_NAN_WKB),
+    (pygeos.geometrycollections([pygeos.multipoints([empty_point])]), 3, NESTED_COLLECTIONZ_NAN_WKB),
+])
+def test_to_wkb_point_empty_pre_geos38(geom,dims,expected):
+    # Pre GEOS 3.8: empty point is 3D
+    assert pygeos.to_wkb(geom, output_dimension=dims) == expected
 
 
-def test_from_wkb_point_nan():
-    # WKB representation of POINT (nan, nan, nan) converts to POINT EMPTY
-    geom = pygeos.from_wkb(POINT_NAN_WKB)
-    assert pygeos.get_type_id(geom) == 0
+@pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="Pre GEOS 3.8.0 has 2D empty points")
+@pytest.mark.parametrize("geom,dims,expected", [
+    (empty_point, 2, POINT_NAN_WKB),
+    (empty_point, 3, POINT_NAN_WKB),
+    (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB),
+    (pygeos.multipoints([empty_point]), 3, MULTIPOINT_NAN_WKB),
+    (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB),
+    (pygeos.geometrycollections([empty_point]), 3, GEOMETRYCOLLECTION_NAN_WKB),
+    (pygeos.geometrycollections([pygeos.multipoints([empty_point])]), 2, NESTED_COLLECTION_NAN_WKB),
+    (pygeos.geometrycollections([pygeos.multipoints([empty_point])]), 3, NESTED_COLLECTION_NAN_WKB),
+])
+def test_to_wkb_point_empty_post_geos38(geom,dims,expected):
+    # Post GEOS 3.8: empty point is 2D
+    assert pygeos.to_wkb(geom, output_dimension=dims) == expected
+
+
+@pytest.mark.parametrize("wkb,expected_type", [
+    (POINT_NAN_WKB, 0),
+    (POINTZ_NAN_WKB, 0),
+    (MULTIPOINT_NAN_WKB, 4),
+    (MULTIPOINTZ_NAN_WKB, 4),
+    (GEOMETRYCOLLECTION_NAN_WKB, 7),
+    (GEOMETRYCOLLECTIONZ_NAN_WKB, 7),
+    (NESTED_COLLECTION_NAN_WKB, 7),
+    (NESTED_COLLECTIONZ_NAN_WKB, 7),
+])
+def test_from_wkb_point_empty(wkb,expected_type):
+    geom = pygeos.from_wkb(wkb)
+    # POINT (nan nan) transforms to an empty point
+    # Note that the dimensionality (2D/3D) is GEOS-version dependent
     assert pygeos.is_empty(geom)
-    assert pygeos.get_coordinate_dimension(geom) == 3
+    assert pygeos.get_type_id(geom) == expected_type
 
 
 def test_to_wkb_point_empty_srid():
@@ -265,30 +306,6 @@ def test_to_wkb_point_empty_srid():
     actual = pygeos.from_wkb(wkb)
     assert pygeos.get_srid(actual) == 4236
     
-
-@pytest.mark.parametrize("expected", [
-    pygeos.multipoints([empty_point]),
-    pygeos.geometrycollections([empty_point]),
-    pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
-    pygeos.geometrycollections([pygeos.geometrycollections([empty_point])])
-])
-def test_to_wkb_roundtrip(expected):
-    wkb = pygeos.to_wkb(expected, include_srid=True)
-    actual = pygeos.from_wkb(wkb)
-    assert pygeos.equals_exact(actual, expected)
-
-
-@pytest.mark.parametrize("geom", [
-    pygeos.multipoints([empty_point]),
-    pygeos.geometrycollections([empty_point]),
-    pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
-    pygeos.geometrycollections([pygeos.geometrycollections([empty_point])])
-])
-def test_to_wkb_point_empty_in_collection_raises(geom):
-    # Collections with empty points cannot be serialized to WKB
-    with pytest.raises(ValueError, match="WKB.*"):
-        pygeos.to_wkb(geom)
-
 
 @pytest.mark.parametrize("geom", all_types)
 @mock.patch("pygeos.io.ShapelyGeometry", ShapelyGeometryMock)
