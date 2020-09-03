@@ -242,7 +242,7 @@ GEOSGeometry *point_empty_to_nan_all_geoms(GEOSContextHandle_t ctx, GEOSGeometry
  * 
  * The return value is one of:
  * - PGERR_SUCCESS 
- * - PGERR_WKT_INCOMPATIBLE
+ * - PGERR_MULTIPOINT_WITH_POINT_EMPTY
  * - PGERR_GEOS_EXCEPTION
  */
 char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom) {    
