@@ -48,8 +48,7 @@ enum {
     PGERR_GEOS_EXCEPTION,
     PGERR_NO_MALLOC,
     PGERR_GEOMETRY_TYPE,
-    PGERR_WKT_INCOMPATIBLE,
-    PGERR_WKB_INCOMPATIBLE
+    PGERR_MULTIPOINT_WITH_POINT_EMPTY
 };
 
 // Define how the states are handled by CPython
@@ -66,10 +65,8 @@ enum {
         PyErr_SetString(PyExc_MemoryError, "Could not allocate memory"); break;\
       case PGERR_GEOMETRY_TYPE:\
         PyErr_SetString(PyExc_TypeError, "One of the Geometry inputs is of incorrect geometry type."); break;\
-      case PGERR_WKT_INCOMPATIBLE:\
+      case PGERR_MULTIPOINT_WITH_POINT_EMPTY:\
         PyErr_SetString(PyExc_ValueError, "WKT output of multipoints with an empty point is unsupported on this version of GEOS."); break;\
-      case PGERR_WKB_INCOMPATIBLE:\
-        PyErr_SetString(PyExc_ValueError, "WKB output of collections with an empty point is unsupported on this version of GEOS."); break;\
       default:\
         PyErr_Format(PyExc_RuntimeError, "Pygeos ufunc returned with unknown error state code %d.", errstate); break;\
     }

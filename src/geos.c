@@ -256,7 +256,7 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
     if (is_empty == 0) {
         return PGERR_SUCCESS;
     } else if (is_empty == 1) {
-        return PGERR_WKT_INCOMPATIBLE;
+        return PGERR_MULTIPOINT_WITH_POINT_EMPTY;
     } else {
         return PGERR_GEOS_EXCEPTION;
     }

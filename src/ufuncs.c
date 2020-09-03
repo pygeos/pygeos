@@ -1238,8 +1238,6 @@ static char points_dtypes[2] = {NPY_DOUBLE, NPY_OBJECT};
 static void points_func(char **args, npy_intp *dimensions,
                         npy_intp *steps, void *data)
 {
-    GEOSGeometry *ret_ptr;
-
     GEOS_INIT;
 
     SINGLE_COREDIM_LOOP_OUTER {
@@ -1248,7 +1246,7 @@ static void points_func(char **args, npy_intp *dimensions,
             double coord = *(double *) cp1;
             SET_COORD(0, i_c1);
         }
-        ret_ptr = GEOSGeom_createPoint_r(ctx, coord_seq);
+        GEOSGeometry *ret_ptr = GEOSGeom_createPoint_r(ctx, coord_seq);
         CHECK_RET_PTR;
         OUTPUT_Y;
     }
@@ -1548,10 +1546,7 @@ static void from_wkb_func(char **args, npy_intp *dimensions,
             } else {
                 ret_ptr = GEOSWKBReader_read_r(ctx, reader, wkb, size);
             }
-            if (ret_ptr == NULL) {
-                errstate = PGERR_GEOS_EXCEPTION;
-                goto finish;
-            }
+            if (ret_ptr == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         }
         OUTPUT_Y;
     }
