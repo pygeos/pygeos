@@ -1499,7 +1499,7 @@ static char from_wkb_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
 static void from_wkb_func(char **args, npy_intp *dimensions,
                           npy_intp *steps, void *data)
 {
-    GEOSGeometry *temp_geom, *ret_ptr;
+    GEOSGeometry *ret_ptr;
     PyObject *in1;
 
     GEOSWKBReader *reader;
@@ -1544,25 +1544,13 @@ static void from_wkb_func(char **args, npy_intp *dimensions,
 
             /* Read the WKB */
             if (is_hex) {
-                temp_geom = GEOSWKBReader_readHEX_r(ctx, reader, wkb, size);
+                ret_ptr = GEOSWKBReader_readHEX_r(ctx, reader, wkb, size);
             } else {
-                temp_geom = GEOSWKBReader_read_r(ctx, reader, wkb, size);
+                ret_ptr = GEOSWKBReader_read_r(ctx, reader, wkb, size);
             }
-            if (temp_geom == NULL) {
+            if (ret_ptr == NULL) {
                 errstate = PGERR_GEOS_EXCEPTION;
                 goto finish;
-            }
-
-            // possibly, transform POINT (nan, nan) to POINT EMPTY
-            if (is_point_nan(ctx, temp_geom)) {
-                ret_ptr = point_nan_to_empty(ctx, temp_geom);
-                GEOSGeom_destroy_r(ctx, temp_geom);
-                if (ret_ptr == NULL) {
-                    errstate = PGERR_GEOS_EXCEPTION;
-                    goto finish;
-                }
-            } else {
-                ret_ptr = temp_geom;
             }
         }
         OUTPUT_Y;
@@ -1720,29 +1708,12 @@ static void to_wkb_func(char **args, npy_intp *dimensions,
             Py_INCREF(Py_None);
             *out = Py_None;
         } else {
-            /* WKB Does not allow empty points.
-             * We check for that and patch the case of a 'simple' POINT EMPTY.
-             * Collections with POINT EMPTY in it will raise an exception
-             */
+            // WKB Does not allow empty points.
+            // We check for that and patch the POINT EMPTY if necessary
             has_empty = has_point_empty(ctx, in1);
             if (has_empty == 2) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
             if (has_empty) {
-                if (is_point_empty(ctx, in1)) {
-                    // The POINT EMPTY patch. It is replaced by POINT (nan, nan)
-                    // See: https://trac.osgeo.org/postgis/ticket/3181
-                    temp_geom = point_empty_to_nan(ctx, in1);
-                    if (temp_geom == NULL) {
-                        errstate = PGERR_GEOS_EXCEPTION;
-                        goto finish; 
-                    }
-                } else if (GEOSGeomTypeId_r(ctx, in1) == GEOS_MULTIPOINT) {
-                    temp_geom = multipoint_empty_to_nan(ctx, in1);
-                } else if (GEOSGeomTypeId_r(ctx, in1) == GEOS_GEOMETRYCOLLECTION) {
-                    temp_geom = geometrycollection_empty_to_nan(ctx, in1);
-                } else {
-                    errstate = PGERR_WKB_INCOMPATIBLE;
-                    goto finish;
-                }
+                temp_geom = point_empty_to_nan_all_geoms(ctx, in1);
             } else {
                 temp_geom = in1;
             }

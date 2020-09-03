@@ -31,15 +31,6 @@ char is_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
     }
 }
 
-void destroy_geom_arr(void *context, GEOSGeometry **array, int length) {
-    int i;
-    for(i = 0; i < length; i++) {
-        if (array[i] != NULL) {
-            GEOSGeom_destroy_r(context, array[i]);
-        }
-    }
-}
-
 /* Returns 1 if a multipoint has an empty point, 0 otherwise, 2 on error.
 */
 char multipoint_has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {    
@@ -131,6 +122,16 @@ GEOSGeometry *point_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
     return result;
 }
 
+
+void destroy_geom_arr(void *context, GEOSGeometry **array, int length) {
+    int i;
+    for(i = 0; i < length; i++) {
+        if (array[i] != NULL) {
+            GEOSGeom_destroy_r(context, array[i]);
+        }
+    }
+}
+
 /* Creates a new multipoint, replacing empty points with POINT (nan, nan[, nan)]
 
    Returns NULL on error
@@ -178,8 +179,8 @@ GEOSGeometry *multipoint_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geo
    Returns NULL on error
 */
 GEOSGeometry *geometrycollection_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
-    int n, i, geom_type;
-    GEOSGeometry *result;
+    int n, i;
+    GEOSGeometry *result = NULL;
     const GEOSGeometry *sub_geom;
 
     n = GEOSGetNumGeometries_r(ctx, geom);
@@ -188,94 +189,50 @@ GEOSGeometry *geometrycollection_empty_to_nan(GEOSContextHandle_t ctx, GEOSGeome
     GEOSGeometry **geoms = malloc(sizeof(void *) * n);
     for(i = 0; i < n; i++) {
         sub_geom = GEOSGetGeometryN_r(ctx, geom, i);
-        geom_type = GEOSGeomTypeId_r(ctx, geom);
-        if (is_point_empty(ctx, geom)) {
-            geoms[i] = point_empty_to_nan(ctx, (GEOSGeometry *) sub_geom);
-        } else if (geom_type == GEOS_MULTIPOINT) {
-            geoms[i] = multipoint_empty_to_nan(ctx, (GEOSGeometry *) sub_geom);
-        } else if (geom_type == GEOS_GEOMETRYCOLLECTION) {
-            geoms[i] = geometrycollection_empty_to_nan(ctx, (GEOSGeometry *) sub_geom);
-        } else if (geom_type == -1) {
-            geoms[i] = NULL;
-        } else {
-            geoms[i] = GEOSGeom_clone_r(ctx, (GEOSGeometry *) sub_geom);
-        }
+        geoms[i] = point_empty_to_nan_all_geoms(ctx, (GEOSGeometry *) sub_geom);
         // If the function errored: cleanup and return
-        if (geoms[i] == NULL) {
-            destroy_geom_arr(ctx, geoms, i);
-            free(geoms);
-            return NULL;
-        }
+        if (geoms[i] == NULL) { goto finish; }
     }
 
     result = GEOSGeom_createCollection_r(ctx, GEOS_GEOMETRYCOLLECTION, geoms, n);
-    // If the function errored: cleanup and return
+
+    finish:
+
+    // If the function errored: cleanup, else set SRID
     if (result == NULL) {
         destroy_geom_arr(ctx, geoms, i);
-        free(geoms);
-        return NULL;
+    } else {
+        GEOSSetSRID_r(ctx, result, GEOSGetSRID_r(ctx, geom));
     }
-
     free(geoms);
-    GEOSSetSRID_r(ctx, result, GEOSGetSRID_r(ctx, geom));
     return result;
 }
 
 
-/* Returns 1 if geom is a point with only nan coordinates, 0 otherwise, 2 on error.
+/* Creates a new geometry, replacing empty points with POINT (nan, nan[, nan)]
+
+   Returns NULL on error.
 */
-char is_point_nan(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
+GEOSGeometry *point_empty_to_nan_all_geoms(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
     int geom_type;
-    char is_empty;
-    int j, ndim;
-    double coord;
-    const GEOSCoordSequence *coord_seq;
-
-    geom_type = GEOSGeomTypeId_r(ctx, geom);
-    if (geom_type >= 1) {
-        return 0;
-    } else if (geom_type == -1) {
-        return 2;  // GEOS exception
-    }
-
-    is_empty = GEOSisEmpty_r(ctx, geom);
-    if (is_empty == 1) {
-        return 0;
-    } else if (is_empty == 2) {
-        return 2;  // GEOS exception
-    }
-
-    ndim = GEOSGeom_getCoordinateDimension_r(ctx, geom);
-    if (ndim == 0) { return 2; }
-
-    coord_seq = GEOSGeom_getCoordSeq_r(ctx, geom);
-    for (j = 0; j < ndim; j++) {
-        if (!GEOSCoordSeq_getOrdinate_r(ctx, coord_seq, 0, j, &coord)) {
-            return 2;
-        }
-        if (!isnan(coord)) {
-            // Coordinate is not NaN; do not replace the geometry
-            return 0;
-        }
-    }
-    return 1;
-}
-
-/* Creates a POINT Z EMPTY from a POINT (nan, nan[, nan]) template
-
-   Returns NULL on error
-*/
-GEOSGeometry *point_nan_to_empty(GEOSContextHandle_t ctx, GEOSGeometry *geom) {
     GEOSGeometry *result;
 
-    result = GEOSGeom_createEmptyPoint_r(ctx);
-    if (result == NULL) {
-        return NULL;
+    geom_type = GEOSGeomTypeId_r(ctx, geom);
+    if (geom_type == -1) {
+        result = NULL;
+    } else if (is_point_empty(ctx, geom)) {
+        result = point_empty_to_nan(ctx, geom);
+    } else if (geom_type == GEOS_MULTIPOINT) {
+        result = multipoint_empty_to_nan(ctx, geom);
+    } else if (geom_type == GEOS_GEOMETRYCOLLECTION) {
+        result = geometrycollection_empty_to_nan(ctx, geom);
+    } else {
+        result = GEOSGeom_clone_r(ctx, geom);
     }
+
     GEOSSetSRID_r(ctx, result, GEOSGetSRID_r(ctx, geom));
     return result;
 }
-
 
 /* Checks whether the geometry is a multipoint with an empty point in it
  *
