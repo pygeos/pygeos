@@ -284,7 +284,7 @@ def test_to_wkb_point_empty_post_geos38(geom,dims,expected):
     actual = pygeos.to_wkb(geom, output_dimension=dims)
     # Use numpy.isnan; there are many byte representations for NaN
     assert actual[:-2 * 8] == expected[:-2 * 8]
-    assert np.isnan(struct.unpack(f"<{2}d", actual[-2 * 8:])).all()
+    assert np.isnan(struct.unpack("<2d", actual[-2 * 8:])).all()
 
 
 @pytest.mark.parametrize("wkb,expected_type", [
