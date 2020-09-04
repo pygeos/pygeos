@@ -65,6 +65,17 @@ def test_linestrings_from_xyz():
     assert str(actual) == "LINESTRING Z (0 2 0, 1 3 0)"
 
 
+@pytest.mark.parametrize("args", [
+    ([[(1, 1)]],),  # 1 linestring with 1 point, list arr
+    ([(1, 2)], ) , # 1 linestring with 1 point, scalar
+    ([1], [1]),  # 1 linestring with 1 point, list as xy
+    (1, 1),      # 1 linestring with 1 point, scalar as xy
+])
+def test_linestrings_not_enough_points(args):
+    with pytest.raises(ValueError):
+        pygeos.linestrings(*args)
+
+
 def test_linearrings():
     actual = pygeos.linearrings(box_tpl(0, 0, 1, 1))
     assert str(actual) == "LINEARRING (1 0, 1 1, 0 1, 0 0, 1 0)"
@@ -78,6 +89,17 @@ def test_linearrings_from_xy():
 def test_linearrings_unclosed():
     actual = pygeos.linearrings(box_tpl(0, 0, 1, 1)[:-1])
     assert str(actual) == "LINEARRING (1 0, 1 1, 0 1, 0 0, 1 0)"
+
+
+@pytest.mark.parametrize("args", [
+    ([[(1, 1)]],),  # 1 linearring with 1 point, list arr
+    ([(1, 2)], ) , # 1 linearring with 1 point, scalar
+    ([1], [1]),  # 1 linearring with 1 point, list as xy
+    (1, 1),      # 1 linearring with 1 point, scalar as xy
+])
+def test_linearrings_not_enough_points(args):
+    with pytest.raises(ValueError):
+        pygeos.linearrings(*args)
 
 
 def test_polygon_from_linearring():

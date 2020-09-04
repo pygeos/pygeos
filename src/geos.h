@@ -48,7 +48,8 @@ enum {
     PGERR_GEOS_EXCEPTION,
     PGERR_NO_MALLOC,
     PGERR_GEOMETRY_TYPE,
-    PGERR_MULTIPOINT_WITH_POINT_EMPTY
+    PGERR_MULTIPOINT_WITH_POINT_EMPTY,
+    PGERR_AT_LEAST_TWO_COORDINATES
 };
 
 // Define how the states are handled by CPython
@@ -67,6 +68,8 @@ enum {
         PyErr_SetString(PyExc_TypeError, "One of the Geometry inputs is of incorrect geometry type."); break;\
       case PGERR_MULTIPOINT_WITH_POINT_EMPTY:\
         PyErr_SetString(PyExc_ValueError, "WKT output of multipoints with an empty point is unsupported on this version of GEOS."); break;\
+      case PGERR_AT_LEAST_TWO_COORDINATES:\
+        PyErr_SetString(PyExc_ValueError, "Provide at least 2 coordinates to create a geometry of this type."); break;\
       default:\
         PyErr_Format(PyExc_RuntimeError, "Pygeos ufunc returned with unknown error state code %d.", errstate); break;\
     }

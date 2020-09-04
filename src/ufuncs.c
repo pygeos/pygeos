@@ -1312,6 +1312,11 @@ static void linestrings_func(char **args, npy_intp *dimensions,
 {
     GEOS_INIT;
 
+    if (dimensions[1] < 2) {
+        errstate = PGERR_AT_LEAST_TWO_COORDINATES;
+        goto finish;
+    }
+
     DOUBLE_COREDIM_LOOP_OUTER {
         CREATE_COORDSEQ(n_c1, n_c2);
         DOUBLE_COREDIM_LOOP_INNER_1 {
@@ -1336,6 +1341,12 @@ static void linearrings_func(char **args, npy_intp *dimensions,
                              npy_intp *steps, void *data)
 {
     GEOS_INIT;
+
+    if (dimensions[1] < 2) {
+        errstate = PGERR_AT_LEAST_TWO_COORDINATES;
+        goto finish;
+    }
+
     DOUBLE_COREDIM_LOOP_OUTER {
         /* check if first and last coords are equal; duplicate if necessary */
         char ring_closure = 0;
