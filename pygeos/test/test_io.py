@@ -178,6 +178,12 @@ def test_to_wkt_multipoint_with_point_empty_errors():
         pygeos.to_wkt(geom)
 
 
+def test_repr_max_length():
+    # the repr is limited to 256 characters
+    geom = pygeos.linestrings(np.arange(1000), np.arange(1000))
+    assert len(repr(geom)) == 256
+
+
 def test_repr_multipoint_with_point_empty():
     # Test if segfault is prevented
     geom = pygeos.multipoints([point, empty_point])
