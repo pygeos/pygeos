@@ -1,6 +1,7 @@
 import numpy as np
 import pygeos
 import pytest
+import pickle
 import struct
 from unittest import mock
 
@@ -351,7 +352,7 @@ def test_from_shapely_incompatible_versions():
         pygeos.from_shapely(point)
 
 
-import pickle
-def test_pickle_geometry_class():
-    pickled = pickle.dumps(pygeos.Geometry)
-    assert pickle.loads(pickled) is pygeos.Geometry
+@pytest.mark.parametrize("geom", all_types)
+def test_pickle(geom):
+    pickled = pickle.dumps(geom)
+    assert pygeos.equals_exact(pickle.loads(pickled), geom)

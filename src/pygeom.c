@@ -113,6 +113,19 @@ static PyObject *GeometryObject_str(GeometryObject *self)
     return GeometryObject_ToWKT(self, "%s");
 }
 
+static PyObject *GeometryObject_reduce(PyObject *self)
+{
+    Py_INCREF(self->ob_type);
+    return PyTuple_Pack(
+        2,
+        self->ob_type,
+        PyTuple_Pack(
+            1,
+            GeometryObject_ToWKT((GeometryObject *)self, "%s")
+        )
+    );
+}
+
 static Py_hash_t GeometryObject_hash(GeometryObject *self)
 {
     unsigned char *wkb;
@@ -238,6 +251,7 @@ static PyObject *GeometryObject_new(PyTypeObject *type, PyObject *args,
 }
 
 static PyMethodDef GeometryObject_methods[] = {
+    {"__reduce__", GeometryObject_reduce, METH_NOARGS, "For pickling."},
     {NULL}  /* Sentinel */
 };
 
