@@ -349,3 +349,9 @@ def test_from_shapely_error(geom):
 def test_from_shapely_incompatible_versions():
     with pytest.raises(ImportError):
         pygeos.from_shapely(point)
+
+
+import pickle
+def test_pickle_geometry_class():
+    pickled = pickle.dumps(pygeos.Geometry)
+    assert pickle.loads(pickled) is pygeos.Geometry
