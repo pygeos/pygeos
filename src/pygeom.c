@@ -97,6 +97,61 @@ static PyObject *GeometryObject_ToWKT(GeometryObject *obj, char *format)
         }
 }
 
+
+static PyObject *GeometryObject_ToWKB(GeometryObject *obj)
+{
+    unsigned char *wkb = NULL;
+    char has_empty = 0;
+    size_t size;
+    PyObject *result = NULL;
+    GEOSGeometry *geom = NULL;
+    GEOSWKBWriter *writer = NULL;
+    if (obj->ptr == NULL) {
+        Py_INCREF(Py_None);
+        return Py_None;
+    }
+
+    GEOS_INIT;
+
+    // WKB Does not allow empty points.
+    // We check for that and patch the POINT EMPTY if necessary
+    has_empty = has_point_empty(ctx, obj->ptr);
+    if (has_empty == 2) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+    if (has_empty) {
+        geom = point_empty_to_nan_all_geoms(ctx, obj->ptr);
+    } else {
+        geom = obj->ptr;
+    }
+
+    /* Create the WKB writer */
+    writer = GEOSWKBWriter_create_r(ctx);
+    if (writer == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+    // Allow 3D output and include SRID
+    GEOSWKBWriter_setOutputDimension_r(ctx, writer, 3);
+    GEOSWKBWriter_setIncludeSRID_r(ctx, writer, 1);
+    // Check if the above functions caused a GEOS exception
+    if (last_error[0] != 0) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+
+    wkb = GEOSWKBWriter_write_r(ctx, writer, geom, &size);
+    if (wkb == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+
+    result = PyBytes_FromStringAndSize((char *) wkb, size);    
+
+    finish:
+    // Destroy the geom if it was patched (POINT EMPTY patch)
+    if (has_empty & (geom != NULL)) {
+        GEOSGeom_destroy_r(ctx, geom);
+    }
+    if (writer != NULL) {
+        GEOSWKBWriter_destroy_r(ctx, writer);
+    }
+    if (wkb != NULL) {
+        GEOSFree_r(ctx, wkb);
+    }
+    GEOS_FINISH;
+    return result;
+}
+
 static PyObject *GeometryObject_repr(GeometryObject *self)
 {
     PyObject *result = GeometryObject_ToWKT(self, repr_fmt);
@@ -121,7 +176,7 @@ static PyObject *GeometryObject_reduce(PyObject *self)
         self->ob_type,
         PyTuple_Pack(
             1,
-            GeometryObject_ToWKT((GeometryObject *)self, "%s")
+            GeometryObject_ToWKB((GeometryObject *)self)
         )
     );
 }
