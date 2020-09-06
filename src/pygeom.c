@@ -275,6 +275,42 @@ static PyObject *GeometryObject_FromWKT(PyObject *value)
         }
 }
 
+static PyObject *GeometryObject_FromWKB(PyObject *value)
+{
+    PyObject *result = NULL;
+    unsigned char *wkb;
+    Py_ssize_t size;
+    GEOSGeometry *geom;
+    GEOSWKBReader *reader;
+
+    /* Cast the PyObject bytes to char* */
+    if (PyBytes_Check(value)) {
+        size = PyBytes_Size(value);
+        wkb = (unsigned char *)PyBytes_AsString(value);
+        if (wkb == NULL) { return NULL; }
+    } else {
+        PyErr_Format(PyExc_TypeError, "Expected bytes, found %s", value->ob_type->tp_name);
+        return NULL;
+    }
+
+    GEOS_INIT;
+
+    reader = GEOSWKBReader_create_r(ctx);
+    if (reader == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+    geom = GEOSWKBReader_read_r(ctx, reader, wkb, size);
+    GEOSWKBReader_destroy_r(ctx, reader);
+    if (geom == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+    result = GeometryObject_FromGEOS(geom, ctx);
+    if (result == NULL) {
+        GEOSGeom_destroy_r(ctx, geom);
+        PyErr_Format(PyExc_RuntimeError, "Could not instantiate a new Geometry object");
+    }
+
+    finish:
+        GEOS_FINISH;
+        return result;
+}
+
 static PyObject *GeometryObject_new(PyTypeObject *type, PyObject *args,
                                     PyObject *kwds)
 {
@@ -285,8 +321,9 @@ static PyObject *GeometryObject_new(PyTypeObject *type, PyObject *args,
     }
     else if (PyUnicode_Check(value)) {
         return GeometryObject_FromWKT(value);
-    }
-    else {
+    } else if (PyBytes_Check(value)) {
+        return GeometryObject_FromWKB(value);
+    } else {
         PyErr_Format(PyExc_TypeError, "Expected string, got %s", value->ob_type->tp_name);
         return NULL;
     }
