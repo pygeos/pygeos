@@ -183,38 +183,25 @@ static PyObject *GeometryObject_reduce(PyObject *self)
 
 static Py_hash_t GeometryObject_hash(GeometryObject *self)
 {
-    unsigned char *wkb;
-    size_t size;
+    PyObject *wkb;
     Py_hash_t x;
 
     if (self->ptr == NULL) {
         return -1;
     }
 
-    GEOS_INIT;
-    GEOSWKBWriter *writer = GEOSWKBWriter_create_r(ctx);
-    if (writer == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+    wkb = GeometryObject_ToWKB(self);
+    if (wkb == NULL) { return -1; }
 
-    GEOSWKBWriter_setOutputDimension_r(ctx, writer, 3);
-    GEOSWKBWriter_setIncludeSRID_r(ctx, writer, 1);
-    wkb = GEOSWKBWriter_write_r(ctx, writer, self->ptr, &size);
-    GEOSWKBWriter_destroy_r(ctx, writer);
-    if (wkb == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
-    x = PyHash_GetFuncDef()->hash(wkb, size);
+    x = wkb->ob_type->tp_hash(wkb);
     if (x == -1) {
         x = -2;
     } else {
         x ^= 374761393UL;  // to make the result distinct from the actual WKB hash //
     }
-    GEOSFree_r(ctx, wkb);
+    Py_DECREF(wkb);
 
-    finish:
-        GEOS_FINISH;
-        if (errstate == PGERR_SUCCESS) {
-            return x;
-        } else {
-            return -1;
-        }
+    return x;
 }
 
 static PyObject *GeometryObject_richcompare(GeometryObject *self, PyObject *other, int op) {
