@@ -354,5 +354,7 @@ def test_from_shapely_incompatible_versions():
 
 @pytest.mark.parametrize("geom", all_types)
 def test_pickle(geom):
+    if pygeos.get_type_id(geom) == 2:
+        pytest.xfail("Linearrings are converted to linestrings in pickle")
     pickled = pickle.dumps(geom)
     assert pygeos.equals_exact(pickle.loads(pickled), geom)
