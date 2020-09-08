@@ -10,7 +10,7 @@
 /* This initializes a global geometry type registry */
 PyObject *geom_registry[1] = {NULL};
 
-/* the repr() format, the WKT is limited in length to 238 characters */
+/* The repr() format, the total length is limited to 256 characters */
 char* repr_fmt = "<pygeos.Geometry %.238s>";
 
 /* Initializes a new geometry object */
@@ -106,13 +106,6 @@ static PyObject *GeometryObject_repr(GeometryObject *self)
         PyErr_Clear();
         return PyUnicode_FromFormat(repr_fmt, "Exception in WKT writer");
     }
-    // Py_ssize_t length = PyUnicode_GetLength(result);
-    // if (length > 256) {
-
-    // }
-    // if (PyUnicode_GetLength(result) > 256) {
-
-    // }
     return result;
 }
 
