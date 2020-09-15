@@ -110,7 +110,7 @@ def buffer(
     >>> buffer(Geometry("POINT (10 10)"), 2, quadsegs=1)
     <pygeos.Geometry POLYGON ((12 10, 10 8, 8 10, 10 12, 12 10))>
     >>> buffer(Geometry("POINT (10 10)"), 2, quadsegs=2))  # doctest: +SKIP
-    POLYGON ((12 10, 11.4 8.59, 10 8, 8.59 8.59, 8 10, 8.59 11.4, 10 12, 11.4 11.4, 12 10))
+    <pygeos.Geometry POLYGON ((12 10, 11.4 8.59, 10 8, 8.59 8.59, 8 10, 8.59 11.4, 10 12, 11.4 11.4, 12 10))>
     >>> buffer(Geometry("POINT (10 10)"), -2, quadsegs=1)
     <pygeos.Geometry POLYGON EMPTY>
     >>> line = Geometry("LINESTRING (10 10, 20 10)")
