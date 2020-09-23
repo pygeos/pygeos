@@ -170,6 +170,10 @@ static PyObject *GeometryObject_str(GeometryObject *self)
     return GeometryObject_ToWKT(self, "%s");
 }
 
+
+/* For pickling. To be used in GeometryObject->tp_reduce.
+ * reduce should return a a tuple of (callable, args).
+ * On unpickling, callable(*args) is called */
 static PyObject *GeometryObject_reduce(PyObject *self)
 {
     Py_INCREF(self->ob_type);
@@ -183,24 +187,30 @@ static PyObject *GeometryObject_reduce(PyObject *self)
     );
 }
 
+
+/* For lookups in sets / dicts.
+ * Python should be told how to generate a hash from the Geometry object. */
 static Py_hash_t GeometryObject_hash(GeometryObject *self)
 {
-    PyObject *wkb;
+    PyObject *wkb = NULL;
     Py_hash_t x;
 
     if (self->ptr == NULL) {
         return -1;
     }
 
+    // Transform to a WKB (PyBytes object)
     wkb = GeometryObject_ToWKB(self);
     if (wkb == NULL) { return -1; }
 
+    // Use the python built-in method to hash the PyBytes object
     x = wkb->ob_type->tp_hash(wkb);
     if (x == -1) {
         x = -2;
     } else {
         x ^= 374761393UL;  // to make the result distinct from the actual WKB hash //
     }
+
     Py_DECREF(wkb);
 
     return x;
@@ -280,9 +290,9 @@ static PyObject *GeometryObject_FromWKT(PyObject *value)
 static PyObject *GeometryObject_FromWKB(PyObject *value)
 {
     PyObject *result = NULL;
-    unsigned char *wkb;
+    unsigned char *wkb = NULL;
     Py_ssize_t size;
-    GEOSGeometry *geom;
+    GEOSGeometry *geom = NULL;
     GEOSWKBReader *reader = NULL;
 
     /* Cast the PyObject bytes to char* */

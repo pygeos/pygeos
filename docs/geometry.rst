@@ -8,7 +8,7 @@ lets the python garbage collector free its memory when it is not
 used anymore.
 
 Geometry objects are immutable. This means that after constructed, they cannot
-be changed inplace. Every PyGEOS operation will result in a new object being returned.
+be changed in place. Every PyGEOS operation will result in a new object being returned.
 
 Construction
 ~~~~~~~~~~~~
@@ -35,15 +35,7 @@ Geometries can be serialized using pickle:
   >>> pickle.loads(point_1)
   <pygeos.Geometry POINT (5.2 52.1)>
 
-.. warning:: Pickling is not supported for linearrings and empty points.
-
-In pickled form, a geometry is represented in its WKB (Well-Known Binary) representation.
-Because of this, the following limitations apply:
-
-- linearrings will be converted to linestrings
-- a point with only NaN coordinates is converted to an empty point
-- empty points are transformed to 3D in GEOS < 3.8
-- empty points are transformed to 2D in GEOS 3.8
+.. warning:: Pickling is not supported for linearrings and empty points. See :func:`pygeos.io.to_wkb` for a list of limitations.
 
 Hashing
 ~~~~~~~
@@ -58,6 +50,8 @@ Therefore, geometries are equal if and only if their WKB representations are equ
   >>> point_3 = Geometry("POINT (5.2 52.1)")
   >>> {point_1, point_2, point_3}
   {<pygeos.Geometry POINT (5.2 52.1)>, <pygeos.Geometry POINT (1 1)>}
+
+.. warning:: Due to limitations of WKB, linearrings will equal linearrings if they contain the exact same points. Also, different kind of empty points will be considered equal. See :func:`pygeos.io.to_wkb` for a complete list.
 
 Comparing two geometries directly is also supported.
 This is the same as using :func:`pygeos.predicates.equals_exact` with a ``tolerance`` value of zero.
