@@ -67,3 +67,6 @@ docs/_build
 
 # Benchmarks
 .asv
+
+# Cython C files
+pygeos/ext/*.c

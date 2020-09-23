@@ -7,6 +7,13 @@ from setuptools.command.build_ext import build_ext as _build_ext
 import logging
 import versioneer
 
+# Skip Cython build if not available
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    cythonize = None
+
+
 log = logging.getLogger(__name__)
 ch = logging.StreamHandler()
 log.addHandler(ch)
@@ -37,7 +44,7 @@ def get_geos_config(option):
     return result
 
 
-def get_geos_paths():
+def get_geos_paths(include_src=False):
     """Obtain the paths for compiling and linking with the GEOS C-API
 
     First the presence of the GEOS_INCLUDE_PATH and GEOS_INCLUDE_PATH environment
@@ -57,6 +64,7 @@ def get_geos_paths():
             "library_dirs": [library_dir],
             "libraries": ["geos_c"],
         }
+
     geos_version = get_geos_config("--version")
     if not geos_version:
         log.warning(
@@ -66,12 +74,14 @@ def get_geos_paths():
             MIN_GEOS_VERSION,
         )
         return {}
+
     if LooseVersion(geos_version) < LooseVersion(MIN_GEOS_VERSION):
         raise ImportError(
             "GEOS version should be >={}, found {}".format(
                 MIN_GEOS_VERSION, geos_version
             )
         )
+
     libraries = []
     library_dirs = []
     include_dirs = []
@@ -79,6 +89,7 @@ def get_geos_paths():
     for item in get_geos_config("--cflags").split():
         if item.startswith("-I"):
             include_dirs.extend(item[2:].split(":"))
+
     for item in get_geos_config("--clibs").split():
         if item.startswith("-L"):
             library_dirs.extend(item[2:].split(":"))
@@ -86,6 +97,10 @@ def get_geos_paths():
             libraries.append(item[2:])
         else:
             extra_link_args.append(item)
+
+    if include_src:
+        include_dirs.append("./src")
+
     return {
         "include_dirs": include_dirs,
         "library_dirs": library_dirs,
@@ -107,11 +122,35 @@ class build_ext(_build_ext):
         self.include_dirs.append(numpy.get_include())
 
 
-module_lib = Extension(
-    "pygeos.lib",
-    sources=["src/lib.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c", "src/strtree.c"],
-    **get_geos_paths()
-)
+ext_modules = [
+    Extension(
+        "pygeos.lib",
+        sources=[
+            "src/lib.c",
+            "src/geos.c",
+            "src/pygeom.c",
+            "src/ufuncs.c",
+            "src/coords.c",
+            "src/strtree.c",
+        ],
+        **get_geos_paths()
+    )
+]
+
+cython_modules = []
+if cythonize is not None:
+    ext_options = get_geos_paths(include_src=True)
+    cython_modules = [
+        Extension("pygeos.ext.geos", ["pygeos/ext/geos.pyx"], **ext_options),
+        Extension("pygeos.ext.geom", ["pygeos/ext/geom.pyx"], **ext_options),
+    ]
+
+    ext_modules += cythonize(
+        cython_modules,
+        compiler_directives={"language_level": "3"},
+        # enable once Cython >= 0.3 is released
+        # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+    )
 
 
 try:
@@ -122,7 +161,7 @@ except IOError:
 
 version = versioneer.get_version()
 cmdclass = versioneer.get_cmdclass()
-cmdclass['build_ext'] = build_ext
+cmdclass["build_ext"] = build_ext
 
 setup(
     name="pygeos",
@@ -136,14 +175,11 @@ setup(
     packages=["pygeos"],
     setup_requires=["numpy"],
     install_requires=["numpy>=1.10"],
-    extras_require={
-        "test": ["pytest"],
-        "docs": ["sphinx", "numpydoc"],
-    },
+    extras_require={"test": ["pytest"], "docs": ["sphinx", "numpydoc"],},
     python_requires=">=3",
     include_package_data=True,
-    data_files=[('geos_license', ['GEOS_LICENSE'])],
-    ext_modules=[module_lib],
+    data_files=[("geos_license", ["GEOS_LICENSE"])],
+    ext_modules=ext_modules,
     classifiers=[
         "Programming Language :: Python :: 3",
         "Intended Audience :: Science/Research",

@@ -1,8 +1,11 @@
 from enum import IntEnum
 import numpy as np
+from . import ext
 from . import lib
 from . import Geometry  # NOQA
 from .decorators import multithreading_enabled, requires_geos
+
+# from .ext.geom_ops import get_parts as _get_parts
 
 __all__ = [
     "GeometryType",
@@ -22,6 +25,7 @@ __all__ = [
     "get_point",
     "get_interior_ring",
     "get_geometry",
+    "get_parts",
 ]
 
 
@@ -279,6 +283,7 @@ def get_z(point):
 
 # linestrings
 
+
 @multithreading_enabled
 def get_point(geometry, index):
     """Returns the nth point of a linestring or linearring.
@@ -340,6 +345,7 @@ def get_num_points(geometry):
 
 # polygons
 
+
 @multithreading_enabled
 def get_exterior_ring(geometry):
     """Returns the exterior ring of a polygon.
@@ -360,6 +366,7 @@ def get_exterior_ring(geometry):
     True
     """
     return lib.get_exterior_ring(geometry)
+
 
 @multithreading_enabled
 def get_interior_ring(geometry, index):
@@ -417,6 +424,7 @@ def get_num_interior_rings(geometry):
 
 # collections
 
+
 @multithreading_enabled
 def get_geometry(geometry, index):
     """Returns the nth geometry from a collection of geometries.
@@ -451,6 +459,42 @@ def get_geometry(geometry, index):
     True
     """
     return lib.get_geometry(geometry, np.intc(index))
+
+
+def get_parts(geometry, return_index=False):
+    """Gets parts of each GeometryCollection or Multi* geometry object; returns
+    a copy of each singular geometry type.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    return_index : bool, optional (default: False)
+        If True,will return a tuple of ndarrys of (parts, indexes), where indexes
+        are the indexes of the original geometries in the source array.
+
+    Returns
+    -------
+    ndarray of parts or tuple of (parts, indexes)
+
+    Examples
+    --------
+    >>> parts = get_parts(Geometry("MULTIPOLYGON (((0 0, 0 10, 10 10, 0 0)), ((1 1, 1 10, 10 10, 1 1)))"))
+
+    >>> idx, parts = get_parts(Geometry("MULTIPOLYGON (((0 0, 0 10, 10 10, 0 0)), ((1 1, 1 10, 10 10, 1 1)))"))
+    # >>> idx.tolist()
+    # [0, 0]
+    # >>> parts.tolist()
+    # [<pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 0 0))>, <pygeos.Geometry POLYGON ((1 1, 1 10, 10 10, 1 1))>]
+
+    """
+    geometry = np.asarray(geometry, dtype=np.object)
+    if geometry.ndim == 0:
+        geometry = np.expand_dims(geometry, 0)
+
+    if return_index:
+        return ext.get_parts(geometry)
+
+    return ext.get_parts(geometry)[0]
 
 
 @multithreading_enabled
