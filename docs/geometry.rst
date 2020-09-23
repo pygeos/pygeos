@@ -1,5 +1,78 @@
-Geometry properties
-===================
+Geometry
+========
+
+The `pygeos.Geometry` class is the central datatype in PyGEOS. 
+An instance of `pygeos.Geometry` is a container of the actual GEOSGeometry object.
+The Geometry object keeps track of the underlying GEOSGeometry and
+lets the python garbage collector free its memory when it is not
+used anymore.
+
+Geometry objects are immutable. This means that after constructed, they cannot
+be changed inplace. Every PyGEOS operation will result in a new object being returned.
+
+Construction
+~~~~~~~~~~~~
+
+For convenience, the ``Geometry`` class can be constructed with a WKT (Well-Known Text)
+or WKB (Well-Known Binary) representation of your geometry:
+
+.. code:: python
+
+  >>> from pygeos import Geometry
+  >>> point_1 = Geometry("POINT (5.2 52.1)")
+  >>> point_2 = Geometry(b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?")
+
+A more efficient way of constructing geometries is by making use of the (vectorized)
+functions described in :mod:`pygeos.creation`.
+
+Pickling
+~~~~~~~~
+
+Geometries can be serialized using pickle:
+
+  >>> import pickle
+  >>> pickled = pickle.dumps(point_1)
+  >>> pickle.loads(point_1)
+  <pygeos.Geometry POINT (5.2 52.1)>
+
+.. warning:: Pickling is not supported for linearrings and empty points.
+
+In pickled form, a geometry is represented in its WKB (Well-Known Binary) representation.
+Because of this, the following limitations apply:
+
+- linearrings will be converted to linestrings
+- a point with only NaN coordinates is converted to an empty point
+- empty points are transformed to 3D in GEOS < 3.8
+- empty points are transformed to 2D in GEOS 3.8
+
+Hashing
+~~~~~~~
+
+Geometries can be used as elements in sets or as keys in dictionaries.
+Python uses a technique called *hashing* for lookups in these datastructures.
+PyGEOS generates this hash from the WKB representation.
+Therefore, geometries are equal if and only if their WKB representations are equal.
+
+.. code:: python
+
+  >>> point_3 = Geometry("POINT (5.2 52.1)")
+  >>> {point_1, point_2, point_3}
+  {<pygeos.Geometry POINT (5.2 52.1)>, <pygeos.Geometry POINT (1 1)>}
+
+Comparing two geometries directly is also supported.
+This is the same as using :func:`pygeos.predicates.equals_exact` with a ``tolerance`` value of zero.
+
+  >>> point_1 == point_2
+  False
+  >>> point_1 != point_2
+  True
+
+
+Properties
+~~~~~~~~~~
+
+Geometry objects have no attributes or properties.
+Instead, use functions listed below to obtain information about geometry objects.
 
 .. automodule:: pygeos.geometry
    :members:
