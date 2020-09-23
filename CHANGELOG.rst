@@ -1,11 +1,20 @@
 Changelog
 =========
 
-Version 0.8 (unreleased)
+Version 0.9 (unreleased)
 ------------------------
 
 **Highlights of this release**
 
+* Limited the length of geometry repr to 80 characters (#189)
+
+
+Version 0.8 (2020-09-06)
+------------------------
+
+**Highlights of this release**
+
+* Handle multi geometries in ``boundary`` (#188)
 * Handle empty points in to_wkb by conversion to POINT (nan, nan) (#179)
 * Prevent segfault in to_wkt (and repr) with empty points in multipoints (#171)
 * Fixed bug in ``multilinestrings()``, it now accepts linearrings again (#168)
