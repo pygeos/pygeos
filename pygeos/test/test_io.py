@@ -5,7 +5,7 @@ import pickle
 import struct
 from unittest import mock
 
-from .common import all_types, point, empty_point
+from .common import all_types, point, empty_point, point_z
 
 
 POINT11_WKB = b'\x01\x01\x00\x00\x00' + struct.pack("<2d", 1., 1.)
@@ -352,9 +352,18 @@ def test_from_shapely_incompatible_versions():
         pygeos.from_shapely(point)
 
 
-@pytest.mark.parametrize("geom", all_types)
+@pytest.mark.parametrize("geom", all_types + (point_z, empty_point))
 def test_pickle(geom):
     if pygeos.get_type_id(geom) == 2:
-        pytest.xfail("Linearrings are converted to linestrings in pickle")
+        # Linearrings get converted to linestrings
+        expected = pygeos.linestrings(pygeos.get_coordinates(geom))
+    else:
+        expected = geom
     pickled = pickle.dumps(geom)
-    assert pygeos.equals_exact(pickle.loads(pickled), geom)
+    assert pygeos.equals_exact(pickle.loads(pickled), expected)
+
+
+def test_pickle_with_srid():
+    geom = pygeos.set_srid(point, 4326)
+    pickled = pickle.dumps(geom)
+    assert pygeos.get_srid(pickle.loads(pickled)) == 4326

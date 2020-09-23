@@ -117,7 +117,7 @@ static PyObject *GeometryObject_ToWKB(GeometryObject *obj)
     // We check for that and patch the POINT EMPTY if necessary
     has_empty = has_point_empty(ctx, obj->ptr);
     if (has_empty == 2) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
-    if (has_empty) {
+    if (has_empty == 1) {
         geom = point_empty_to_nan_all_geoms(ctx, obj->ptr);
     } else {
         geom = obj->ptr;
@@ -148,7 +148,9 @@ static PyObject *GeometryObject_ToWKB(GeometryObject *obj)
     if (wkb != NULL) {
         GEOSFree_r(ctx, wkb);
     }
+
     GEOS_FINISH;
+
     return result;
 }
 
@@ -281,25 +283,24 @@ static PyObject *GeometryObject_FromWKB(PyObject *value)
     unsigned char *wkb;
     Py_ssize_t size;
     GEOSGeometry *geom;
-    GEOSWKBReader *reader;
+    GEOSWKBReader *reader = NULL;
 
     /* Cast the PyObject bytes to char* */
-    if (PyBytes_Check(value)) {
-        size = PyBytes_Size(value);
-        wkb = (unsigned char *)PyBytes_AsString(value);
-        if (wkb == NULL) { return NULL; }
-    } else {
+    if (!PyBytes_Check(value)) {
         PyErr_Format(PyExc_TypeError, "Expected bytes, found %s", value->ob_type->tp_name);
         return NULL;
     }
+    size = PyBytes_Size(value);
+    wkb = (unsigned char *)PyBytes_AsString(value);
+    if (wkb == NULL) { return NULL; }
 
     GEOS_INIT;
 
     reader = GEOSWKBReader_create_r(ctx);
     if (reader == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
     geom = GEOSWKBReader_read_r(ctx, reader, wkb, size);
-    GEOSWKBReader_destroy_r(ctx, reader);
     if (geom == NULL) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
+
     result = GeometryObject_FromGEOS(geom, ctx);
     if (result == NULL) {
         GEOSGeom_destroy_r(ctx, geom);
@@ -307,8 +308,14 @@ static PyObject *GeometryObject_FromWKB(PyObject *value)
     }
 
     finish:
-        GEOS_FINISH;
-        return result;
+
+    if (reader != NULL) {
+        GEOSWKBReader_destroy_r(ctx, reader);
+    }
+
+    GEOS_FINISH;
+
+    return result;
 }
 
 static PyObject *GeometryObject_new(PyTypeObject *type, PyObject *args,
@@ -330,7 +337,7 @@ static PyObject *GeometryObject_new(PyTypeObject *type, PyObject *args,
 }
 
 static PyMethodDef GeometryObject_methods[] = {
-    {"__reduce__", GeometryObject_reduce, METH_NOARGS, "For pickling."},
+    {"__reduce__", (PyCFunction) GeometryObject_reduce, METH_NOARGS, "For pickling."},
     {NULL}  /* Sentinel */
 };
 
