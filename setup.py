@@ -1,3 +1,4 @@
+import builtins
 import os
 import subprocess
 import sys
@@ -110,13 +111,17 @@ def get_geos_paths(include_src=False):
 
 
 # Add numpy include dirs without importing numpy on module level.
-# See https://stackoverflow.com/questions/19919905/
-# how-to-bootstrap-numpy-installation-in-setup-py/21621689#21621689
+# derived from scikit-hep:
+# https://github.com/scikit-hep/root_numpy/pull/292
 class build_ext(_build_ext):
     def finalize_options(self):
         _build_ext.finalize_options(self)
         # Prevent numpy from thinking it is still in its setup process:
-        __builtins__.__NUMPY_SETUP__ = False
+        try:
+            del builtins.__NUMPY_SETUP__
+        except AttributeError:
+            pass
+
         import numpy
 
         self.include_dirs.append(numpy.get_include())
@@ -147,6 +152,14 @@ if "clean" not in sys.argv:
             sys.exit("ERROR: Cython is required ot build pygeos from source.")
 
         ext_options = get_geos_paths(include_src=True)
+
+        # numpy libs must be included for Cython build
+        import numpy
+
+        ext_options["include_dirs"] = ext_options.get("include_dirs", []) + [
+            numpy.get_include()
+        ]
+
         cython_modules = [
             Extension("pygeos.ext.geos", ["pygeos/ext/geos.pyx"], **ext_options),
             Extension("pygeos.ext.geom", ["pygeos/ext/geom.pyx"], **ext_options),
@@ -168,7 +181,7 @@ except IOError:
 
 version = versioneer.get_version()
 cmdclass = versioneer.get_cmdclass()
-cmdclass["build_ext"] = build_ext
+# cmdclass["build_ext"] = build_ext
 
 setup(
     name="pygeos",
