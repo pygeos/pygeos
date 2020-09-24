@@ -5,7 +5,6 @@ from . import lib
 from . import Geometry  # NOQA
 from .decorators import multithreading_enabled, requires_geos
 
-# from .ext.geom_ops import get_parts as _get_parts
 
 __all__ = [
     "GeometryType",
@@ -478,18 +477,20 @@ def get_parts(geometry, return_index=False):
 
     Examples
     --------
-    >>> parts = get_parts(Geometry("MULTIPOLYGON (((0 0, 0 10, 10 10, 0 0)), ((1 1, 1 10, 10 10, 1 1)))"))
-
-    >>> idx, parts = get_parts(Geometry("MULTIPOLYGON (((0 0, 0 10, 10 10, 0 0)), ((1 1, 1 10, 10 10, 1 1)))"))
-    # >>> idx.tolist()
-    # [0, 0]
-    # >>> parts.tolist()
-    # [<pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 0 0))>, <pygeos.Geometry POLYGON ((1 1, 1 10, 10 10, 1 1))>]
-
+    >>> get_parts(Geometry("MULTIPOINT (0 1, 2 3)")).tolist()
+    [<pygeos.Geometry POINT (0 1)>, <pygeos.Geometry POINT (2 3)>]
+    >>> parts, index = get_parts([Geometry("MULTIPOINT (0 1)"), Geometry("MULTIPOINT (4 5, 6 7)")], return_index=True)
+    >>> parts.tolist()
+    [<pygeos.Geometry POINT (0 1)>, <pygeos.Geometry POINT (4 5)>, <pygeos.Geometry POINT (6 7)>]
+    >>> index.tolist()
+    [0, 1, 1]
     """
     geometry = np.asarray(geometry, dtype=np.object)
     if geometry.ndim == 0:
         geometry = np.expand_dims(geometry, 0)
+
+    if geometry.ndim != 1:
+        raise ValueError("Array should be one dimensional")
 
     if return_index:
         return ext.get_parts(geometry)
