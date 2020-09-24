@@ -193,18 +193,15 @@ static PyUFuncGenericFunction YY_b_funcs[1] = {&YY_b_func};
 
 
 /* Define the geom, geom -> bool functions (YY_b) prepared */
-static void *intersects_data[2] = {GEOSIntersects_r, GEOSPreparedIntersects_r};
-typedef char FuncGEOS_YY_b_p(void *context, void *a, void *b);
+static void *intersects_func_tuple[2] = {GEOSIntersects_r, GEOSPreparedIntersects_r};
+static void *intersects_data[1] = {intersects_func_tuple};
 static char YY_b_p_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_BOOL};
 static void YY_b_p_func(char **args, npy_intp *dimensions,
-                      npy_intp *steps, void *data)
+                        npy_intp *steps, void *data)
 {
-    // TODO extract functions from the data
-    // FuncGEOS_YY_b_p *func = (FuncGEOS_YY_b_p *)data;
-    // FuncGEOS_YY_b_p *func_prepared = (FuncGEOS_YY_b_p *)((char *)data + 1);
-    FuncGEOS_YY_b_p *func = (FuncGEOS_YY_b *)GEOSIntersects_r;
-    FuncGEOS_YY_b_p *func_prepared = (FuncGEOS_YY_b *)GEOSPreparedIntersects_r;
-    
+    FuncGEOS_YY_b *func = ((FuncGEOS_YY_b **)data)[0];
+    FuncGEOS_YY_b *func_prepared = ((FuncGEOS_YY_b **)data)[1];
+
     GEOSGeometry *in1 = NULL, *in2 = NULL;
     GEOSPreparedGeometry *in1_prepared = NULL;
     char ret;
@@ -234,6 +231,7 @@ static void YY_b_p_func(char **args, npy_intp *dimensions,
     }
 
     finish:
+
     GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction YY_b_p_funcs[1] = {&YY_b_p_func};

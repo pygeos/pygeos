@@ -534,6 +534,7 @@ def intersects(a, b, **kwargs):
     See also
     --------
     disjoint : ``intersects(A, B) == ~disjoint(A, B)``
+    prepare : improve performance by preparing geometries
 
     Examples
     --------
