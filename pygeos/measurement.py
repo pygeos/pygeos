@@ -2,10 +2,13 @@ import numpy as np
 
 from . import lib
 from . import Geometry  # NOQA
+from .decorators import requires_geos, multithreading_enabled
 
-__all__ = ["area", "distance", "bounds", "length", "hausdorff_distance"]
+
+__all__ = ["area", "distance", "bounds", "total_bounds", "length", "hausdorff_distance", "frechet_distance"]
 
 
+@multithreading_enabled
 def area(geometry, **kwargs):
     """Computes the area of a (multi)polygon.
 
@@ -27,6 +30,7 @@ def area(geometry, **kwargs):
     return lib.area(geometry, **kwargs)
 
 
+@multithreading_enabled
 def distance(a, b, **kwargs):
     """Computes the Cartesian distance between two geometries.
 
@@ -51,6 +55,7 @@ def distance(a, b, **kwargs):
     return lib.distance(a, b, **kwargs)
 
 
+@multithreading_enabled
 def bounds(geometry, **kwargs):
     """Computes the bounds (extent) of a geometry.
 
@@ -78,6 +83,46 @@ def bounds(geometry, **kwargs):
     return lib.bounds(geometry_arr, out=out, **kwargs)
 
 
+def total_bounds(geometry, **kwargs):
+    """Computes the total bounds (extent) of the geometry.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Returns
+    -------
+    numpy ndarray of [xmin, ymin, xmax, ymax]
+
+
+    >>> total_bounds(Geometry("POINT (2 3)")).tolist()
+    [2.0, 3.0, 2.0, 3.0]
+    >>> total_bounds([Geometry("POINT (2 3)"), Geometry("POINT (4 5)")]).tolist()
+    [2.0, 3.0, 4.0, 5.0]
+    >>> total_bounds([Geometry("LINESTRING (0 1, 0 2, 3 2)"),Geometry("LINESTRING (4 4, 4 6, 6 7)")]).tolist()
+    [0.0, 1.0, 6.0, 7.0]
+    >>> total_bounds(Geometry("POLYGON EMPTY")).tolist()
+    [nan, nan, nan, nan]
+    >>> total_bounds([Geometry("POLYGON EMPTY"), Geometry("POINT (2 3)")]).tolist()
+    [2.0, 3.0, 2.0, 3.0]
+    >>> total_bounds(None).tolist()
+    [nan, nan, nan, nan]
+    """
+    b = bounds(geometry, **kwargs)
+    if b.ndim == 1:
+        return b
+
+    return np.array(
+        [
+            np.nanmin(b[..., 0]),
+            np.nanmin(b[..., 1]),
+            np.nanmax(b[..., 2]),
+            np.nanmax(b[..., 3]),
+        ]
+    )
+
+
+@multithreading_enabled
 def length(geometry, **kwargs):
     """Computes the length of a (multi)linestring or polygon perimeter.
 
@@ -101,10 +146,11 @@ def length(geometry, **kwargs):
     return lib.length(geometry, **kwargs)
 
 
+@multithreading_enabled
 def hausdorff_distance(a, b, densify=None, **kwargs):
-    """Compute the discrete Haussdorf distance between two geometries.
+    """Compute the discrete Hausdorff distance between two geometries.
 
-    The Haussdorf distance is a measure of similarity: it is the greatest
+    The Hausdorff distance is a measure of similarity: it is the greatest
     distance between any point in A and the closest point in B. The discrete
     distance is an approximation of this metric: only vertices are considered.
     The parameter 'densify' makes this approximation less coarse by splitting
@@ -132,4 +178,43 @@ def hausdorff_distance(a, b, densify=None, **kwargs):
     if densify is None:
         return lib.hausdorff_distance(a, b, **kwargs)
     else:
-        return lib.haussdorf_distance_densify(a, b, densify, **kwargs)
+        return lib.hausdorff_distance_densify(a, b, densify, **kwargs)
+
+
+@requires_geos("3.7.0")
+@multithreading_enabled
+def frechet_distance(a, b, densify=None, **kwargs):
+    """Compute the discrete Fréchet distance between two geometries.
+
+    The Fréchet distance is a measure of similarity: it is the greatest
+    distance between any point in A and the closest point in B. The discrete
+    distance is an approximation of this metric: only vertices are considered.
+    The parameter 'densify' makes this approximation less coarse by splitting
+    the line segments between vertices before computing the distance.
+
+    Fréchet distance sweep continuously along their respective curves
+    and the direction of curves is significant. This makes it a better measure
+    of similarity than Hausdorff distance for curve or surface matching.
+
+    Parameters
+    ----------
+    a, b : Geometry or array_like
+    densify : float, array_like or None
+        The value of densify is required to be between 0 and 1.
+
+    Examples
+    --------
+    >>> line_1 = Geometry("LINESTRING (0 0, 100 0)")
+    >>> line_2 = Geometry("LINESTRING (0 0, 50 50, 100 0)")
+    >>> frechet_distance(line_1, line_2)  # doctest: +ELLIPSIS
+    70.71...
+    >>> frechet_distance(line_1, line_2, densify=0.5)
+    50.0
+    >>> frechet_distance(line_1, Geometry("LINESTRING EMPTY"))
+    nan
+    >>> frechet_distance(line_1, None)
+    nan
+    """
+    if densify is None:
+        return lib.frechet_distance(a, b, **kwargs)
+    return lib.frechet_distance_densify(a, b, densify, **kwargs)

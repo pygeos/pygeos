@@ -4,12 +4,24 @@ from . import Geometry  # noqa
 from . import lib
 from . import geos_capi_version_string
 
-try:
-    from shapely.geos import geos_version_string as shapely_geos_version
-    from shapely.geometry.base import BaseGeometry as ShapelyGeometry
-except ImportError:
-    shapely_geos_version = None
-    ShapelyGeometry = None
+
+shapely_geos_version = None
+ShapelyGeometry = None
+_shapely_checked = False
+
+def check_shapely_version():
+    global shapely_geos_version
+    global ShapelyGeometry
+    global _shapely_checked
+
+    if not _shapely_checked:
+        try:
+            from shapely.geos import geos_version_string as shapely_geos_version
+            from shapely.geometry.base import BaseGeometry as ShapelyGeometry
+        except ImportError:
+            pass
+        
+        _shapely_checked = True
 
 
 __all__ = ["from_shapely", "from_wkb", "from_wkt", "to_wkb", "to_wkt"]
@@ -96,6 +108,13 @@ def to_wkb(
 
     The Well-Known Binary format is defined in the `OGC Simple Features
     Specification for SQL <https://www.opengeospatial.org/standards/sfs>`__.
+
+    The following limitations apply to WKB serialization:
+
+    - linearrings will be converted to linestrings
+    - a point with only NaN coordinates is converted to an empty point
+    - empty points are transformed to 3D in GEOS < 3.8
+    - empty points are transformed to 2D in GEOS 3.8
 
     Parameters
     ----------
@@ -199,6 +218,8 @@ def from_shapely(geometry, **kwargs):
     >>> from_shapely(Point(1, 2))   # doctest: +SKIP
     <pygeos.Geometry POINT (1 2)>
     """
+    check_shapely_version()
+
     if shapely_geos_version is None:
         raise ImportError("This function requires shapely")
 

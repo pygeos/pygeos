@@ -1,9 +1,10 @@
 from . import lib
 from . import Geometry  # NOQA
+from .decorators import multithreading_enabled
 
 __all__ = ["line_interpolate_point", "line_locate_point", "line_merge", "shared_paths"]
 
-
+@multithreading_enabled
 def line_interpolate_point(line, distance, normalize=False):
     """Returns a point interpolated at given distance on a line.
 
@@ -37,6 +38,7 @@ def line_interpolate_point(line, distance, normalize=False):
         return lib.line_interpolate_point(line, distance)
 
 
+@multithreading_enabled
 def line_locate_point(line, other, normalize=False):
     """Returns the distance to the line origin of given point.
 
@@ -68,7 +70,7 @@ def line_locate_point(line, other, normalize=False):
     else:
         return lib.line_locate_point(line, other)
 
-
+@multithreading_enabled
 def line_merge(line):
     """Returns (multi)linestrings formed by combining the lines in a
     multilinestrings.
@@ -109,6 +111,6 @@ def shared_paths(a, b, **kwargs):
     >>> geom1 = Geometry("LINESTRING (0 0, 1 0, 1 1, 0 1, 0 0)")
     >>> geom2 = Geometry("LINESTRING (1 0, 2 0, 2 1, 1 1, 1 0)")
     >>> shared_paths(geom1, geom2)
-    <pygeos.Geometry GEOMETRYCOLLECTION (MULTILINESTRING EMPTY, MULTILINESTRING ((1 0, 1 1)))>
+    <pygeos.Geometry GEOMETRYCOLLECTION (MULTILINESTRING EMPTY, MULTILINESTRING ...>
     """
     return lib.shared_paths(a, b, **kwargs)

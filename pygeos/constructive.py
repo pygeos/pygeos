@@ -2,6 +2,7 @@ from enum import IntEnum
 import numpy as np
 from . import Geometry  # NOQA
 from . import lib
+from .decorators import requires_geos, multithreading_enabled
 
 
 __all__ = [
@@ -14,6 +15,9 @@ __all__ = [
     "delaunay_triangles",
     "envelope",
     "extract_unique_points",
+    "build_area",
+    "make_valid",
+    "normalize",
     "point_on_surface",
     "simplify",
     "snap",
@@ -32,14 +36,14 @@ class BufferJoinStyles(IntEnum):
     MITRE = 2
     BEVEL = 3
 
-
+@multithreading_enabled
 def boundary(geometry, **kwargs):
     """Returns the topological boundary of a geometry.
 
     Parameters
     ----------
     geometry : Geometry or array_like
-        This function will raise for non-empty geometrycollections.
+        This function will return None for geometrycollections.
 
     Examples
     --------
@@ -51,12 +55,16 @@ def boundary(geometry, **kwargs):
     <pygeos.Geometry MULTIPOINT EMPTY>
     >>> boundary(Geometry("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))"))
     <pygeos.Geometry LINESTRING (0 0, 1 0, 1 1, 0 1, 0 0)>
-    >>> boundary(Geometry("MULTIPOINT (0 0, 1 2)")) is None
+    >>> boundary(Geometry("MULTIPOINT (0 0, 1 2)"))
+    <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>
+    >>> boundary(Geometry("MULTILINESTRING ((0 0, 1 1), (0 1, 1 0))"))
+    <pygeos.Geometry MULTIPOINT (0 0, 0 1, 1 0, 1 1)>
+    >>> boundary(Geometry("GEOMETRYCOLLECTION (POINT (0 0))")) is None
     True
     """
     return lib.boundary(geometry, **kwargs)
 
-
+@multithreading_enabled
 def buffer(
     geometry,
     radius,
@@ -106,7 +114,7 @@ def buffer(
     >>> buffer(Geometry("POINT (10 10)"), 2, quadsegs=1)
     <pygeos.Geometry POLYGON ((12 10, 10 8, 8 10, 10 12, 12 10))>
     >>> buffer(Geometry("POINT (10 10)"), 2, quadsegs=2)
-    <pygeos.Geometry POLYGON ((12 10, 11.4 8.59, 10 8, 8.59 8.59, 8 10, 8.59 11.4, 10 12, 11.4 11.4, 12 10))>
+    <pygeos.Geometry POLYGON ((12 10, 11.4 8.59, 10 8, 8.59 8.59, 8 10, 8.59 11....>
     >>> buffer(Geometry("POINT (10 10)"), -2, quadsegs=1)
     <pygeos.Geometry POLYGON EMPTY>
     >>> line = Geometry("LINESTRING (10 10, 20 10)")
@@ -118,11 +126,11 @@ def buffer(
     <pygeos.Geometry POLYGON ((20 10, 10 10, 10 12, 20 12, 20 10))>
     >>> line2 = Geometry("LINESTRING (10 10, 20 10, 20 20)")
     >>> buffer(line2, 2, cap_style="flat", join_style="bevel")
-    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 22 10, 20 8, 10 8, 10 12, 18 12))>
+    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 22 10, 20 8, 10 8, 10 12, 18...>
     >>> buffer(line2, 2, cap_style="flat", join_style="mitre")
     <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 22 8, 10 8, 10 12, 18 12))>
     >>> buffer(line2, 2, cap_style="flat", join_style="mitre", mitre_limit=1)
-    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 21.8 9, 21 8.17, 10 8, 10 12, 18 12))>
+    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 21.8 9, 21 8.17, 10 8, 10 12...>
     >>> square = Geometry("POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))")
     >>> buffer(square, 2, join_style="mitre")
     <pygeos.Geometry POLYGON ((-2 -2, -2 12, 12 12, 12 -2, -2 -2))>
@@ -158,7 +166,7 @@ def buffer(
         **kwargs
     )
 
-
+@multithreading_enabled
 def centroid(geometry, **kwargs):
     """Computes the geometric center (center-of-mass) of a geometry.
 
@@ -184,7 +192,7 @@ def centroid(geometry, **kwargs):
     """
     return lib.centroid(geometry, **kwargs)
 
-
+@multithreading_enabled
 def convex_hull(geometry, **kwargs):
     """Computes the minimum convex geometry that encloses an input geometry.
 
@@ -201,7 +209,7 @@ def convex_hull(geometry, **kwargs):
     """
     return lib.convex_hull(geometry, **kwargs)
 
-
+@multithreading_enabled
 def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     """Computes a Delaunay triangulation around the vertices of an input
     geometry.
@@ -225,7 +233,7 @@ def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     >>> delaunay_triangles(points)
     <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((50 30, 60 30, 100 100, 50 30)))>
     >>> delaunay_triangles(points, only_edges=True)
-    <pygeos.Geometry MULTILINESTRING ((50 30, 100 100), (50 30, 60 30), (60 30, 100 100))>
+    <pygeos.Geometry MULTILINESTRING ((50 30, 100 100), (50 30, 60 30), (60 30, ...>
     >>> delaunay_triangles(Geometry("MULTIPOINT (50 30, 51 30, 60 30, 100 100)"), tolerance=2)
     <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((50 30, 60 30, 100 100, 50 30)))>
     >>> delaunay_triangles(Geometry("POLYGON ((50 30, 60 30, 100 100, 50 30))"))
@@ -237,7 +245,7 @@ def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     """
     return lib.delaunay_triangles(geometry, tolerance, only_edges, **kwargs)
 
-
+@multithreading_enabled
 def envelope(geometry, **kwargs):
     """Computes the minimum bounding box that encloses an input geometry.
 
@@ -258,7 +266,7 @@ def envelope(geometry, **kwargs):
     """
     return lib.envelope(geometry, **kwargs)
 
-
+@multithreading_enabled
 def extract_unique_points(geometry, **kwargs):
     """Returns all distinct vertices of an input geometry as a multipoint.
 
@@ -285,6 +293,66 @@ def extract_unique_points(geometry, **kwargs):
     return lib.extract_unique_points(geometry, **kwargs)
 
 
+@requires_geos("3.8.0")
+@multithreading_enabled
+def build_area(geometry, **kwargs):
+    """Creates an areal geometry formed by the constituent linework of given geometry.
+
+    Equivalent of the PostGIS ST_BuildArea() function.
+
+    Requires at least GEOS 3.8.0.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> build_area(Geometry("GEOMETRYCOLLECTION(POLYGON((0 0, 3 0, 3 3, 0 3, 0 0)), POLYGON((1 1, 1 2, 2 2, 1 1)))"))
+    <pygeos.Geometry POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (1 1, 2 2, 1 2, 1 1))>
+    """
+    return lib.build_area(geometry, **kwargs)
+
+
+@requires_geos("3.8.0")
+@multithreading_enabled
+def make_valid(geometry, **kwargs):
+    """Repairs invalid geometries.
+
+    Requires at least GEOS 3.8.0.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> make_valid(Geometry("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))"))
+    <pygeos.Geometry MULTILINESTRING ((0 0, 1 1), (1 1, 1 2))>
+    """
+    return lib.make_valid(geometry, **kwargs)
+
+@multithreading_enabled
+def normalize(geometry, **kwargs):
+    """Converts Geometry to normal form (or canonical form).
+
+    This method orders the coordinates, rings of a polygon and parts of
+    multi geometries consistently. Typically useful for testing purposes
+    (for example in combination with `equals_exact`).
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> p = Geometry("MULTILINESTRING((0 0, 1 1),(2 2, 3 3))")
+    >>> normalize(p)
+    <pygeos.Geometry MULTILINESTRING ((2 2, 3 3), (0 0, 1 1))>
+    """
+    return lib.normalize(geometry, **kwargs)
+
+@multithreading_enabled
 def point_on_surface(geometry, **kwargs):
     """Returns a point that intersects an input geometry.
 
@@ -305,7 +373,7 @@ def point_on_surface(geometry, **kwargs):
     """
     return lib.point_on_surface(geometry, **kwargs)
 
-
+@multithreading_enabled
 def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
     """Returns a simplified version of an input geometry using the
     Douglas-Peucker algorithm.
@@ -328,7 +396,7 @@ def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
     <pygeos.Geometry LINESTRING (0 0, 0 20)>
     >>> polygon_with_hole = Geometry("POLYGON((0 0, 0 10, 10 10, 10 0, 0 0), (2 2, 2 4, 4 4, 4 2, 2 2))")
     >>> simplify(polygon_with_hole, tolerance=4, preserve_topology=True)
-    <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0), (2 2, 2 4, 4 4, 4 2, 2 2))>
+    <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0), (2 2, 2 4, 4 4, 4 2...>
     >>> simplify(polygon_with_hole, tolerance=4, preserve_topology=False)
     <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0))>
     """
@@ -337,7 +405,7 @@ def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
     else:
         return lib.simplify(geometry, tolerance, **kwargs)
 
-
+@multithreading_enabled
 def snap(geometry, reference, tolerance, **kwargs):
     """Snaps an input geometry to reference geometry's vertices.
 
@@ -366,7 +434,7 @@ def snap(geometry, reference, tolerance, **kwargs):
     """
     return lib.snap(geometry, reference, tolerance, **kwargs)
 
-
+@multithreading_enabled
 def voronoi_polygons(
     geometry, tolerance=0.0, extend_to=None, only_edges=False, **kwargs
 ):
@@ -392,7 +460,7 @@ def voronoi_polygons(
     --------
     >>> points = Geometry("MULTIPOINT (2 2, 4 2)")
     >>> voronoi_polygons(points)
-    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((3 0, 0 0, 0 4, 3 4, 3 0)), POLYGON ((3 4, 6 4, 6 0, 3 0, 3 4)))>
+    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((3 0, 0 0, 0 4, 3 4, 3 0)), PO...>
     >>> voronoi_polygons(points, only_edges=True)
     <pygeos.Geometry LINESTRING (3 4, 3 0)>
     >>> voronoi_polygons(Geometry("MULTIPOINT (2 2, 4 2, 4.2 2)"), 0.5, only_edges=True)

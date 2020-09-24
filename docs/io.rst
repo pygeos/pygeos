@@ -1,9 +1,9 @@
-Predicates
-==========
+Input/Output
+============
 
-.. automodule:: pygeos.predicates
+.. automodule:: pygeos.io
    :members:
-   :undoc-members:
+   :exclude-members:
    :special-members:
    :inherited-members:
    :show-inheritance:

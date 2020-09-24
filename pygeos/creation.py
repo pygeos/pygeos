@@ -1,6 +1,7 @@
 import numpy as np
 from . import lib
 from . import Geometry, GeometryType
+from .decorators import multithreading_enabled
 
 __all__ = [
     "points",
@@ -70,7 +71,7 @@ def linearrings(coords, y=None, z=None):
     """
     return _wrap_construct_ufunc(lib.linearrings, coords, y, z)
 
-
+@multithreading_enabled
 def polygons(shells, holes=None):
     """Create an array of polygons.
 
@@ -101,8 +102,8 @@ def box(x1, y1, x2, y2):
     Parameters
     ----------
     x1 : array_like
-    y2 : array_like
-    x1 : array_like
+    y1 : array_like
+    x2 : array_like
     y2 : array_like
     """
     x1, y1, x2, y2 = np.broadcast_arrays(x1, y1, x2, y2)

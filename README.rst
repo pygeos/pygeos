@@ -26,6 +26,13 @@ PyGEOS
 	:alt: PyPI
 	:target: https://badge.fury.io/py/pygeos
 
+.. Zenodo
+
+.. image:: https://zenodo.org/badge/191151963.svg
+  :alt: Zenodo 
+  :target: https://zenodo.org/badge/latestdoi/191151963
+
+
 PyGEOS is a C/Python library with vectorized geometry functions. The geometry
 operations are done in the open-source geometry library GEOS. PyGEOS wraps
 these operations in NumPy ufuncs providing a performance improvement when
@@ -35,26 +42,35 @@ Note: PyGEOS is a very young package. While the available functionality should
 be stable and working correctly, it's still possible that APIs change in upcoming
 releases. But we would love for you to try it out, give feedback or contribute!
 
-Why ufuncs?
------------
+What is a ufunc?
+----------------
 
 A universal function (or ufunc for short) is a function that operates on
 n-dimensional arrays in an element-by-element fashion, supporting array
 broadcasting. The for-loops that are involved are fully implemented in C
 diminishing the overhead of the Python interpreter.
 
+Multithreading
+--------------
+
+PyGEOS functions support multithreading. More specifically, the Global
+Interpreter Lock (GIL) is released during function execution. Normally in Python, the
+GIL prevents multiple threads from computing at the same time. PyGEOS functions
+internally releases this constraint so that the heavy lifting done by GEOS can be
+done in parallel, from a single Python process.
 
 The Geometry object
 -------------------
 
 The `pygeos.Geometry` object is a container of the actual GEOSGeometry object.
-A C pointer to this object is stored in a static attribute of the `Geometry`
-object. This keeps the python interpreter out of the ufunc inner loop. The
-Geometry object keeps track of the underlying GEOSGeometry and
+The Geometry object keeps track of the underlying GEOSGeometry and
 allows the python garbage collector to free memory when it is not
 used anymore.
 
-`Geometry` objects are immutable. Construct them as follows:
+`Geometry` objects are immutable. This means that after constructed, they cannot
+be changed inplace. Every PyGEOS operation will result in a new object being returned.
+
+Construct a Geometry from a WKT (Well-Known Text):
 
 .. code:: python
 
@@ -68,7 +84,7 @@ Or using one of the provided (vectorized) functions:
 
   >>> from pygeos import points
 
-  >>> point = points(5.2, 52.1)
+  >>> point = points([(5.2, 52.1), (5.1, 52.2)]]
 
 Examples
 --------
@@ -107,64 +123,6 @@ Compute the area of all possible intersections of two lists of polygons:
 
 See the documentation for more: https://pygeos.readthedocs.io
 
-Installation using conda
-------------------------
-
-Pygeos requires the presence of NumPy and GEOS >= 3.5. It is recommended to install
-these using Anaconda from the conda-forge channel (which provides pre-compiled
-binaries)::
-
-    $ conda install numpy geos pygeos --channel conda-forge
-
-Installation using system GEOS
-------------------------------
-
-On Linux::
-
-    $ sudo apt install libgeos-dev
-
-On OSX::
-
-    $ brew install geos
-
-Make sure `geos-config` is available from you shell; append PATH if necessary::
-
-    $ export PATH=$PATH:/path/to/dir/having/geos-config
-    $ pip install pygeos
-
-
-Installation for developers
----------------------------
-
-Ensure you have numpy and GEOS installed (either using conda or using system
-GEOS, see above).
-
-Clone the package::
-
-    $ git clone https://github.com/pygeos/pygeos.git
-
-Install it using `pip`::
-
-    $ pip install -e .[test]
-
-Run the unittests::
-
-    $ pytest
-
-If GEOS is installed, normally the ``geos-config`` command line utility
-will be available, and ``pip install`` will find GEOS automatically.
-But if needed, you can specify where PyGEOS should look for the GEOS library
-before installing it:
-
-On Linux / OSX::
-
-    $ export GEOS_INCLUDE_PATH=$CONDA_PREFIX/Library/include
-    $ export GEOS_LIBRARY_PATH=$CONDA_PREFIX/Library/lib
-
-On windows (assuming you are in a Visual C++ shell)::
-
-    $ set GEOS_INCLUDE_PATH=%CONDA_PREFIX%\Library\include
-    $ set GEOS_LIBRARY_PATH=%CONDA_PREFIX%\Library\lib
 
 Relationship to Shapely
 -----------------------
@@ -174,9 +132,12 @@ to Python. While Shapely only deals with single geometries, PyGEOS provides
 vectorized functions to work with arrays of geometries, giving better
 performance and convenience for such usecases.
 
-There is still discussion of integrating PyGEOS into Shapely
-(https://github.com/Toblerity/Shapely/issues/782), but for now PyGEOS is
-developed as a separate project.
+There is active discussion and work toward integrating PyGEOS into Shapely:
+
+* latest proposal: https://github.com/shapely/shapely-rfc/pull/1
+* prior discussion: https://github.com/Toblerity/Shapely/issues/782
+
+For now PyGEOS is developed as a separate project.
 
 References
 ----------
@@ -191,4 +152,5 @@ References
 Copyright & License
 -------------------
 
-Copyright (c) 2019, Casper van der Wel. BSD 3-Clause license.
+PyGEOS is licensed under BSD 3-Clause license. Copyright (c) 2019, Casper van der Wel.
+GEOS is available under the terms of ​GNU Lesser General Public License (LGPL) 2.1 at https://trac.osgeo.org/geos.

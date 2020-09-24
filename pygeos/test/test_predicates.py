@@ -92,6 +92,11 @@ def test_equals_exact_tolerance():
     assert pygeos.equals_exact(p1, p2).item() is False
 
 
+@pytest.mark.parametrize("g1, g2", [(point, None), (None, point), (None, None)])
+def test_relate_none(g1, g2):
+    assert pygeos.relate(g1, g2) is None
+
+
 @pytest.mark.parametrize("a", all_types)
 @pytest.mark.parametrize("func", [pygeos.intersects])
 def test_binary_prepared(a, func):

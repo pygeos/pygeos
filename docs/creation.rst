@@ -1,7 +1,7 @@
-Set operations
-==============
+Geometry creation
+=================
 
-.. automodule:: pygeos.set_operations
+.. automodule:: pygeos.creation
    :members:
    :exclude-members:
    :special-members:

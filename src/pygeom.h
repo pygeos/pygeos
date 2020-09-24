@@ -15,7 +15,7 @@ typedef struct {
 extern PyTypeObject GeometryType;
 
 /* Initializes a new geometry object */
-extern PyObject *GeometryObject_FromGEOS(PyTypeObject *type, GEOSGeometry *ptr);
+extern PyObject *GeometryObject_FromGEOS(GEOSGeometry *ptr, GEOSContextHandle_t ctx);
 /* Get a GEOSGeometry from a GeometryObject */
 extern char get_geom(GeometryObject *obj, GEOSGeometry **out);
 extern char get_geom_prepared(GeometryObject *obj, GEOSPreparedGeometry **out);
