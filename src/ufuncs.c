@@ -355,38 +355,50 @@ static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
 
 /* Define the geom -> no return value functions (Y) */
-static void *prepare_data[1] = {GEOSPrepare_r};
-typedef void *FuncGEOS_Y(void *context, void *a);
-static char Y_dtypes[2] = {NPY_OBJECT};
+static char PrepareGeometryObject(void *ctx, GeometryObject *geom) {
+    if (geom->ptr_prepared == NULL) {
+        geom->ptr_prepared = (GEOSPreparedGeometry *) GEOSPrepare_r(ctx, geom->ptr);
+        if (geom->ptr_prepared == NULL) {
+            return PGERR_GEOS_EXCEPTION;
+        }
+    }
+    return PGERR_SUCCESS;
+}
+static char DestroyPreparedGeometryObject(void *ctx, GeometryObject *geom) {
+    if (geom->ptr_prepared != NULL) {
+        GEOSPreparedGeom_destroy_r(ctx, geom->ptr_prepared);
+        geom->ptr_prepared = NULL;
+    }
+    return PGERR_SUCCESS;
+}
+
+static void *prepare_data[1] = {PrepareGeometryObject};
+static void *destroy_prepared_data[1] = {DestroyPreparedGeometryObject};
+typedef char FuncPyGEOS_Y(void *ctx, GeometryObject *geom);
+static char Y_dtypes[1] = {NPY_OBJECT};
 static void Y_func(char **args, npy_intp *dimensions,
                       npy_intp *steps, void *data)
 {
-    FuncGEOS_Y *func = (FuncGEOS_Y *)data;
+    FuncPyGEOS_Y *func = (FuncPyGEOS_Y *)data;
     GEOSGeometry *in1 = NULL;
-    GEOSPreparedGeometry *ret_ptr = NULL;
+    GeometryObject *geom_obj = NULL;
 
-    GEOS_INIT_THREADS;
+    GEOS_INIT;
 
-    char *ip1 = args[0];
-    npy_intp is1 = steps[0];
-    npy_intp n = dimensions[0];
-    npy_intp i;
-    for (i = 0; i < n; i++, ip1 += is1) {
-        /* get the geometry: return on error */
-        if (!get_geom(*(GeometryObject **)ip1, &in1)) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
-
+    NO_OUTPUT_LOOP {
+        geom_obj = *(GeometryObject **)ip1;
+        if (!get_geom(geom_obj, &in1)) { errstate = PGERR_GEOS_EXCEPTION; goto finish; }
         if (in1 != NULL) {
-            GeometryObject *geom_obj = *(GeometryObject **)ip1;
-            if (geom_obj->ptr_prepared == NULL) {
-                ret_ptr = func(ctx, in1);
-                geom_obj->ptr_prepared = ret_ptr;
+            errstate = func(ctx, geom_obj);
+            if (errstate != PGERR_SUCCESS) {
+                goto finish;
             }
         }
     }
 
     finish:
 
-    GEOS_FINISH_THREADS;
+    GEOS_FINISH;
 }
 static PyUFuncGenericFunction Y_funcs[1] = {&Y_func};
 
@@ -2043,6 +2055,7 @@ int init_ufuncs(PyObject *m, PyObject *d)
     DEFINE_Y_Y (normalize);
 
     DEFINE_Y(prepare);
+    DEFINE_Y(destroy_prepared);
 
     DEFINE_Yi_Y (get_point);
     DEFINE_Yi_Y (get_interior_ring);
