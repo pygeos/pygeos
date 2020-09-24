@@ -141,7 +141,7 @@ if "clean" not in sys.argv:
                 "src/coords.c",
                 "src/strtree.c",
             ],
-            **get_geos_paths()
+            **get_geos_paths(),
         )
     ]
 
@@ -149,7 +149,7 @@ if "clean" not in sys.argv:
         # likely building from source; Cython is required
 
         if not cythonize:
-            sys.exit("ERROR: Cython is required ot build pygeos from source.")
+            sys.exit("ERROR: Cython is required to build pygeos from source.")
 
         ext_options = get_geos_paths(include_src=True)
 
@@ -181,7 +181,7 @@ except IOError:
 
 version = versioneer.get_version()
 cmdclass = versioneer.get_cmdclass()
-# cmdclass["build_ext"] = build_ext
+cmdclass["build_ext"] = build_ext
 
 setup(
     name="pygeos",
