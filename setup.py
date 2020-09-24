@@ -122,35 +122,42 @@ class build_ext(_build_ext):
         self.include_dirs.append(numpy.get_include())
 
 
-ext_modules = [
-    Extension(
-        "pygeos.lib",
-        sources=[
-            "src/lib.c",
-            "src/geos.c",
-            "src/pygeom.c",
-            "src/ufuncs.c",
-            "src/coords.c",
-            "src/strtree.c",
-        ],
-        **get_geos_paths()
-    )
-]
+ext_modules = []
 
-cython_modules = []
-if cythonize is not None:
-    ext_options = get_geos_paths(include_src=True)
-    cython_modules = [
-        Extension("pygeos.ext.geos", ["pygeos/ext/geos.pyx"], **ext_options),
-        Extension("pygeos.ext.geom", ["pygeos/ext/geom.pyx"], **ext_options),
+if "clean" not in sys.argv:
+    ext_modules = [
+        Extension(
+            "pygeos.lib",
+            sources=[
+                "src/lib.c",
+                "src/geos.c",
+                "src/pygeom.c",
+                "src/ufuncs.c",
+                "src/coords.c",
+                "src/strtree.c",
+            ],
+            **get_geos_paths()
+        )
     ]
 
-    ext_modules += cythonize(
-        cython_modules,
-        compiler_directives={"language_level": "3"},
-        # enable once Cython >= 0.3 is released
-        # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-    )
+    if os.path.exists("MANIFEST.in"):
+        # likely building from source; Cython is required
+
+        if not cythonize:
+            sys.exit("ERROR: Cython is required ot build pygeos from source.")
+
+        ext_options = get_geos_paths(include_src=True)
+        cython_modules = [
+            Extension("pygeos.ext.geos", ["pygeos/ext/geos.pyx"], **ext_options),
+            Extension("pygeos.ext.geom", ["pygeos/ext/geom.pyx"], **ext_options),
+        ]
+
+        ext_modules += cythonize(
+            cython_modules,
+            compiler_directives={"language_level": "3"},
+            # enable once Cython >= 0.3 is released
+            # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+        )
 
 
 try:
