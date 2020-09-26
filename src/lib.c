@@ -3,12 +3,15 @@
 
 #include <Python.h>
 
+#define PyGEOS_API_Module
+
 #define PY_ARRAY_UNIQUE_SYMBOL pygeos_ARRAY_API
 #define PY_UFUNC_UNIQUE_SYMBOL pygeos_UFUNC_API
 #include <numpy/ndarraytypes.h>
 #include <numpy/ufuncobject.h>
 #include <numpy/npy_3kcompat.h>
 
+#include "c_api.h"
 #include "geos.h"
 #include "pygeom.h"
 #include "coords.h"
@@ -39,6 +42,9 @@ static struct PyModuleDef moduledef = {
 PyMODINIT_FUNC PyInit_lib(void)
 {
     PyObject *m, *d;
+
+    static void *PyGEOS_API[PyGEOS_API_num_pointers];
+    PyObject *c_api_object;
 
     m = PyModule_Create(&moduledef);
     if (!m) {
@@ -80,6 +86,18 @@ PyMODINIT_FUNC PyInit_lib(void)
     if (init_ufuncs(m, d) < 0) {
         return NULL;
     };
+
+
+    /* Initialize the C API pointer array */
+    PyGEOS_API[PyGEOS_GEOS_API_Version_NUM] = (void *)PyGEOS_GEOS_API_Version;
+    PyGEOS_API[PyGEOSCreateGeom_NUM] = (void *)PyGEOSCreateGeom;
+    PyGEOS_API[PyGEOSGetGEOSGeom_NUM] = (void *)PyGEOSGetGEOSGeom;
+
+    /* Create a Capsule containing the API pointer array's address */
+    c_api_object = PyCapsule_New((void *)PyGEOS_API, "pygeos.lib._C_API", NULL);
+    if (c_api_object != NULL) {
+        PyModule_AddObject(m, "_C_API", c_api_object);
+    }
 
     return m;
 }

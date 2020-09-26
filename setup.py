@@ -134,12 +134,13 @@ if "clean" not in sys.argv:
         Extension(
             "pygeos.lib",
             sources=[
-                "src/lib.c",
-                "src/geos.c",
-                "src/pygeom.c",
-                "src/ufuncs.c",
+                "src/c_api.c",
                 "src/coords.c",
+                "src/geos.c",
+                "src/lib.c",
+                "src/pygeom.c",
                 "src/strtree.c",
+                "src/ufuncs.c",
             ],
             **get_geos_paths(),
         )
@@ -156,13 +157,20 @@ if "clean" not in sys.argv:
         # numpy libs must be included for Cython build
         import numpy
 
-        ext_options["include_dirs"] = ext_options.get("include_dirs", []) + [
-            numpy.get_include()
-        ]
+        ext_options["include_dirs"].append(numpy.get_include())
 
         cython_modules = [
-            Extension("pygeos.ext.geos", ["pygeos/ext/geos.pyx"], **ext_options),
-            Extension("pygeos.ext.geom", ["pygeos/ext/geom.pyx"], **ext_options),
+            Extension(
+                "pygeos.ext.pygeos_wrapper",
+                ["pygeos/ext/pygeos_wrapper.pyx"],
+                **ext_options,
+            ),
+            Extension(
+                "pygeos.ext.geos_wrapper",
+                ["pygeos/ext/geos_wrapper.pyx"],
+                **ext_options,
+            ),
+            Extension("pygeos.ext.geom", ["pygeos/ext/geom.pyx",], **ext_options,),
         ]
 
         ext_modules += cythonize(

@@ -1,19 +1,12 @@
 from cpython cimport PyObject
 cimport cython
+
 import numpy as np
-from pygeos.ext.geos cimport *
+cimport numpy as np
 
-
-cdef extern from "geos_c.h":
-    const GEOSGeometry* GEOSGetGeometryN_r(GEOSContextHandle_t handle, const GEOSGeometry* g, int n)
-    int GEOSGetNumGeometries_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
-    int GEOSisEmpty_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
-    GEOSGeometry* GEOSGeom_clone_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
-
-
-cdef extern from "pygeom.h":
-    extern char get_geom(GeometryObject *obj, GEOSGeometry **out)
-    extern PyObject *GeometryObject_FromGEOS(GEOSGeometry *ptr, GEOSContextHandle_t ctx)
+from pygeos import lib
+from pygeos.ext.geos_wrapper cimport *
+from pygeos.ext.pygeos_wrapper cimport *
 
 
 @cython.boundscheck(False)
@@ -27,7 +20,7 @@ cdef geos_get_num_geometries(object[:] array):
     cdef np.intp_t [:] counts_view = counts[:]
 
     for i in range(array.size):
-        get_geom(<GeometryObject *>array[i], &geom)
+        PyGEOSGetGEOSGeom(<GeometryObject *>array[i], &geom)
 
         if geom == NULL or GEOSisEmpty_r(geos_handle, geom):
             continue
@@ -61,7 +54,7 @@ def get_parts(object[:] array):
     cdef np.intp_t [:] index_view = index[:]
 
     for geom_idx in range(array.size):
-        get_geom(<GeometryObject *>array[geom_idx], &geom)
+        PyGEOSGetGEOSGeom(<GeometryObject *>array[geom_idx], &geom)
 
         if geom == NULL or GEOSisEmpty_r(geos_handle, geom):
             continue
@@ -77,9 +70,12 @@ def get_parts(object[:] array):
             else:
                 # clone the geometry to keep it separate from the inputs
                 part = GEOSGeom_clone_r(geos_handle, part)
-                parts_view[idx] = <object>GeometryObject_FromGEOS(part, geos_handle)
+                parts_view[idx] = <object>PyGEOSCreateGeom(part, geos_handle)
 
             idx += 1
 
 
     return parts, index
+
+def test_cython():
+    print("Cython function works")
