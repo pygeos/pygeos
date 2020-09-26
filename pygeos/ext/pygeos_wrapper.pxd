@@ -3,8 +3,10 @@ Provides a wrapper for the pygeos.lib C extension C API for use in Cython.
 Internally, the pygeos C extension uses a PyCapsule to provide run-time access
 to function pointers within the C API.
 
-To use these functions, you must first call:
+To use these functions, you must first call (in each *.pyx):
 `import_pygeos_api()`
+
+If you get unexplained segfaults, this is a likely culprit.
 
 This uses a macro to dynamically load the functions from pointers in the PyCapsule.
 

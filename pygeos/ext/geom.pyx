@@ -9,6 +9,11 @@ from pygeos.ext.geos_wrapper cimport *
 from pygeos.ext.pygeos_wrapper cimport *
 
 
+# call macro to import pygeos C API; fail on error
+if import_pygeos_api() == -1:
+    raise ImportError("Could not import pygeos.lib C API")
+
+
 @cython.boundscheck(False)
 @cython.wraparound(False)
 cdef geos_get_num_geometries(object[:] array):

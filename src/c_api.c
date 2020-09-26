@@ -8,8 +8,6 @@
 #include "geos.h"
 #include "pygeom.h"
 
-#include "stdio.h"
-
 // TODO: provide typedefs as opaque pointers?
 
 // TODO: provide context handle from here instead of via GEOS?
