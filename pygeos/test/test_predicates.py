@@ -1,8 +1,9 @@
 import pytest
 import pygeos
+from pygeos import Geometry
 import numpy as np
 
-from .common import point, all_types
+from .common import point, all_types, polygon, geometry_collection
 
 UNARY_PREDICATES = (
     pygeos.is_empty,
@@ -13,6 +14,7 @@ UNARY_PREDICATES = (
     pygeos.is_missing,
     pygeos.is_geometry,
     pygeos.is_valid_input,
+    pygeos.is_ccw,
 )
 
 BINARY_PREDICATES = (
@@ -33,6 +35,8 @@ BINARY_PREDICATES = (
 @pytest.mark.parametrize("geometry", all_types)
 @pytest.mark.parametrize("func", UNARY_PREDICATES)
 def test_unary_array(geometry, func):
+    if func is pygeos.is_ccw and pygeos.geos_version < (3, 7, 0):
+        raise pytest.skip("GEOS < 3.7")
     actual = func([geometry, geometry])
     assert actual.shape == (2,)
     assert actual.dtype == np.bool
@@ -40,6 +44,8 @@ def test_unary_array(geometry, func):
 
 @pytest.mark.parametrize("func", UNARY_PREDICATES)
 def test_unary_with_kwargs(func):
+    if func is pygeos.is_ccw and pygeos.geos_version < (3, 7, 0):
+        raise pytest.skip("GEOS < 3.7")
     out = np.empty((), dtype=np.uint8)
     actual = func(point, out=out)
     assert actual is out
@@ -48,7 +54,9 @@ def test_unary_with_kwargs(func):
 
 @pytest.mark.parametrize("func", UNARY_PREDICATES)
 def test_unary_missing(func):
-    if func in (pygeos.is_valid_input, pygeos.is_missing):
+    if func is pygeos.is_ccw and pygeos.geos_version < (3, 7, 0):
+        raise pytest.skip("GEOS < 3.7")
+    elif func in (pygeos.is_valid_input, pygeos.is_missing):
         assert func(None)
     else:
         assert not func(None)
@@ -103,3 +111,20 @@ def test_relate():
 @pytest.mark.parametrize("g1, g2", [(point, None), (None, point), (None, None)])
 def test_relate_none(g1, g2):
     assert pygeos.relate(g1, g2) is None
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+@pytest.mark.parametrize("geom, expected", [
+    (Geometry("LINEARRING (0 0, 0 1, 1 1, 0 0)"), False),
+    (Geometry("LINEARRING (0 0, 1 1, 0 1, 0 0)"), True),
+    (Geometry("LINESTRING (0 0, 0 1, 1 1, 0 0)"), False),
+    (Geometry("LINESTRING (0 0, 1 1, 0 1, 0 0)"), True),
+    (Geometry("LINESTRING (0 0, 1 1, 0 1)"), False),
+    (Geometry("LINESTRING (0 0, 0 1, 1 1)"), False),
+    (point, False),
+    (polygon, False),
+    (geometry_collection, False),
+    (None, False),
+])
+def test_is_ccw(geom, expected):
+    assert pygeos.is_ccw(geom) == expected

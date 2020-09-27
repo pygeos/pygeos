@@ -2,10 +2,11 @@ import warnings
 
 from . import lib
 from . import Geometry  # NOQA
-from .decorators import multithreading_enabled
+from .decorators import multithreading_enabled, requires_geos
 
 __all__ = [
     "has_z",
+    "is_ccw",
     "is_closed",
     "is_empty",
     "is_geometry",
@@ -46,6 +47,31 @@ def has_z(geometry, **kwargs):
     True
     """
     return lib.has_z(geometry, **kwargs)
+
+
+@requires_geos("3.7.0")
+@multithreading_enabled
+def is_ccw(geometry, **kwargs):
+    """Returns True if a linestring is counterclockwise.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+        This function will return False for non-linear goemetries and for
+        lines with fewer than 4 points (including the closing point).
+
+    Examples
+    --------
+    >>> is_ccw(Geometry("LINEARRING (0 0, 0 1, 1 1, 0 0)"))
+    False
+    >>> is_ccw(Geometry("LINEARRING (0 0, 1 1, 0 1, 0 0)"))
+    True
+    >>> is_ccw(Geometry("LINESTRING (0 0, 1 1, 0 1)"))
+    False
+    >>> is_ccw(Geometry("POINT (0 0)"))
+    False
+    """
+    return lib.is_ccw(geometry, **kwargs)
 
 
 @multithreading_enabled
