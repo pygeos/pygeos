@@ -52,13 +52,23 @@ def has_z(geometry, **kwargs):
 @requires_geos("3.7.0")
 @multithreading_enabled
 def is_ccw(geometry, **kwargs):
-    """Returns True if a linestring is counterclockwise.
+    """Returns True if a linestring or linearring is counterclockwise.
+
+    Note that there are no checks on whether lines are actually closed and
+    not self-intersecting, while this is a requirement for is_ccw. The recommended
+    usage of this function for linestrings is ``is_ccw(g) & is_simple(g)`` and for
+    linearrings ``is_ccw(g) & is_valid(g)``. 
 
     Parameters
     ----------
     geometry : Geometry or array_like
         This function will return False for non-linear goemetries and for
         lines with fewer than 4 points (including the closing point).
+
+    See also
+    --------
+    is_simple : Checks if a linestring is closed and simple.
+    is_valid : Checks additionally if the geometry is simple.
 
     Examples
     --------
@@ -241,6 +251,9 @@ def is_simple(geometry, **kwargs):
     """Returns True if a Geometry has no anomalous geometric points, such as
     self-intersections or self tangency.
 
+    Note that polygons and linearrings are assumed to be simple. Use is_valid
+    to check these kind of geometries for self-intersections.
+
     Parameters
     ----------
     geometry : Geometry or array_like
@@ -249,6 +262,7 @@ def is_simple(geometry, **kwargs):
     See also
     --------
     is_ring : Checks additionally if the geometry is closed.
+    is_valid : Checks whether a geometry is well formed.
 
     Examples
     --------

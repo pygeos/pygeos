@@ -14,7 +14,7 @@ UNARY_PREDICATES = (
     pygeos.is_missing,
     pygeos.is_geometry,
     pygeos.is_valid_input,
-    pygeos.is_ccw,
+    pytest.param(pygeos.is_ccw, marks=pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")),
 )
 
 BINARY_PREDICATES = (
@@ -35,8 +35,6 @@ BINARY_PREDICATES = (
 @pytest.mark.parametrize("geometry", all_types)
 @pytest.mark.parametrize("func", UNARY_PREDICATES)
 def test_unary_array(geometry, func):
-    if func is pygeos.is_ccw and pygeos.geos_version < (3, 7, 0):
-        raise pytest.skip("GEOS < 3.7")
     actual = func([geometry, geometry])
     assert actual.shape == (2,)
     assert actual.dtype == np.bool
@@ -44,8 +42,6 @@ def test_unary_array(geometry, func):
 
 @pytest.mark.parametrize("func", UNARY_PREDICATES)
 def test_unary_with_kwargs(func):
-    if func is pygeos.is_ccw and pygeos.geos_version < (3, 7, 0):
-        raise pytest.skip("GEOS < 3.7")
     out = np.empty((), dtype=np.uint8)
     actual = func(point, out=out)
     assert actual is out
@@ -54,9 +50,7 @@ def test_unary_with_kwargs(func):
 
 @pytest.mark.parametrize("func", UNARY_PREDICATES)
 def test_unary_missing(func):
-    if func is pygeos.is_ccw and pygeos.geos_version < (3, 7, 0):
-        raise pytest.skip("GEOS < 3.7")
-    elif func in (pygeos.is_valid_input, pygeos.is_missing):
+    if func in (pygeos.is_valid_input, pygeos.is_missing):
         assert func(None)
     else:
         assert not func(None)
