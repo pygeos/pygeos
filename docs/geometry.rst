@@ -67,7 +67,7 @@ This is the same as using :func:`pygeos.predicates.equals_exact` with a ``tolera
 Properties
 ~~~~~~~~~~
 
-Geometry objects have neither attributes nor properties.
+Geometry objects have neither properties nor methods.
 Instead, use the functions listed below to obtain information about geometry objects.
 
 .. automodule:: pygeos.geometry
