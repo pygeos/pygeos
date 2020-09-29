@@ -48,7 +48,7 @@ def get_geos_config(option):
     return result
 
 
-def get_geos_paths(include_src=False):
+def get_geos_paths():
     """Obtain the paths for compiling and linking with the GEOS C-API
 
     First the presence of the GEOS_INCLUDE_PATH and GEOS_INCLUDE_PATH environment
@@ -102,10 +102,6 @@ def get_geos_paths(include_src=False):
         else:
             extra_link_args.append(item)
 
-    if include_src:
-        # include_dirs.append("./src")
-        include_dirs.append(os.path.realpath("./src"))
-
     return {
         "include_dirs": include_dirs,
         "library_dirs": library_dirs,
@@ -134,6 +130,8 @@ class build_ext(_build_ext):
 ext_modules = []
 
 if "clean" not in sys.argv:
+    ext_options = get_geos_paths()
+
     ext_modules = [
         Extension(
             "pygeos.lib.core",
@@ -146,7 +144,7 @@ if "clean" not in sys.argv:
                 "src/strtree.c",
                 "src/ufuncs.c",
             ],
-            **get_geos_paths(),
+            **ext_options,
         )
     ]
 
@@ -156,18 +154,13 @@ if "clean" not in sys.argv:
         if not cythonize:
             sys.exit("ERROR: Cython is required to build pygeos from source.")
 
-        ext_options = get_geos_paths(include_src=True)
-
         # numpy libs must be included for Cython build
         import numpy
 
         ext_options["include_dirs"].append(numpy.get_include())
 
-        # for whatever reason, this doesn't appear to be added above on AppVeyor
-        ext_options["include_dirs"].append(os.path.realpath("./src"))
-        print("Should add src path: ", os.path.realpath("./src"))
-
-        print("Ext build options:", ext_options)
+        # add pygeos.lib.core source directory
+        ext_options["include_dirs"].append("./src")
 
         cython_modules = [
             Extension(

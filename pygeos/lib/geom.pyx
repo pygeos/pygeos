@@ -42,7 +42,7 @@ def get_parts(object[:] array):
     cdef GEOSGeometry *geom = NULL
     cdef GEOSGeometry *part = NULL
 
-    cdef const np.intp_t [:] input_index_view = np.arange(0, len(array))
+    cdef const np.intp_t [:] input_index_view = np.arange(0, len(array), dtype=np.intp)
 
     counts = geos_get_num_geometries(array)
     cdef np.intp_t [:] counts_view = counts[:]
