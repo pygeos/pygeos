@@ -33,7 +33,7 @@ def get_geos_config(option):
     located, or the GEOS_CONFIG environment variable should point to the
     executable.
     """
-    cmd = os.environ.get('GEOS_CONFIG', 'geos-config')
+    cmd = os.environ.get("GEOS_CONFIG", "geos-config")
     try:
         stdout, stderr = subprocess.Popen(
             [cmd, option], stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -103,7 +103,8 @@ def get_geos_paths(include_src=False):
             extra_link_args.append(item)
 
     if include_src:
-        include_dirs.append("./src")
+        # include_dirs.append("./src")
+        include_dirs.append(os.path.realpath("./src"))
 
     return {
         "include_dirs": include_dirs,
@@ -161,6 +162,8 @@ if "clean" not in sys.argv:
         import numpy
 
         ext_options["include_dirs"].append(numpy.get_include())
+
+        print("Ext build options:", ext_options)
 
         cython_modules = [
             Extension(
