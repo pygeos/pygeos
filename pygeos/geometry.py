@@ -1,8 +1,8 @@
 from enum import IntEnum
 import numpy as np
-from . import ext
-from . import lib
+
 from . import Geometry  # NOQA
+from . import lib
 from .decorators import multithreading_enabled, requires_geos
 
 
@@ -493,9 +493,9 @@ def get_parts(geometry, return_index=False):
         raise ValueError("Array should be one dimensional")
 
     if return_index:
-        return ext.get_parts(geometry)
+        return lib.get_parts(geometry)
 
-    return ext.get_parts(geometry)[0]
+    return lib.get_parts(geometry)[0]
 
 
 @multithreading_enabled

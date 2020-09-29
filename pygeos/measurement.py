@@ -1,11 +1,19 @@
 import numpy as np
 
-from . import lib
 from . import Geometry  # NOQA
+from . import lib
 from .decorators import requires_geos, multithreading_enabled
 
 
-__all__ = ["area", "distance", "bounds", "total_bounds", "length", "hausdorff_distance", "frechet_distance"]
+__all__ = [
+    "area",
+    "distance",
+    "bounds",
+    "total_bounds",
+    "length",
+    "hausdorff_distance",
+    "frechet_distance",
+]
 
 
 @multithreading_enabled

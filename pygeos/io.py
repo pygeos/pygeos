@@ -1,13 +1,14 @@
 import numpy as np
 
 from . import Geometry  # noqa
-from . import lib
 from . import geos_capi_version_string
+from . import lib
 
 
 shapely_geos_version = None
 ShapelyGeometry = None
 _shapely_checked = False
+
 
 def check_shapely_version():
     global shapely_geos_version
@@ -20,7 +21,7 @@ def check_shapely_version():
             from shapely.geometry.base import BaseGeometry as ShapelyGeometry
         except ImportError:
             pass
-        
+
         _shapely_checked = True
 
 

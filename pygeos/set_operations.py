@@ -1,7 +1,10 @@
 import numpy as np
-from . import lib, Geometry, GeometryType
+
+from . import Geometry, GeometryType
+from . import lib
 from .decorators import requires_geos
 from .decorators import multithreading_enabled
+
 
 __all__ = [
     "difference",
@@ -14,6 +17,7 @@ __all__ = [
     "coverage_union",
     "coverage_union_all",
 ]
+
 
 @multithreading_enabled
 def difference(a, b, **kwargs):
@@ -36,6 +40,7 @@ def difference(a, b, **kwargs):
     """
     return lib.difference(a, b, **kwargs)
 
+
 @multithreading_enabled
 def intersection(a, b, **kwargs):
     """Returns the geometry that is shared between input geometries.
@@ -56,6 +61,7 @@ def intersection(a, b, **kwargs):
     <pygeos.Geometry LINESTRING (1 1, 2 2)>
     """
     return lib.intersection(a, b, **kwargs)
+
 
 @multithreading_enabled
 def intersection_all(geometries, axis=0, **kwargs):
@@ -85,6 +91,7 @@ def intersection_all(geometries, axis=0, **kwargs):
     """
     return lib.intersection.reduce(geometries, axis=axis, **kwargs)
 
+
 @multithreading_enabled
 def symmetric_difference(a, b, **kwargs):
     """Returns the geometry that represents the portions of input geometries
@@ -106,6 +113,7 @@ def symmetric_difference(a, b, **kwargs):
     <pygeos.Geometry MULTILINESTRING ((0 0, 1 1), (2 2, 3 3))>
     """
     return lib.symmetric_difference(a, b, **kwargs)
+
 
 @multithreading_enabled
 def symmetric_difference_all(geometries, axis=0, **kwargs):
@@ -135,6 +143,7 @@ def symmetric_difference_all(geometries, axis=0, **kwargs):
     """
     return lib.symmetric_difference.reduce(geometries, axis=axis, **kwargs)
 
+
 @multithreading_enabled
 def union(a, b, **kwargs):
     """Merges geometries into one.
@@ -157,6 +166,7 @@ def union(a, b, **kwargs):
     True
     """
     return lib.union(a, b, **kwargs)
+
 
 @multithreading_enabled
 def union_all(geometries, axis=0, **kwargs):

@@ -1,7 +1,9 @@
 import numpy as np
-from . import lib
+
 from . import Geometry, GeometryType
+from . import lib
 from .decorators import multithreading_enabled
+
 
 __all__ = [
     "points",
@@ -70,6 +72,7 @@ def linearrings(coords, y=None, z=None):
     z : array_like
     """
     return _wrap_construct_ufunc(lib.linearrings, coords, y, z)
+
 
 @multithreading_enabled
 def polygons(shells, holes=None):

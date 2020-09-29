@@ -273,7 +273,7 @@ int __Pyx_InBases(PyTypeObject *a, PyTypeObject *b) {
 
 /* Get a GEOSGeometry pointer from a GeometryObject, or NULL if the input is
 Py_None. Returns 0 on error, 1 on success. */
-char get_geom(GeometryObject *obj, GEOSGeometry **out) {
+extern char get_geom(GeometryObject *obj, GEOSGeometry **out) {
     PyTypeObject *type = ((PyObject *)obj)->ob_type;
     if ((type != &GeometryType) & !(__Pyx_InBases(type, &GeometryType))) {
         if ((PyObject *) obj == Py_None) {

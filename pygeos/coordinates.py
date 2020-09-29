@@ -1,5 +1,8 @@
-from . import lib, Geometry
 import numpy as np
+
+from . import Geometry
+from . import lib
+
 
 __all__ = ["apply", "count_coordinates", "get_coordinates", "set_coordinates"]
 

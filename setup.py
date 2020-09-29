@@ -132,7 +132,7 @@ ext_modules = []
 if "clean" not in sys.argv:
     ext_modules = [
         Extension(
-            "pygeos.lib",
+            "pygeos.lib.core",
             sources=[
                 "src/c_api.c",
                 "src/coords.c",
@@ -161,16 +161,16 @@ if "clean" not in sys.argv:
 
         cython_modules = [
             Extension(
-                "pygeos.ext.pygeos_wrapper",
-                ["pygeos/ext/pygeos_wrapper.pyx"],
+                "pygeos.lib.pygeos_wrapper",
+                ["pygeos/lib/pygeos_wrapper.pyx"],
                 **ext_options,
             ),
             Extension(
-                "pygeos.ext.geos_wrapper",
-                ["pygeos/ext/geos_wrapper.pyx"],
+                "pygeos.lib.geos_wrapper",
+                ["pygeos/lib/geos_wrapper.pyx"],
                 **ext_options,
             ),
-            Extension("pygeos.ext.geom", ["pygeos/ext/geom.pyx",], **ext_options,),
+            Extension("pygeos.lib.geom", ["pygeos/lib/geom.pyx",], **ext_options,),
         ]
 
         ext_modules += cythonize(

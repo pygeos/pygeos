@@ -1,8 +1,9 @@
 import warnings
 
-from . import lib
 from . import Geometry  # NOQA
+from . import lib
 from .decorators import multithreading_enabled
+
 
 __all__ = [
     "has_z",
