@@ -163,6 +163,10 @@ if "clean" not in sys.argv:
 
         ext_options["include_dirs"].append(numpy.get_include())
 
+        # for whatever reason, this doesn't appear to be added above on AppVeyor
+        ext_options["include_dirs"].append(os.path.realpath("./src"))
+        print("Should add src path: ", os.path.realpath("./src"))
+
         print("Ext build options:", ext_options)
 
         cython_modules = [
