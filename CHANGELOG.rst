@@ -1,6 +1,16 @@
 Changelog
 =========
 
+Version 0.9 (unreleased)
+------------------------
+
+**Highlights of this release**
+
+* Addition of a ``is_ccw()`` function for GEOS >= 3.7 (#201)
+* Added support for pickling to ``Geometry`` objects (#190)
+* Limited the length of geometry repr to 80 characters (#189)
+
+
 Version 0.8 (2020-09-06)
 ------------------------
 
