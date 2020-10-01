@@ -165,15 +165,24 @@ static PyUFuncGenericFunction Y_b_funcs[1] = {&Y_b_func};
 
 /* Define the object -> bool functions (O_b) which do not raise on non-geom objects*/
 static char IsMissing(void* context, PyObject* obj) {
-  return ((PyObject*)obj == Py_None);
+  GEOSGeometry* g = NULL;
+  if (!get_geom((GeometryObject *) obj, &g)) {
+    return 0;
+  };
+  return g == NULL;
 }
 static void* is_missing_data[1] = {IsMissing};
 static char IsGeometry(void* context, PyObject* obj) {
-  return (PyObject_IsInstance(obj, (PyObject*)&GeometryType));
+  GEOSGeometry* g = NULL;
+  if (!get_geom((GeometryObject *) obj, &g)) {
+    return 0;
+  }
+  return g != NULL;
 }
 static void* is_geometry_data[1] = {IsGeometry};
 static char IsValidInput(void* context, PyObject* obj) {
-  return (IsGeometry(context, obj) | IsMissing(context, obj));
+  GEOSGeometry* g = NULL;
+  return get_geom((GeometryObject *) obj, &g) == 1;
 }
 static void* is_valid_input_data[1] = {IsValidInput};
 typedef char FuncGEOS_O_b(void* context, PyObject* obj);
