@@ -45,6 +45,8 @@ def test_line_interpolate_point_float_array():
         pygeos.Geometry("LINEARRING EMPTY"),
         pygeos.Geometry("MULTILINESTRING EMPTY"),
         pygeos.Geometry("MULTILINESTRING (EMPTY, (0 0, 1 1))"),
+        pygeos.Geometry("GEOMETRYCOLLECTION EMPTY"),
+        pygeos.Geometry("GEOMETRYCOLLECTION (LINESTRING EMPTY)"),
     ],
 )
 def test_line_interpolate_point_empty(geom, normalize):
