@@ -358,11 +358,9 @@ static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 /* Define the geom, double -> geom functions (Yd_Y) */
 
 /* GEOS < 3.8 gives segfault for empty linestrings, this is fixed since
-   https://github.com/libgeos/geos/commit/18505af1103cdafb2178f2f0eb8e1a10cfa16d2d */
-#if GEOS_SINCE_3_8_0
-static void* line_interpolate_point_data[1] = {GEOSInterpolate_r};
-static void* line_interpolate_point_normalized_data[1] = {GEOSInterpolateNormalized_r};
-#else
+   https://github.com/libgeos/geos/commit/18505af1103cdafb2178f2f0eb8e1a10cfa16d2d
+   But still, GEOS 3.8 gives segfaults for multilinestrings. So we do an empty line
+   check for all versions. */
 static void* GEOSInterpolateProtectEmpty_r(void* context, void* geom, double d) {
   char has_empty = has_empty_line(context, geom);
   if (has_empty == 0) {
@@ -387,7 +385,6 @@ static void* GEOSInterpolateNormalizedProtectEmpty_r(void* context, void* geom,
 }
 static void* line_interpolate_point_normalized_data[1] = {
     GEOSInterpolateNormalizedProtectEmpty_r};
-#endif
 
 static void* simplify_data[1] = {GEOSSimplify_r};
 static void* simplify_preserve_topology_data[1] = {GEOSTopologyPreserveSimplify_r};

@@ -285,7 +285,6 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
 /* GEOSInterpolate_r and GEOSInterpolateNormalized_r segfault on empty
  * linestrings, empty multilinestrings or multilinestrings with the first geometry empty.
  * Returns 1 in those cases, 2 on error, 0 otherwise. */
-#if !GEOS_SINCE_3_8_0
 char has_empty_line(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
   char type;
   char is_empty;
@@ -313,7 +312,6 @@ char has_empty_line(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
     return 0;
   }
 }
-#endif
 
 /* Define GEOS error handlers. See GEOS_INIT / GEOS_FINISH macros in geos.h*/
 void geos_error_handler(const char* message, void* userdata) {
