@@ -11,17 +11,24 @@ from .common import multi_line_string
 
 
 def test_line_interpolate_point_geom_array():
-    actual = pygeos.line_interpolate_point([line_string, linear_ring, multi_line_string], -1)
+    actual = pygeos.line_interpolate_point(
+        [line_string, linear_ring, multi_line_string], -1
+    )
     assert pygeos.equals(actual[0], pygeos.Geometry("POINT (1 0)"))
     assert pygeos.equals(actual[1], pygeos.Geometry("POINT (0 1)"))
-    assert pygeos.equals_exact(actual[2], pygeos.Geometry("POINT (0.5528 1.1056)"), tolerance=0.001)
+    assert pygeos.equals_exact(
+        actual[2], pygeos.Geometry("POINT (0.5528 1.1056)"), tolerance=0.001
+    )
 
 
 def test_line_interpolate_point_geom_array_normalized():
-    actual = pygeos.line_interpolate_point([line_string, linear_ring, multi_line_string], 1, normalize=True)
+    actual = pygeos.line_interpolate_point(
+        [line_string, linear_ring, multi_line_string], 1, normalize=True
+    )
     assert pygeos.equals(actual[0], pygeos.Geometry("POINT (1 1)"))
     assert pygeos.equals(actual[1], pygeos.Geometry("POINT (0 0)"))
     assert pygeos.equals(actual[2], pygeos.Geometry("POINT (1 2)"))
+
 
 def test_line_interpolate_point_float_array():
     actual = pygeos.line_interpolate_point(line_string, [0.2, 1.5, -0.2])
@@ -31,9 +38,14 @@ def test_line_interpolate_point_float_array():
 
 
 @pytest.mark.parametrize("normalize", [False, True])
-@pytest.mark.parametrize("geom", [
-    empty_line_string, pygeos.Geometry("MULTILINESTRING EMPTY"), pygeos.Geometry("MULTILINESTRING (EMPTY, (0 0, 1 1))")
-])
+@pytest.mark.parametrize(
+    "geom",
+    [
+        empty_line_string,
+        pygeos.Geometry("MULTILINESTRING EMPTY"),
+        pygeos.Geometry("MULTILINESTRING (EMPTY, (0 0, 1 1))"),
+    ],
+)
 def test_line_interpolate_point_empty(geom, normalize):
     assert pygeos.equals(
         pygeos.line_interpolate_point(geom, 0.2, normalize=normalize), empty_point
