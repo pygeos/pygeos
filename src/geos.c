@@ -283,7 +283,8 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
 }
 
 /* GEOSInterpolate_r and GEOSInterpolateNormalized_r segfault on empty
- * linestrings, empty multilinestrings or multilinestrings with the first geometry empty.
+ * linestrings, linearrings, multilinestrings or multilinestrings with the
+ * first geometry empty.
  * Returns 1 in those cases, 2 on error, 0 otherwise. */
 char has_empty_line(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
   char type;
@@ -293,7 +294,7 @@ char has_empty_line(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
   type = GEOSGeomTypeId_r(ctx, geom);
   if (type == -1) {
     return 2;
-  } else if (type == GEOS_LINESTRING) {
+  } else if ((type == GEOS_LINESTRING) | (type == GEOS_LINEARRING)) {
     // linestring: check if it is empty
     return GEOSisEmpty_r(ctx, geom);
   } else if (type == GEOS_MULTILINESTRING) {
