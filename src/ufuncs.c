@@ -364,22 +364,26 @@ static void* line_interpolate_point_data[1] = {GEOSInterpolate_r};
 static void* line_interpolate_point_normalized_data[1] = {GEOSInterpolateNormalized_r};
 #else
 static void* GEOSInterpolateProtectEmpty_r(void* context, void* geom, double d) {
-  int n = GEOSGeomGetNumPoints_r(context, geom);
-  if (n < 2) {
-    return GEOSGeom_createEmptyPoint_r(context);
-  } else {
-    return GEOSInterpolate_r(context, geom, d);
-  }
+    char has_empty = has_empty_line(context, geom);
+    if (has_empty == 0) {
+      return GEOSInterpolate_r(context, geom, d);
+    } else if (has_empty == 1) {
+      return GEOSGeom_createEmptyPoint_r(context);
+    } else {
+      return NULL;
+    }
 }
 static void* line_interpolate_point_data[1] = {GEOSInterpolateProtectEmpty_r};
 static void* GEOSInterpolateNormalizedProtectEmpty_r(void* context, void* geom,
                                                      double d) {
-  int n = GEOSGeomGetNumPoints_r(context, geom);
-  if (n < 2) {
-    return GEOSGeom_createEmptyPoint_r(context);
-  } else {
-    return GEOSInterpolateNormalized_r(context, geom, d);
-  }
+    char has_empty = has_empty_line(context, geom);
+    if (has_empty == 0) {
+      return GEOSInterpolateNormalized_r(context, geom, d);
+    } else if (has_empty == 1) {
+      return GEOSGeom_createEmptyPoint_r(context);
+    } else {
+      return NULL;
+    }
 }
 static void* line_interpolate_point_normalized_data[1] = {
     GEOSInterpolateNormalizedProtectEmpty_r};

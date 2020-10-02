@@ -282,6 +282,40 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
   }
 }
 
+
+/* GEOSInterpolate_r and GEOSInterpolateNormalized_r segfault on empty
+ * linestrings, empty multilinestrings or multilinestrings with the first geometry empty.
+ * Returns 1 in those cases, 2 on error, 0 otherwise. */
+#if !GEOS_SINCE_3_8_0
+char has_empty_line(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
+    char type;
+    char is_empty;
+    const GEOSGeometry* sub_geom;
+
+    type = GEOSGeomTypeId_r(ctx, geom);
+    if (type == -1) {
+      return 2;
+    } else if (type == GEOS_LINESTRING) {
+      // linestring: check if it is empty
+      return GEOSisEmpty_r(ctx, geom);
+    } else if (type == GEOS_MULTILINESTRING) {
+      // multilinestring: check if it is empty
+      is_empty = GEOSisEmpty_r(ctx, geom);
+      if (is_empty != 0) {
+        return is_empty;  // empty (1) or GEOSException (2)
+      }
+      // also check if the first linestring is empty
+      sub_geom = GEOSGetGeometryN_r(ctx, geom, 0);
+      if (sub_geom == NULL) {
+        return 2;  // GEOSException
+      }
+      return GEOSisEmpty_r(ctx, sub_geom);
+    } else {
+      return 0;
+    }
+}
+#endif
+
 /* Define GEOS error handlers. See GEOS_INIT / GEOS_FINISH macros in geos.h*/
 void geos_error_handler(const char* message, void* userdata) {
   snprintf(userdata, 1024, "%s", message);

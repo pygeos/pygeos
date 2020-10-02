@@ -127,6 +127,9 @@ extern char has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry* geom);
 extern GEOSGeometry* point_empty_to_nan_all_geoms(GEOSContextHandle_t ctx,
                                                   GEOSGeometry* geom);
 extern char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry* geom);
+#if !GEOS_SINCE_3_8_0
+extern char has_empty_line(GEOSContextHandle_t ctx, GEOSGeometry* geom);
+#endif
 
 extern int init_geos(PyObject* m);
 
