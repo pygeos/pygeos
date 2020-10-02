@@ -322,6 +322,8 @@ def test_subclasses(with_point_in_registry):
 
 def test_prepare():
     arr = np.array([pygeos.points(1, 1), None, pygeos.box(0, 0, 1, 1)])
+    assert arr[0]._ptr_prepared == 0
+    assert arr[2]._ptr_prepared == 0
     pygeos.prepare(arr)
     assert arr[0]._ptr_prepared != 0
     assert arr[1] is None
@@ -336,6 +338,8 @@ def test_prepare():
 def test_destroy_prepared():
     arr = np.array([pygeos.points(1, 1), None, pygeos.box(0, 0, 1, 1)])
     pygeos.prepare(arr)
+    assert arr[0]._ptr_prepared != 0
+    assert arr[2]._ptr_prepared != 0
     pygeos.destroy_prepared(arr)
     assert arr[0]._ptr_prepared == 0
     assert arr[1] is None

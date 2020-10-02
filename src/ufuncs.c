@@ -251,15 +251,11 @@ static void YY_b_p_func(char** args, npy_intp* dimensions, npy_intp* steps, void
 
   BINARY_LOOP {
     /* get the geometries: return on error */
-    if (!get_geom(*(GeometryObject**)ip1, &in1)) {
+    if (!get_geom_with_prepared(*(GeometryObject**)ip1, &in1, &in1_prepared)) {
       errstate = PGERR_NOT_A_GEOMETRY;
       goto finish;
     }
     if (!get_geom(*(GeometryObject**)ip2, &in2)) {
-      errstate = PGERR_NOT_A_GEOMETRY;
-      goto finish;
-    }
-    if (!get_geom_prepared(*(GeometryObject**)ip1, &in1_prepared)) {
       errstate = PGERR_NOT_A_GEOMETRY;
       goto finish;
     }

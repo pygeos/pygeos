@@ -434,10 +434,18 @@ char get_geom(GeometryObject* obj, GEOSGeometry** out) {
   }
 }
 
-/* Get a GEOSPreparedGeometry pointer from a GeometryObject
-This function does not check obj's type */
-char get_geom_prepared(GeometryObject* obj, GEOSPreparedGeometry** out) {
-  *out = obj->ptr_prepared;
+/* Get a GEOSGeometry AND GEOSPreparedGeometry pointer from a GeometryObject,
+or NULL if the input is Py_None. Returns 0 on error, 1 on success. */
+char get_geom_with_prepared(GeometryObject* obj, GEOSGeometry** out,
+                            GEOSPreparedGeometry** prep) {
+  if (!get_geom(obj, out)) {
+    // It is not a GeometryObject / None: Error
+    return 0;
+  }
+  if (*out != NULL) {
+    // Only if it is not None, fill the prepared geometry
+    *prep = obj->ptr_prepared;
+  }
   return 1;
 }
 
