@@ -196,7 +196,8 @@ def destroy_prepared(geometry, **kwargs):
     """Destroy a previously prepared geometry, freeing up memory.
 
     Note that the prepared geometry will always be cleaned up if the geometry itself
-    is dereferenced. This function needs only be called in very specific circumstances.
+    is dereferenced. This function needs only be called in very specific circumstances,
+    such as freeing up memory without losing the geometries, or benchmarking.
 
     Parameters
     ----------
