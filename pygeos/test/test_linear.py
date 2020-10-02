@@ -41,15 +41,23 @@ def test_line_interpolate_point_float_array():
 @pytest.mark.parametrize(
     "geom",
     [
-        empty_line_string,
+        pygeos.Geometry("POINT EMPTY"),
+        pygeos.Geometry("LINESTRING EMPTY"),
         pygeos.Geometry("LINEARRING EMPTY"),
+        pygeos.Geometry("POLYGON EMPTY"),
+        pygeos.Geometry("MULTIPOINT EMPTY"),
         pygeos.Geometry("MULTILINESTRING EMPTY"),
         pygeos.Geometry("MULTILINESTRING (EMPTY, (0 0, 1 1))"),
+        pygeos.Geometry("MULTIPOLYGON EMPTY"),
+        pygeos.Geometry("MULTIPOLYGON (EMPTY, ((0 0, 1 1, 1 0, 0 0)))"),
         pygeos.Geometry("GEOMETRYCOLLECTION EMPTY"),
-        pygeos.Geometry("GEOMETRYCOLLECTION (LINESTRING EMPTY)"),
+        pygeos.Geometry("GEOMETRYCOLLECTION (LINESTRING EMPTY, POINT (1 1))"),
     ],
 )
 def test_line_interpolate_point_empty(geom, normalize):
+    # These geometries segfault in some versions of GEOS (in 3.8.0, still
+    # some of them segfault). Instead, we patched this to return POINT EMPTY.
+    # This matches GEOS 3.8.0 behavior on simple empty geometries.
     assert pygeos.equals(
         pygeos.line_interpolate_point(geom, 0.2, normalize=normalize), empty_point
     )
