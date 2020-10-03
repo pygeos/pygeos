@@ -187,15 +187,7 @@ static void O_b_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 static PyUFuncGenericFunction O_b_funcs[1] = {&O_b_func};
 
 /* Define the geom, geom -> bool functions (YY_b) */
-static void* disjoint_data[1] = {GEOSDisjoint_r};
-static void* touches_data[1] = {GEOSTouches_r};
-static void* crosses_data[1] = {GEOSCrosses_r};
-static void* within_data[1] = {GEOSWithin_r};
-static void* contains_data[1] = {GEOSContains_r};
-static void* overlaps_data[1] = {GEOSOverlaps_r};
 static void* equals_data[1] = {GEOSEquals_r};
-static void* covers_data[1] = {GEOSCovers_r};
-static void* covered_by_data[1] = {GEOSCoveredBy_r};
 typedef char FuncGEOS_YY_b(void* context, void* a, void* b);
 static char YY_b_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_BOOL};
 static void YY_b_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -236,8 +228,26 @@ finish:
 static PyUFuncGenericFunction YY_b_funcs[1] = {&YY_b_func};
 
 /* Define the geom, geom -> bool functions (YY_b) prepared */
+static void* contains_func_tuple[2] = {GEOSContains_r, GEOSPreparedContains_r};
+static void* contains_data[1] = {contains_func_tuple};
+// static void* contains_properly_func_tuple[2] = {..., GEOSPreparedContainsProperly_r};
+// static void* contains_properly_data[1] = {contains_properly_func_tuple};
+static void* covered_by_func_tuple[2] = {GEOSCoveredBy_r, GEOSPreparedCoveredBy_r};
+static void* covered_by_data[1] = {covered_by_func_tuple};
+static void* covers_func_tuple[2] = {GEOSCovers_r, GEOSPreparedCovers_r};
+static void* covers_data[1] = {covers_func_tuple};
+static void* crosses_func_tuple[2] = {GEOSCrosses_r, GEOSPreparedCrosses_r};
+static void* crosses_data[1] = {crosses_func_tuple};
+static void* disjoint_func_tuple[2] = {GEOSDisjoint_r, GEOSPreparedDisjoint_r};
+static void* disjoint_data[1] = {disjoint_func_tuple};
 static void* intersects_func_tuple[2] = {GEOSIntersects_r, GEOSPreparedIntersects_r};
 static void* intersects_data[1] = {intersects_func_tuple};
+static void* overlaps_func_tuple[2] = {GEOSOverlaps_r, GEOSPreparedOverlaps_r};
+static void* overlaps_data[1] = {overlaps_func_tuple};
+static void* touches_func_tuple[2] = {GEOSTouches_r, GEOSPreparedTouches_r};
+static void* touches_data[1] = {touches_func_tuple};
+static void* within_func_tuple[2] = {GEOSWithin_r, GEOSPreparedWithin_r};
+static void* within_data[1] = {within_func_tuple};
 static char YY_b_p_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_BOOL};
 static void YY_b_p_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
   FuncGEOS_YY_b* func = ((FuncGEOS_YY_b**)data)[0];
@@ -2255,16 +2265,16 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_O_b(is_missing);
   DEFINE_O_b(is_valid_input);
 
-  DEFINE_YY_b(disjoint);
-  DEFINE_YY_b(touches);
+  DEFINE_YY_b_p(disjoint);
+  DEFINE_YY_b_p(touches);
   DEFINE_YY_b_p(intersects);
-  DEFINE_YY_b(crosses);
-  DEFINE_YY_b(within);
-  DEFINE_YY_b(contains);
-  DEFINE_YY_b(overlaps);
+  DEFINE_YY_b_p(crosses);
+  DEFINE_YY_b_p(within);
+  DEFINE_YY_b_p(contains);
+  DEFINE_YY_b_p(overlaps);
   DEFINE_YY_b(equals);
-  DEFINE_YY_b(covers);
-  DEFINE_YY_b(covered_by);
+  DEFINE_YY_b_p(covers);
+  DEFINE_YY_b_p(covered_by);
 
   DEFINE_Y_Y(envelope);
   DEFINE_Y_Y(convex_hull);
