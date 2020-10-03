@@ -136,10 +136,10 @@ if "clean" not in sys.argv:
         Extension(
             "pygeos.lib.core",
             sources=[
+                "src/core.c",
                 "src/c_api.c",
                 "src/coords.c",
                 "src/geos.c",
-                "src/lib.c",
                 "src/pygeom.c",
                 "src/strtree.c",
                 "src/ufuncs.c",
