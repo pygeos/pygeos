@@ -169,7 +169,7 @@ static char IsMissing(void* context, PyObject* obj) {
   if (!get_geom((GeometryObject *) obj, &g)) {
     return 0;
   };
-  return g == NULL;
+  return g == NULL;  // get_geom sets g to NULL for None input
 }
 static void* is_missing_data[1] = {IsMissing};
 static char IsGeometry(void* context, PyObject* obj) {
@@ -182,7 +182,7 @@ static char IsGeometry(void* context, PyObject* obj) {
 static void* is_geometry_data[1] = {IsGeometry};
 static char IsValidInput(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  return get_geom((GeometryObject *) obj, &g) == 1;
+  return get_geom((GeometryObject *) obj, &g);
 }
 static void* is_valid_input_data[1] = {IsValidInput};
 typedef char FuncGEOS_O_b(void* context, PyObject* obj);
