@@ -6,6 +6,9 @@ from .common import empty_point
 from .common import empty_line_string
 from .common import point
 from .common import line_string
+from .common import polygon
+from .common import multi_point
+from .common import multi_polygon
 from .common import linear_ring
 from .common import multi_line_string
 
@@ -41,15 +44,10 @@ def test_line_interpolate_point_float_array():
 @pytest.mark.parametrize(
     "geom",
     [
-        pygeos.Geometry("POINT EMPTY"),
         pygeos.Geometry("LINESTRING EMPTY"),
         pygeos.Geometry("LINEARRING EMPTY"),
-        pygeos.Geometry("POLYGON EMPTY"),
-        pygeos.Geometry("MULTIPOINT EMPTY"),
         pygeos.Geometry("MULTILINESTRING EMPTY"),
         pygeos.Geometry("MULTILINESTRING (EMPTY, (0 0, 1 1))"),
-        pygeos.Geometry("MULTIPOLYGON EMPTY"),
-        pygeos.Geometry("MULTIPOLYGON (EMPTY, ((0 0, 1 1, 1 0, 0 0)))"),
         pygeos.Geometry("GEOMETRYCOLLECTION EMPTY"),
         pygeos.Geometry("GEOMETRYCOLLECTION (LINESTRING EMPTY, POINT (1 1))"),
     ],
@@ -61,6 +59,27 @@ def test_line_interpolate_point_empty(geom, normalize):
     assert pygeos.equals(
         pygeos.line_interpolate_point(geom, 0.2, normalize=normalize), empty_point
     )
+
+
+@pytest.mark.parametrize("normalize", [False, True])
+@pytest.mark.parametrize(
+    "geom",
+    [
+        empty_point,
+        point,
+        polygon,
+        multi_point,
+        multi_polygon,
+        pygeos.geometrycollections([point]),
+        pygeos.geometrycollections([polygon]),
+        pygeos.geometrycollections([multi_line_string]),
+        pygeos.geometrycollections([multi_point]),
+        pygeos.geometrycollections([multi_polygon]),
+    ],
+)
+def test_line_interpolate_point_invalid_type(geom, normalize):
+    with pytest.raises(TypeError):
+        assert pygeos.line_interpolate_point(geom, 0.2, normalize=normalize)
 
 
 def test_line_interpolate_point_none():

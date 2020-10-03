@@ -362,7 +362,7 @@ static void* GEOSInterpolateProtectEmpty_r(void* context, void* geom, double d) 
     return GEOSInterpolate_r(context, geom, d);
   } else if (errstate == PGERR_EMPTY_GEOMETRY) {
     return GEOSGeom_createEmptyPoint_r(context);
-  } else if (errstate == PGERR_GEOMETRY_TYPE) {
+  } else {
     return NULL;
   }
 }
@@ -374,7 +374,7 @@ static void* GEOSInterpolateNormalizedProtectEmpty_r(void* context, void* geom,
     return GEOSInterpolateNormalized_r(context, geom, d);
   } else if (errstate == PGERR_EMPTY_GEOMETRY) {
     return GEOSGeom_createEmptyPoint_r(context);
-  } else if (errstate == PGERR_GEOMETRY_TYPE) {
+  } else {
     return NULL;
   }
 }
