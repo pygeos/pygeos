@@ -284,31 +284,58 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
 
 /* GEOSInterpolate_r and GEOSInterpolateNormalized_r segfault on empty
  * geometries and also on collections with the first geometry empty.
- * Returns 1 in those cases, 2 on error, 0 otherwise. */
-char has_empty_line(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
+ * 
+ * This function returns:
+ * - PGERR_GEOMETRY_TYPE on non-linear geometries
+ * - PGERR_EMPTY_GEOMETRY on empty linear geometries
+ * - PGERR_EXCEPTIONS on GEOS exceptions
+ * - PGERR_SUCCESS on a non-empty and linear geometry
+ * 
+ * Note that GEOS 3.8 fixed this situation for empty LINESTRING/LINEARRING,
+ * but it still segfaults on other empty geometries.
+ */
+char geos_interpolate_checker(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
   char type;
   char is_empty;
   const GEOSGeometry* sub_geom;
 
-  is_empty = GEOSisEmpty_r(ctx, geom);
-  if (is_empty != 0) {
-    return is_empty;  // empty (1) or GEOSException (2)
-  }
-
+  // Check if the geometry is linear
   type = GEOSGeomTypeId_r(ctx, geom);
   if (type == -1) {
-    return 2;
-  } else if ((type == GEOS_MULTIPOINT) | (type == GEOS_MULTILINESTRING) |
-             (type == GEOS_MULTIPOLYGON) | (type = GEOS_GEOMETRYCOLLECTION)) {
-    // also check if the first geometry is empty
+    return PGERR_GEOS_EXCEPTION;
+  } else if ((type == GEOS_POINT) | (type == GEOS_POLYGON) | (type == GEOS_MULTIPOINT) |
+             (type == GEOS_MULTIPOLYGON)) {
+    return PGERR_GEOMETRY_TYPE;
+  }
+
+  // Check if the geometry is empty
+  is_empty = GEOSisEmpty_r(ctx, geom);
+  if (is_empty == 1) {
+    return PGERR_EMPTY_GEOMETRY;
+  } else if (is_empty == 2) {
+    return PGERR_GEOS_EXCEPTION;
+  }
+
+  // For collections: also check the type and emptyness of the first geometry
+  if ((type == GEOS_MULTILINESTRING) | (type == GEOS_GEOMETRYCOLLECTION)) {
     sub_geom = GEOSGetGeometryN_r(ctx, geom, 0);
     if (sub_geom == NULL) {
-      return 2;  // GEOSException
+      return PGERR_GEOS_EXCEPTION;  // GEOSException
     }
-    return GEOSisEmpty_r(ctx, sub_geom);
-  } else {
-    return 0;
+    type = GEOSGeomTypeId_r(ctx, sub_geom);
+    if (type == -1) {
+      return PGERR_GEOS_EXCEPTION;
+    } else if ((type != GEOS_LINESTRING) & (type != GEOS_LINEARRING)) {
+      return PGERR_GEOMETRY_TYPE;
+    }
+    is_empty = GEOSisEmpty_r(ctx, sub_geom);
+    if (is_empty == 1) {
+      return PGERR_EMPTY_GEOMETRY;
+    } else if (is_empty == 2) {
+      return PGERR_GEOS_EXCEPTION;
+    }
   }
+  return PGERR_SUCCESS;
 }
 
 /* Define GEOS error handlers. See GEOS_INIT / GEOS_FINISH macros in geos.h*/

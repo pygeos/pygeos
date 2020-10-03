@@ -356,30 +356,25 @@ static void Y_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
 /* Define the geom, double -> geom functions (Yd_Y) */
-
-/* GEOS < 3.8 gives segfault for empty linestrings, this is fixed since
-   https://github.com/libgeos/geos/commit/18505af1103cdafb2178f2f0eb8e1a10cfa16d2d
-   But still, GEOS 3.8 gives segfaults for multilinestrings. So we do an empty line
-   check for all versions. */
 static void* GEOSInterpolateProtectEmpty_r(void* context, void* geom, double d) {
-  char has_empty = has_empty_line(context, geom);
-  if (has_empty == 0) {
+  char errstate = geos_interpolate_checker(context, geom);
+  if (errstate == PGERR_SUCCESS) {
     return GEOSInterpolate_r(context, geom, d);
-  } else if (has_empty == 1) {
+  } else if (errstate == PGERR_EMPTY_GEOMETRY) {
     return GEOSGeom_createEmptyPoint_r(context);
-  } else {
+  } else if (errstate == PGERR_GEOMETRY_TYPE) {
     return NULL;
   }
 }
 static void* line_interpolate_point_data[1] = {GEOSInterpolateProtectEmpty_r};
 static void* GEOSInterpolateNormalizedProtectEmpty_r(void* context, void* geom,
                                                      double d) {
-  char has_empty = has_empty_line(context, geom);
-  if (has_empty == 0) {
+  char errstate = geos_interpolate_checker(context, geom);
+  if (errstate == PGERR_SUCCESS) {
     return GEOSInterpolateNormalized_r(context, geom, d);
-  } else if (has_empty == 1) {
+  } else if (errstate == PGERR_EMPTY_GEOMETRY) {
     return GEOSGeom_createEmptyPoint_r(context);
-  } else {
+  } else if (errstate == PGERR_GEOMETRY_TYPE) {
     return NULL;
   }
 }
@@ -428,7 +423,9 @@ static void Yd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
     } else {
       geom_arr[i] = func(ctx, in1, in2);
       if (geom_arr[i] == NULL) {
-        errstate = PGERR_GEOS_EXCEPTION;
+        // Interpolate functions return NULL on PGERR_GEOMETRY_TYPE and on
+        // PGERR_GEOS_EXCEPTION. Distinguish these by the state of last_error.
+        errstate = last_error[0] == 0 ? PGERR_GEOMETRY_TYPE : PGERR_GEOS_EXCEPTION;
         destroy_geom_arr(ctx, geom_arr, i - 1);
         break;
       }
