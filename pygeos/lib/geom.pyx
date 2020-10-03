@@ -20,9 +20,11 @@ cdef geos_get_num_geometries(object[:] array):
     cdef np.intp_t [:] counts_view = counts[:]
 
     for i in range(array.size):
-        PyGEOSGetGEOSGeom(<GeometryObject *>array[i], &geom)
+        if PyGEOSGetGEOSGeom(<GeometryObject *>array[i], &geom) == 0:
+            raise TypeError("One of the arguments is of incorrect type. Please provide "
+            "only Geometry objects.")
 
-        if geom == NULL or GEOSisEmpty_r(geos_handle, geom):
+        if geom == NULL:
             continue
 
         counts_view[i] = GEOSGetNumGeometries_r(geos_handle, geom)
@@ -56,13 +58,14 @@ def get_parts(object[:] array):
     cdef np.intp_t [:] index_view = index[:]
 
     for geom_idx in range(array.size):
-        PyGEOSGetGEOSGeom(<GeometryObject *>array[geom_idx], &geom)
+        if PyGEOSGetGEOSGeom(<GeometryObject *>array[geom_idx], &geom) == 0:
+            raise TypeError("One of the arguments is of incorrect type. Please provide "
+            "only Geometry objects.")
 
-        if geom == NULL or GEOSisEmpty_r(geos_handle, geom):
+        if geom == NULL:
             continue
 
         for part_idx in range(counts_view[geom_idx]):
-
             index_view[idx] = geom_idx
             part = GEOSGetGeometryN_r(geos_handle, geom, part_idx)
 

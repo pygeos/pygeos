@@ -462,7 +462,11 @@ def get_geometry(geometry, index):
 
 def get_parts(geometry, return_index=False):
     """Gets parts of each GeometryCollection or Multi* geometry object; returns
-    a copy of each singular geometry type.
+    a copy of each geometry in the GeometryCollection or Multi* geometry object.
+
+    Note: This does not return the individual parts of Multi* geometry objects in
+    a GeometryCollection.  You may need to call this function multiple times to
+    return individual parts of Multi* geometry objects in a GeometryCollection.
 
     Parameters
     ----------
