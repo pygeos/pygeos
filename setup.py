@@ -3,9 +3,10 @@ import subprocess
 import sys
 from distutils.version import LooseVersion
 from setuptools import setup, Extension
-from setuptools.command.build_ext import build_ext as _build_ext
 import logging
 import versioneer
+from Cython.Distutils import build_ext as _build_ext
+from Cython.Build import cythonize
 
 log = logging.getLogger(__name__)
 ch = logging.StreamHandler()
@@ -109,12 +110,22 @@ class build_ext(_build_ext):
 
         self.include_dirs.append(numpy.get_include())
 
+geos_paths = get_geos_paths()
+geos_paths["include_dirs"].append("src")
 
-module_lib = Extension(
+extensions = [
+    Extension(
     "pygeos.lib",
     sources=["src/lib.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c", "src/strtree.c"],
-    **get_geos_paths()
+        **geos_paths
+    ),
+    Extension(
+        "pygeos.cythondemo",
+        sources=["pygeos/cythondemo.pyx", "src/pygeom.c", "src/geos.c"],
+        define_macros = [('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')],
+        **geos_paths
 )
+]
 
 
 try:
@@ -146,7 +157,7 @@ setup(
     python_requires=">=3",
     include_package_data=True,
     data_files=[('geos_license', ['GEOS_LICENSE'])],
-    ext_modules=[module_lib],
+    ext_modules=cythonize(extensions),
     classifiers=[
         "Programming Language :: Python :: 3",
         "Intended Audience :: Science/Research",

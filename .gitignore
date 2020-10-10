@@ -67,3 +67,5 @@ docs/_build
 
 # Benchmarks
 .asv
+
+pygeos/*.c
