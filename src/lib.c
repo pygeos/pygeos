@@ -2,7 +2,7 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <Python.h>
-
+#define PyGEOS_API_Module
 #define PY_ARRAY_UNIQUE_SYMBOL pygeos_ARRAY_API
 #define PY_UFUNC_UNIQUE_SYMBOL pygeos_UFUNC_API
 #include <numpy/ndarraytypes.h>
@@ -74,8 +74,6 @@ PyMODINIT_FUNC PyInit_lib(void) {
   };
 
   /* Initialize the C API pointer array (see c_api.h) */
-  PyGEOS_API[PyGEOS_GEOSVersion_NUM] = (void*)PyGEOS_GEOSVersion;
-  PyGEOS_API[PyGEOS_CreateGeom_NUM] = (void*)PyGEOS_CreateGeom;
   PyGEOS_API[PyGEOS_GetGeom_NUM] = (void*)PyGEOS_GetGeom;
 
   /* Create a Capsule containing the API pointer array's address */

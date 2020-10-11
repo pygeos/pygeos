@@ -1,11 +1,12 @@
 cimport numpy as np
-from ._geos cimport GEOSGeometry
+from cpython cimport PyObject
+from ._geos cimport GEOSGeometry, GEOSContextHandle_t
 
-cdef extern from "pygeom.h":
-    ctypedef struct GeometryObject:
-        np.intp_t ptr
 
-    ctypedef class pygeos.lib.Geometry [object GeometryObject]:
-        cdef np.intp_t _ptr "ptr"
+cdef extern from "pygeos_api.h":
+    # pygeos.lib C API loader; returns -1 on error
+    # MUST be called before calling other C API functions
+    int import_pygeos_api() except -1
 
-    char get_geom(GeometryObject* obj, GEOSGeometry** out)
+    # C functions provided by the pygeos.lib C API
+    char PyGEOS_GetGeom(PyObject *obj, GEOSGeometry **out)

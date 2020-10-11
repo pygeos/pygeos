@@ -116,12 +116,12 @@ geos_paths["include_dirs"].append("src")
 extensions = [
     Extension(
     "pygeos.lib",
-    sources=["src/lib.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c", "src/strtree.c"],
+    sources=["src/lib.c", "src/pygeos_api.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c", "src/strtree.c"],
         **geos_paths
     ),
     Extension(
         "pygeos.cythondemo",
-        sources=["pygeos/cythondemo.pyx", "src/pygeom.c", "src/geos.c"],
+        sources=["pygeos/cythondemo.pyx"],
         define_macros = [('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')],
         **geos_paths
 )
