@@ -154,7 +154,7 @@ setup(
         "test": ["pytest"],
         "docs": ["sphinx", "numpydoc"],
     },
-    python_requires=">=3",
+    python_requires=">=3.6",
     include_package_data=True,
     data_files=[('geos_license', ['GEOS_LICENSE'])],
     ext_modules=cythonize(extensions),
