@@ -12,6 +12,7 @@
 #include "coords.h"
 #include "geos.h"
 #include "pygeom.h"
+#include "pygeos_api.h"
 #include "strtree.h"
 #include "ufuncs.h"
 
@@ -29,7 +30,8 @@ static struct PyModuleDef moduledef = {
     PyModuleDef_HEAD_INIT, "lib", NULL, -1, GeosModule, NULL, NULL, NULL, NULL};
 
 PyMODINIT_FUNC PyInit_lib(void) {
-  PyObject *m, *d;
+  PyObject *m, *d, *c_api_object;
+  static void* PyGEOS_API[PyGEOS_API_pointers];
 
   m = PyModule_Create(&moduledef);
   if (!m) {
@@ -70,6 +72,17 @@ PyMODINIT_FUNC PyInit_lib(void) {
   if (init_ufuncs(m, d) < 0) {
     return NULL;
   };
+
+  /* Initialize the C API pointer array (see c_api.h) */
+  PyGEOS_API[PyGEOS_GEOSVersion_NUM] = (void*)PyGEOS_GEOSVersion;
+  PyGEOS_API[PyGEOS_CreateGeom_NUM] = (void*)PyGEOS_CreateGeom;
+  PyGEOS_API[PyGEOS_GetGeom_NUM] = (void*)PyGEOS_GetGeom;
+
+  /* Create a Capsule containing the API pointer array's address */
+  c_api_object = PyCapsule_New((void*)PyGEOS_API, "pygeos.lib._C_API", NULL);
+  if (c_api_object != NULL) {
+    PyModule_AddObject(m, "_C_API", c_api_object);
+  }
 
   return m;
 }
