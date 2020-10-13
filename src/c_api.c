@@ -24,4 +24,3 @@ extern PyObject* PyGEOSCreateGeom(GEOSGeometry *ptr, GEOSContextHandle_t ctx) {
 extern char PyGEOSGetGEOSGeom(GeometryObject *obj, GEOSGeometry **out) {
     return get_geom(obj, out);
 }
-
