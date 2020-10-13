@@ -1,9 +1,8 @@
-from . import Geometry  # NOQA
 from . import lib
+from . import Geometry  # NOQA
 from .decorators import multithreading_enabled
 
 __all__ = ["line_interpolate_point", "line_locate_point", "line_merge", "shared_paths"]
-
 
 @multithreading_enabled
 def line_interpolate_point(line, distance, normalize=False):
@@ -70,7 +69,6 @@ def line_locate_point(line, other, normalize=False):
         return lib.line_locate_point_normalized(line, other)
     else:
         return lib.line_locate_point(line, other)
-
 
 @multithreading_enabled
 def line_merge(line):

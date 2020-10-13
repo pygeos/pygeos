@@ -1,9 +1,8 @@
 import warnings
 
-from . import Geometry  # NOQA
 from . import lib
+from . import Geometry  # NOQA
 from .decorators import multithreading_enabled, requires_geos
-
 
 __all__ = [
     "has_z",
@@ -58,7 +57,7 @@ def is_ccw(geometry, **kwargs):
     Note that there are no checks on whether lines are actually closed and
     not self-intersecting, while this is a requirement for is_ccw. The recommended
     usage of this function for linestrings is ``is_ccw(g) & is_simple(g)`` and for
-    linearrings ``is_ccw(g) & is_valid(g)``.
+    linearrings ``is_ccw(g) & is_valid(g)``. 
 
     Parameters
     ----------
