@@ -165,24 +165,33 @@ static PyUFuncGenericFunction Y_b_funcs[1] = {&Y_b_func};
 
 /* Define the object -> bool functions (O_b) which do not raise on non-geom objects*/
 static char IsMissing(void* context, PyObject* obj) {
-  return ((PyObject*)obj == Py_None);
+  GEOSGeometry* g = NULL;
+  if (!get_geom((GeometryObject *) obj, &g)) {
+    return 0;
+  };
+  return g == NULL;  // get_geom sets g to NULL for None input
 }
 static void* is_missing_data[1] = {IsMissing};
 static char IsGeometry(void* context, PyObject* obj) {
-  return (PyObject_IsInstance(obj, (PyObject*)&GeometryType));
+  GEOSGeometry* g = NULL;
+  if (!get_geom((GeometryObject *) obj, &g)) {
+    return 0;
+  }
+  return g != NULL;
 }
 static void* is_geometry_data[1] = {IsGeometry};
 static char IsValidInput(void* context, PyObject* obj) {
-  return (IsGeometry(context, obj) | IsMissing(context, obj));
+  GEOSGeometry* g = NULL;
+  return get_geom((GeometryObject *) obj, &g);
 }
 static void* is_valid_input_data[1] = {IsValidInput};
 typedef char FuncGEOS_O_b(void* context, PyObject* obj);
 static char O_b_dtypes[2] = {NPY_OBJECT, NPY_BOOL};
 static void O_b_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
   FuncGEOS_O_b* func = (FuncGEOS_O_b*)data;
-  GEOS_INIT;
+  GEOS_INIT_THREADS;
   UNARY_LOOP { *(npy_bool*)op1 = func(ctx, *(PyObject**)ip1); }
-  GEOS_FINISH;
+  GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction O_b_funcs[1] = {&O_b_func};
 
@@ -356,34 +365,30 @@ static void Y_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
 /* Define the geom, double -> geom functions (Yd_Y) */
-
-/* GEOS < 3.8 gives segfault for empty linestrings, this is fixed since
-   https://github.com/libgeos/geos/commit/18505af1103cdafb2178f2f0eb8e1a10cfa16d2d */
-#if GEOS_SINCE_3_8_0
-static void* line_interpolate_point_data[1] = {GEOSInterpolate_r};
-static void* line_interpolate_point_normalized_data[1] = {GEOSInterpolateNormalized_r};
-#else
 static void* GEOSInterpolateProtectEmpty_r(void* context, void* geom, double d) {
-  int n = GEOSGeomGetNumPoints_r(context, geom);
-  if (n < 2) {
+  char errstate = geos_interpolate_checker(context, geom);
+  if (errstate == PGERR_SUCCESS) {
+    return GEOSInterpolate_r(context, geom, d);
+  } else if (errstate == PGERR_EMPTY_GEOMETRY) {
     return GEOSGeom_createEmptyPoint_r(context);
   } else {
-    return GEOSInterpolate_r(context, geom, d);
+    return NULL;
   }
 }
 static void* line_interpolate_point_data[1] = {GEOSInterpolateProtectEmpty_r};
 static void* GEOSInterpolateNormalizedProtectEmpty_r(void* context, void* geom,
                                                      double d) {
-  int n = GEOSGeomGetNumPoints_r(context, geom);
-  if (n < 2) {
+  char errstate = geos_interpolate_checker(context, geom);
+  if (errstate == PGERR_SUCCESS) {
+    return GEOSInterpolateNormalized_r(context, geom, d);
+  } else if (errstate == PGERR_EMPTY_GEOMETRY) {
     return GEOSGeom_createEmptyPoint_r(context);
   } else {
-    return GEOSInterpolateNormalized_r(context, geom, d);
+    return NULL;
   }
 }
 static void* line_interpolate_point_normalized_data[1] = {
     GEOSInterpolateNormalizedProtectEmpty_r};
-#endif
 
 static void* simplify_data[1] = {GEOSSimplify_r};
 static void* simplify_preserve_topology_data[1] = {GEOSTopologyPreserveSimplify_r};
@@ -427,7 +432,9 @@ static void Yd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
     } else {
       geom_arr[i] = func(ctx, in1, in2);
       if (geom_arr[i] == NULL) {
-        errstate = PGERR_GEOS_EXCEPTION;
+        // Interpolate functions return NULL on PGERR_GEOMETRY_TYPE and on
+        // PGERR_GEOS_EXCEPTION. Distinguish these by the state of last_error.
+        errstate = last_error[0] == 0 ? PGERR_GEOMETRY_TYPE : PGERR_GEOS_EXCEPTION;
         destroy_geom_arr(ctx, geom_arr, i - 1);
         break;
       }
