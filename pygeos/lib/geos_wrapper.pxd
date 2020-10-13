@@ -7,6 +7,3 @@ cdef extern from "geos_c.h":
     int GEOSGetNumGeometries_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
     int GEOSisEmpty_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
     GEOSGeometry* GEOSGeom_clone_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
-
-
-cdef GEOSContextHandle_t get_geos_handle()

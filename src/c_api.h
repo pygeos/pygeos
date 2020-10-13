@@ -23,15 +23,15 @@ provide an entry into PyGEOS_API in c_api.c module declaration block
 #define PyGEOS_GEOS_API_Version_RETURN char *
 #define PyGEOS_GEOS_API_Version_PROTO (void)
 
-/* PyObject* PyGEOSCreateGeom(GEOSGeometry *ptr, GEOSContextHandle_t ctx) */
-#define PyGEOSCreateGeom_NUM 1
-#define PyGEOSCreateGeom_RETURN PyObject *
-#define PyGEOSCreateGeom_PROTO (GEOSGeometry * ptr, GEOSContextHandle_t ctx)
+/* PyObject* PyGEOS_CreateGeometry(GEOSGeometry *ptr, GEOSContextHandle_t ctx) */
+#define PyGEOS_CreateGeometry_NUM 1
+#define PyGEOS_CreateGeometry_RETURN PyObject *
+#define PyGEOS_CreateGeometry_PROTO (GEOSGeometry * ptr, GEOSContextHandle_t ctx)
 
-/* char PyGEOSGetGEOSGeom(GeometryObject *obj, GEOSGeometry **out) */
-#define PyGEOSGetGEOSGeom_NUM 2
-#define PyGEOSGetGEOSGeom_RETURN char
-#define PyGEOSGetGEOSGeom_PROTO (GeometryObject * obj, GEOSGeometry * *out)
+/* char PyGEOS_GetGEOSGeometry(GeometryObject *obj, GEOSGeometry **out) */
+#define PyGEOS_GetGEOSGeometry_NUM 2
+#define PyGEOS_GetGEOSGeometry_RETURN char
+#define PyGEOS_GetGEOSGeometry_PROTO (GeometryObject * obj, GEOSGeometry * *out)
 
 /* Total number of C API pointers */
 #define PyGEOS_API_num_pointers 4
@@ -42,8 +42,8 @@ provide an entry into PyGEOS_API in c_api.c module declaration block
  */
 
 extern PyGEOS_GEOS_API_Version_RETURN PyGEOS_GEOS_API_Version PyGEOS_GEOS_API_Version_PROTO;
-extern PyGEOSCreateGeom_RETURN PyGEOSCreateGeom PyGEOSCreateGeom_PROTO;
-extern PyGEOSGetGEOSGeom_RETURN PyGEOSGetGEOSGeom PyGEOSGetGEOSGeom_PROTO;
+extern PyGEOS_CreateGeometry_RETURN PyGEOS_CreateGeometry PyGEOS_CreateGeometry_PROTO;
+extern PyGEOS_GetGEOSGeometry_RETURN PyGEOS_GetGEOSGeometry PyGEOS_GetGEOSGeometry_PROTO;
 
 #else
 /* This section is used in modules that use the pygeos C API
@@ -56,11 +56,11 @@ static void **PyGEOS_API;
 #define PyGEOS_GEOS_API_Version \
     (*(PyGEOS_GEOS_API_Version_RETURN(*) PyGEOS_GEOS_API_Version_PROTO)PyGEOS_API[PyGEOS_GEOS_API_Version_NUM])
 
-#define PyGEOSCreateGeom \
-    (*(PyGEOSCreateGeom_RETURN(*) PyGEOSCreateGeom_PROTO)PyGEOS_API[PyGEOSCreateGeom_NUM])
+#define PyGEOS_CreateGeometry \
+    (*(PyGEOS_CreateGeometry_RETURN(*) PyGEOS_CreateGeometry_PROTO)PyGEOS_API[PyGEOS_CreateGeometry_NUM])
 
-#define PyGEOSGetGEOSGeom \
-    (*(PyGEOSGetGEOSGeom_RETURN(*) PyGEOSGetGEOSGeom_PROTO)PyGEOS_API[PyGEOSGetGEOSGeom_NUM])
+#define PyGEOS_GetGEOSGeometry \
+    (*(PyGEOS_GetGEOSGeometry_RETURN(*) PyGEOS_GetGEOSGeometry_PROTO)PyGEOS_API[PyGEOS_GetGEOSGeometry_NUM])
 
 /* Dynamically load C API from PyCapsule.
  * It is necessary to call this prior to using C API functions in other modules.

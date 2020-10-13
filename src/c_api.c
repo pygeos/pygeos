@@ -17,10 +17,10 @@ extern char* PyGEOS_GEOS_API_Version(void) {
     return GEOS_CAPI_VERSION;
 }
 
-extern PyObject* PyGEOSCreateGeom(GEOSGeometry *ptr, GEOSContextHandle_t ctx) {
+extern PyObject* PyGEOS_CreateGeometry(GEOSGeometry *ptr, GEOSContextHandle_t ctx) {
     return GeometryObject_FromGEOS(ptr, ctx);
 }
 
-extern char PyGEOSGetGEOSGeom(GeometryObject *obj, GEOSGeometry **out) {
+extern char PyGEOS_GetGEOSGeometry(GeometryObject *obj, GEOSGeometry **out) {
     return get_geom(obj, out);
 }

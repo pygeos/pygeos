@@ -386,7 +386,7 @@ static PyMethodDef GeometryObject_methods[] = {
 };
 
 PyTypeObject GeometryType = {
-    PyVarObject_HEAD_INIT(NULL, 0).tp_name = "pygeos.lib.Geometry",
+    PyVarObject_HEAD_INIT(NULL, 0).tp_name = "pygeos.lib.core.Geometry",
     .tp_doc = "Geometry type",
     .tp_basicsize = sizeof(GeometryObject),
     .tp_itemsize = 0,

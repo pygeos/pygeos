@@ -18,15 +18,7 @@ to enable this capability.
 from cpython.ref cimport PyObject
 cimport numpy as np
 
-from pygeos.lib.geos_wrapper cimport *
-
-
-cdef extern from "pygeom.h":
-    ctypedef struct GeometryObject:
-        np.intp_t ptr
-
-    ctypedef class pygeos.lib.core.Geometry [object GeometryObject]:
-        cdef np.intp_t _ptr "ptr"
+from pygeos.lib.geos_wrapper cimport GEOSGeometry, GEOSContextHandle_t
 
 
 cdef extern from "c_api.h":
@@ -37,5 +29,5 @@ cdef extern from "c_api.h":
 
     # C functions provided by the pygeos.lib C API
     char* PyGEOS_GEOS_API_Version()
-    PyObject* PyGEOSCreateGeom(GEOSGeometry *ptr, GEOSContextHandle_t ctx)
-    char PyGEOSGetGEOSGeom(GeometryObject *obj, GEOSGeometry **out)
+    PyObject* PyGEOS_CreateGeometry(GEOSGeometry *ptr, GEOSContextHandle_t ctx)
+    char PyGEOS_GetGEOSGeometry(PyObject *obj, GEOSGeometry **out)

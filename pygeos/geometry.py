@@ -490,8 +490,7 @@ def get_parts(geometry, return_index=False):
     [0, 1, 1]
     """
     geometry = np.asarray(geometry, dtype=np.object)
-    if geometry.ndim == 0:
-        geometry = np.expand_dims(geometry, 0)
+    geometry = np.atleast_1d(geometry)
 
     if geometry.ndim != 1:
         raise ValueError("Array should be one dimensional")

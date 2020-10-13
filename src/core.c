@@ -79,8 +79,8 @@ PyMODINIT_FUNC PyInit_core(void) {
 
   /* Initialize the C API pointer array */
   PyGEOS_API[PyGEOS_GEOS_API_Version_NUM] = (void*)PyGEOS_GEOS_API_Version;
-  PyGEOS_API[PyGEOSCreateGeom_NUM] = (void*)PyGEOSCreateGeom;
-  PyGEOS_API[PyGEOSGetGEOSGeom_NUM] = (void*)PyGEOSGetGEOSGeom;
+  PyGEOS_API[PyGEOS_CreateGeometry_NUM] = (void*)PyGEOS_CreateGeometry;
+  PyGEOS_API[PyGEOS_GetGEOSGeometry_NUM] = (void*)PyGEOS_GetGEOSGeometry;
 
   /* Create a Capsule containing the API pointer array's address */
   c_api_object = PyCapsule_New((void*)PyGEOS_API, "pygeos.lib.core._C_API", NULL);

@@ -64,7 +64,7 @@ def get_geos_paths():
     library_dir = os.environ.get("GEOS_LIBRARY_PATH")
     if include_dir and library_dir:
         return {
-            "include_dirs": [include_dir],
+            "include_dirs": ["./src", include_dir],
             "library_dirs": [library_dir],
             "libraries": ["geos_c"],
         }
@@ -88,7 +88,7 @@ def get_geos_paths():
 
     libraries = []
     library_dirs = []
-    include_dirs = []
+    include_dirs = ["./src"]
     extra_link_args = []
     for item in get_geos_config("--cflags").split():
         if item.startswith("-I"):
@@ -154,25 +154,12 @@ if "clean" not in sys.argv:
         if not cythonize:
             sys.exit("ERROR: Cython is required to build pygeos from source.")
 
-        # numpy libs must be included for Cython build
-        import numpy
-
-        ext_options["include_dirs"].append(numpy.get_include())
-
-        # add pygeos.lib.core source directory
-        ext_options["include_dirs"].append("./src")
-
         cython_modules = [
-            Extension(
-                "pygeos.lib.pygeos_wrapper",
-                ["pygeos/lib/pygeos_wrapper.pyx"],
-                **ext_options,
-            ),
-            Extension(
-                "pygeos.lib.geos_wrapper",
-                ["pygeos/lib/geos_wrapper.pyx"],
-                **ext_options,
-            ),
+            # Extension(
+            #     "pygeos.lib.geos_wrapper",
+            #     ["pygeos/lib/geos_wrapper.pyx"],
+            #     **ext_options,
+            # ),
             Extension("pygeos.lib.geom", ["pygeos/lib/geom.pyx",], **ext_options,),
         ]
 
