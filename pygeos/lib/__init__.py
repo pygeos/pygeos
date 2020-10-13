@@ -1,3 +1,3 @@
 from pygeos.lib.core import *
 
-from pygeos.lib.geom import *
+from pygeos.lib.geom import get_parts

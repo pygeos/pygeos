@@ -27,7 +27,7 @@ cdef geos_get_num_geometries(object[:] array):
     cdef GEOSGeometry *geom = NULL
 
     counts = np.zeros(shape=(array.size), dtype=np.intp)
-    cdef np.intp_t [:] counts_view = counts[:]
+    cdef np.intp_t[:] counts_view = counts[:]
 
     for i in range(array.size):
         if PyGEOS_GetGEOSGeometry(<PyObject *>array[i], &geom) == 0:

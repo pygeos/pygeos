@@ -155,11 +155,6 @@ if "clean" not in sys.argv:
             sys.exit("ERROR: Cython is required to build pygeos from source.")
 
         cython_modules = [
-            # Extension(
-            #     "pygeos.lib.geos_wrapper",
-            #     ["pygeos/lib/geos_wrapper.pyx"],
-            #     **ext_options,
-            # ),
             Extension("pygeos.lib.geom", ["pygeos/lib/geom.pyx",], **ext_options,),
         ]
 
@@ -170,6 +165,11 @@ if "clean" not in sys.argv:
             # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
         )
 
+    else:
+        # use the previously generated C files
+        ext_modules += [
+            Extension("pygeos.lib.geom", ["pygeos/lib/geom.c"], **ext_options)
+        ]
 
 try:
     descr = open(os.path.join(os.path.dirname(__file__), "README.rst")).read()
