@@ -2,6 +2,8 @@ language: minimal
 
 matrix:
   include:
+  - os: linux  # GEOS 3.5 testing until April 2021
+    env: PYTHON_VERSION="3.6" DEPS="numpy=1.13 geos=3.5"
   - os: linux  # 2017
     env: PYTHON_VERSION="3.6" DEPS="numpy=1.13 geos=3.6"
   - os: linux  # 2018
