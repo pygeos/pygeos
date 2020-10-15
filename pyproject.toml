@@ -1,2 +1,3 @@
 [build-system]
+# numpy and Cython are required to execute setup.py to build Cython extensions
 requires = ["setuptools", "wheel", "numpy", "Cython"]

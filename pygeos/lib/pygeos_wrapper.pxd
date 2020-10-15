@@ -4,8 +4,10 @@ Internally, the pygeos C extension uses a PyCapsule to provide run-time access
 to function pointers within the C API.
 
 To use these functions, you must first call the following in each top-level
-function in each Cython module:
+function declared in each Cython module:
 `import_pygeos_core_api()`
+
+This cannot be imported at the module level due to circular import issues.
 
 If you get unexplained segfaults, this is a likely culprit.
 
@@ -28,6 +30,5 @@ cdef extern from "c_api.h":
     int import_pygeos_core_api() except -1
 
     # C functions provided by the pygeos.lib C API
-    char* PyGEOS_GEOS_API_Version()
     PyObject* PyGEOS_CreateGeometry(GEOSGeometry *ptr, GEOSContextHandle_t ctx)
     char PyGEOS_GetGEOSGeometry(PyObject *obj, GEOSGeometry **out)

@@ -3,7 +3,7 @@ cdef extern from "geos_c.h":
     GEOSContextHandle_t GEOS_init_r()
     ctypedef struct GEOSGeometry
 
-    const GEOSGeometry* GEOSGetGeometryN_r(GEOSContextHandle_t handle, const GEOSGeometry* g, int n)
-    int GEOSGetNumGeometries_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
-    int GEOSisEmpty_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
-    GEOSGeometry* GEOSGeom_clone_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
+    const GEOSGeometry* GEOSGetGeometryN_r(GEOSContextHandle_t handle, const GEOSGeometry* g, int n) except NULL
+    int GEOSGetNumGeometries_r(GEOSContextHandle_t handle, const GEOSGeometry* g) except -1
+    int GEOSisEmpty_r(GEOSContextHandle_t handle, const GEOSGeometry* g) except 2
+    GEOSGeometry* GEOSGeom_clone_r(GEOSContextHandle_t handle, const GEOSGeometry* g) except NULL

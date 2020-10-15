@@ -45,6 +45,7 @@ cdef geos_get_num_geometries(object[:] array):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def get_parts(object[:] array):
+    # initialize PyGEOS C API, must be called for each top-level function
     import_pygeos_core_api()
 
     cdef Py_ssize_t geom_idx = 0
@@ -79,13 +80,9 @@ def get_parts(object[:] array):
             index_view[idx] = geom_idx
             part = GEOSGetGeometryN_r(geos_handle, geom, part_idx)
 
-            if part == NULL:
-                parts_view[idx] = None
-
-            else:
-                # clone the geometry to keep it separate from the inputs
-                part = GEOSGeom_clone_r(geos_handle, part)
-                parts_view[idx] = <object>PyGEOS_CreateGeometry(part, geos_handle)
+            # clone the geometry to keep it separate from the inputs
+            part = GEOSGeom_clone_r(geos_handle, part)
+            parts_view[idx] = <object>PyGEOS_CreateGeometry(part, geos_handle)
 
             idx += 1
 
