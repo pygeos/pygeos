@@ -22,13 +22,11 @@ from pygeos.lib.core import (
     boundary,
     bounds,
     buffer,
-    build_area,
     centroid,
     contains,
     convex_hull,
     count_coordinates,
     covered_by,
-    coverage_union,
     covers,
     create_collection,
     crosses,
@@ -40,8 +38,6 @@ from pygeos.lib.core import (
     equals,
     equals_exact,
     extract_unique_points,
-    frechet_distance,
-    frechet_distance_densify,
     from_shapely,
     from_wkb,
     from_wkt,
@@ -60,13 +56,11 @@ from pygeos.lib.core import (
     get_type_id,
     get_x,
     get_y,
-    get_z,
     has_z,
     hausdorff_distance,
     hausdorff_distance_densify,
     intersection,
     intersects,
-    is_ccw,
     is_closed,
     is_empty,
     is_geometry,
@@ -84,7 +78,6 @@ from pygeos.lib.core import (
     line_locate_point,
     line_locate_point_normalized,
     line_merge,
-    make_valid,
     normalize,
     overlaps,
     points,
@@ -107,5 +100,18 @@ from pygeos.lib.core import (
     voronoi_polygons,
     within,
 )
+
+# Requires GEOS 3.7.0
+if geos_version >= (3, 7, 0):
+    from pygeos.lib.core import (
+        frechet_distance,
+        frechet_distance_densify,
+        get_z,
+        is_ccw,
+    )
+
+# Requires GEOS 3.7.0
+if geos_version >= (3, 8, 0):
+    from pygeos.lib.core import build_area, coverage_union, make_valid
 
 from pygeos.lib.geom import get_parts
