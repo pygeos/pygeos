@@ -129,7 +129,7 @@ class build_ext(_build_ext):
 
 ext_modules = []
 
-if "clean" not in sys.argv:
+if "clean" not in sys.argv and "sdist" not in sys.argv:
     ext_options = get_geos_paths()
 
     ext_modules = [
@@ -148,28 +148,21 @@ if "clean" not in sys.argv:
         )
     ]
 
-    if os.path.exists("MANIFEST.in"):
-        # likely building from source; Cython is required
+    # Cython is required
+    if not cythonize:
+        sys.exit("ERROR: Cython is required to build pygeos from source.")
 
-        if not cythonize:
-            sys.exit("ERROR: Cython is required to build pygeos from source.")
+    cython_modules = [
+        Extension("pygeos.lib.geom", ["pygeos/lib/geom.pyx",], **ext_options,),
+    ]
 
-        cython_modules = [
-            Extension("pygeos.lib.geom", ["pygeos/lib/geom.pyx",], **ext_options,),
-        ]
+    ext_modules += cythonize(
+        cython_modules,
+        compiler_directives={"language_level": "3"},
+        # enable once Cython >= 0.3 is released
+        # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+    )
 
-        ext_modules += cythonize(
-            cython_modules,
-            compiler_directives={"language_level": "3"},
-            # enable once Cython >= 0.3 is released
-            # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
-        )
-
-    else:
-        # use the previously generated C files
-        ext_modules += [
-            Extension("pygeos.lib.geom", ["pygeos/lib/geom.c"], **ext_options)
-        ]
 
 try:
     descr = open(os.path.join(os.path.dirname(__file__), "README.rst")).read()

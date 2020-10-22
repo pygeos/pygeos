@@ -1,8 +1,8 @@
 include src/*
-include pygeos/lib/*.py pygeos/lib/*.c
+include pygeos/lib/*.py pygeos/lib/*.pyx pygeos/lib/*.pxd
 include versioneer.py
 include pygeos/_version.py
 include pygeos/*.dll
 include LICENSE
+include pyproject.toml
 exclude MANIFEST.in
-exclude pyproject.toml
