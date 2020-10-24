@@ -1,5 +1,5 @@
 include src/*
-include pygeos/lib/*.py pygeos/lib/*.pyx pygeos/lib/*.pxd
+include pygeos/*.pyx pygeos/*.pxd
 include versioneer.py
 include pygeos/_version.py
 include pygeos/*.dll

@@ -68,4 +68,4 @@ docs/_build
 .asv
 
 # Cython C files
-pygeos/lib/*.c
+pygeos/*.c

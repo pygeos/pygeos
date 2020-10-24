@@ -4,7 +4,7 @@ cimport cython
 import numpy as np
 cimport numpy as np
 
-from pygeos.lib.geos_wrapper cimport (
+from pygeos._geos cimport (
     GEOSContextHandle_t,
     GEOSGeometry,
     GEOSGeom_clone_r,
@@ -12,11 +12,14 @@ from pygeos.lib.geos_wrapper cimport (
     GEOSGetNumGeometries_r,
     GEOS_init_r
 )
-from pygeos.lib.pygeos_wrapper cimport (
-    import_pygeos_core_api,
+from pygeos._pygeos_api cimport (
+    import_pygeos_c_api,
     PyGEOS_CreateGeometry,
     PyGEOS_GetGEOSGeometry
 )
+
+# initialize PyGEOS C API
+import_pygeos_c_api()
 
 
 @cython.boundscheck(False)
@@ -45,9 +48,6 @@ cdef geos_get_num_geometries(object[:] array):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def get_parts(object[:] array):
-    # initialize PyGEOS C API, must be called for each top-level function
-    import_pygeos_core_api()
-
     cdef Py_ssize_t geom_idx = 0
     cdef Py_ssize_t part_idx = 0
     cdef Py_ssize_t idx = 0

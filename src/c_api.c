@@ -3,7 +3,7 @@
  *
  * This file wraps internal PyGEOS C extension functions for use in other
  * extensions.  These are specifically wrapped to enable dynamic loading
- * after Python initialization (see c_api.h and core.c).
+ * after Python initialization (see c_api.h and lib.c).
  *
  ***********************************************************************/
 #define PY_SSIZE_T_CLEAN

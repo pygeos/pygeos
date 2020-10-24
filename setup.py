@@ -134,12 +134,12 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
 
     ext_modules = [
         Extension(
-            "pygeos.lib.core",
+            "pygeos.lib",
             sources=[
-                "src/core.c",
                 "src/c_api.c",
                 "src/coords.c",
                 "src/geos.c",
+                "src/lib.c",
                 "src/pygeom.c",
                 "src/strtree.c",
                 "src/ufuncs.c",
@@ -153,7 +153,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
         sys.exit("ERROR: Cython is required to build pygeos from source.")
 
     cython_modules = [
-        Extension("pygeos.lib.geom", ["pygeos/lib/geom.pyx",], **ext_options,),
+        Extension("pygeos._geom", ["pygeos/_geom.pyx",], **ext_options,),
     ]
 
     ext_modules += cythonize(

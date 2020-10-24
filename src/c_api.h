@@ -11,7 +11,7 @@
  * PROTO: function prototype
  *
  * IMPORTANT: each function must provide 2 sets of defines below and
- * provide an entry into PyGEOS_API in core.c module declaration block.
+ * provide an entry into PyGEOS_API in lib.c module declaration block.
  *
  ***********************************************************************/
 
@@ -65,9 +65,9 @@ static void **PyGEOS_API;
  * PyCapsule_Import will set an exception on error.
  */
 static int
-import_pygeos_core_api(void)
+import_pygeos_c_api(void)
 {
-    PyGEOS_API = (void **)PyCapsule_Import("pygeos.lib.core._C_API", 0);
+    PyGEOS_API = (void **)PyCapsule_Import("pygeos.lib._C_API", 0);
     return (PyGEOS_API == NULL) ? -1 : 0;
 }
 

@@ -29,9 +29,9 @@ static PyMethodDef GeosModule[] = {
     {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef moduledef = {
-    PyModuleDef_HEAD_INIT, "core", NULL, -1, GeosModule, NULL, NULL, NULL, NULL};
+    PyModuleDef_HEAD_INIT, "lib", NULL, -1, GeosModule, NULL, NULL, NULL, NULL};
 
-PyMODINIT_FUNC PyInit_core(void) {
+PyMODINIT_FUNC PyInit_lib(void) {
   PyObject *m, *d;
 
   static void* PyGEOS_API[PyGEOS_API_num_pointers];
@@ -82,7 +82,7 @@ PyMODINIT_FUNC PyInit_core(void) {
   PyGEOS_API[PyGEOS_GetGEOSGeometry_NUM] = (void*)PyGEOS_GetGEOSGeometry;
 
   /* Create a Capsule containing the API pointer array's address */
-  c_api_object = PyCapsule_New((void*)PyGEOS_API, "pygeos.lib.core._C_API", NULL);
+  c_api_object = PyCapsule_New((void*)PyGEOS_API, "pygeos.lib._C_API", NULL);
   if (c_api_object != NULL) {
     PyModule_AddObject(m, "_C_API", c_api_object);
   }

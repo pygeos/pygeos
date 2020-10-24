@@ -3,6 +3,7 @@ import numpy as np
 
 from . import Geometry  # NOQA
 from . import lib
+from . import _geom
 from .decorators import multithreading_enabled, requires_geos
 
 
@@ -496,9 +497,9 @@ def get_parts(geometry, return_index=False):
         raise ValueError("Array should be one dimensional")
 
     if return_index:
-        return lib.get_parts(geometry)
+        return _geom.get_parts(geometry)
 
-    return lib.get_parts(geometry)[0]
+    return _geom.get_parts(geometry)[0]
 
 
 @multithreading_enabled
