@@ -473,7 +473,7 @@ def get_parts(geometry, return_index=False):
     ----------
     geometry : Geometry or array_like
     return_index : bool, optional (default: False)
-        If True,will return a tuple of ndarrys of (parts, indexes), where indexes
+        If True, will return a tuple of ndarrys of (parts, indexes), where indexes
         are the indexes of the original geometries in the source array.
 
     Returns

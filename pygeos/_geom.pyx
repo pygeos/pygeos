@@ -3,14 +3,16 @@ cimport cython
 
 import numpy as np
 cimport numpy as np
+import pygeos
 
 from pygeos._geos cimport (
     GEOSContextHandle_t,
     GEOSGeometry,
     GEOSGeom_clone_r,
     GEOSGetGeometryN_r,
-    GEOSGetNumGeometries_r,
-    GEOS_init_r
+    GEOS_init_r,
+    GEOS_finish_r,
+    get_geos_handle
 )
 from pygeos._pygeos_api cimport (
     import_pygeos_c_api,
@@ -24,43 +26,27 @@ import_pygeos_c_api()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cdef geos_get_num_geometries(object[:] array):
-    cdef Py_ssize_t i = 0
-    cdef GEOSContextHandle_t geos_handle = GEOS_init_r()
-    cdef GEOSGeometry *geom = NULL
-
-    counts = np.zeros(shape=(array.size), dtype=np.intp)
-    cdef np.intp_t[:] counts_view = counts[:]
-
-    for i in range(array.size):
-        if PyGEOS_GetGEOSGeometry(<PyObject *>array[i], &geom) == 0:
-            raise TypeError("One of the arguments is of incorrect type. Please provide "
-            "only Geometry objects.")
-
-        if geom == NULL:
-            continue
-
-        counts_view[i] = GEOSGetNumGeometries_r(geos_handle, geom)
-
-    return counts
-
-
-@cython.boundscheck(False)
-@cython.wraparound(False)
 def get_parts(object[:] array):
     cdef Py_ssize_t geom_idx = 0
     cdef Py_ssize_t part_idx = 0
     cdef Py_ssize_t idx = 0
-    cdef GEOSContextHandle_t geos_handle = GEOS_init_r()
     cdef GEOSGeometry *geom = NULL
     cdef GEOSGeometry *part = NULL
 
     cdef const np.intp_t [:] input_index_view = np.arange(0, len(array), dtype=np.intp)
 
-    counts = geos_get_num_geometries(array)
-    cdef np.intp_t [:] counts_view = counts[:]
+    counts = pygeos.get_num_geometries(array)
+    cdef int [:] counts_view = counts[:]
 
     cdef Py_ssize_t count = counts.sum()
+
+    if count <= 0:
+        # return immeidately if there are no geometries to return
+        # count is negative when the only entries in array are None
+        return (
+            np.empty(shape=(0, ), dtype=np.object),
+            np.empty(shape=(0, ), dtype=np.intp)
+        )
 
     parts = np.empty(shape=(count, ), dtype=np.object)
     index = np.empty(shape=(count, ), dtype=np.intp)
@@ -68,23 +54,28 @@ def get_parts(object[:] array):
     cdef object[:] parts_view = parts[:]
     cdef np.intp_t [:] index_view = index[:]
 
-    for geom_idx in range(array.size):
-        if PyGEOS_GetGEOSGeometry(<PyObject *>array[geom_idx], &geom) == 0:
-            raise TypeError("One of the arguments is of incorrect type. Please provide "
-            "only Geometry objects.")
+    with get_geos_handle() as geos_handle:
+        for geom_idx in range(array.size):
+            if counts_view[geom_idx] <= 0:
+                # No parts to return, skip this item
+                continue
 
-        if geom == NULL:
-            continue
+            if PyGEOS_GetGEOSGeometry(<PyObject *>array[geom_idx], &geom) == 0:
+                raise TypeError("One of the arguments is of incorrect type. Please provide "
+                "only Geometry objects.")
 
-        for part_idx in range(counts_view[geom_idx]):
-            index_view[idx] = geom_idx
-            part = GEOSGetGeometryN_r(geos_handle, geom, part_idx)
+            if geom == NULL:
+                continue
 
-            # clone the geometry to keep it separate from the inputs
-            part = GEOSGeom_clone_r(geos_handle, part)
-            parts_view[idx] = <object>PyGEOS_CreateGeometry(part, geos_handle)
+            for part_idx in range(counts_view[geom_idx]):
+                index_view[idx] = geom_idx
+                part = GEOSGetGeometryN_r(geos_handle, geom, part_idx)
 
-            idx += 1
+                # clone the geometry to keep it separate from the inputs
+                part = GEOSGeom_clone_r(geos_handle, part)
+                parts_view[idx] = <object>PyGEOS_CreateGeometry(part, geos_handle)
+
+                idx += 1
 
 
     return parts, index

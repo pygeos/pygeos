@@ -54,3 +54,21 @@ class ConstructiveSuite:
 
     def time_delaunay_triangles(self):
         pygeos.delaunay_triangles(self.points)
+
+
+
+class GetParts:
+    """Benchmarks for getting individual parts from 100 multipolygons of 100 polygons each"""
+    def setup(self):
+        self.multipolygons = [pygeos.multipolygons(pygeos.polygons(np.random.random((1000, 100, 2)))) for i in range(100)]
+
+    def time_get_parts(self):
+        """Cython implementation of get_parts"""
+        pygeos.get_parts(self.multipolygons)
+
+    def time_get_parts_python(self):
+        """Python / ufuncs version of get_parts"""
+        parts = np.array([], dtype='object')
+        for i in range(len(self.multipolygons)):
+            num_parts = pygeos.get_num_geometries(self.multipolygons[i])
+            parts = np.append(parts, pygeos.get_geometry(self.multipolygons[i], range(num_parts)))

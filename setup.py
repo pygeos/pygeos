@@ -154,6 +154,7 @@ if "clean" not in sys.argv and "sdist" not in sys.argv:
 
     cython_modules = [
         Extension("pygeos._geom", ["pygeos/_geom.pyx",], **ext_options,),
+        Extension("pygeos._geos", ["pygeos/_geos.pyx",], **ext_options,),
     ]
 
     ext_modules += cythonize(
