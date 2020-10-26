@@ -1,8 +1,13 @@
-cdef extern from "geos_c.h":
-    # GEOS C API types and functions.
-    # Note: GEOS functions in Cython must be called using the get_geos_handle context
-    # manager.
+"""
+Provides a wrapper for GEOS types and functions.
 
+Note: GEOS functions in Cython must be called using the get_geos_handle context manager.
+Example:
+    with get_geos_handle() as geos_handle:
+        SomeGEOSFunc(geos_handle, ...<other params>)
+"""
+
+cdef extern from "geos_c.h":
     ctypedef void *GEOSContextHandle_t
 
     GEOSContextHandle_t GEOS_init_r()
