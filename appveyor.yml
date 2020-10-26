@@ -42,7 +42,7 @@ build: false
 before_test:
   - "set GEOS_LIBRARY_PATH=%CONDA_PREFIX%\\Library\\lib"
   - "set GEOS_INCLUDE_PATH=%CONDA_PREFIX%\\Library\\include"
-  - "%CMD_IN_ENV% pip install . --no-deps -v"
+  - "%CMD_IN_ENV% pip install -e . --no-deps -v"
 
 test_script:
   - pytest --doctest-modules

@@ -22,7 +22,7 @@ install:
   - ./conda.exe create --prefix $HOME/miniconda python=$PYTHON_VERSION conda pytest $DEPS
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
-  - pip install . --no-deps -v
+  - pip install -e . --no-deps -v
 
 script:
   - pytest --doctest-modules;
