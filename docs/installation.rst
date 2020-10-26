@@ -52,7 +52,7 @@ package from Github::
 
 Install it in development mode using `pip`::
 
-    $ pip install -e .[test]
+    $ pip install -e .[test] --no-build-isolation
 
 Run the unittests::
 
