@@ -7,7 +7,7 @@ FROM python:3.6-stretch
 
 RUN apt-get update && apt-get install -y valgrind libgeos-dev --no-install-recommends
 
-RUN pip install numpy pytest pytest-valgrind
+RUN pip install numpy Cython pytest pytest-valgrind
 
 COPY . /code
 

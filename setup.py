@@ -185,7 +185,6 @@ setup(
     author_email="caspervdw@gmail.com",
     license="BSD 3-Clause",
     packages=["pygeos"],
-    setup_requires=["numpy"],
     install_requires=["numpy>=1.13"],
     extras_require={"test": ["pytest"], "docs": ["sphinx", "numpydoc"],},
     python_requires=">=3",
