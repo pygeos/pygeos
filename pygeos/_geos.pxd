@@ -10,16 +10,16 @@ Example:
 cdef extern from "geos_c.h":
     ctypedef void *GEOSContextHandle_t
 
-    GEOSContextHandle_t GEOS_init_r()
-    void GEOS_finish_r(GEOSContextHandle_t handle)
+    GEOSContextHandle_t GEOS_init_r() nogil
+    void GEOS_finish_r(GEOSContextHandle_t handle) nogil
 
     ctypedef struct GEOSGeometry
 
     const GEOSGeometry* GEOSGetGeometryN_r(GEOSContextHandle_t handle,
                                            const GEOSGeometry* g,
-                                           int n) except NULL
+                                           int n) nogil except NULL
     GEOSGeometry* GEOSGeom_clone_r(GEOSContextHandle_t handle,
-                                   const GEOSGeometry* g) except NULL
+                                   const GEOSGeometry* g) nogil except NULL
 
 
 cdef class get_geos_handle:

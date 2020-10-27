@@ -38,7 +38,9 @@ def get_parts(object[:] array):
     counts = pygeos.get_num_geometries(array)
     cdef int [:] counts_view = counts[:]
 
-    cdef Py_ssize_t count = counts.sum()
+    # None elements in array return -1 for count, so
+    # they must be filtered out before calculating total count
+    cdef Py_ssize_t count = counts[counts>0].sum()
 
     if count <= 0:
         # return immeidately if there are no geometries to return

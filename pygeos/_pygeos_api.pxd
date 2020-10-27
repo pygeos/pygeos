@@ -29,4 +29,4 @@ cdef extern from "c_api.h":
     # in Cython to avoid memory leaks, not PyObject* (even though
     # they are declared that way in the header file).
     object PyGEOS_CreateGeometry(GEOSGeometry *ptr, GEOSContextHandle_t ctx)
-    char PyGEOS_GetGEOSGeometry(PyObject *obj, GEOSGeometry **out)
+    char PyGEOS_GetGEOSGeometry(PyObject *obj, GEOSGeometry **out) nogil

@@ -271,7 +271,9 @@ def test_get_parts(geom):
 
 
 def test_get_parts_array():
-    geom = np.array([multi_point, point, multi_polygon])
+    # note: this also verifies that None is handled correctly
+    # in the mix; internally it returns -1 for count of geometries
+    geom = np.array([None, empty_line_string, multi_point, point, multi_polygon])
     expected_parts = []
     for g in geom:
         for i in range(0, pygeos.get_num_geometries(g)):
