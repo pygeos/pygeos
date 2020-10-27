@@ -2,11 +2,11 @@ environment:
   matrix:
     - PYTHON_PATH: "C:\\Miniconda37"
       PYTHON_VERSION: 3.7
-      DEPS: "numpy geos"
+      DEPS: "numpy geos Cython"
 
     - PYTHON_PATH: "C:\\Miniconda37-x64"
       PYTHON_VERSION: 3.7
-      DEPS: "numpy geos"
+      DEPS: "numpy geos Cython"
 
 init:
   - "ECHO %PYTHON% %PYTHON_VERSION%"
@@ -42,7 +42,7 @@ build: false
 before_test:
   - "set GEOS_LIBRARY_PATH=%CONDA_PREFIX%\\Library\\lib"
   - "set GEOS_INCLUDE_PATH=%CONDA_PREFIX%\\Library\\include"
-  - "%CMD_IN_ENV% pip install . --no-deps -v"
+  - "%CMD_IN_ENV% pip install -e . --no-deps --no-build-isolation -v"
 
 test_script:
   - pytest --doctest-modules
