@@ -6,12 +6,9 @@ cimport numpy as np
 import pygeos
 
 from pygeos._geos cimport (
-    GEOSContextHandle_t,
     GEOSGeometry,
     GEOSGeom_clone_r,
     GEOSGetGeometryN_r,
-    GEOS_init_r,
-    GEOS_finish_r,
     get_geos_handle
 )
 from pygeos._pygeos_api cimport (
@@ -33,10 +30,7 @@ def get_parts(object[:] array):
     cdef GEOSGeometry *geom = NULL
     cdef GEOSGeometry *part = NULL
 
-    cdef const np.intp_t [:] input_index_view = np.arange(0, len(array), dtype=np.intp)
-
     counts = pygeos.get_num_geometries(array)
-    cdef int [:] counts_view = counts[:]
 
     # None elements in array return -1 for count, so
     # they must be filtered out before calculating total count
@@ -53,8 +47,9 @@ def get_parts(object[:] array):
     parts = np.empty(shape=(count, ), dtype=np.object)
     index = np.empty(shape=(count, ), dtype=np.intp)
 
-    cdef object[:] parts_view = parts[:]
-    cdef np.intp_t [:] index_view = index[:]
+    cdef int[:] counts_view = counts
+    cdef object[:] parts_view = parts
+    cdef np.intp_t[:] index_view = index
 
     with get_geos_handle() as geos_handle:
         for geom_idx in range(array.size):
@@ -63,8 +58,8 @@ def get_parts(object[:] array):
                 continue
 
             if PyGEOS_GetGEOSGeometry(<PyObject *>array[geom_idx], &geom) == 0:
-                raise TypeError("One of the arguments is of incorrect type. Please provide "
-                "only Geometry objects.")
+                raise TypeError("One of the arguments is of incorrect type. "
+                                "Please provide only Geometry objects.")
 
             if geom == NULL:
                 continue
