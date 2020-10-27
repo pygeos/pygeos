@@ -25,5 +25,8 @@ cdef extern from "c_api.h":
     int import_pygeos_c_api() except -1
 
     # C functions provided by the pygeos.lib C API
-    PyObject* PyGEOS_CreateGeometry(GEOSGeometry *ptr, GEOSContextHandle_t ctx)
+    # Note: GeometryObjects are always managed as Python objects
+    # in Cython to avoid memory leaks, not PyObject* (even though
+    # they are declared that way in the header file).
+    object PyGEOS_CreateGeometry(GEOSGeometry *ptr, GEOSContextHandle_t ctx)
     char PyGEOS_GetGEOSGeometry(PyObject *obj, GEOSGeometry **out)

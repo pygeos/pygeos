@@ -73,9 +73,8 @@ def get_parts(object[:] array):
 
                 # clone the geometry to keep it separate from the inputs
                 part = GEOSGeom_clone_r(geos_handle, part)
-                parts_view[idx] = <object>PyGEOS_CreateGeometry(part, geos_handle)
+                parts_view[idx] = PyGEOS_CreateGeometry(part, geos_handle)
 
                 idx += 1
-
 
     return parts, index
