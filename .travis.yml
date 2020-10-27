@@ -3,9 +3,9 @@ language: minimal
 matrix:
   include:
     - os: linux # 2017
-      env: PYTHON_VERSION="3.6" DEPS="numpy=1.13 geos=3.6 Cython"
+      env: PYTHON_VERSION="3.6" DEPS="numpy=1.13 geos=3.6"
     - os: linux # 2018
-      env: PYTHON_VERSION="3.7" DEPS="numpy=1.15 geos=3.7 Cython"
+      env: PYTHON_VERSION="3.7" DEPS="numpy=1.15 geos=3.7"
     - os: linux # 2019
       env: PYTHON_VERSION="3.8" DEPS="numpy=1.17 geos=3.8"
     - os: linux # now
