@@ -45,4 +45,4 @@ before_test:
   - "%CMD_IN_ENV% pip install . --no-deps -v"
 
 test_script:
-  - pytest --doctest-modules --pyargs pygeos
+  - pytest --doctest-modules
