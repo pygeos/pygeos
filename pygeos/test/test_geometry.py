@@ -18,18 +18,20 @@ from .common import all_types
 
 
 def test_get_num_points():
-    actual = pygeos.get_num_points(all_types).tolist()
-    assert actual == [0, 3, 5, 0, 0, 0, 0, 0, 0]
+    actual = pygeos.get_num_points(all_types + (None,)).tolist()
+    assert actual == [0, 3, 5, 0, 0, 0, 0, 0, 0, 0]
 
 
 def test_get_num_interior_rings():
-    actual = pygeos.get_num_interior_rings(all_types + (polygon_with_hole,)).tolist()
-    assert actual == [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+    actual = pygeos.get_num_interior_rings(
+        all_types + (polygon_with_hole, None)
+    ).tolist()
+    assert actual == [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
 
 
 def test_get_num_geometries():
-    actual = pygeos.get_num_geometries(all_types).tolist()
-    assert actual == [1, 1, 1, 1, 2, 1, 2, 2, 0]
+    actual = pygeos.get_num_geometries(all_types + (None,)).tolist()
+    assert actual == [1, 1, 1, 1, 2, 1, 2, 2, 0, 0]
 
 
 @pytest.mark.parametrize(
@@ -134,8 +136,14 @@ def test_get_coordinate_dimension():
 
 
 def test_get_num_coordinates():
-    actual = pygeos.get_num_coordinates(all_types).tolist()
-    assert actual == [1, 3, 5, 5, 2, 2, 10, 3, 0]
+    actual = pygeos.get_num_coordinates(all_types + (None,)).tolist()
+    assert actual == [1, 3, 5, 5, 2, 2, 10, 3, 0, 0]
+
+
+def test_get_srid():
+    """All geometry types have no SRID by default; None returns -1"""
+    actual = pygeos.get_srid(all_types + (None,)).tolist()
+    assert actual == [0, 0, 0, 0, 0, 0, 0, 0, 0, -1]
 
 
 def test_get_set_srid():
@@ -192,7 +200,9 @@ def test_adapt_ptr_raises():
         point._ptr += 1
 
 
-@pytest.mark.parametrize("geom", all_types + (pygeos.points(np.nan, np.nan), empty_point))
+@pytest.mark.parametrize(
+    "geom", all_types + (pygeos.points(np.nan, np.nan), empty_point)
+)
 def test_hash_same_equal(geom):
     assert hash(geom) == hash(pygeos.apply(geom, lambda x: x))
 

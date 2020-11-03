@@ -835,6 +835,16 @@ static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
   GEOSGeometry* in1 = NULL;
   int result;
 
+  int none_value;
+  if (((void*)func == GetNumPoints) || ((void*)func == GetNumInteriorRings) ||
+      ((void*)func == GEOSGetNumGeometries_r) ||
+      ((void*)func == GEOSGetNumGeometries_r) ||
+      ((void*)func == GEOSGetNumCoordinates_r)) {
+    none_value = 0;
+  } else {
+    none_value = -1;
+  }
+
   // In the GEOS CAPI, sometimes -1 is an error, sometimes 0
   int errcode;
   if (((void*)func == GEOSGeom_getDimensions_r) || ((void*)func == GEOSGetSRID_r)) {
@@ -852,8 +862,8 @@ static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
       goto finish;
     }
     if (in1 == NULL) {
-      /* None results in -1 */
-      *(npy_int*)op1 = -1;
+      /* None results in 0 for counting functions, -1 otherwise */
+      *(npy_int*)op1 = none_value;
     } else {
       result = func(ctx, in1);
       // Check last_error if the result equals errcode.

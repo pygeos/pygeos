@@ -128,7 +128,7 @@ def get_coordinate_dimension(geometry):
 def get_num_coordinates(geometry):
     """Returns the total number of coordinates in a geometry.
 
-    Returns -1 for not-a-geometry values.
+    Returns 0 for not-a-geometry values.
 
     Parameters
     ----------
@@ -143,7 +143,7 @@ def get_num_coordinates(geometry):
     >>> get_num_coordinates(Geometry("GEOMETRYCOLLECTION (POINT(0 0), LINESTRING(0 0, 1 1))"))
     3
     >>> get_num_coordinates(None)
-    -1
+    0
     """
     return lib.get_num_coordinates(geometry)
 
@@ -391,6 +391,8 @@ def get_interior_ring(geometry, index):
 def get_num_interior_rings(geometry):
     """Returns number of internal rings in a polygon
 
+    Returns 0 for not-a-geometry values.
+
     Parameters
     ----------
     geometry : Geometry or array_like
@@ -410,6 +412,8 @@ def get_num_interior_rings(geometry):
     >>> get_num_interior_rings(polygon_with_hole)
     1
     >>> get_num_interior_rings(Geometry("POINT (1 1)"))
+    0
+    >>> get_num_interior_rings(None)
     0
     """
     return lib.get_num_interior_rings(geometry)
@@ -457,6 +461,8 @@ def get_geometry(geometry, index):
 def get_num_geometries(geometry):
     """Returns number of geometries in a collection.
 
+    Returns 0 for not-a-geometry values.
+
     Parameters
     ----------
     geometry : Geometry or array_like
@@ -474,5 +480,7 @@ def get_num_geometries(geometry):
     4
     >>> get_num_geometries(Geometry("POINT (1 1)"))
     1
+    >>> get_num_geometries(None)
+    0
     """
     return lib.get_num_geometries(geometry)
