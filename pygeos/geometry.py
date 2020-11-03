@@ -316,6 +316,8 @@ def get_point(geometry, index):
 def get_num_points(geometry):
     """Returns number of points in a linestring or linearring.
 
+    Returns 0 for not-a-geometry values.
+
     Parameters
     ----------
     geometry : Geometry or array_like
@@ -333,6 +335,8 @@ def get_num_points(geometry):
     >>> get_num_points(line)
     4
     >>> get_num_points(Geometry("MULTIPOINT (0 0, 1 1, 2 2, 3 3)"))
+    0
+    >>> get_num_points(None)
     0
     """
     return lib.get_num_points(geometry)
