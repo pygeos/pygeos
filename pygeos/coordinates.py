@@ -11,7 +11,7 @@ def apply(geometry, transformation, include_z=False):
     With the default of ``include_z=False``, all returned geometries will be
     two-dimensional; the third dimension will be discarded, if present.
     When specifying ``include_z=True``, the returned geometries preserve
-    the dimensionality of the input.
+    the dimensionality of the respective input geometries.
 
     Parameters
     ----------
