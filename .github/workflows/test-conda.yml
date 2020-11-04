@@ -39,8 +39,8 @@ jobs:
         shell: bash
         if: contains(matrix.os, 'windows')
         run: |
-          echo "GEOS_LIBRARY_PATH=C:\\Miniconda\\envs\\test\\lib" >> $GITHUB_ENV
-          echo "GEOS_INCLUDE_PATH=C:\\Miniconda\\envs\\test\\include" >> $GITHUB_ENV
+          echo "GEOS_LIBRARY_PATH=C:\\Miniconda\\envs\\test\\Library\\lib" >> $GITHUB_ENV
+          echo "GEOS_INCLUDE_PATH=C:\\Miniconda\\envs\\test\\Library\\include" >> $GITHUB_ENV
 
       - name: Build and install PyGEOS
         shell: bash
