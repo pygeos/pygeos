@@ -34,6 +34,14 @@ jobs:
           conda info
           conda list
 
+      # set GEOS paths for Windows
+      - name: Set GEOS library / include folders
+        shell: bash
+        if: contains(matrix.os, 'windows')
+        run: |
+          echo "GEOS_LIBRARY_PATH=%CONDA_PREFIX%\\Library\\lib" >> $GITHUB_ENV
+          echo "GEOS_INCLUDE_PATH=%CONDA_PREFIX%\\Library\\include" >> $GITHUB_ENV
+
       - name: Build and install PyGEOS
         shell: bash
         run: |
