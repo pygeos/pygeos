@@ -37,9 +37,11 @@ jobs:
       - name: Build and install PyGEOS
         shell: bash
         run: |
+          source activate test
           pip install -e . --no-deps -v
 
       - name: Run tests
         shell: bash
         run: |
-          - pytest --doctest-modules
+          source activate test
+          pytest --doctest-modules
