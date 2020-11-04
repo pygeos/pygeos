@@ -1,0 +1,45 @@
+name: Test using Conda environments
+
+on: [push, pull_request]
+
+jobs:
+  TestConda:
+    name: ${{ matrix.os }}, ${{ matrix.env }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        env:
+          - ci/envs/py36-geos36.yaml
+          - ci/envs/py37-geos37.yaml
+          - ci/envs/py38-geos38.yaml
+          - ci/envs/py38-geos-latest.yaml
+          - ci/envs/py38-geos-latest-conda-forge.yaml
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Conda
+        uses: s-weigand/setup-conda@v1.0.5
+        with:
+          activate-conda: false
+
+      - name: Setup Environment
+        shell: bash
+        run: |
+          conda env create -f ${{ matrix.env }}
+          source activate test
+          python -V
+          conda info
+          conda list
+
+      - name: Build and install PyGEOS
+        shell: bash
+        run: |
+          pip install -e . --no-deps -v
+
+      - name: Run tests
+        shell: bash
+        run: |
+          - pytest --doctest-modules
