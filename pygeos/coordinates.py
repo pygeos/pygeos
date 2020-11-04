@@ -147,9 +147,9 @@ def set_coordinates(geometry, coordinates):
     not include one:
 
     >>> set_coordinates(Geometry("POINT Z (0 0 0)"), [[1, 1]])
-    <pygeos.Geometry POINT (1 1) >
+    <pygeos.Geometry POINT (1 1)>
     >>> set_coordinates(Geometry("POINT Z (0 0 0)"), [[1, 1, 1]])
-    <pygeos.Geometry POINT Z (1 1 1) >
+    <pygeos.Geometry POINT Z (1 1 1)>
     """
     geometry_arr = np.asarray(geometry, dtype=np.object)
     coordinates = np.atleast_2d(np.asarray(coordinates)).astype(np.float64)
