@@ -9,17 +9,11 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        channel: [defaults]
+        channel: ['']
         dev: [false]
         geos: ['']
         numpy: ['']
         python: [3.6, 3.7, 3.8]
-        include:
-          - python: 3.8
-            channel: conda-forge
-            geos: 3.8
-            numpy: 1.17
-            dev: true
 
     steps:
       - uses: actions/checkout@v2
