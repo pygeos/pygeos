@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
-    name: ${{ matrix.os }}, ${{conda-channel}}, ${{ matrix.deps }}
+    name: ${{ matrix.os }}, ${{matrix.conda-channel}}, ${{ matrix.deps }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
