@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
-    name: ${{ matrix.os }}, Python ${{ matrix.python }} (${{ matrix.channel }}), GEOS ${{ matrix.geos }}, numpy ${{ matrix.numpy }}
+    # name: ${{ matrix.os }}, Python ${{ matrix.python }} (${{ matrix.channel }}), GEOS ${{ matrix.geos }}, numpy ${{ matrix.numpy }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -63,7 +63,7 @@ jobs:
 
       - name: Run tests
         shell: bash
-        # continue-on-error: ${{ matrix.dev }}
+        continue-on-error: ${{ matrix.dev }}
         run: |
           source activate test
           pytest --doctest-modules
