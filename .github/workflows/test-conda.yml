@@ -4,20 +4,20 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
-    name: ${{ matrix.os }} - Python ${{ matrix.python }} (conda ${{ matrix.channel || 'default' }}), ${{ matrix.geos }}, ${{ matrix.numpy }}
+    name: ${{ matrix.os }} - Python ${{ matrix.python }} (conda ${{ matrix.channel || 'default' }}), GEOS ${{ matrix.geos || 'latest' }}, numpy ${{ matrix.numpy || 'latest' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         channel: ['']
-        geos: ['geos']
-        numpy: ['numpy']
+        geos: ['']
+        numpy: ['']
         python: [3.6, 3.7, 3.8]
         include:
           - python: 3.6
-            geos: '"geos=3.6"'
-            numpy: '"numpy=1.13"'
+            geos: 3.6
+            numpy: 1.13
 
     steps:
       - uses: actions/checkout@v2
@@ -32,7 +32,7 @@ jobs:
       - name: Setup Environment
         shell: bash
         run: |
-          conda create --name test python=${{ matrix.python}} conda pytest ${{ matrix.geos }} ${{ matrix.numpy }}
+          conda create --name test python=${{ matrix.python}} conda pytest geos=${{ matrix.geos }} numpy=${{ matrix.numpy }}
           source activate test
           python -V
           conda info
