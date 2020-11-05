@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
+    name: ${{ matrix.os }} - Python ${{ matrix.python }} (conda ${{ matrix.channel || 'default' }}), GEOS ${{ matrix.geos }}, numpy ${{ matrix.numpy }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -28,7 +29,7 @@ jobs:
       - name: Setup Environment
         shell: bash
         run: |
-          conda create --name test python=${{ matrix.python}} conda ${{ matrix.geos }} ${{ matrix.numpy }}
+          conda create --name test python=${{ matrix.python}} conda pytest ${{ matrix.geos }} ${{ matrix.numpy }}
           source activate test
           python -V
           conda info
@@ -46,7 +47,7 @@ jobs:
         shell: bash
         run: |
           source activate test
-          pip install -e .[test] --no-deps -v
+          pip install -e . --no-deps -v
 
       - name: Run tests
         shell: bash
