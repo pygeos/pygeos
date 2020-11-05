@@ -11,8 +11,8 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         channel: ['']
         dev: [false]
-        geos: ['']
-        numpy: ['']
+        geos: ['geos']
+        numpy: ['numpy']
         python: [3.6, 3.7, 3.8]
 
     steps:
@@ -28,7 +28,7 @@ jobs:
       - name: Setup Environment
         shell: bash
         run: |
-          conda env create --name test python=${{ matrix.python}} geos=${{ matrix.geos }} numpy=${{ matrix.numpy }}
+          conda env create --name test python=${{ matrix.python}} ${{ matrix.geos }} ${{ matrix.numpy }}
           source activate test
           python -V
           conda info
