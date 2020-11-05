@@ -71,6 +71,7 @@ def get_parts(object[:] array):
                 # clone the geometry to keep it separate from the inputs
                 part = GEOSGeom_clone_r(geos_handle, part)
                 # cast part back to <GEOSGeometry> to discard const qualifier
+                # pending issue #227
                 parts_view[idx] = PyGEOS_CreateGeometry(<GEOSGeometry *>part, geos_handle)
 
                 idx += 1
