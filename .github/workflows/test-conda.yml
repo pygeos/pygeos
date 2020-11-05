@@ -16,16 +16,8 @@ jobs:
         python: [3.6, 3.7, 3.8]
         include:
           - python: 3.6
-            geos: 'geos=3.6'
-            numpy: 'numpy=1.13'
-          - python: 3.7
-            geos: 'geos=3.7'
-            numpy: 'numpy=1.15'
-          - python: 3.8
-            geos: 'geos=3.8'
-            numpy: 'numpy=1.17'
-          - python: 3.8
-            channel: conda-forge
+            geos: '"geos=3.6"'
+            numpy: '"numpy=1.13"'
 
     steps:
       - uses: actions/checkout@v2
