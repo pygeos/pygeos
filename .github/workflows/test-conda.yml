@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
-    name: ${{ matrix.os }}, ${{matrix.conda-channel}}, ${{ matrix.deps }}
+    name: ${{ matrix.os }}, ${{ matrix.conda-channel }}, ${{ matrix.deps }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -29,12 +29,12 @@ jobs:
         uses: s-weigand/setup-conda@v1.0.5
         with:
           activate-conda: false
-          conda-channels: ${{matrix.conda-channel}}
+          conda-channels: ${{ matrix.conda-channel }}
 
       - name: Setup Environment
         shell: bash
         run: |
-          conda env create --name test ${{matrix.deps}}
+          conda env create --name test ${{ matrix.deps }}
           source activate test
           python -V
           conda info
