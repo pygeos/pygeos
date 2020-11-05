@@ -28,7 +28,7 @@ jobs:
       - name: Setup Environment
         shell: bash
         run: |
-          conda env create --name test python=${{ matrix.python}} ${{ matrix.geos }} ${{ matrix.numpy }}
+          conda create --name test python=${{ matrix.python}} conda ${{ matrix.geos }} ${{ matrix.numpy }}
           source activate test
           python -V
           conda info
