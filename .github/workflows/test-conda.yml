@@ -4,40 +4,18 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
-    name: ${{ matrix.os }} - Python ${{ matrix.python }} (conda ${{ matrix.channel || 'default' }}), GEOS ${{ matrix.geos || 'latest' }}, numpy ${{ matrix.numpy || 'latest' }}
+    name: ${{ matrix.os }}, ${{ matrix.env }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        # note: each entry uses an arbitrary build number so that we can specify params below
-        include:
-          - build: 1
-            python: 3.6
-            geos: 3.6
-            numpy: 1.13
-            channel: ''
-          - build: 2
-            python: 3.7
-            geos: 3.7
-            numpy: 1.15
-            channel: ''
-          - build: 3
-            python: 3.8
-            geos: 3.8
-            numpy: 1.17
-            channel: ''
-          - build: 4
-            python: 3.8
-            geos: ''
-            numpy: ''
-            channel: ''
-          - build: 5
-            python: 3.8
-            geos: ''
-            numpy: ''
-            channel: conda-forge
-
+        env:
+          - ci/envs/py36-geos36.yml
+          - ci/envs/py37-geos37.yml
+          - ci/envs/py38-geos38.yml
+          - ci/envs/py38-geos-latest.yml
+          - ci/envs/py38-geos-latest-conda-forge.yml
     steps:
       - uses: actions/checkout@v2
 
@@ -45,13 +23,11 @@ jobs:
         uses: s-weigand/setup-conda@v1.0.5
         with:
           activate-conda: false
-          conda-channels: ${{ matrix.channel }}
-          python-version: ${{ matrix.python }}
 
       - name: Setup Environment
         shell: bash
         run: |
-          conda create --name test python=${{ matrix.python}} pytest geos=${{ matrix.geos }} numpy=${{ matrix.numpy }}
+          conda env create -f ${{ matrix.env }}
           source activate test
           python -V
           conda info
@@ -73,7 +49,7 @@ jobs:
 
       - name: Run tests
         shell: bash
-        continue-on-error: ${{ matrix.dev == 'conda-forge' }}
+        continue-on-error: ${{ endsWith(matrix.env, 'conda-forge.yml') }}
         run: |
           source activate test
           pytest --doctest-modules
