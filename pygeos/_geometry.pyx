@@ -28,7 +28,7 @@ def get_parts(object[:] array):
     cdef Py_ssize_t part_idx = 0
     cdef Py_ssize_t idx = 0
     cdef GEOSGeometry *geom = NULL
-    cdef GEOSGeometry *part = NULL
+    cdef const GEOSGeometry *part = NULL
 
     counts = pygeos.get_num_geometries(array)
 
@@ -70,7 +70,8 @@ def get_parts(object[:] array):
 
                 # clone the geometry to keep it separate from the inputs
                 part = GEOSGeom_clone_r(geos_handle, part)
-                parts_view[idx] = PyGEOS_CreateGeometry(part, geos_handle)
+                # cast part back to <GEOSGeometry> to discard const qualifier
+                parts_view[idx] = PyGEOS_CreateGeometry(<GEOSGeometry *>part, geos_handle)
 
                 idx += 1
 
