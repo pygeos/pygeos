@@ -4,24 +4,28 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
-    name: ${{ matrix.os }}, ${{ matrix.channel }}
+    name: ${{ matrix.os }}, Python ${{ matrix.python }} (${{ matrix.channel }}), GEOS ${{ matrix.geos }}, numpy ${{ matrix.numpy }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         channel: [defaults]
-        deps:
-          - python=3.6 geos=3.6 numpy=1.13
-          - python=3.7 geos=3.7 numpy=1.15
-          - python=3.8 geos=3.8 numpy=1.17
-          - python=3.8 geos numpy
         dev: [false]
-
-        # include conda-forge for latest versions of GEOS / numpy
+        geos: ['']
+        numpy: ['']
+        python: [3.6, 3.7, 3.8]
         include:
-          - deps: python=3.8 geos numpy
+          # - python: 3.6
+          #   geos: [3.6]
+          #   numpy: [1.13]
+          # - python: 3.7
+          #   geos: [3.7]
+          #   numpy: [1.15]
+          - python: 3.8
             channel: conda-forge
+            geos: [3.8]
+            numpy: [1.17]
             dev: true
 
     steps:
@@ -32,11 +36,12 @@ jobs:
         with:
           activate-conda: false
           channels: ${{ matrix.channel }}
+          python-version: ${{ matrix.python }}
 
       - name: Setup Environment
         shell: bash
         run: |
-          conda env create --name test ${{ matrix.deps }}
+          conda env create --name test python=${{ matrix.python}} geos=${{ matrix.geos }} numpy=${{ matrix.numpy }}
           source activate test
           python -V
           conda info
@@ -58,7 +63,7 @@ jobs:
 
       - name: Run tests
         shell: bash
-        continue-on-error: ${{ matrix.dev }}
+        # continue-on-error: ${{ matrix.dev }}
         run: |
           source activate test
           pytest --doctest-modules
