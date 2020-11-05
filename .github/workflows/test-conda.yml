@@ -10,12 +10,17 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        env:
-          - ci/envs/py36-geos36.yml
-          - ci/envs/py37-geos37.yml
-          - ci/envs/py38-geos38.yml
-          - ci/envs/py38-geos-latest.yml
-          - ci/envs/py38-geos-latest-conda-forge.yml
+        deps:
+          - "python=3.6 geos=3.6 numpy=1.13"
+          - "python=3.7 geos=3.7 numpy=1.15"
+          - "python=3.8 geos=3.8 numpy=1.17"
+          - "python=3.8 geos numpy"
+        conda-channel: ['defaults']
+
+        # include conda-forge for latest versions of GEOS / numpy
+        include:
+          - deps: "python=3.8 geos numpy"
+            conda-channel: 'conda-forge'
 
     steps:
       - uses: actions/checkout@v2
@@ -24,11 +29,12 @@ jobs:
         uses: s-weigand/setup-conda@v1.0.5
         with:
           activate-conda: false
+          conda-channels: ${{matrix.conda-channel}}
 
       - name: Setup Environment
         shell: bash
         run: |
-          conda env create -f ${{ matrix.env }}
+          conda env create --name test ${{matrix.deps}}
           source activate test
           python -V
           conda info
@@ -46,7 +52,7 @@ jobs:
         shell: bash
         run: |
           source activate test
-          pip install -e . --no-deps -v
+          pip install -e .[test] --no-deps -v
 
       - name: Run tests
         shell: bash
