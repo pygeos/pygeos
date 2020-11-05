@@ -10,17 +10,19 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        deps:
-          - 'python=3.6 geos=3.6 numpy=1.13'
-          - 'python=3.7 geos=3.7 numpy=1.15'
-          - 'python=3.8 geos=3.8 numpy=1.17'
-          - 'python=3.8 geos numpy'
         channel: [defaults]
+        deps:
+          - python=3.6 geos=3.6 numpy=1.13
+          - python=3.7 geos=3.7 numpy=1.15
+          - python=3.8 geos=3.8 numpy=1.17
+          - python=3.8 geos numpy
+        dev: [false]
 
         # include conda-forge for latest versions of GEOS / numpy
         include:
-          - deps: 'python=3.8 geos numpy'
+          - deps: python=3.8 geos numpy
             channel: conda-forge
+            dev: true
 
     steps:
       - uses: actions/checkout@v2
@@ -56,6 +58,7 @@ jobs:
 
       - name: Run tests
         shell: bash
+        continue-on-error: ${{ matrix.dev }}
         run: |
           source activate test
           pytest --doctest-modules
