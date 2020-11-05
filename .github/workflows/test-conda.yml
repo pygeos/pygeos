@@ -22,7 +22,7 @@ jobs:
         uses: s-weigand/setup-conda@v1.0.5
         with:
           activate-conda: false
-          channels: ${{ matrix.channel }}
+          conda-channels: ${{ matrix.channel }}
           python-version: ${{ matrix.python }}
 
       - name: Setup Environment
