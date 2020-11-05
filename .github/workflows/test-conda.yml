@@ -11,7 +11,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         channel: ['']
-        build: [1, 2, 3, 4, 5] # arbitrary build number so that we can specify params below
+        # note: each entry uses an arbitrary build number so that we can specify params below
         include:
           - build: 1
             python: 3.6
