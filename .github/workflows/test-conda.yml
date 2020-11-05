@@ -4,7 +4,6 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
-    # name: ${{ matrix.os }}, Python ${{ matrix.python }} (${{ matrix.channel }}), GEOS ${{ matrix.geos }}, numpy ${{ matrix.numpy }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -16,16 +15,10 @@ jobs:
         numpy: ['']
         python: [3.6, 3.7, 3.8]
         include:
-          # - python: 3.6
-          #   geos: [3.6]
-          #   numpy: [1.13]
-          # - python: 3.7
-          #   geos: [3.7]
-          #   numpy: [1.15]
           - python: 3.8
             channel: conda-forge
-            geos: [3.8]
-            numpy: [1.17]
+            geos: 3.8
+            numpy: 1.17
             dev: true
 
     steps:
