@@ -835,6 +835,48 @@ static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
   GEOSGeometry* in1 = NULL;
   int result;
 
+  // DEBUG: print which function signature is called here; this seems to behave differently
+  // on windows
+  int match = 0;
+  if ((void*)func == GEOSGeomTypeId_r) {
+    printf("C ext: GEOSGeomTypeId_r\n");
+    match = 1;
+  }
+  if ((void*)func == GetNumPoints) {
+    printf("C ext: GetNumPoints\n");
+    match = 1;
+  }
+  if ((void*)func == GetNumInteriorRings) {
+    printf("C ext: GetNumInteriorRings\n");
+    match = 1;
+  }
+  if ((void*)func == GEOSGetNumGeometries_r) {
+    printf("C ext: GEOSGetNumGeometries_r\n");
+    match = 1;
+  }
+  if ((void*)func == GEOSGetNumCoordinates_r) {
+    printf("C ext: GEOSGetNumCoordinates_r\n");
+    match = 1;
+  }
+  if ((void*)func == GEOSGeom_getDimensions_r) {
+    printf("C ext: GEOSGeom_getDimensions_r\n");
+    match = 1;
+  }
+  if ((void*)func == GEOSGeom_getCoordinateDimension_r) {
+    printf("C ext: GEOSGeom_getCoordinateDimension_r\n");
+    match = 1;
+  }
+  if ((void*)func == GEOSGetSRID_r) {
+    printf("C ext: GEOSGetSRID_r\n");
+    match = 1;
+  }
+  // no match found
+  if (match == 0) {
+    printf("C ext: no match on function signature\n");
+  }
+
+  // END DEBUG
+
   int none_value;
   if (((void*)func == GetNumPoints) || ((void*)func == GetNumInteriorRings) ||
       ((void*)func == GEOSGetNumGeometries_r) ||
