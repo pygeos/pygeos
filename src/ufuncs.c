@@ -166,7 +166,7 @@ static PyUFuncGenericFunction Y_b_funcs[1] = {&Y_b_func};
 /* Define the object -> bool functions (O_b) which do not raise on non-geom objects*/
 static char IsMissing(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  if (!get_geom((GeometryObject *) obj, &g)) {
+  if (!get_geom((GeometryObject*)obj, &g)) {
     return 0;
   };
   return g == NULL;  // get_geom sets g to NULL for None input
@@ -174,7 +174,7 @@ static char IsMissing(void* context, PyObject* obj) {
 static void* is_missing_data[1] = {IsMissing};
 static char IsGeometry(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  if (!get_geom((GeometryObject *) obj, &g)) {
+  if (!get_geom((GeometryObject*)obj, &g)) {
     return 0;
   }
   return g != NULL;
@@ -182,7 +182,7 @@ static char IsGeometry(void* context, PyObject* obj) {
 static void* is_geometry_data[1] = {IsGeometry};
 static char IsValidInput(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  return get_geom((GeometryObject *) obj, &g);
+  return get_geom((GeometryObject*)obj, &g);
 }
 static void* is_valid_input_data[1] = {IsValidInput};
 typedef char FuncGEOS_O_b(void* context, PyObject* obj);
@@ -1108,14 +1108,16 @@ static void buffer_func(char** args, npy_intp* dimensions, npy_intp* steps, void
 }
 static PyUFuncGenericFunction buffer_funcs[1] = {&buffer_func};
 
-static char offset_curve_dtypes[6] = {NPY_OBJECT, NPY_DOUBLE, NPY_INT, NPY_INT, NPY_DOUBLE, NPY_OBJECT};
-static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
+static char offset_curve_dtypes[6] = {NPY_OBJECT, NPY_DOUBLE, NPY_INT,
+                                      NPY_INT,    NPY_DOUBLE, NPY_OBJECT};
+static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                              void* data) {
   char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4];
   npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4];
   npy_intp n = dimensions[0];
   npy_intp i;
   GEOSGeometry** geom_arr;
-  GEOSGeometry *in1 = NULL;
+  GEOSGeometry* in1 = NULL;
 
   // Fail if inputs output multiple times on the same place in memory. That would
   // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
@@ -1128,7 +1130,8 @@ static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps
   }
 
   if ((is3 != 0) | (is4 != 0) | (is5 != 0)) {
-    PyErr_Format(PyExc_ValueError, "Offset curve function called with non-scalar parameters");
+    PyErr_Format(PyExc_ValueError,
+                 "Offset curve function called with non-scalar parameters");
     return;
   }
 
