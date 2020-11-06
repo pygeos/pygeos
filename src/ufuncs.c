@@ -43,6 +43,17 @@
   Py_XDECREF(*out);                                      \
   *out = ret
 
+// Fail if inputs output multiple times on the same place in memory. That would
+// lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
+#define CHECK_NO_INPLACE_OUTPUT(N)                                                \
+  if ((steps[N] == 0) && (dimensions[0] > 1)) {                                   \
+    PyErr_Format(PyExc_NotImplementedError,                                       \
+                 "Unknown ufunc mode with args[0]=%p, args[N]=%p, steps[0]=%ld, " \
+                 "steps[N]=%ld, dimensions[0]=%ld.",                              \
+                 args[0], args[N], steps[0], steps[N], dimensions[0]);            \
+    return;                                                                       \
+  }
+
 static void geom_arr_to_npy(GEOSGeometry** array, char* ptr, npy_intp stride,
                             npy_intp count) {
   npy_intp i;
@@ -166,7 +177,7 @@ static PyUFuncGenericFunction Y_b_funcs[1] = {&Y_b_func};
 /* Define the object -> bool functions (O_b) which do not raise on non-geom objects*/
 static char IsMissing(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  if (!get_geom((GeometryObject *) obj, &g)) {
+  if (!get_geom((GeometryObject*)obj, &g)) {
     return 0;
   };
   return g == NULL;  // get_geom sets g to NULL for None input
@@ -174,7 +185,7 @@ static char IsMissing(void* context, PyObject* obj) {
 static void* is_missing_data[1] = {IsMissing};
 static char IsGeometry(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  if (!get_geom((GeometryObject *) obj, &g)) {
+  if (!get_geom((GeometryObject*)obj, &g)) {
     return 0;
   }
   return g != NULL;
@@ -182,7 +193,7 @@ static char IsGeometry(void* context, PyObject* obj) {
 static void* is_geometry_data[1] = {IsGeometry};
 static char IsValidInput(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  return get_geom((GeometryObject *) obj, &g);
+  return get_geom((GeometryObject*)obj, &g);
 }
 static void* is_valid_input_data[1] = {IsValidInput};
 typedef char FuncGEOS_O_b(void* context, PyObject* obj);
@@ -312,15 +323,7 @@ static void Y_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
   GEOSGeometry* in1 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[1] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(
-        PyExc_NotImplementedError,
-        "Unknown ufunc mode with args=[%p, %p], steps=[%ld, %ld], dimensions=[%ld].",
-        args[0], args[1], steps[0], steps[1], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(1);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
@@ -399,15 +402,7 @@ static void Yd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
   GEOSGeometry* in1 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[2] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], "
-                 "dimensions=[%ld].",
-                 args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(2);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
@@ -545,15 +540,7 @@ static void Yi_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
   GEOSGeometry* in1 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[2] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], "
-                 "dimensions=[%ld].",
-                 args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(2);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
@@ -1006,6 +993,7 @@ finish:
 static PyUFuncGenericFunction YYd_d_funcs[1] = {&YYd_d_func};
 
 /* Define functions with unique call signatures */
+
 static void* null_data[1] = {NULL};
 static char buffer_inner(void* ctx, GEOSBufferParams* params, void* ip1, void* ip2,
                          GEOSGeometry** geom_arr, npy_intp i) {
@@ -1039,15 +1027,7 @@ static void buffer_func(char** args, npy_intp* dimensions, npy_intp* steps, void
   npy_intp i;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[7] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args[0]=%p, args[7]=%p, steps[0]=%ld, "
-                 "steps[7]=%ld, dimensions[0]=%ld.",
-                 args[0], args[7], steps[0], steps[7], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(7);
 
   if ((is3 != 0) | (is4 != 0) | (is5 != 0) | (is6 != 0) | (is7 != 0)) {
     PyErr_Format(PyExc_ValueError, "Buffer function called with non-scalar parameters");
@@ -1113,16 +1093,7 @@ static void snap_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
   GEOSGeometry *in1 = NULL, *in2 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[3] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p, %p], steps=[%ld, %ld, %ld, "
-                 "%ld], dimensions=[%ld].",
-                 args[0], args[1], args[2], args[3], steps[0], steps[1], steps[2],
-                 steps[3], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(3);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
@@ -1208,16 +1179,7 @@ static void delaunay_triangles_func(char** args, npy_intp* dimensions, npy_intp*
   GEOSGeometry* in1 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[3] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p, %p], steps=[%ld, %ld, %ld, "
-                 "%ld], dimensions=[%ld].",
-                 args[0], args[1], args[2], args[3], steps[0], steps[1], steps[2],
-                 steps[3], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(3);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
@@ -1267,16 +1229,7 @@ static void voronoi_polygons_func(char** args, npy_intp* dimensions, npy_intp* s
   GEOSGeometry *in1 = NULL, *in3 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[4] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p, %p, %p], steps=[%ld, %ld, "
-                 "%ld, %ld, %ld], dimensions=[%ld].",
-                 args[0], args[1], args[2], args[3], args[4], steps[0], steps[1],
-                 steps[2], steps[3], steps[4], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(4);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
