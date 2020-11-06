@@ -146,8 +146,6 @@ def get_num_coordinates(geometry):
     1
     >>> get_num_coordinates(Geometry("GEOMETRYCOLLECTION (POINT(0 0), LINESTRING(0 0, 1 1))"))
     3
-    >>> get_num_coordinates(None)
-    0
     """
     return lib.get_num_coordinates(geometry)
 
@@ -533,7 +531,5 @@ def get_num_geometries(geometry):
     4
     >>> get_num_geometries(Geometry("POINT (1 1)"))
     1
-    >>> get_num_geometries(None)
-    0
     """
     return lib.get_num_geometries(geometry)

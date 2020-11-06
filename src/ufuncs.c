@@ -166,7 +166,7 @@ static PyUFuncGenericFunction Y_b_funcs[1] = {&Y_b_func};
 /* Define the object -> bool functions (O_b) which do not raise on non-geom objects*/
 static char IsMissing(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  if (!get_geom((GeometryObject *) obj, &g)) {
+  if (!get_geom((GeometryObject*)obj, &g)) {
     return 0;
   };
   return g == NULL;  // get_geom sets g to NULL for None input
@@ -174,7 +174,7 @@ static char IsMissing(void* context, PyObject* obj) {
 static void* is_missing_data[1] = {IsMissing};
 static char IsGeometry(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  if (!get_geom((GeometryObject *) obj, &g)) {
+  if (!get_geom((GeometryObject*)obj, &g)) {
     return 0;
   }
   return g != NULL;
@@ -182,7 +182,7 @@ static char IsGeometry(void* context, PyObject* obj) {
 static void* is_geometry_data[1] = {IsGeometry};
 static char IsValidInput(void* context, PyObject* obj) {
   GEOSGeometry* g = NULL;
-  return get_geom((GeometryObject *) obj, &g);
+  return get_geom((GeometryObject*)obj, &g);
 }
 static void* is_valid_input_data[1] = {IsValidInput};
 typedef char FuncGEOS_O_b(void* context, PyObject* obj);
@@ -835,8 +835,8 @@ static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
   GEOSGeometry* in1 = NULL;
   int result;
 
-  // DEBUG: print which function signature is called here; this seems to behave differently
-  // on windows
+  // DEBUG: print which function signature is called here; this seems to behave
+  // differently on windows
   int match = 0;
   if ((void*)func == GEOSGeomTypeId_r) {
     printf("C ext: GEOSGeomTypeId_r\n");
@@ -879,7 +879,6 @@ static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 
   int none_value;
   if (((void*)func == GetNumPoints) || ((void*)func == GetNumInteriorRings) ||
-      ((void*)func == GEOSGetNumGeometries_r) ||
       ((void*)func == GEOSGetNumGeometries_r) ||
       ((void*)func == GEOSGetNumCoordinates_r)) {
     none_value = 0;
