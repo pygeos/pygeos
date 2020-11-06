@@ -1127,12 +1127,12 @@ static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps
     return;
   }
 
-  if ((is2 != 0) | (is3 != 0) | (is4 != 0) | (is5 != 0)) {
+  if ((is3 != 0) | (is4 != 0) | (is5 != 0)) {
     PyErr_Format(PyExc_ValueError, "Offset curve function called with non-scalar parameters");
     return;
   }
 
-  double width = *(double*)ip2;
+  double width;
   int quadsegs = *(int*)ip3;
   int joinStyle = *(int*)ip4;
   double mitreLimit = *(double*)ip5;
@@ -1146,7 +1146,7 @@ static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps
 
   GEOS_INIT_THREADS;
 
-  for (i = 0; i < n; i++, ip1 += is1) {
+  for (i = 0; i < n; i++, ip1 += is1, ip2 += is2) {
     /* get the geometry: return on error */
     if (!get_geom(*(GeometryObject**)ip1, &in1)) {
       errstate = PGERR_NOT_A_GEOMETRY;
@@ -1154,6 +1154,7 @@ static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps
       break;
     }
 
+    width = *(double*)ip2;
     if ((in1 == NULL) | npy_isnan(width)) {
       // in case of a missing value: return NULL (None)
       geom_arr[i] = NULL;

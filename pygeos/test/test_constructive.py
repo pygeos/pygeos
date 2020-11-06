@@ -187,6 +187,13 @@ def test_offset_curve_empty():
     assert pygeos.is_empty(actual)
 
 
+def test_offset_curve_distance_array():
+    # check that kwargs are passed through
+    result = pygeos.offset_curve([line_string, line_string], [-2.0, -3.0])
+    assert result[0] == pygeos.offset_curve(line_string, -2.0)
+    assert result[1] == pygeos.offset_curve(line_string, -3.0)
+
+
 def test_offset_curve_kwargs():
     # check that kwargs are passed through
     result1 = pygeos.offset_curve(
@@ -198,9 +205,6 @@ def test_offset_curve_kwargs():
 
 def test_offset_curve_non_scalar_kwargs():
     msg = "only accepts scalar values"
-    with pytest.raises(TypeError, match=msg):
-        pygeos.offset_curve([line_string, line_string], distance=np.array([8, 9]))
-
     with pytest.raises(TypeError, match=msg):
         pygeos.offset_curve([line_string, line_string], 1, quadsegs=np.array([8, 9]))
 

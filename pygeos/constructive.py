@@ -190,7 +190,7 @@ def offset_curve(
     Parameters
     ----------
     geometry : Geometry or array_like
-    distance : float
+    distance : float or array_like
         Specifies the offset distance from the input geometry. Negative
         for right side offset, positive for left side offset.
     quadsegs : int
@@ -209,14 +209,12 @@ def offset_curve(
     --------
     >>> line = Geometry("LINESTRING (0 0, 0 2)")
     >>> offset_curve(line, 2)
-    <pygeos.Geometry LINESTRING (-2 0, -2 2) >
+    <pygeos.Geometry LINESTRING (-2 0, -2 2)>
     >>> offset_curve(line, -2)
-    <pygeos.Geometry LINESTRING (2 2, 2 0) >
+    <pygeos.Geometry LINESTRING (2 2, 2 0)>
     """
     if isinstance(join_style, str):
         join_style = BufferJoinStyles[join_style.upper()].value
-    if not np.isscalar(distance):
-        raise TypeError("distance only accepts scalar values")
     if not np.isscalar(quadsegs):
         raise TypeError("quadsegs only accepts scalar values")
     if not np.isscalar(join_style):
@@ -225,7 +223,7 @@ def offset_curve(
         raise TypeError("mitre_limit only accepts scalar values")
     return lib.offset_curve(
         geometry,
-        np.double(distance),
+        distance,
         np.intc(quadsegs),
         np.intc(join_style),
         np.double(mitre_limit),
