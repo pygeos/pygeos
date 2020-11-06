@@ -804,7 +804,11 @@ finish:
 static PyUFuncGenericFunction Y_d_funcs[1] = {&Y_d_func};
 
 /* Define the geom -> int functions (Y_i) */
-static void* get_type_id_data[1] = {&GEOSGeomTypeId_r};
+static int GEOSGeomTypeId(void* context, void* geom, int n) {
+  return GEOSGeomTypeId_r(context, geom);
+}
+// static void* get_type_id_data[1] = {GEOSGeomTypeId_r};
+static void* get_type_id_data[1] = {GEOSGeomTypeId};
 static void* get_dimensions_data[1] = {GEOSGeom_getDimensions_r};
 static void* get_coordinate_dimension_data[1] = {GEOSGeom_getCoordinateDimension_r};
 static void* get_srid_data[1] = {GEOSGetSRID_r};
@@ -839,14 +843,14 @@ static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
   // differently on windows
   printf(
     "-----------------------\nincoming func: %p, (cast: %p, deref: %p)\n",
-    func,
+    data,
     (void*)func,
     &func
   );
   printf(
-    "known GEOS funcs: %p (deref: %p), %p, %p, %p, %p, %p\n------------------------\n",
+    "known GEOS funcs: %p (wrapper: %p), %p, %p, %p, %p, %p\n------------------------\n",
     GEOSGeomTypeId_r,
-    &GEOSGeomTypeId_r,
+    GEOSGeomTypeId,
     GEOSGetNumGeometries_r,
     GEOSGetNumCoordinates_r,
     GEOSGeom_getDimensions_r,
