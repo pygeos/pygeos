@@ -119,12 +119,12 @@ def test_make_valid_none():
         # an L shaped polygon without area is converted to a multilinestring
         (
             Geometry("POLYGON((0 0, 1 1, 1 2, 1 1, 0 0))"),
-            Geometry("MULTILINESTRING ((0 0, 1 1), (1 1, 1 2))"),
+            Geometry("MULTILINESTRING ((1 1, 1 2), (0 0, 1 1))"),
         ),
         # a polygon with self-intersection (bowtie) is converted into polygons
         (
             Geometry("POLYGON((0 0, 2 2, 2 0, 0 2, 0 0))"),
-            Geometry("MULTIPOLYGON (((1 1, 0 0, 0 2, 1 1)), ((1 1, 2 2, 2 0, 1 1)))"),
+            Geometry("MULTIPOLYGON (((1 1, 2 2, 2 0, 1 1)), ((0 0, 0 2, 1 1, 0 0)))"),
         ),
         (empty, empty),
         ([empty], [empty])
@@ -133,7 +133,8 @@ def test_make_valid_none():
 def test_make_valid(geom, expected):
     actual = pygeos.make_valid(geom)
     assert actual is not expected
-    assert pygeos.normalize(actual) == pygeos.normalize(expected)
+    assert pygeos.normalize(actual) == expected
+
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
 @pytest.mark.parametrize(
