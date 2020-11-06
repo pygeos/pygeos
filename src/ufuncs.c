@@ -837,6 +837,23 @@ static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 
   // DEBUG: print which function signature is called here; this seems to behave
   // differently on windows
+  printf(
+    "-----------------------\nincoming func: %p, (cast: %p, deref: %p)\n",
+    func,
+    (void*)func,
+    &func
+  );
+  printf(
+    "known GEOS funcs: %p (deref: %p), %p, %p, %p, %p, %p\n------------------------\n",
+    GEOSGeomTypeId_r,
+    &GEOSGeomTypeId_r,
+    GEOSGetNumGeometries_r,
+    GEOSGetNumCoordinates_r,
+    GEOSGeom_getDimensions_r,
+    GEOSGeom_getCoordinateDimension_r,
+    GEOSGetSRID_r
+  );
+
   int match = 0;
   if ((void*)func == GEOSGeomTypeId_r) {
     printf("C ext: GEOSGeomTypeId_r\n");
