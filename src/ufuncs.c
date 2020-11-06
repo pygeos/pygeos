@@ -1154,7 +1154,7 @@ static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps
       break;
     }
 
-    if (in1 == NULL) {
+    if ((in1 == NULL) | npy_isnan(width)) {
       // in case of a missing value: return NULL (None)
       geom_arr[i] = NULL;
     } else {

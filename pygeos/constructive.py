@@ -207,7 +207,11 @@ def offset_curve(
 
     Examples
     --------
-    TODO
+    >>> line = Geometry("LINESTRING (0 0, 0 2)")
+    >>> offset_curve(line, 2)
+    <pygeos.Geometry LINESTRING (-2 0, -2 2) >
+    >>> offset_curve(line, -2)
+    <pygeos.Geometry LINESTRING (2 2, 2 0) >
     """
     if isinstance(join_style, str):
         join_style = BufferJoinStyles[join_style.upper()].value

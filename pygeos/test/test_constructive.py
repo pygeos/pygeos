@@ -4,7 +4,7 @@ import pytest
 
 from pygeos import Geometry, GEOSException
 
-from .common import point, line_string, all_types, empty
+from .common import point, line_string, all_types, empty, empty_line_string
 
 CONSTRUCTIVE_NO_ARGS = (
     pygeos.boundary,
@@ -37,7 +37,7 @@ def test_no_args_array(geometry, func):
 @pytest.mark.parametrize("func", CONSTRUCTIVE_FLOAT_ARG)
 def test_float_arg_array(geometry, func):
     if func is pygeos.offset_curve and pygeos.get_type_id(geometry) not in [1, 2]:
-        with pytest.raises(GEOSException):
+        with pytest.raises(GEOSException, match="only accept linestrings"):
             func([geometry, geometry], 0.0)
         return
     actual = func([geometry, geometry], 0.0)
@@ -68,10 +68,6 @@ def test_float_arg_missing(func):
 @pytest.mark.parametrize("geometry", all_types)
 @pytest.mark.parametrize("func", CONSTRUCTIVE_FLOAT_ARG)
 def test_float_arg_nan(geometry, func):
-    if func is pygeos.offset_curve and pygeos.get_type_id(geometry) not in [1, 2]:
-        with pytest.raises(GEOSException):
-            func(geometry, float("nan"))
-        return
     actual = func(geometry, float("nan"))
     assert actual is None
 
@@ -184,3 +180,39 @@ def test_make_valid_1d(geom, expected):
 def test_normalize(geom, expected):
     actual = pygeos.normalize(geom)
     assert actual == expected
+
+
+def test_offset_curve_empty():
+    actual = pygeos.offset_curve(empty_line_string, 2.0)
+    assert pygeos.is_empty(actual)
+
+
+def test_offset_curve_kwargs():
+    # check that kwargs are passed through
+    result1 = pygeos.offset_curve(
+        line_string, -2.0, quadsegs=2, join_style="mitre", mitre_limit=2.0
+    )
+    result2 = pygeos.offset_curve(line_string, -2.0)
+    assert result1 != result2
+
+
+def test_offset_curve_non_scalar_kwargs():
+    msg = "only accepts scalar values"
+    with pytest.raises(TypeError, match=msg):
+        pygeos.offset_curve([line_string, line_string], distance=np.array([8, 9]))
+
+    with pytest.raises(TypeError, match=msg):
+        pygeos.offset_curve([line_string, line_string], 1, quadsegs=np.array([8, 9]))
+
+    with pytest.raises(TypeError, match=msg):
+        pygeos.offset_curve(
+            [line_string, line_string], 1, join_style=["round", "bevel"]
+        )
+
+    with pytest.raises(TypeError, match=msg):
+        pygeos.offset_curve([line_string, line_string], 1, mitre_limit=[5.0, 6.0])
+
+
+def test_offset_curve_join_style():
+    with pytest.raises(KeyError):
+        pygeos.offset_curve(line_string, 1.0, join_style="nonsense")
