@@ -133,6 +133,7 @@ def test_make_valid_none():
 def test_make_valid(geom, expected):
     actual = pygeos.make_valid(geom)
     assert actual is not expected
+    # normalize needed to handle variation in output across GEOS versions
     assert pygeos.normalize(actual) == expected
 
 
@@ -159,6 +160,7 @@ def test_make_valid(geom, expected):
 )
 def test_make_valid_1d(geom, expected):
     actual = pygeos.make_valid(geom)
+    # normalize needed to handle variation in output across GEOS versions
     assert np.all(pygeos.normalize(actual) == pygeos.normalize(expected))
 
 
