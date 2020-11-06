@@ -804,7 +804,7 @@ finish:
 static PyUFuncGenericFunction Y_d_funcs[1] = {&Y_d_func};
 
 /* Define the geom -> int functions (Y_i) */
-static void* get_type_id_data[1] = {GEOSGeomTypeId_r};
+static void* get_type_id_data[1] = {&GEOSGeomTypeId_r};
 static void* get_dimensions_data[1] = {GEOSGeom_getDimensions_r};
 static void* get_coordinate_dimension_data[1] = {GEOSGeom_getCoordinateDimension_r};
 static void* get_srid_data[1] = {GEOSGetSRID_r};
