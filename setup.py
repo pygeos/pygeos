@@ -116,6 +116,8 @@ class build_ext(_build_ext):
         # Remove -Wstrict-prototypes from call to gcc
         # because compiling against GEOS raises a lot of these.
         # from: https://stackoverflow.com/a/36293331/2740575
+        # FUTUREWARNING: per PEP 632, distutils will be deprecated in a future version of
+        # Python which may impact how compiler options are used here.
         customize_compiler(self.compiler)
         try:
             self.compiler.compiler_so.remove("-Wstrict-prototypes")
