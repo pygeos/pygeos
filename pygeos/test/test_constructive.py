@@ -133,7 +133,7 @@ def test_make_valid_none():
 def test_make_valid(geom, expected):
     actual = pygeos.make_valid(geom)
     assert actual is not expected
-    assert actual == expected
+    assert pygeos.normalize(actual) == pygeos.normalize(expected)
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
 @pytest.mark.parametrize(
@@ -158,7 +158,7 @@ def test_make_valid(geom, expected):
 )
 def test_make_valid_1d(geom, expected):
     actual = pygeos.make_valid(geom)
-    assert np.all(actual == expected)
+    assert np.all(pygeos.normalize(actual) == pygeos.normalize(expected))
 
 
 @pytest.mark.parametrize(
