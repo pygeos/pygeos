@@ -11,7 +11,10 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python: [3.8]
+        channel: ['']
         include:
+          - os: ubuntu-latest
+            channel: conda-forge
           - os: macos-latest
             python: 3.6
             geos: 3.6
@@ -24,6 +27,8 @@ jobs:
             python: 3.8
             geos: 3.8
             numpy: 1.17
+          - os: macos-latest
+            channel: conda-forge
           - os: windows-latest
             python: 3.6
             geos: 3.6
@@ -36,6 +41,8 @@ jobs:
             python: 3.8
             geos: 3.8
             numpy: 1.17
+          - os: windows-latest
+            channel: conda-forge
 
     steps:
       - uses: actions/checkout@v2
@@ -44,6 +51,7 @@ jobs:
         uses: s-weigand/setup-conda@v1.0.5
         with:
           activate-conda: false
+          conda-channels: ${{ matrix.channel }}
 
       - name: Setup Environment
         shell: bash
@@ -70,7 +78,7 @@ jobs:
 
       - name: Run tests
         shell: bash
-        continue-on-error: ${{ endsWith(matrix.env, 'conda-forge.yml') }}
+        continue-on-error: ${{ matrix.channel == 'conda-forge' }}
         run: |
           source activate test
           pytest --doctest-modules
