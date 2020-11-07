@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
-    name: ${{ matrix.os }} - Python ${{ matrix.python }} (GEOS ${{ matrix.geos || 'latest' }}, numpy ${{ matrix.numpy || 'latest' }})
+    name: ${{ matrix.os }} - Python ${{ matrix.python }} (GEOS ${{ matrix.geos || 'latest' }}, numpy ${{ matrix.numpy || 'latest' }}, conda ${{ matrix.channel || 'defaults' }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -28,6 +28,9 @@ jobs:
             geos: 3.8
             numpy: 1.17
           - os: macos-latest
+            geos: ''
+            numpy: ''
+          - os: macos-latest
             channel: conda-forge
           - os: windows-latest
             python: 3.6
@@ -41,6 +44,9 @@ jobs:
             python: 3.8
             geos: 3.8
             numpy: 1.17
+          - os: windows-latest
+            geos: ''
+            numpy: ''
           - os: windows-latest
             channel: conda-forge
 
