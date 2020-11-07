@@ -15,6 +15,11 @@ jobs:
         include:
           - os: ubuntu-latest
             python: 3.8
+            geos: ' '
+            numpy: ' '
+            channel: ''
+          - os: ubuntu-latest
+            python: 3.8
             geos: ''
             numpy: ''
             channel: conda-forge
