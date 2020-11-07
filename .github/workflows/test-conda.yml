@@ -37,11 +37,6 @@ jobs:
             python: 3.8
             geos: ''
             numpy: ''
-            channel: ''
-          - os: macos-latest
-            python: 3.8
-            geos: ''
-            numpy: ''
             channel: 'conda-forge'
           - os: windows-latest
             python: 3.6
@@ -57,11 +52,6 @@ jobs:
             python: 3.8
             geos: 3.8
             numpy: 1.17
-            channel: ''
-          - os: windows-latest
-            python: 3.8
-            geos: ''
-            numpy: ''
             channel: ''
           - os: windows-latest
             python: 3.8
