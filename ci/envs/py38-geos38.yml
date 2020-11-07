@@ -1,8 +1,0 @@
-name: test
-channels:
-  - defaults
-dependencies:
-  - python=3.8
-  - geos=3.8
-  - numpy=1.17
-  - pytest
