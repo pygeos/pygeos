@@ -14,41 +14,60 @@ jobs:
         channel: ['']
         include:
           - os: ubuntu-latest
+            python: 3.8
+            geos: ''
+            numpy: ''
             channel: conda-forge
           - os: macos-latest
             python: 3.6
             geos: 3.6
             numpy: 1.13
+            channel: ''
           - os: macos-latest
             python: 3.7
             geos: 3.7
             numpy: 1.15
+            channel: ''
           - os: macos-latest
             python: 3.8
             geos: 3.8
             numpy: 1.17
+            channel: ''
           - os: macos-latest
+            python: 3.8
             geos: ''
             numpy: ''
+            channel: ''
           - os: macos-latest
-            channel: conda-forge
+            python: 3.8
+            geos: ''
+            numpy: ''
+            channel: 'conda-forge'
           - os: windows-latest
             python: 3.6
             geos: 3.6
             numpy: 1.13
+            channel: ''
           - os: windows-latest
             python: 3.7
             geos: 3.7
             numpy: 1.15
+            channel: ''
           - os: windows-latest
             python: 3.8
             geos: 3.8
             numpy: 1.17
+            channel: ''
           - os: windows-latest
+            python: 3.8
             geos: ''
             numpy: ''
+            channel: ''
           - os: windows-latest
-            channel: conda-forge
+            python: 3.8
+            geos: ''
+            numpy: ''
+            channel: 'conda-forge'
 
     steps:
       - uses: actions/checkout@v2
