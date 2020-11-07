@@ -35,9 +35,9 @@ jobs:
             channel: ''
           - os: macos-latest
             python: 3.8
-            geos: ' '
-            numpy: ' '
-            channel: ''
+            geos: ''
+            numpy: ''
+            channel: 'defaults'
           - os: macos-latest
             python: 3.8
             geos: ''
@@ -60,9 +60,9 @@ jobs:
             channel: ''
           - os: windows-latest
             python: 3.8
-            geos: ' '
-            numpy: ' '
-            channel: ''
+            geos: ''
+            numpy: ''
+            channel: 'defaults'
           - os: windows-latest
             python: 3.8
             geos: ''
