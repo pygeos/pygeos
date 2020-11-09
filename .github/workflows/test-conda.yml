@@ -1,4 +1,4 @@
-name: Test using Conda environments
+name: Conda
 
 on: [push, pull_request]
 
@@ -34,18 +34,6 @@ jobs:
           - os: macos-latest
             python: 3.8
             channel: conda-forge
-          - os: windows-latest
-            python: 3.6
-            geos: 3.6
-            numpy: 1.13
-          - os: windows-latest
-            python: 3.7
-            geos: 3.7
-            numpy: 1.15
-          - os: windows-latest
-            python: 3.8
-            geos: 3.8
-            numpy: 1.17
           - os: windows-latest
             python: 3.8
             channel: defaults
