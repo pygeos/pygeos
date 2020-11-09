@@ -818,14 +818,21 @@ finish:
 static PyUFuncGenericFunction Y_d_funcs[1] = {&Y_d_func};
 
 /* Define the geom -> int functions (Y_i) */
-static int GEOSGeomTypeId(void* context, void* geom, int n) {
-  return GEOSGeomTypeId_r(context, geom);
-}
-// static void* get_type_id_data[1] = {GEOSGeomTypeId_r};
-static void* get_type_id_data[1] = {GEOSGeomTypeId};
-static void* get_dimensions_data[1] = {GEOSGeom_getDimensions_r};
-static void* get_coordinate_dimension_data[1] = {GEOSGeom_getCoordinateDimension_r};
-static void* get_srid_data[1] = {GEOSGetSRID_r};
+/* data values are GEOS func, GEOS error code, return value when input is None */
+static void* get_type_id_func_tuple[3] = {GEOSGeomTypeId_r, (void*)-1, (void*)-1};
+static void* get_type_id_data[1] = {get_type_id_func_tuple};
+
+static void* get_dimensions_func_tuple[3] = {GEOSGeom_getDimensions_r, (void*)0,
+                                             (void*)-1};
+static void* get_dimensions_data[1] = {get_dimensions_func_tuple};
+
+static void* get_coordinate_dimension_func_tuple[3] = {GEOSGeom_getCoordinateDimension_r,
+                                                       (void*)-1, (void*)-1};
+static void* get_coordinate_dimension_data[1] = {get_coordinate_dimension_func_tuple};
+
+static void* get_srid_func_tuple[3] = {GEOSGetSRID_r, (void*)0, (void*)-1};
+static void* get_srid_data[1] = {get_srid_func_tuple};
+
 static int GetNumPoints(void* context, void* geom, int n) {
   char typ = GEOSGeomTypeId_r(context, geom);
   if ((typ == 1) | (typ == 2)) { /* Linestring & Linearring */
@@ -834,7 +841,9 @@ static int GetNumPoints(void* context, void* geom, int n) {
     return 0;
   }
 }
-static void* get_num_points_data[1] = {GetNumPoints};
+static void* get_num_points_func_tuple[3] = {GetNumPoints, (void*)-1, (void*)0};
+static void* get_num_points_data[1] = {get_num_points_func_tuple};
+
 static int GetNumInteriorRings(void* context, void* geom, int n) {
   char typ = GEOSGeomTypeId_r(context, geom);
   if (typ == 3) { /* Polygon */
@@ -843,91 +852,27 @@ static int GetNumInteriorRings(void* context, void* geom, int n) {
     return 0;
   }
 }
-static void* get_num_interior_rings_data[1] = {GetNumInteriorRings};
-static void* get_num_geometries_data[1] = {GEOSGetNumGeometries_r};
-static void* get_num_coordinates_data[1] = {GEOSGetNumCoordinates_r};
+static void* get_num_interior_rings_func_tuple[3] = {GetNumInteriorRings, (void*)-1,
+                                                     (void*)0};
+static void* get_num_interior_rings_data[1] = {get_num_interior_rings_func_tuple};
+
+static void* get_num_geometries_func_tuple[3] = {GEOSGetNumGeometries_r, (void*)-1,
+                                                 (void*)0};
+static void* get_num_geometries_data[1] = {get_num_geometries_func_tuple};
+
+static void* get_num_coordinates_func_tuple[3] = {GEOSGetNumCoordinates_r, (void*)-1,
+                                                  (void*)0};
+static void* get_num_coordinates_data[1] = {get_num_coordinates_func_tuple};
+
 typedef int FuncGEOS_Y_i(void* context, void* a);
 static char Y_i_dtypes[2] = {NPY_OBJECT, NPY_INT};
 static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
-  FuncGEOS_Y_i* func = (FuncGEOS_Y_i*)data;
+  FuncGEOS_Y_i* func = ((FuncGEOS_Y_i**)data)[0];
+  int errcode = (int)((int**)data)[1];
+  int none_value = (int)((int**)data)[2];
+
   GEOSGeometry* in1 = NULL;
   int result;
-
-  // DEBUG: print which function signature is called here; this seems to behave
-  // differently on windows
-  printf(
-    "-----------------------\nincoming func: %p, (cast: %p, deref: %p)\n",
-    data,
-    (void*)func,
-    &func
-  );
-  printf(
-    "known GEOS funcs: %p (wrapper: %p), %p, %p, %p, %p, %p\n------------------------\n",
-    GEOSGeomTypeId_r,
-    GEOSGeomTypeId,
-    GEOSGetNumGeometries_r,
-    GEOSGetNumCoordinates_r,
-    GEOSGeom_getDimensions_r,
-    GEOSGeom_getCoordinateDimension_r,
-    GEOSGetSRID_r
-  );
-
-  int match = 0;
-  if ((void*)func == GEOSGeomTypeId_r) {
-    printf("C ext: GEOSGeomTypeId_r\n");
-    match = 1;
-  }
-  if ((void*)func == GetNumPoints) {
-    printf("C ext: GetNumPoints\n");
-    match = 1;
-  }
-  if ((void*)func == GetNumInteriorRings) {
-    printf("C ext: GetNumInteriorRings\n");
-    match = 1;
-  }
-  if ((void*)func == GEOSGetNumGeometries_r) {
-    printf("C ext: GEOSGetNumGeometries_r\n");
-    match = 1;
-  }
-  if ((void*)func == GEOSGetNumCoordinates_r) {
-    printf("C ext: GEOSGetNumCoordinates_r\n");
-    match = 1;
-  }
-  if ((void*)func == GEOSGeom_getDimensions_r) {
-    printf("C ext: GEOSGeom_getDimensions_r\n");
-    match = 1;
-  }
-  if ((void*)func == GEOSGeom_getCoordinateDimension_r) {
-    printf("C ext: GEOSGeom_getCoordinateDimension_r\n");
-    match = 1;
-  }
-  if ((void*)func == GEOSGetSRID_r) {
-    printf("C ext: GEOSGetSRID_r\n");
-    match = 1;
-  }
-  // no match found
-  if (match == 0) {
-    printf("C ext: no match on function signature\n");
-  }
-
-  // END DEBUG
-
-  int none_value;
-  if (((void*)func == GetNumPoints) || ((void*)func == GetNumInteriorRings) ||
-      ((void*)func == GEOSGetNumGeometries_r) ||
-      ((void*)func == GEOSGetNumCoordinates_r)) {
-    none_value = 0;
-  } else {
-    none_value = -1;
-  }
-
-  // In the GEOS CAPI, sometimes -1 is an error, sometimes 0
-  int errcode;
-  if (((void*)func == GEOSGeom_getDimensions_r) || ((void*)func == GEOSGetSRID_r)) {
-    errcode = 0;
-  } else {
-    errcode = -1;
-  }
 
   GEOS_INIT_THREADS;
 

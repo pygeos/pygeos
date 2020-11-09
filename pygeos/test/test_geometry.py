@@ -33,8 +33,6 @@ def test_get_num_interior_rings():
     assert actual == [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
 
 
-# FIXME:
-@pytest.mark.xfail(sys.platform == "win32", reason="Not correctly detecting function signature")
 def test_get_num_geometries():
     actual = pygeos.get_num_geometries(all_types + (None,)).tolist()
     assert actual == [1, 1, 1, 1, 2, 1, 2, 2, 0, 0]
@@ -140,8 +138,7 @@ def test_get_coordinate_dimension():
     actual = pygeos.get_coordinate_dimension([point, point_z, None]).tolist()
     assert actual == [2, 3, -1]
 
-# FIXME:
-@pytest.mark.xfail(sys.platform == "win32", reason="Not correctly detecting function signature")
+
 def test_get_num_coordinates():
     actual = pygeos.get_num_coordinates(all_types + (None,)).tolist()
     assert actual == [1, 3, 5, 5, 2, 2, 10, 3, 0, 0]
