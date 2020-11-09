@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   TestConda:
-    name: ${{ matrix.os }} - Python ${{ matrix.python }} (GEOS ${{ matrix.geos || 'latest' }}, numpy ${{ matrix.numpy || 'latest' }}, conda ${{ matrix.channel || 'defaults' }})
+    name: ${{ matrix.os }} - ${{ matrix.channel || 'defaults' }}) - Python ${{ matrix.python }} (GEOS ${{ matrix.geos || 'latest' }}, numpy ${{ matrix.numpy || 'latest' }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
