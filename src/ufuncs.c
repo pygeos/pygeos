@@ -773,6 +773,20 @@ static void* get_z_data[1] = {GetZ};
 #endif
 static void* area_data[1] = {GEOSArea_r};
 static void* length_data[1] = {GEOSLength_r};
+#if GEOS_SINCE_3_6_0
+static int MinimumClearance(void* context, void* a, double* b) {
+  // GEOSMinimumClearance deviates from the pattern of returning 0 on exception and 1 on
+  // success for functions that return an int (it follows pattern for boolean functions
+  // returning char 0/1 and 2 on exception)
+  int retcode = GEOSMinimumClearance_r(context, a, b);
+  if (retcode == 2) {
+    return 0;
+  } else {
+    return 1;
+  }
+}
+static void* minimum_clearance_data[1] = {MinimumClearance};
+#endif
 typedef int FuncGEOS_Y_d(void* context, void* a, double* b);
 static char Y_d_dtypes[2] = {NPY_OBJECT, NPY_DOUBLE};
 static void Y_d_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -1179,6 +1193,79 @@ static void buffer_func(char** args, npy_intp* dimensions, npy_intp* steps, void
   free(geom_arr);
 }
 static PyUFuncGenericFunction buffer_funcs[1] = {&buffer_func};
+
+static char offset_curve_dtypes[6] = {NPY_OBJECT, NPY_DOUBLE, NPY_INT,
+                                      NPY_INT,    NPY_DOUBLE, NPY_OBJECT};
+static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                              void* data) {
+  char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4];
+  npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4];
+  npy_intp n = dimensions[0];
+  npy_intp i;
+  GEOSGeometry** geom_arr;
+  GEOSGeometry* in1 = NULL;
+
+  // Fail if inputs output multiple times on the same place in memory. That would
+  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
+  if ((steps[5] == 0) && (dimensions[0] > 1)) {
+    PyErr_Format(PyExc_NotImplementedError,
+                 "Unknown ufunc mode with args[0]=%p, args[5]=%p, steps[0]=%ld, "
+                 "steps[5]=%ld, dimensions[0]=%ld.",
+                 args[0], args[5], steps[0], steps[5], dimensions[0]);
+    return;
+  }
+
+  if ((is3 != 0) | (is4 != 0) | (is5 != 0)) {
+    PyErr_Format(PyExc_ValueError,
+                 "Offset curve function called with non-scalar parameters");
+    return;
+  }
+
+  double width;
+  int quadsegs = *(int*)ip3;
+  int joinStyle = *(int*)ip4;
+  double mitreLimit = *(double*)ip5;
+
+  // allocate a temporary array to store output GEOSGeometry objects
+  geom_arr = malloc(sizeof(void*) * n);
+  if (geom_arr == NULL) {
+    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
+    return;
+  }
+
+  GEOS_INIT_THREADS;
+
+  for (i = 0; i < n; i++, ip1 += is1, ip2 += is2) {
+    /* get the geometry: return on error */
+    if (!get_geom(*(GeometryObject**)ip1, &in1)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
+    }
+
+    width = *(double*)ip2;
+    if ((in1 == NULL) | npy_isnan(width)) {
+      // in case of a missing value: return NULL (None)
+      geom_arr[i] = NULL;
+    } else {
+      geom_arr[i] = GEOSOffsetCurve_r(ctx, in1, width, quadsegs, joinStyle, mitreLimit);
+      if (geom_arr[i] == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        break;
+      }
+    }
+  }
+
+  GEOS_FINISH_THREADS;
+
+  // fill the numpy array with PyObjects while holding the GIL
+  if (errstate == PGERR_SUCCESS) {
+    geom_arr_to_npy(geom_arr, args[5], steps[5], dimensions[0]);
+  }
+  free(geom_arr);
+}
+static PyUFuncGenericFunction offset_curve_funcs[1] = {&offset_curve_func};
 
 static char snap_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT};
 static void snap_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -2302,6 +2389,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_YYd_d(hausdorff_distance_densify);
 
   DEFINE_CUSTOM(buffer, 7);
+  DEFINE_CUSTOM(offset_curve, 5);
   DEFINE_CUSTOM(snap, 3);
   DEFINE_CUSTOM(equals_exact, 3);
 
@@ -2322,6 +2410,10 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_CUSTOM(to_wkb, 5);
   DEFINE_CUSTOM(to_wkt, 5);
   DEFINE_CUSTOM(from_shapely, 1);
+
+#if GEOS_SINCE_3_6_0
+  DEFINE_Y_d(minimum_clearance);
+#endif
 
 #if GEOS_SINCE_3_7_0
   DEFINE_Y_b(is_ccw);
