@@ -184,7 +184,7 @@ def offset_curve(
 
     For positive distance the offset will be at the left side of
     the input line and retain the same direction. For a negative
-    distance it'll be at the right side and in the opposite
+    distance it will be at the right side and in the opposite
     direction.
 
     Parameters
