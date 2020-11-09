@@ -16,6 +16,12 @@ jobs:
           - os: ubuntu-latest
             python: 3.8
             channel: conda-forge
+          - os: windows-latest
+            python: 3.8
+            channel: conda-forge
+          - os: macos-latest
+            python: 3.8
+            channel: conda-forge
           - os: macos-latest
             python: 3.6
             geos: 3.6
@@ -31,15 +37,6 @@ jobs:
           - os: macos-latest
             python: 3.8
             channel: defaults
-          - os: macos-latest
-            python: 3.8
-            channel: conda-forge
-          - os: windows-latest
-            python: 3.8
-            channel: defaults
-          - os: windows-latest
-            python: 3.8
-            channel: conda-forge
 
     steps:
       - uses: actions/checkout@v2
