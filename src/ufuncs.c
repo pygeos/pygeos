@@ -1113,15 +1113,7 @@ static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps
   GEOSGeometry** geom_arr;
   GEOSGeometry* in1 = NULL;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[5] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args[0]=%p, args[5]=%p, steps[0]=%ld, "
-                 "steps[5]=%ld, dimensions[0]=%ld.",
-                 args[0], args[5], steps[0], steps[5], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(5);
 
   if ((is3 != 0) | (is4 != 0) | (is5 != 0)) {
     PyErr_Format(PyExc_ValueError,
