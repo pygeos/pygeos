@@ -156,6 +156,12 @@ static void* set_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry* g
     return NULL;
   }
 
+  /* If we have CoordSeq with z dim, but new coordinates only are 2D,
+   * create new CoordSeq that is also only 2D */
+  if ((dims == 3) && !include_z) {
+    dims = 2;
+  }
+
   /* Create a new one to fill with the new coordinates */
   GEOSCoordSequence* seq_new = GEOSCoordSeq_create_r(context, n, dims);
   if (seq_new == NULL) {
@@ -171,7 +177,7 @@ static void* set_coordinates_simple(GEOSContextHandle_t context, GEOSGeometry* g
     if (GEOSCoordSeq_setY_r(context, seq_new, i, *y) == 0) {
       goto fail;
     }
-    if ((dims == 3) && include_z) {
+    if (dims == 3) {
       z = PyArray_GETPTR2(coords, *cursor, 2);
       if (GEOSCoordSeq_setZ_r(context, seq_new, i, *z) == 0) {
         goto fail;

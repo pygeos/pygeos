@@ -201,3 +201,11 @@ def test_apply_check_shape():
 
     with pytest.raises(ValueError):
         apply(linear_ring, remove_coord)
+
+
+def test_apply_correct_coordinate_dimension():
+    # ensure that new geometry is 2D with include_z=False
+    geom = line_string_z
+    assert pygeos.get_coordinate_dimension(geom) == 3
+    new_geom = apply(geom, lambda x: x + 1, include_z=False)
+    assert pygeos.get_coordinate_dimension(new_geom) == 2
