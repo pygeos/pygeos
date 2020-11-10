@@ -177,9 +177,16 @@ def geometrycollections(geometries):
 def prepare(geometry, **kwargs):
     """Compute a prepared geometry.
 
-    Prepared geometries improve the performance of the binary predicate operations
+    A prepared geometry is a normal geometry with added information such as an
+    index on the line segments. This improves the performance of the following operations:
     contains, contains_properly, covered_by, covers, crosses, disjoint, intersects,
     overlaps, touches, and within.
+
+    Note that if a prepared geometry is modified, the newly created Geometry object is
+    not prepared. In that case, ``prepare`` should be called again.
+
+    This function does not recompute previously prepared geometries; 
+    it is efficient to call this function on an array that partially contains prepared geometries. 
 
     Parameters
     ----------
