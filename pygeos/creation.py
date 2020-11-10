@@ -175,9 +175,9 @@ def geometrycollections(geometries):
 
 
 def prepare(geometry, **kwargs):
-    """Compute a prepared geometry
+    """Compute a prepared geometry.
 
-    Prepared geometries improves performance of the binary predicate operations
+    Prepared geometries improve the performance of the binary predicate operations
     contains, contains_properly, covered_by, covers, crosses, disjoint, intersects,
     overlaps, touches, and within.
 
