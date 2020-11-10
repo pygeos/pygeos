@@ -27,10 +27,8 @@ def test_get_num_points():
 
 
 def test_get_num_interior_rings():
-    actual = pygeos.get_num_interior_rings(
-        all_types + (polygon_with_hole, None)
-    ).tolist()
-    assert actual == [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+    actual = pygeos.get_num_interior_rings(all_types + (polygon_with_hole, None))
+    assert actual.tolist() == [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
 
 
 def test_get_num_geometries():
