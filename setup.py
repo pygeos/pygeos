@@ -135,6 +135,7 @@ if "clean" in sys.argv:
     p = Path('pygeos')
     for pattern in ['*.c','*.so', '*.pyd']:
         for filename in p.glob(pattern):
+            print("removing '{}'".format(filename))
             filename.unlink()
 
 elif "sdist" not in sys.argv:
