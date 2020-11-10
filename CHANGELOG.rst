@@ -9,10 +9,14 @@ Version 0.9 (unreleased)
 * Release the GIL for ``is_geometry()``, ``is_missing()``, and
   ``is_valid_input()`` (#207)
 * Addition of a ``is_ccw()`` function for GEOS >= 3.7 (#201)
+* Addition of a ``minimum_clearance`` function for GEOS >= 3.6.0 (#223)
+* Addition of a ``offset_curve`` function (#229)
 * Added support for pickling to ``Geometry`` objects (#190)
 * Limited the length of geometry repr to 80 characters (#189)
 * Argument in ``line_interpolate_point`` and ``line_locate_point``
   was renamed from ``normalize`` to ``normalized`` (#209)
+* Fixed error handling in ``line_locate_point`` for incorrect geometry
+  types, now actually requiring line and point geometries (#216)
 * Addition of ``get_parts`` function to get individual parts of an array of multipart
   geometries (#197).
 * The ``apply`` function for coordinate transformations and the ``set_coordinates``
