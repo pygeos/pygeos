@@ -453,11 +453,7 @@ PyObject* SetCoords(PyArrayObject* geoms, PyArrayObject* coords) {
   }
 
   coords_shape = PyArray_SHAPE(coords);
-  if (coords_shape[1] == 3) {
-    include_z = 1;
-  } else {
-    include_z = 0;
-  }
+  include_z = (coords_shape[1] == 3);
 
   /* We use the Numpy iterator C-API here.
   The iterator exposes an "iternext" function which updates a "dataptr"
