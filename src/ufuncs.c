@@ -54,6 +54,12 @@
     return;                                                                       \
   }
 
+#define CHECK_ALLOC(ARR)                                             \
+  if (ARR == NULL) {                                                 \
+    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory"); \
+    return;                                                          \
+  }
+
 static void geom_arr_to_npy(GEOSGeometry** array, char* ptr, npy_intp stride,
                             npy_intp count) {
   npy_intp i;
@@ -327,10 +333,7 @@ static void Y_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -406,10 +409,7 @@ static void Yd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -544,10 +544,7 @@ static void Yi_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -687,10 +684,7 @@ static void YY_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -1050,10 +1044,7 @@ static void buffer_func(char** args, npy_intp* dimensions, npy_intp* steps, void
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * n);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -1128,10 +1119,7 @@ static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * n);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -1176,10 +1164,7 @@ static void snap_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -1262,10 +1247,7 @@ static void delaunay_triangles_func(char** args, npy_intp* dimensions, npy_intp*
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -1312,10 +1294,7 @@ static void voronoi_polygons_func(char** args, npy_intp* dimensions, npy_intp* s
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
