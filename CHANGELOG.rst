@@ -23,6 +23,8 @@ Version 0.9 (unreleased)
   function now support geometries with z-coordinates (#131).
 * Addition of Cython and internal PyGEOS C API to enable easier development of internal
   functions (previously all significant internal functions were developed in C) (#51).
+* Ensure that ``python setup.py clean`` removes all previously Cythonized and compiled
+  files (#239).
 
 Version 0.8 (2020-09-06)
 ------------------------
