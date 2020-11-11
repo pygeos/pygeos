@@ -117,6 +117,8 @@ class build_ext(_build_ext):
         # Add numpy include dirs without importing numpy on module level.
         # derived from scikit-hep:
         # https://github.com/scikit-hep/root_numpy/pull/292
+
+        # Prevent numpy from thinking it is still in its setup process:
         try:
             del builtins.__NUMPY_SETUP__
         except AttributeError:
