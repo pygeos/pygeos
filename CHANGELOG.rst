@@ -9,6 +9,8 @@ Version 0.9 (unreleased)
 * Release the GIL for ``is_geometry()``, ``is_missing()``, and
   ``is_valid_input()`` (#207)
 * Addition of a ``is_ccw()`` function for GEOS >= 3.7 (#201)
+* Addition of a ``minimum_clearance`` function for GEOS >= 3.6.0 (#223)
+* Addition of a ``offset_curve`` function (#229)
 * Added support for pickling to ``Geometry`` objects (#190)
 * Limited the length of geometry repr to 80 characters (#189)
 * Argument in ``line_interpolate_point`` and ``line_locate_point``
@@ -17,8 +19,14 @@ Version 0.9 (unreleased)
   types, now actually requiring line and point geometries (#216)
 * Addition of ``get_parts`` function to get individual parts of an array of multipart
   geometries (#197).
+* The ``apply`` function for coordinate transformations and the ``set_coordinates``
+  function now support geometries with z-coordinates (#131).
 * Addition of Cython and internal PyGEOS C API to enable easier development of internal
   functions (previously all significant internal functions were developed in C) (#51).
+* API change: geometry and counting functions (``get_num_coordinates``,
+  ``get_num_geometries``, ``get_num_interior_rings``, ``get_num_points``) now return 0
+  for ``None`` input values instead of -1 (#218).
+* Fixed internal GEOS error code detection for ``get_dimensions`` and ``get_srid`` (#218).
 
 Version 0.8 (2020-09-06)
 ------------------------
