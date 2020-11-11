@@ -2,7 +2,6 @@ import builtins
 import os
 import subprocess
 import sys
-from distutils.sysconfig import customize_compiler
 from distutils.version import LooseVersion
 from setuptools import setup, Extension
 from setuptools.command.build_ext import build_ext as _build_ext
@@ -112,19 +111,6 @@ def get_geos_paths():
 
 
 class build_ext(_build_ext):
-    def build_extensions(self):
-        # Remove -Wstrict-prototypes from call to gcc
-        # because compiling against GEOS raises a lot of these.
-        # from: https://stackoverflow.com/a/36293331/2740575
-        # FUTUREWARNING: per PEP 632, distutils will be deprecated in a future version of
-        # Python which may impact how compiler options are used here.
-        customize_compiler(self.compiler)
-        try:
-            self.compiler.compiler_so.remove("-Wstrict-prototypes")
-        except (AttributeError, ValueError):
-            pass
-        _build_ext.build_extensions(self)
-
     def finalize_options(self):
         _build_ext.finalize_options(self)
 
