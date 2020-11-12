@@ -771,6 +771,7 @@ def relate(a, b, **kwargs):
     return lib.relate(a, b, **kwargs)
 
 
+@multithreading_enabled
 def relate_pattern(a, b, pattern, **kwargs):
     """
     Returns True if the DE-9IM string code for the relationship between
