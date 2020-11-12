@@ -35,7 +35,6 @@ def get_parts(object[:] array):
 
     if count == 0:
         # return immediately if there are no geometries to return
-        # count is negative when the only entries in array are None
         return (
             np.empty(shape=(0, ), dtype=np.object),
             np.empty(shape=(0, ), dtype=np.intp)
