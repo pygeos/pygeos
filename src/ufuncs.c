@@ -1551,14 +1551,14 @@ static void relate_pattern_func(char** args, npy_intp* dimensions, npy_intp* ste
     return;
   }
   PyObject* in3 = *(PyObject**)ip3;
-  if (!PyUnicode_Check(in3)) {
+  if (PyUnicode_Check(in3)) {
+    pattern = PyUnicode_AsUTF8(in3);
+    if (pattern == NULL) {
+      return;
+    }
+  } else {
     PyErr_Format(PyExc_TypeError, "pattern keyword expected string, got %s",
                  Py_TYPE(in3)->tp_name);
-    return;
-  }
-  pattern = PyUnicode_AsUTF8(in3);
-  if (pattern == NULL) {
-    errstate = PGERR_GEOS_EXCEPTION;
     return;
   }
 
