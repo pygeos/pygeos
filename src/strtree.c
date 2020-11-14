@@ -15,6 +15,7 @@
 #include "kvec.h"
 #include "pygeom.h"
 #include "strtree.h"
+#include "vector.h"
 
 /* GEOS function that takes a prepared geometry and a regular geometry
  * and returns bool value */
@@ -61,34 +62,6 @@ FuncGEOS_YpY_b* get_predicate_func(int predicate_id) {
   }
 }
 
-/* Copy values from arr to a new numpy integer array.
- *
- * Parameters
- * ----------
- * arr: dynamic vector array to convert to ndarray
- */
-
-static PyArrayObject* copy_kvec_to_npy(npy_intp_vec* arr) {
-  npy_intp i;
-  npy_intp size = kv_size(*arr);
-
-  npy_intp dims[1] = {size};
-  // the following raises a compiler warning based on how the macro is defined
-  // in numpy.  There doesn't appear to be anything we can do to avoid it.
-  PyArrayObject* result = (PyArrayObject*)PyArray_SimpleNew(1, dims, NPY_INTP);
-  if (result == NULL) {
-    PyErr_SetString(PyExc_RuntimeError, "could not allocate numpy array");
-    return NULL;
-  }
-
-  for (i = 0; i < size; i++) {
-    // assign value into numpy array
-    *(npy_intp*)PyArray_GETPTR1(result, i) = kv_A(*arr, i);
-  }
-
-  return (PyArrayObject*)result;
-}
-
 static void STRtree_dealloc(STRtreeObject* self) {
   size_t i, size;
 
@@ -114,7 +87,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
   void *tree, *ptr;
   npy_intp n, i, count = 0;
   GEOSGeometry* geom;
-  pg_geom_obj_vec _geoms;
+  geom_obj_vec _geoms;
   GeometryObject* obj;
 
   if (!PyArg_ParseTuple(args, "Oi", &arr, &node_capacity)) {
@@ -221,7 +194,7 @@ void query_callback(void* item, void* user_data) {
  * */
 
 static char evaluate_predicate(void* context, FuncGEOS_YpY_b* predicate_func,
-                               GEOSGeometry* geom, pg_geom_obj_vec* tree_geometries,
+                               GEOSGeometry* geom, geom_obj_vec* tree_geometries,
                                npy_intp_vec* in_indexes, npy_intp_vec* out_indexes,
                                npy_intp* count) {
   GeometryObject* pg_geom;
@@ -319,7 +292,7 @@ static PyObject* STRtree_query(STRtreeObject* self, PyObject* args) {
   if (predicate_id == 0 || kv_size(query_indexes) == 0) {
     // No predicate function provided, return all geometry indexes from
     // query.  If array is empty, return an empty numpy array
-    result = copy_kvec_to_npy(&query_indexes);
+    result = npy_intp_vec_to_npy_arr(&query_indexes);
     kv_destroy(query_indexes);
     GEOS_FINISH;
     return (PyObject*)result;
@@ -336,7 +309,7 @@ static PyObject* STRtree_query(STRtreeObject* self, PyObject* args) {
     return NULL;
   }
 
-  result = copy_kvec_to_npy(&predicate_indexes);
+  result = npy_intp_vec_to_npy_arr(&predicate_indexes);
 
   kv_destroy(query_indexes);
   kv_destroy(predicate_indexes);
