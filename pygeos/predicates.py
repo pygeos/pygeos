@@ -11,6 +11,7 @@ __all__ = [
     "is_empty",
     "is_geometry",
     "is_missing",
+    "is_prepared",
     "is_ring",
     "is_simple",
     "is_valid",
@@ -185,6 +186,32 @@ def is_missing(geometry, **kwargs):
     False
     """
     return lib.is_missing(geometry, **kwargs)
+
+
+@multithreading_enabled
+def is_prepared(geometry, **kwargs):
+    """Returns True if a Geometry is prepared
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    See also
+    --------
+    is_valid_input : check if an object is a geometry or None
+    prepare : prepare a geometry
+
+    Examples
+    --------
+    >>> geometry = Geometry("POINT (0 0)")
+    >>> is_prepared(Geometry("POINT (0 0)"))
+    False
+    >>> pygeos.prepare(geometry);
+    >>> is_prepared(geometry)
+    True
+    """
+    return lib.is_prepared(geometry, **kwargs)
+
 
 @multithreading_enabled
 def is_valid_input(geometry, **kwargs):

@@ -14,6 +14,7 @@ UNARY_PREDICATES = (
     pygeos.is_missing,
     pygeos.is_geometry,
     pygeos.is_valid_input,
+    pygeos.is_prepared,
     pytest.param(pygeos.is_ccw, marks=pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")),
 )
 
@@ -132,6 +133,15 @@ def test_is_ccw(geom, expected):
 @pytest.mark.parametrize("func", BINARY_PREPARED_PREDICATES)
 def test_binary_prepared(a, func):
     actual = func(a, point)
-    pygeos.lib.prepare(a)
+    pygeos.prepare(a)
     result = func(a, point)
     assert actual == result
+
+
+def test_is_prepared():
+    geometry = Geometry("POINT (1 1)")
+    assert not pygeos.is_prepared(geometry)
+    pygeos.prepare(geometry)
+    assert pygeos.is_prepared(geometry)
+    pygeos.destroy_prepared(geometry)
+    assert not pygeos.is_prepared(geometry)
