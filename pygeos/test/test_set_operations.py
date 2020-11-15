@@ -65,12 +65,26 @@ def test_set_operation_reduce_axis(func, related_func):
     assert actual.shape == (3,)
 
 
+@pytest.mark.parametrize("none_position", range(3))
 @pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS)
-def test_set_operation_reduce_any_none(func, related_func):
+def test_set_operation_reduce_one_none(func, related_func, none_position):
     # API change: before, intersection_all and symmetric_difference_all returned
     # None if any input geometry was None.
     # The new behaviour is to ignore None values.
-    actual = func(reduce_test_data[:2] + [None])
+    test_data = reduce_test_data[:2]
+    test_data.insert(none_position, None)
+    actual = func(test_data)
+    expected = related_func(reduce_test_data[0], reduce_test_data[1])
+    assert pygeos.equals(actual, expected)
+
+
+@pytest.mark.parametrize("none_position", range(3))
+@pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS)
+def test_set_operation_reduce_two_none(func, related_func, none_position):
+    test_data = reduce_test_data[:2]
+    test_data.insert(none_position, None)
+    test_data.insert(none_position, None)
+    actual = func(test_data)
     expected = related_func(reduce_test_data[0], reduce_test_data[1])
     assert pygeos.equals(actual, expected)
 
