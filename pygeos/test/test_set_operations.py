@@ -65,6 +65,24 @@ def test_set_operation_reduce_axis(func, related_func):
     assert actual.shape == (3,)
 
 
+@pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS)
+def test_set_operation_reduce_any_none(func, related_func):
+    # API change: before, intersection_all and symmetric_difference_all returned
+    # None if any input geometry was None.
+    # The new behaviour is to ignore None values.
+    actual = func(reduce_test_data[:2] + [None])
+    expected = related_func(reduce_test_data[0], reduce_test_data[1])
+    assert pygeos.equals(actual, expected)
+
+
+@pytest.mark.parametrize("n", range(1, 3))
+@pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS)
+def test_set_operation_reduce_all_none(n, func, related_func):
+    # API change: before, union_all([None]) yielded EMPTY GEOMETRYCOLLECTION
+    # The new behaviour is that it returns None if all inputs are None.
+    assert func([None] * n) is None
+
+
 @pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
 @pytest.mark.parametrize("n", range(1, 4))
 def test_coverage_union_reduce_1dim(n):
@@ -73,11 +91,7 @@ def test_coverage_union_reduce_1dim(n):
       1. It expects only non-overlapping polygons
       2. It expects GEOS 3.8.0+
     """
-    test_data = [
-        pygeos.box(0, 0, 1, 1),
-        pygeos.box(1, 0, 2, 1),
-        pygeos.box(2, 0, 3, 1),
-    ]
+    test_data = [pygeos.box(0, 0, 1, 1), pygeos.box(1, 0, 2, 1), pygeos.box(2, 0, 3, 1)]
     actual = pygeos.coverage_union_all(test_data[:n])
     # perform the reduction in a python loop and compare
     expected = test_data[0]
@@ -105,18 +119,20 @@ def test_coverage_union_overlapping_inputs():
     polygon = Geometry("POLYGON ((1 1, 1 0, 0 0, 0 1, 1 1))")
 
     # Overlapping polygons raise an error
-    with pytest.raises(pygeos.GEOSException, match="CoverageUnion cannot process incorrectly noded inputs."):
-        pygeos.coverage_union(polygon, Geometry("POLYGON ((1 0, 0.9 1, 2 1, 2 0, 1 0))"))
+    with pytest.raises(
+        pygeos.GEOSException,
+        match="CoverageUnion cannot process incorrectly noded inputs.",
+    ):
+        pygeos.coverage_union(
+            polygon, Geometry("POLYGON ((1 0, 0.9 1, 2 1, 2 0, 1 0))")
+        )
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
 @pytest.mark.parametrize(
     "geom_1, geom_2",
     # All possible polygon, non_polygon combinations
-    [
-        [polygon, non_polygon]
-        for non_polygon in non_polygon_types
-    ] +
+    [[polygon, non_polygon] for non_polygon in non_polygon_types] +
     # All possible non_polygon, non_polygon combinations
     [
         [non_polygon_1, non_polygon_2]
@@ -126,5 +142,7 @@ def test_coverage_union_overlapping_inputs():
 )
 def test_coverage_union_non_polygon_inputs(geom_1, geom_2):
     # Non polygon geometries raise an error
-    with pytest.raises(pygeos.GEOSException, match="Unhandled geometry type in CoverageUnion."):
+    with pytest.raises(
+        pygeos.GEOSException, match="Unhandled geometry type in CoverageUnion."
+    ):
         pygeos.coverage_union(geom_1, geom_2)
