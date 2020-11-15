@@ -134,8 +134,8 @@ ext_modules = []
 
 if "clean" in sys.argv:
     # delete any previously Cythonized or compiled files in pygeos
-    p = Path('pygeos')
-    for pattern in ['*.c','*.so', '*.pyd']:
+    p = Path("pygeos")
+    for pattern in ["*.c", "*.so", "*.pyd"]:
         for filename in p.glob(pattern):
             print("removing '{}'".format(filename))
             filename.unlink()
