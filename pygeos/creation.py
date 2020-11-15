@@ -195,8 +195,8 @@ def prepare(geometry, **kwargs):
 
     See also
     --------
-    destroy_prepared
-    is_prepared
+    is_prepared : Identify whether a geometry is prepared already.
+    destroy_prepared : Destroy the prepared part of a geometry.
     """
     lib.prepare(geometry, **kwargs)
 
@@ -216,6 +216,5 @@ def destroy_prepared(geometry, **kwargs):
     See also
     --------
     prepare
-    is_prepared : Identify whether a geometry is prepared
     """
     lib.destroy_prepared(geometry, **kwargs)
