@@ -209,7 +209,7 @@ def union_all(geometries, axis=0, **kwargs):
     if np.isscalar(only_none):
         return result if not only_none else None
     else:
-        result[lib.get_num_geometries(collections) == 0] = None
+        result[only_none] = None
         return result
 
 
