@@ -43,6 +43,23 @@
   Py_XDECREF(*out);                                      \
   *out = ret
 
+// Fail if inputs output multiple times on the same place in memory. That would
+// lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
+#define CHECK_NO_INPLACE_OUTPUT(N)                                                \
+  if ((steps[N] == 0) && (dimensions[0] > 1)) {                                   \
+    PyErr_Format(PyExc_NotImplementedError,                                       \
+                 "Unknown ufunc mode with args[0]=%p, args[N]=%p, steps[0]=%ld, " \
+                 "steps[N]=%ld, dimensions[0]=%ld.",                              \
+                 args[0], args[N], steps[0], steps[N], dimensions[0]);            \
+    return;                                                                       \
+  }
+
+#define CHECK_ALLOC(ARR)                                             \
+  if (ARR == NULL) {                                                 \
+    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory"); \
+    return;                                                          \
+  }
+
 static void geom_arr_to_npy(GEOSGeometry** array, char* ptr, npy_intp stride,
                             npy_intp count) {
   npy_intp i;
@@ -196,16 +213,7 @@ static void O_b_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 static PyUFuncGenericFunction O_b_funcs[1] = {&O_b_func};
 
 /* Define the geom, geom -> bool functions (YY_b) */
-static void* disjoint_data[1] = {GEOSDisjoint_r};
-static void* touches_data[1] = {GEOSTouches_r};
-static void* intersects_data[1] = {GEOSIntersects_r};
-static void* crosses_data[1] = {GEOSCrosses_r};
-static void* within_data[1] = {GEOSWithin_r};
-static void* contains_data[1] = {GEOSContains_r};
-static void* overlaps_data[1] = {GEOSOverlaps_r};
 static void* equals_data[1] = {GEOSEquals_r};
-static void* covers_data[1] = {GEOSCovers_r};
-static void* covered_by_data[1] = {GEOSCoveredBy_r};
 typedef char FuncGEOS_YY_b(void* context, void* a, void* b);
 static char YY_b_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_BOOL};
 static void YY_b_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -244,6 +252,74 @@ finish:
   GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction YY_b_funcs[1] = {&YY_b_func};
+
+/* Define the geom, geom -> bool functions (YY_b) prepared */
+static void* contains_func_tuple[2] = {GEOSContains_r, GEOSPreparedContains_r};
+static void* contains_data[1] = {contains_func_tuple};
+// static void* contains_properly_func_tuple[2] = {..., GEOSPreparedContainsProperly_r};
+// static void* contains_properly_data[1] = {contains_properly_func_tuple};
+static void* covered_by_func_tuple[2] = {GEOSCoveredBy_r, GEOSPreparedCoveredBy_r};
+static void* covered_by_data[1] = {covered_by_func_tuple};
+static void* covers_func_tuple[2] = {GEOSCovers_r, GEOSPreparedCovers_r};
+static void* covers_data[1] = {covers_func_tuple};
+static void* crosses_func_tuple[2] = {GEOSCrosses_r, GEOSPreparedCrosses_r};
+static void* crosses_data[1] = {crosses_func_tuple};
+static void* disjoint_func_tuple[2] = {GEOSDisjoint_r, GEOSPreparedDisjoint_r};
+static void* disjoint_data[1] = {disjoint_func_tuple};
+static void* intersects_func_tuple[2] = {GEOSIntersects_r, GEOSPreparedIntersects_r};
+static void* intersects_data[1] = {intersects_func_tuple};
+static void* overlaps_func_tuple[2] = {GEOSOverlaps_r, GEOSPreparedOverlaps_r};
+static void* overlaps_data[1] = {overlaps_func_tuple};
+static void* touches_func_tuple[2] = {GEOSTouches_r, GEOSPreparedTouches_r};
+static void* touches_data[1] = {touches_func_tuple};
+static void* within_func_tuple[2] = {GEOSWithin_r, GEOSPreparedWithin_r};
+static void* within_data[1] = {within_func_tuple};
+static char YY_b_p_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_BOOL};
+static void YY_b_p_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
+  FuncGEOS_YY_b* func = ((FuncGEOS_YY_b**)data)[0];
+  FuncGEOS_YY_b* func_prepared = ((FuncGEOS_YY_b**)data)[1];
+
+  GEOSGeometry *in1 = NULL, *in2 = NULL;
+  GEOSPreparedGeometry* in1_prepared = NULL;
+  char ret;
+
+  GEOS_INIT_THREADS;
+
+  BINARY_LOOP {
+    /* get the geometries: return on error */
+    if (!get_geom_with_prepared(*(GeometryObject**)ip1, &in1, &in1_prepared)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      goto finish;
+    }
+    if (!get_geom(*(GeometryObject**)ip2, &in2)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      goto finish;
+    }
+    if ((in1 == NULL) | (in2 == NULL)) {
+      /* in case of a missing value: return 0 (False) */
+      ret = 0;
+    } else {
+      if (in1_prepared == NULL) {
+        /* call the GEOS function */
+        ret = func(ctx, in1, in2);
+      } else {
+        /* call the prepared GEOS function */
+        ret = func_prepared(ctx, in1_prepared, in2);
+      }
+      /* return for illegal values */
+      if (ret == 2) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        goto finish;
+      }
+    }
+    *(npy_bool*)op1 = ret;
+  }
+
+finish:
+
+  GEOS_FINISH_THREADS;
+}
+static PyUFuncGenericFunction YY_b_p_funcs[1] = {&YY_b_p_func};
 
 /* Define the geom -> geom functions (Y_Y) */
 static void* envelope_data[1] = {GEOSEnvelope_r};
@@ -312,22 +388,11 @@ static void Y_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
   GEOSGeometry* in1 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[1] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(
-        PyExc_NotImplementedError,
-        "Unknown ufunc mode with args=[%p, %p], steps=[%ld, %ld], dimensions=[%ld].",
-        args[0], args[1], steps[0], steps[1], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(1);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -364,6 +429,55 @@ static void Y_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 }
 static PyUFuncGenericFunction Y_Y_funcs[1] = {&Y_Y_func};
 
+/* Define the geom -> no return value functions (Y) */
+static char PrepareGeometryObject(void* ctx, GeometryObject* geom) {
+  if (geom->ptr_prepared == NULL) {
+    geom->ptr_prepared = (GEOSPreparedGeometry*)GEOSPrepare_r(ctx, geom->ptr);
+    if (geom->ptr_prepared == NULL) {
+      return PGERR_GEOS_EXCEPTION;
+    }
+  }
+  return PGERR_SUCCESS;
+}
+static char DestroyPreparedGeometryObject(void* ctx, GeometryObject* geom) {
+  if (geom->ptr_prepared != NULL) {
+    GEOSPreparedGeom_destroy_r(ctx, geom->ptr_prepared);
+    geom->ptr_prepared = NULL;
+  }
+  return PGERR_SUCCESS;
+}
+
+static void* prepare_data[1] = {PrepareGeometryObject};
+static void* destroy_prepared_data[1] = {DestroyPreparedGeometryObject};
+typedef char FuncPyGEOS_Y(void* ctx, GeometryObject* geom);
+static char Y_dtypes[1] = {NPY_OBJECT};
+static void Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
+  FuncPyGEOS_Y* func = (FuncPyGEOS_Y*)data;
+  GEOSGeometry* in1 = NULL;
+  GeometryObject* geom_obj = NULL;
+
+  GEOS_INIT;
+
+  NO_OUTPUT_LOOP {
+    geom_obj = *(GeometryObject**)ip1;
+    if (!get_geom(geom_obj, &in1)) {
+      errstate = PGERR_GEOS_EXCEPTION;
+      goto finish;
+    }
+    if (in1 != NULL) {
+      errstate = func(ctx, geom_obj);
+      if (errstate != PGERR_SUCCESS) {
+        goto finish;
+      }
+    }
+  }
+
+finish:
+
+  GEOS_FINISH;
+}
+static PyUFuncGenericFunction Y_funcs[1] = {&Y_func};
+
 /* Define the geom, double -> geom functions (Yd_Y) */
 static void* GEOSInterpolateProtectEmpty_r(void* context, void* geom, double d) {
   char errstate = geos_interpolate_checker(context, geom);
@@ -399,22 +513,11 @@ static void Yd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
   GEOSGeometry* in1 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[2] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], "
-                 "dimensions=[%ld].",
-                 args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(2);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -545,22 +648,11 @@ static void Yi_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
   GEOSGeometry* in1 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[2] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p], steps=[%ld, %ld, %ld], "
-                 "dimensions=[%ld].",
-                 args[0], args[1], args[2], steps[0], steps[1], steps[2], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(2);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -700,10 +792,7 @@ static void YY_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -818,10 +907,21 @@ finish:
 static PyUFuncGenericFunction Y_d_funcs[1] = {&Y_d_func};
 
 /* Define the geom -> int functions (Y_i) */
-static void* get_type_id_data[1] = {GEOSGeomTypeId_r};
-static void* get_dimensions_data[1] = {GEOSGeom_getDimensions_r};
-static void* get_coordinate_dimension_data[1] = {GEOSGeom_getCoordinateDimension_r};
-static void* get_srid_data[1] = {GEOSGetSRID_r};
+/* data values are GEOS func, GEOS error code, return value when input is None */
+static void* get_type_id_func_tuple[3] = {GEOSGeomTypeId_r, (void*)-1, (void*)-1};
+static void* get_type_id_data[1] = {get_type_id_func_tuple};
+
+static void* get_dimensions_func_tuple[3] = {GEOSGeom_getDimensions_r, (void*)0,
+                                             (void*)-1};
+static void* get_dimensions_data[1] = {get_dimensions_func_tuple};
+
+static void* get_coordinate_dimension_func_tuple[3] = {GEOSGeom_getCoordinateDimension_r,
+                                                       (void*)-1, (void*)-1};
+static void* get_coordinate_dimension_data[1] = {get_coordinate_dimension_func_tuple};
+
+static void* get_srid_func_tuple[3] = {GEOSGetSRID_r, (void*)0, (void*)-1};
+static void* get_srid_data[1] = {get_srid_func_tuple};
+
 static int GetNumPoints(void* context, void* geom, int n) {
   char typ = GEOSGeomTypeId_r(context, geom);
   if ((typ == 1) | (typ == 2)) { /* Linestring & Linearring */
@@ -830,7 +930,9 @@ static int GetNumPoints(void* context, void* geom, int n) {
     return 0;
   }
 }
-static void* get_num_points_data[1] = {GetNumPoints};
+static void* get_num_points_func_tuple[3] = {GetNumPoints, (void*)-1, (void*)0};
+static void* get_num_points_data[1] = {get_num_points_func_tuple};
+
 static int GetNumInteriorRings(void* context, void* geom, int n) {
   char typ = GEOSGeomTypeId_r(context, geom);
   if (typ == 3) { /* Polygon */
@@ -839,23 +941,27 @@ static int GetNumInteriorRings(void* context, void* geom, int n) {
     return 0;
   }
 }
-static void* get_num_interior_rings_data[1] = {GetNumInteriorRings};
-static void* get_num_geometries_data[1] = {GEOSGetNumGeometries_r};
-static void* get_num_coordinates_data[1] = {GEOSGetNumCoordinates_r};
+static void* get_num_interior_rings_func_tuple[3] = {GetNumInteriorRings, (void*)-1,
+                                                     (void*)0};
+static void* get_num_interior_rings_data[1] = {get_num_interior_rings_func_tuple};
+
+static void* get_num_geometries_func_tuple[3] = {GEOSGetNumGeometries_r, (void*)-1,
+                                                 (void*)0};
+static void* get_num_geometries_data[1] = {get_num_geometries_func_tuple};
+
+static void* get_num_coordinates_func_tuple[3] = {GEOSGetNumCoordinates_r, (void*)-1,
+                                                  (void*)0};
+static void* get_num_coordinates_data[1] = {get_num_coordinates_func_tuple};
+
 typedef int FuncGEOS_Y_i(void* context, void* a);
 static char Y_i_dtypes[2] = {NPY_OBJECT, NPY_INT};
 static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
-  FuncGEOS_Y_i* func = (FuncGEOS_Y_i*)data;
+  FuncGEOS_Y_i* func = ((FuncGEOS_Y_i**)data)[0];
+  int errcode = (int)((int**)data)[1];
+  int none_value = (int)((int**)data)[2];
+
   GEOSGeometry* in1 = NULL;
   int result;
-
-  // In the GEOS CAPI, sometimes -1 is an error, sometimes 0
-  int errcode;
-  if (((void*)func == GEOSGeom_getDimensions_r) || ((void*)func == GEOSGetSRID_r)) {
-    errcode = 0;
-  } else {
-    errcode = -1;
-  }
 
   GEOS_INIT_THREADS;
 
@@ -866,8 +972,8 @@ static void Y_i_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
       goto finish;
     }
     if (in1 == NULL) {
-      /* None results in -1 */
-      *(npy_int*)op1 = -1;
+      /* None results in 0 for counting functions, -1 otherwise */
+      *(npy_int*)op1 = none_value;
     } else {
       result = func(ctx, in1);
       // Check last_error if the result equals errcode.
@@ -1020,6 +1126,7 @@ finish:
 static PyUFuncGenericFunction YYd_d_funcs[1] = {&YYd_d_func};
 
 /* Define functions with unique call signatures */
+
 static void* null_data[1] = {NULL};
 static char buffer_inner(void* ctx, GEOSBufferParams* params, void* ip1, void* ip2,
                          GEOSGeometry** geom_arr, npy_intp i) {
@@ -1053,15 +1160,7 @@ static void buffer_func(char** args, npy_intp* dimensions, npy_intp* steps, void
   npy_intp i;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[7] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args[0]=%p, args[7]=%p, steps[0]=%ld, "
-                 "steps[7]=%ld, dimensions[0]=%ld.",
-                 args[0], args[7], steps[0], steps[7], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(7);
 
   if ((is3 != 0) | (is4 != 0) | (is5 != 0) | (is6 != 0) | (is7 != 0)) {
     PyErr_Format(PyExc_ValueError, "Buffer function called with non-scalar parameters");
@@ -1070,10 +1169,7 @@ static void buffer_func(char** args, npy_intp* dimensions, npy_intp* steps, void
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * n);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -1133,15 +1229,7 @@ static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps
   GEOSGeometry** geom_arr;
   GEOSGeometry* in1 = NULL;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[5] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args[0]=%p, args[5]=%p, steps[0]=%ld, "
-                 "steps[5]=%ld, dimensions[0]=%ld.",
-                 args[0], args[5], steps[0], steps[5], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(5);
 
   if ((is3 != 0) | (is4 != 0) | (is5 != 0)) {
     PyErr_Format(PyExc_ValueError,
@@ -1156,10 +1244,7 @@ static void offset_curve_func(char** args, npy_intp* dimensions, npy_intp* steps
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * n);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -1200,23 +1285,11 @@ static void snap_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
   GEOSGeometry *in1 = NULL, *in2 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[3] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p, %p], steps=[%ld, %ld, %ld, "
-                 "%ld], dimensions=[%ld].",
-                 args[0], args[1], args[2], args[3], steps[0], steps[1], steps[2],
-                 steps[3], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(3);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -1295,23 +1368,11 @@ static void delaunay_triangles_func(char** args, npy_intp* dimensions, npy_intp*
   GEOSGeometry* in1 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[3] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p, %p], steps=[%ld, %ld, %ld, "
-                 "%ld], dimensions=[%ld].",
-                 args[0], args[1], args[2], args[3], steps[0], steps[1], steps[2],
-                 steps[3], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(3);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -1354,23 +1415,11 @@ static void voronoi_polygons_func(char** args, npy_intp* dimensions, npy_intp* s
   GEOSGeometry *in1 = NULL, *in3 = NULL;
   GEOSGeometry** geom_arr;
 
-  // Fail if inputs output multiple times on the same place in memory. That would
-  // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
-  if ((steps[4] == 0) && (dimensions[0] > 1)) {
-    PyErr_Format(PyExc_NotImplementedError,
-                 "Unknown ufunc mode with args=[%p, %p, %p, %p, %p], steps=[%ld, %ld, "
-                 "%ld, %ld, %ld], dimensions=[%ld].",
-                 args[0], args[1], args[2], args[3], args[4], steps[0], steps[1],
-                 steps[2], steps[3], steps[4], dimensions[0]);
-    return;
-  }
+  CHECK_NO_INPLACE_OUTPUT(4);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * dimensions[0]);
-  if (geom_arr == NULL) {
-    PyErr_SetString(PyExc_MemoryError, "Could not allocate memory");
-    return;
-  }
+  CHECK_ALLOC(geom_arr);
 
   GEOS_INIT_THREADS;
 
@@ -2186,9 +2235,19 @@ TODO relate functions
                                   PyUFunc_None, #NAME, "", 0);                   \
   PyDict_SetItemString(d, #NAME, ufunc)
 
+#define DEFINE_YY_b_p(NAME)                                                          \
+  ufunc = PyUFunc_FromFuncAndData(YY_b_p_funcs, NAME##_data, YY_b_p_dtypes, 1, 2, 1, \
+                                  PyUFunc_None, #NAME, "", 0);                       \
+  PyDict_SetItemString(d, #NAME, ufunc)
+
 #define DEFINE_Y_Y(NAME)                                                       \
   ufunc = PyUFunc_FromFuncAndData(Y_Y_funcs, NAME##_data, Y_Y_dtypes, 1, 1, 1, \
                                   PyUFunc_None, #NAME, "", 0);                 \
+  PyDict_SetItemString(d, #NAME, ufunc)
+
+#define DEFINE_Y(NAME)                                                                   \
+  ufunc = PyUFunc_FromFuncAndData(Y_funcs, NAME##_data, Y_dtypes, 1, 1, 0, PyUFunc_None, \
+                                  #NAME, "", 0);                                         \
   PyDict_SetItemString(d, #NAME, ufunc)
 
 #define DEFINE_Yi_Y(NAME)                                                        \
@@ -2257,16 +2316,16 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_O_b(is_missing);
   DEFINE_O_b(is_valid_input);
 
-  DEFINE_YY_b(disjoint);
-  DEFINE_YY_b(touches);
-  DEFINE_YY_b(intersects);
-  DEFINE_YY_b(crosses);
-  DEFINE_YY_b(within);
-  DEFINE_YY_b(contains);
-  DEFINE_YY_b(overlaps);
+  DEFINE_YY_b_p(disjoint);
+  DEFINE_YY_b_p(touches);
+  DEFINE_YY_b_p(intersects);
+  DEFINE_YY_b_p(crosses);
+  DEFINE_YY_b_p(within);
+  DEFINE_YY_b_p(contains);
+  DEFINE_YY_b_p(overlaps);
   DEFINE_YY_b(equals);
-  DEFINE_YY_b(covers);
-  DEFINE_YY_b(covered_by);
+  DEFINE_YY_b_p(covers);
+  DEFINE_YY_b_p(covered_by);
 
   DEFINE_Y_Y(envelope);
   DEFINE_Y_Y(convex_hull);
@@ -2278,6 +2337,9 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Y_Y(extract_unique_points);
   DEFINE_Y_Y(get_exterior_ring);
   DEFINE_Y_Y(normalize);
+
+  DEFINE_Y(prepare);
+  DEFINE_Y(destroy_prepared);
 
   DEFINE_Yi_Y(get_point);
   DEFINE_Yi_Y(get_interior_ring);
