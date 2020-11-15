@@ -97,6 +97,14 @@ def test_set_operation_reduce_all_none(n, func, related_func):
     assert func([None] * n) is None
 
 
+@pytest.mark.parametrize("n", range(1, 3))
+@pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS)
+def test_set_operation_reduce_all_none_arr(n, func, related_func):
+    # API change: before, union_all([None]) yielded EMPTY GEOMETRYCOLLECTION
+    # The new behaviour is that it returns None if all inputs are None.
+    assert func([[None] * n] * 2, axis=1).tolist() == [None, None]
+
+
 @pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
 @pytest.mark.parametrize("n", range(1, 4))
 def test_coverage_union_reduce_1dim(n):
