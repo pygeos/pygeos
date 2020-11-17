@@ -718,7 +718,7 @@ static void YY_Y_func_reduce(char** args, npy_intp* dimensions, npy_intp* steps,
   GEOSGeometry *in1 = NULL, *in2 = NULL, *out = NULL;
 
   // Whether to destroy a temporary intermediate value of `out`:
-  char out_is_temp = 0, in1_is_temp = 0;
+  char do_destroy = 0;
 
   GEOS_INIT_THREADS;
 
@@ -726,48 +726,48 @@ static void YY_Y_func_reduce(char** args, npy_intp* dimensions, npy_intp* steps,
     errstate = PGERR_NOT_A_GEOMETRY;
   } else {
     BINARY_LOOP {
-      if (in1_is_temp && (in1 != NULL)) {
-        /* Cleanup previous in1 if necessary:
-         * On the first iteration, in1 is NULL
-         * On the second iteration, int1_is_temp == 0 because in1 is owned by python.
-         * On the third iteration, in1_is_temp == 1. Unless some NULL values were
-         * encountered.
-         */
-        GEOSGeom_destroy_r(ctx, in1);
-      }
-      // This is the main reduce logic: in1 becomes previous out
+      // Get the geometry inputs; in1 from previous iteration, in2 from array
       in1 = out;
-      in1_is_temp = out_is_temp;
-      // Get the other geometry (as normal)
       if (!get_geom(*(GeometryObject**)ip2, &in2)) {
         errstate = PGERR_NOT_A_GEOMETRY;
         break;
       }
-      // Now there are 4 possible situations:
+
+      /* Either (or both) in1 and in2 could be NULL (Python: None).
+       * Reduction operations should skip None values. We have 4 possible combinations:
+       */
+
       // 1. (not NULL, not NULL); run the GEOS function
       if ((in1 != NULL) && (in2 != NULL)) {
         out = func(ctx, in1, in2);
+  
+        // Discard in1 if it was a temporary intermediate
+        if (do_destroy) {
+          GEOSGeom_destroy_r(ctx, in1);
+        }
+
+        // Mark the newly generated geometry as intermediate. Note: out will become in1. 
+        do_destroy = 1;
+
+        // Break on error (we do this after discarding in1 to avoid memleaks)
         if (out == NULL) {
           errstate = PGERR_GEOS_EXCEPTION;
           break;
         }
-        out_is_temp = 1;  // Call GEOSGeom_destroy_r on this geometry later
       }
+
       // 2. (NULL, not NULL); When the first element of the reduction axis is None
       else if ((in1 == NULL) && (in2 != NULL)) {
+        // Keep in2 as 'outcome' of the operation.
         out = in2;
-        out_is_temp = 0;  // Skips calling GEOSGeom_destroy_r on this geometry
-        // 3. (not NULL, NULL); When a None value is encountered after the first not-None
-      } else if ((in1 != NULL) && (in2 == NULL)) {
-        // out already equals in1! but be sure it is not cleaned up
-        in1_is_temp = out_is_temp = 0;
+        // Ensure that it will not be destroyed (it is owned by python)
+        do_destroy = 0;
       }
-      // 4. (NULL, NULL); When 1st and 2nd elements of a reduction axis are None
-      //   Do nothing
-    }
-    // We need to cleanup the intermediate geometry stored in in1.
-    if (in1_is_temp && (in1 != NULL)) {
-      GEOSGeom_destroy_r(ctx, in1);
+
+      // 3. (not NULL, NULL); When a None value is encountered after a not-None
+      //    Don't do `out = in1`, as that is already the case.
+      // 4. (NULL, NULL); When we have not yet encountered any not-None
+      //    Do nothing; out will remain NULL
     }
   }
 
