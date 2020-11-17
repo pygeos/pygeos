@@ -61,7 +61,8 @@ def intersection(a, b, **kwargs):
 def intersection_all(geometries, axis=0, **kwargs):
     """Returns the intersection of multiple geometries.
 
-    This function ignores None values. If all inputs are None, None is returned.
+    This function ignores None values when other Geometry elements are present.
+    If all elements of the given axis are None, None is returned.
 
     Parameters
     ----------
@@ -113,7 +114,8 @@ def symmetric_difference(a, b, **kwargs):
 def symmetric_difference_all(geometries, axis=0, **kwargs):
     """Returns the symmetric difference of multiple geometries.
 
-    This function ignores None values. If all inputs are None, None is returned.
+    This function ignores None values when other Geometry elements are present.
+    If all elements of the given axis are None, None is returned.
 
     Parameters
     ----------
@@ -166,7 +168,8 @@ def union(a, b, **kwargs):
 def union_all(geometries, axis=0, **kwargs):
     """Returns the union of multiple geometries.
 
-    This function ignores None values. If all inputs are None, None is returned.
+    This function ignores None values when other Geometry elements are present.
+    If all elements of the given axis are None, None is returned.
 
     Parameters
     ----------

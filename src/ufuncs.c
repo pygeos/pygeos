@@ -726,11 +726,13 @@ static void YY_Y_func_reduce(char** args, npy_intp* dimensions, npy_intp* steps,
     errstate = PGERR_NOT_A_GEOMETRY;
   } else {
     BINARY_LOOP {
-      // Cleanup previous in1
       if (in1_is_temp && (in1 != NULL)) {
-        // If i == 0, in1 is NULL
-        // If i == 1, in1 is the first input, which is owned by python
-        // If in1 == NULL (None in Python terms), we are skipping it
+        /* Cleanup previous in1 if necessary:
+         * On the first iteration, in1 is NULL
+         * On the second iteration, int1_is_temp == 0 because in1 is owned by python.
+         * On the third iteration, in1_is_temp == 1. Unless some NULL values were
+         * encountered.
+         */
         GEOSGeom_destroy_r(ctx, in1);
       }
       // This is the main reduce logic: in1 becomes previous out
@@ -741,6 +743,8 @@ static void YY_Y_func_reduce(char** args, npy_intp* dimensions, npy_intp* steps,
         errstate = PGERR_NOT_A_GEOMETRY;
         break;
       }
+      // Now there are 4 possible situations:
+      // 1. (not NULL, not NULL); run the GEOS function
       if ((in1 != NULL) && (in2 != NULL)) {
         out = func(ctx, in1, in2);
         if (out == NULL) {
@@ -748,13 +752,18 @@ static void YY_Y_func_reduce(char** args, npy_intp* dimensions, npy_intp* steps,
           break;
         }
         out_is_temp = 1;  // Call GEOSGeom_destroy_r on this geometry later
-      } else if ((in1 == NULL) && (in2 != NULL)) {
+      }
+      // 2. (NULL, not NULL); When the first element of the reduction axis is None
+      else if ((in1 == NULL) && (in2 != NULL)) {
         out = in2;
         out_is_temp = 0;  // Skips calling GEOSGeom_destroy_r on this geometry
+        // 3. (not NULL, NULL); When a None value is encountered after the first not-None
       } else if ((in1 != NULL) && (in2 == NULL)) {
         // out already equals in1! but be sure it is not cleaned up
         in1_is_temp = out_is_temp = 0;
       }
+      // 4. (NULL, NULL); When 1st and 2nd elements of a reduction axis are None
+      //   Do nothing
     }
     // We need to cleanup the intermediate geometry stored in in1.
     if (in1_is_temp && (in1 != NULL)) {
