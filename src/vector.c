@@ -24,7 +24,7 @@
  * arr: dynamic vector array to convert to ndarray
  */
 
-PyArrayObject* npy_intp_vec_to_npy_arr(npy_intp_vec* arr) {
+PyArrayObject* index_vec_to_npy_arr(index_vec_t* arr) {
   npy_intp i;
   npy_intp size = kv_size(*arr);
 

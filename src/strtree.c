@@ -172,7 +172,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
  * */
 
 void query_callback(void* item, void* user_data) {
-  kv_push(npy_intp, *(npy_intp_vec*)user_data, (npy_intp)item);
+  kv_push(npy_intp, *(index_vec_t*)user_data, (npy_intp)item);
 }
 
 /* Evaluate the predicate function against a prepared version of geom
@@ -195,7 +195,7 @@ void query_callback(void* item, void* user_data) {
 
 static char evaluate_predicate(void* context, FuncGEOS_YpY_b* predicate_func,
                                GEOSGeometry* geom, geom_obj_vec* tree_geometries,
-                               npy_intp_vec* in_indexes, npy_intp_vec* out_indexes,
+                               index_vec_t* in_indexes, index_vec_t* out_indexes,
                                npy_intp* count) {
   GeometryObject* pg_geom;
   GEOSGeometry* target_geom;
@@ -248,7 +248,7 @@ static PyObject* STRtree_query(STRtreeObject* self, PyObject* args) {
   GeometryObject* geometry;
   int predicate_id = 0;  // default no predicate
   GEOSGeometry* geom;
-  npy_intp_vec query_indexes,
+  index_vec_t query_indexes,
       predicate_indexes;  // Resizable array for matches for each geometry
   npy_intp count;
   FuncGEOS_YpY_b* predicate_func = NULL;
@@ -292,7 +292,7 @@ static PyObject* STRtree_query(STRtreeObject* self, PyObject* args) {
   if (predicate_id == 0 || kv_size(query_indexes) == 0) {
     // No predicate function provided, return all geometry indexes from
     // query.  If array is empty, return an empty numpy array
-    result = npy_intp_vec_to_npy_arr(&query_indexes);
+    result = index_vec_to_npy_arr(&query_indexes);
     kv_destroy(query_indexes);
     GEOS_FINISH;
     return (PyObject*)result;
@@ -309,7 +309,7 @@ static PyObject* STRtree_query(STRtreeObject* self, PyObject* args) {
     return NULL;
   }
 
-  result = npy_intp_vec_to_npy_arr(&predicate_indexes);
+  result = index_vec_to_npy_arr(&predicate_indexes);
 
   kv_destroy(query_indexes);
   kv_destroy(predicate_indexes);
@@ -337,7 +337,7 @@ static PyObject* STRtree_query_bulk(STRtreeObject* self, PyObject* args) {
   GeometryObject* pg_geom;
   int predicate_id = 0;  // default no predicate
   GEOSGeometry* geom;
-  npy_intp_vec query_indexes, src_indexes, target_indexes;
+  index_vec_t query_indexes, src_indexes, target_indexes;
   npy_intp i, j, n, size;
   FuncGEOS_YpY_b* predicate_func = NULL;
   PyArrayObject* result;

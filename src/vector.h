@@ -13,8 +13,16 @@
  */
 typedef struct {
   size_t n, m;
-  npy_intp* a;
-} npy_intp_vec;
+  Py_ssize_t* a;
+} index_vec_t;
+
+/* A resizable vector with pointers to GEOSGeometry.
+ * Wraps the vector implementation in kvec.h as a type.
+ */
+typedef struct {
+  size_t n, m;
+  GEOSGeometry** a;
+} geom_vec_t;
 
 /* A resizable vector with pointers to pygeos GeometryObjects.
  * Wraps the vector implementation in kvec.h as a type.
@@ -30,6 +38,6 @@ typedef struct {
  * ----------
  * arr: dynamic vector array to convert to ndarray
  */
-extern PyArrayObject* npy_intp_vec_to_npy_arr(npy_intp_vec* arr);
+extern PyArrayObject* index_vec_to_npy_arr(index_vec_t* arr);
 
 #endif
