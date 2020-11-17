@@ -445,8 +445,10 @@ def point_on_surface(geometry, **kwargs):
 @requires_geos("3.7.0")
 @multithreading_enabled
 def reverse(geometry, **kwargs):
-    """Returns a copy of the Geometry with the order of coordinates reversed.  If the
-    Geometry is a polygon with interior rings, the interior rings are also reversed.
+    """Returns a copy of the Geometry with the order of coordinates reversed.
+
+    If the Geometry is a polygon with interior rings, the interior rings are also
+    reversed.
 
     Points are unchanged.  None is returned when Geometry is None.
 
@@ -464,7 +466,7 @@ def reverse(geometry, **kwargs):
     <pygeos.Geometry LINESTRING (1 2, 0 0)>
     >>> reverse(Geometry("POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))"))
     <pygeos.Geometry POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))>
-    >>> reverse(None) == None
+    >>> reverse(None) is None
     True
     """
 

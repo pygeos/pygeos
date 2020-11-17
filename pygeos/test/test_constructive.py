@@ -291,13 +291,13 @@ def test_reverse(geom, expected):
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
 def test_reverse_none():
-    assert pygeos.reverse(None) == None
+    assert pygeos.reverse(None) is None
     assert pygeos.reverse([None]).tolist() == [None]
 
     geometry = pygeos.Geometry("POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))")
     expected = pygeos.Geometry("POLYGON ((0 0,  0 1, 1 1, 1 0, 0 0))")
     result = pygeos.reverse([None, geometry])
-    assert result[0] == None
+    assert result[0] is None
     assert pygeos.equals(result[1], expected)
 
 
