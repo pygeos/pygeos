@@ -75,3 +75,13 @@ class GetParts:
             parts.append(pygeos.get_geometry(self.multipolygons[i], range(num_parts)))
 
         parts = np.concatenate(parts)
+
+
+class Subdivide:
+    """Benchmarks for testing subdivide of complex polygons"""
+    def setup(self):
+        points = pygeos.points(np.random.random((1000, 2)))
+        self.polygon = pygeos.union_all(pygeos.buffer(points, 0.025))
+
+    def time_subdivide(self):
+        pygeos.subdivide(self.polygon, max_vertices=10)

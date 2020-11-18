@@ -24,9 +24,6 @@ from pygeos._pygeos_api cimport (
     PyGEOS_GetGEOSGeometry
 )
 
-# FIXME: remove?
-# initialize the numpy API
-# np.import_array()
 
 # initialize PyGEOS C API
 import_pygeos_c_api()

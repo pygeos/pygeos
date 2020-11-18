@@ -7,9 +7,8 @@ from cpython cimport PyObject
 
 cimport cython
 
-import numpy as np
+# import numpy as np
 cimport numpy as np
-import pygeos
 
 from pygeos._geometry cimport get_bounds
 from pygeos._geos cimport (
@@ -48,10 +47,14 @@ from pygeos._vector cimport (
 import_pygeos_c_api()
 
 
-
-
-cdef GEOSGeometry* create_box(GEOSContextHandle_t geos_handle,
-                              double xmin, double ymin, double xmax, double ymax) nogil:
+# requires GEOS >= 3.8
+cdef GEOSGeometry* create_box(
+    GEOSContextHandle_t geos_handle,
+    double xmin,
+    double ymin,
+    double xmax,
+    double ymax
+) nogil:
 
     cdef GEOSCoordSequence *coords = NULL
     cdef GEOSGeometry *geom = NULL
@@ -85,13 +88,16 @@ cdef GEOSGeometry* create_box(GEOSContextHandle_t geos_handle,
 # returns count of geometries
 # TODO: depth can be 8 bit uint
 # max_vertices maybe uint32, and check bounds on input below
-cdef int _subdivide_geometry(GEOSContextHandle_t geos_handle,
-                             const GEOSGeometry *geom,
-                             int geom_dimension, int max_vertices, uint8_t depth,
-                             void *out_geom_vec) nogil:
+cdef Py_ssize_t _subdivide_geometry(
+    GEOSContextHandle_t geos_handle,
+    const GEOSGeometry *geom,
+    int geom_dimension, int max_vertices, uint8_t depth,
+    void *out_geom_vec
+) nogil:
+
     cdef Py_ssize_t part_idx = 0
     cdef Py_ssize_t geom_idx = 0
-    cdef uint64_t count = 0
+    cdef Py_ssize_t count = 0
     cdef int num_parts = 0
     cdef int num_coords = 0
     cdef double xmax = DBL_MIN
@@ -219,23 +225,21 @@ cdef int _subdivide_geometry(GEOSContextHandle_t geos_handle,
 # TODO: crosscheck ST_subdivide results
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def subdivide(object[:] array, int max_vertices=256):
+def subdivide(array, int max_vertices=256):
     cdef Py_ssize_t geom_idx = 0
-    cdef Py_ssize_t idx = 0
+    cdef Py_ssize_t i = 0
     cdef int geom_dimension = 0;
     cdef GEOSGeometry *geom = NULL
-    cdef Py_ssize_t[:] out_idx2
+    cdef Py_ssize_t initial_size = len(array)
 
     if max_vertices <= 5:
         raise ValueError("max_vertices must be greater than 5")
 
-    cdef Py_ssize_t reserved_size = len(array)
-
     with get_geos_handle() as geos_handle, \
-         GeometryVector(reserved_size) as out_geom_vec, \
-         IndexVector(reserved_size) as out_idx_vec:
+         GeometryVector(initial_size) as out_geom_vec, \
+         IndexVector(initial_size) as out_idx_vec:
 
-        for geom_idx in range(array.size):
+        for geom_idx in range(initial_size):
             if PyGEOS_GetGEOSGeometry(<PyObject *>array[geom_idx], &geom) == 0:
                 raise TypeError("One of the arguments is of incorrect type. "
                                 "Please provide only Geometry objects.")
@@ -248,7 +252,15 @@ def subdivide(object[:] array, int max_vertices=256):
 
             geom_dimension = GEOSGeom_getDimensions_r(geos_handle, geom)
 
-            count = _subdivide_geometry(geos_handle, <const GEOSGeometry*>geom, geom_dimension, max_vertices, 0, <void*>out_geom_vec)
+            count = _subdivide_geometry(
+                        geos_handle,
+                        <const GEOSGeometry*>geom,
+                        geom_dimension,
+                        max_vertices,
+                        0,
+                        <void*>out_geom_vec
+                    )
+
             for i in range(count):
                 out_idx_vec.push(geom_idx)
 
