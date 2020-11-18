@@ -4,7 +4,18 @@ import pytest
 
 from pygeos import Geometry, GEOSException
 
-from .common import point, line_string, all_types, empty, empty_line_string
+from .common import (
+    point,
+    point_z,
+    multi_point,
+    line_string,
+    multi_line_string,
+    polygon,
+    multi_polygon,
+    all_types,
+    empty,
+    empty_line_string,
+)
 
 CONSTRUCTIVE_NO_ARGS = (
     pygeos.boundary,
@@ -97,11 +108,13 @@ def test_build_area_none():
         (line_string, empty),  # a line string has no area
         # geometry collection of two polygons are combined into one
         (
-            Geometry("GEOMETRYCOLLECTION(POLYGON((0 0, 3 0, 3 3, 0 3, 0 0)), POLYGON((1 1, 1 2, 2 2, 1 1)))"),
+            Geometry(
+                "GEOMETRYCOLLECTION(POLYGON((0 0, 3 0, 3 3, 0 3, 0 0)), POLYGON((1 1, 1 2, 2 2, 1 1)))"
+            ),
             Geometry("POLYGON ((0 0, 0 3, 3 3, 3 0, 0 0), (1 1, 2 2, 1 2, 1 1))"),
         ),
         (empty, empty),
-        ([empty], [empty])
+        ([empty], [empty]),
     ],
 )
 def test_build_area(geom, expected):
@@ -132,7 +145,7 @@ def test_make_valid_none():
             Geometry("MULTIPOLYGON (((1 1, 2 2, 2 0, 1 1)), ((0 0, 0 2, 1 1, 0 0)))"),
         ),
         (empty, empty),
-        ([empty], [empty])
+        ([empty], [empty]),
     ],
 )
 def test_make_valid(geom, expected):
@@ -160,7 +173,7 @@ def test_make_valid(geom, expected):
                 ),
             ],
         ),
-        ([point, None, empty], [point, None, empty])
+        ([point, None, empty], [point, None, empty]),
     ],
 )
 def test_make_valid_1d(geom, expected):
@@ -223,3 +236,29 @@ def test_offset_curve_non_scalar_kwargs():
 def test_offset_curve_join_style():
     with pytest.raises(KeyError):
         pygeos.offset_curve(line_string, 1.0, join_style="nonsense")
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+@pytest.mark.parametrize(
+    "geom, expected",
+    [
+        (pygeos.box(0, 0, 1, 1), pygeos.box(0, 0, 1, 1)),
+        (point, point),
+        (point_z, point_z),
+        (line_string, line_string),
+        (multi_point, pygeos.get_parts(multi_point)),
+        (multi_line_string, pygeos.get_parts(multi_line_string)),
+        (
+            Geometry("POLYGON ((5 4, 5 0, 0 0, 0 5, 4 5, 4 8, 8 8, 8 4, 5 4))"),
+            [
+                Geometry("POLYGON ((4 0, 0 0, 0 4, 4 4, 4 0))"),
+                Geometry("POLYGON ((0 4, 0 5, 4 5, 4 4, 0 4))"),
+                Geometry("POLYGON ((4 5, 4 8, 8 8, 8 4, 4 4, 4 5))"),
+                Geometry("POLYGON ((5 4, 5 0, 4 0, 4 4, 5 4))"),
+            ],
+        ),
+    ],
+)
+def test_subdivide(geom, expected):
+    assert np.all(pygeos.equals(expected, pygeos.subdivide(expected, max_vertices=6)))
+

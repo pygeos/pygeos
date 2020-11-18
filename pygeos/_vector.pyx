@@ -1,4 +1,5 @@
-from libc.stdio cimport *
+# distutils: define_macros=GEOS_USE_ONLY_R_API
+
 from libc.stdlib cimport free, malloc, realloc
 from cpython cimport Py_buffer
 cimport cython

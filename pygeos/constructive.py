@@ -2,6 +2,7 @@ from enum import IntEnum
 import numpy as np
 from . import Geometry  # NOQA
 from . import lib
+from . import _constructive
 from .decorators import requires_geos, multithreading_enabled
 
 
@@ -22,6 +23,7 @@ __all__ = [
     "point_on_surface",
     "simplify",
     "snap",
+    "subdivide",
     "voronoi_polygons",
 ]
 
@@ -36,6 +38,7 @@ class BufferJoinStyles(IntEnum):
     ROUND = 1
     MITRE = 2
     BEVEL = 3
+
 
 @multithreading_enabled
 def boundary(geometry, **kwargs):
@@ -171,12 +174,7 @@ def buffer(
 
 @multithreading_enabled
 def offset_curve(
-    geometry,
-    distance,
-    quadsegs=8,
-    join_style="round",
-    mitre_limit=5.0,
-    **kwargs
+    geometry, distance, quadsegs=8, join_style="round", mitre_limit=5.0, **kwargs
 ):
     """
     Returns a (Multi)LineString at a distance from the object
@@ -257,6 +255,7 @@ def centroid(geometry, **kwargs):
     """
     return lib.centroid(geometry, **kwargs)
 
+
 @multithreading_enabled
 def convex_hull(geometry, **kwargs):
     """Computes the minimum convex geometry that encloses an input geometry.
@@ -273,6 +272,7 @@ def convex_hull(geometry, **kwargs):
     <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>
     """
     return lib.convex_hull(geometry, **kwargs)
+
 
 @multithreading_enabled
 def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
@@ -310,6 +310,7 @@ def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     """
     return lib.delaunay_triangles(geometry, tolerance, only_edges, **kwargs)
 
+
 @multithreading_enabled
 def envelope(geometry, **kwargs):
     """Computes the minimum bounding box that encloses an input geometry.
@@ -330,6 +331,7 @@ def envelope(geometry, **kwargs):
     <pygeos.Geometry POINT EMPTY>
     """
     return lib.envelope(geometry, **kwargs)
+
 
 @multithreading_enabled
 def extract_unique_points(geometry, **kwargs):
@@ -397,6 +399,7 @@ def make_valid(geometry, **kwargs):
     """
     return lib.make_valid(geometry, **kwargs)
 
+
 @multithreading_enabled
 def normalize(geometry, **kwargs):
     """Converts Geometry to normal form (or canonical form).
@@ -416,6 +419,7 @@ def normalize(geometry, **kwargs):
     <pygeos.Geometry MULTILINESTRING ((2 2, 3 3), (0 0, 1 1))>
     """
     return lib.normalize(geometry, **kwargs)
+
 
 @multithreading_enabled
 def point_on_surface(geometry, **kwargs):
@@ -437,6 +441,7 @@ def point_on_surface(geometry, **kwargs):
     <pygeos.Geometry POINT EMPTY>
     """
     return lib.point_on_surface(geometry, **kwargs)
+
 
 @multithreading_enabled
 def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
@@ -470,6 +475,7 @@ def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
     else:
         return lib.simplify(geometry, tolerance, **kwargs)
 
+
 @multithreading_enabled
 def snap(geometry, reference, tolerance, **kwargs):
     """Snaps an input geometry to reference geometry's vertices.
@@ -498,6 +504,61 @@ def snap(geometry, reference, tolerance, **kwargs):
     <pygeos.Geometry POLYGON ((0 0, 0 10, 8 10, 8 0, 0 0))>
     """
     return lib.snap(geometry, reference, tolerance, **kwargs)
+
+
+@requires_geos("3.7.0")
+def subdivide(geometry, max_vertices=256, return_index=False):
+    """Recursively subdivides input geometry until each subdivision has no more than
+    max_vertices.  May improve performance of spatial index, predicate, and set-returning
+    operations for highly complex geometries.
+
+    Note: The subdivision process introduces additional vertices at the cut points; a
+    unary union of the ouput may not exactly match the input geometry.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    max_vertices : int
+        Maximum number of vertices per subdivision.  Must be > 5.
+    return_index : bool, optional (default: False)
+        If True, will return a tuple of ndarrys of (parts, indexes), where indexes
+        are the indexes of the original geometries in the source array.
+
+    Returns
+    -------
+    ndarray of parts or tuple of (parts, indexes)
+
+
+    Examples
+    --------
+    >>> geometry = Geometry("POLYGON ((5 4, 5 0, 0 0, 0 5, 4 5, 4 8, 8 8, 8 4, 5 4))")
+    >>> subdivide(geometry, max_vertices=6).tolist()
+    [<pygeos.Geometry POLYGON ((4 0, 0 0, 0 4, 4 4, 4 0))>, \
+<pygeos.Geometry POLYGON ((0 4, 0 5, 4 5, 4 4, 0 4))>, \
+<pygeos.Geometry POLYGON ((4 5, 4 8, 8 8, 8 4, 4 4, 4 5))>, \
+<pygeos.Geometry POLYGON ((5 4, 5 0, 4 0, 4 4, 5 4))>]
+    >>> geom2 = Geometry("POINT (0 0)")
+    >>> parts, index = subdivide([geometry, geom2], max_vertices=6, return_index=True)
+    >>> parts.tolist()
+    [<pygeos.Geometry POLYGON ((4 0, 0 0, 0 4, 4 4, 4 0))>, \
+<pygeos.Geometry POLYGON ((0 4, 0 5, 4 5, 4 4, 0 4))>, \
+<pygeos.Geometry POLYGON ((4 5, 4 8, 8 8, 8 4, 4 4, 4 5))>, \
+<pygeos.Geometry POLYGON ((5 4, 5 0, 4 0, 4 4, 5 4))>, \
+<pygeos.Geometry POINT (0 0)>]
+    >>> index.tolist()
+    [0, 0, 0, 0, 1]
+    """
+    geometry = np.asarray(geometry, dtype=np.object)
+    geometry = np.atleast_1d(geometry)
+
+    if geometry.ndim != 1:
+        raise ValueError("Array should be one dimensional")
+
+    if return_index:
+        return _constructive.subdivide(geometry, max_vertices)
+
+    return _constructive.subdivide(geometry, max_vertices)[0]
+
 
 @multithreading_enabled
 def voronoi_polygons(
