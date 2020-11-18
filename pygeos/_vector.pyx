@@ -164,6 +164,9 @@ cdef class IndexVector:
         self._size += 1
 
     def to_array(self):
+        if self._size == 0:
+            return np.empty(shape=(0,), dtype=np.intp)
+
         cdef Py_ssize_t[:] view = <Py_ssize_t[:self._size]>self._values
         return np.array(view)
 

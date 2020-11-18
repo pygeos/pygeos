@@ -10,13 +10,15 @@ import pygeos
 from pygeos._geos cimport (
     GEOSContextHandle_t,
     GEOSGeometry,
+    GEOSGeomTypeId_r,
     GEOSGeom_clone_r,
-    GEOSGetGeometryN_r,
-    get_geos_handle,
     GEOSGeom_getXMax_r,
-    GEOSGeom_getYMax_r,
     GEOSGeom_getXMin_r,
+    GEOSGeom_getYMax_r,
     GEOSGeom_getYMin_r,
+    GEOSGetGeometryN_r,
+    GEOSisEmpty_r,
+    get_geos_handle
 )
 from pygeos._pygeos_api cimport (
     import_pygeos_c_api,
@@ -87,16 +89,48 @@ def get_parts(object[:] array):
     return parts, index
 
 
-# NOTE: limited to GEOS >= 3.7
-cdef int get_bounds(GEOSContextHandle_t geos_handle,
-                    const GEOSGeometry *geom,
-                    double *xmin, double *ymin, double *xmax, double *ymax) nogil except 0:
+cdef int _bounds(
+    GEOSContextHandle_t geos_handle,
+    const GEOSGeometry *geom,
+    double *xmin,
+    double *ymin,
+    double *xmax,
+    double *ymax
+) nogil except 0:
+    """Calculate the bounds of a geometry, for use within Cython (does not require gil).
 
-    # TODO: fails if empty / NULL, return 0
+    Requires GEOS >= 3.7.
 
-    GEOSGeom_getXMin_r(geos_handle, geom, xmin)
-    GEOSGeom_getYMin_r(geos_handle, geom, ymin)
-    GEOSGeom_getXMax_r(geos_handle, geom, xmax)
-    GEOSGeom_getYMax_r(geos_handle, geom, ymax)
+    Parameters
+    ----------
+    geos_handle : GEOSContextHandle_t
+    geom : GEOSGeometry pointer
+    xmin : double pointer that receives xmin value
+    ymin: double pointer that receives ymin value
+    xmax : double pointer that receives xmax value
+    ymax : double pointer that receives ymax value
+
+    Returns
+    -------
+    int
+        0 if geometry is empty or NULL or there was an error extracting bounds.  It is up
+            to the caller to determine how to handle that case.
+        1 if bounds were successfully extracted.
+
+    See also
+    --------
+    pygeos.bounds: ufunc that returns bounds as ndarray
+    """
+
+    if geom == NULL or GEOSisEmpty_r(geos_handle, geom):
+        return 0
+
+    if not (
+        GEOSGeom_getXMin_r(geos_handle, geom, xmin)
+        and GEOSGeom_getYMin_r(geos_handle, geom, ymin)
+        and GEOSGeom_getXMax_r(geos_handle, geom, xmax)
+        and GEOSGeom_getYMax_r(geos_handle, geom, ymax)
+    ):
+        return 0
 
     return 1

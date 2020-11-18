@@ -6,11 +6,9 @@ from libc.stdint cimport uint8_t, uint64_t
 from cpython cimport PyObject
 
 cimport cython
-
-# import numpy as np
 cimport numpy as np
 
-from pygeos._geometry cimport get_bounds
+from pygeos._geometry cimport _bounds
 from pygeos._geos cimport (
     GEOSCoordSequence,
     GEOSCoordSeq_create_r,
@@ -46,55 +44,120 @@ from pygeos._vector cimport (
 # initialize PyGEOS C API
 import_pygeos_c_api()
 
+cdef uint8_t MAX_RECURSION_DEPTH = 50
+
 
 # requires GEOS >= 3.8
-cdef GEOSGeometry* create_box(
+cdef GEOSGeometry* _box(
     GEOSContextHandle_t geos_handle,
     double xmin,
     double ymin,
     double xmax,
     double ymax
-) nogil:
+) nogil except NULL:
+    """Creates a polygon starting at bottom left oriented counterclockwise
+    (does not require gil).
 
+    Requires GEOS >= 3.8.
+
+    Parameters
+    ----------
+    geos_handle : GEOSContextHandle_t
+    geom : GEOSGeometry pointer
+    xmin : double
+    ymin : double
+    xmax : double
+    ymax : double
+
+    Returns
+    -------
+    GEOSGeometry pointer
+        Caller becomes owner of this geometry.  NULL is returned if create operation fails.
+
+    See also
+    --------
+    pygeos.box : ufunc that creates polygons from 4 coordinates
+    """
     cdef GEOSCoordSequence *coords = NULL
     cdef GEOSGeometry *geom = NULL
+    cdef GEOSGeometry *ring = NULL
 
-# try:
-    # create polygon starting at bottom left oriented  counterclockwise
+    # Construct coordinate sequence and set vertices
     coords = GEOSCoordSeq_create_r(geos_handle, 5, 2)
-    GEOSCoordSeq_setXY_r(geos_handle, coords, 0, xmin, ymin)
-    GEOSCoordSeq_setXY_r(geos_handle, coords, 1, xmax, ymin)
-    GEOSCoordSeq_setXY_r(geos_handle, coords, 2, xmax, ymax)
-    GEOSCoordSeq_setXY_r(geos_handle, coords, 3, xmin, ymax)
-    GEOSCoordSeq_setXY_r(geos_handle, coords, 4, xmin, ymin)
+    if coords == NULL:
+        return NULL
 
-    # construct linear ring then construct polygon
-    # NOTE: coords then ring become owned by polygon
-    # and are not to be cleaned up here
+    if not (
+        GEOSCoordSeq_setXY_r(geos_handle, coords, 0, xmin, ymin)
+        and GEOSCoordSeq_setXY_r(geos_handle, coords, 1, xmax, ymin)
+        and GEOSCoordSeq_setXY_r(geos_handle, coords, 2, xmax, ymax)
+        and GEOSCoordSeq_setXY_r(geos_handle, coords, 3, xmin, ymax)
+        and GEOSCoordSeq_setXY_r(geos_handle, coords, 4, xmin, ymin)
+    ):
+        if coords != NULL:
+            GEOSCoordSeq_destroy_r(geos_handle, coords)
+
+        return NULL
+
+    # Construct linear ring then use to construct polygon
+    # NOTE: coords are owned by ring
     ring = GEOSGeom_createLinearRing_r(geos_handle, coords)
+    if ring == NULL:
+        return NULL
+
+    # NOTE: ring is owned by polygon
     geom = GEOSGeom_createPolygon_r(geos_handle, ring, NULL, 0)
+    if geom == NULL:
+        if ring != NULL:
+            GEOSGeom_destroy_r(geos_handle, ring)
 
-    # except:
-    #     if coords != NULL:
-    #         GEOSCoordSeq_destroy_r(geos_handle, coords)
-
-    #     if geom != NULL:
-    #         GEOSGeom_destroy_r(geos_handle, geom)
+        return NULL
 
     return geom
 
 
-# last params: resizeable geom vector
 # returns count of geometries
-# TODO: depth can be 8 bit uint
 # max_vertices maybe uint32, and check bounds on input below
 cdef Py_ssize_t _subdivide_geometry(
     GEOSContextHandle_t geos_handle,
     const GEOSGeometry *geom,
-    int geom_dimension, int max_vertices, uint8_t depth,
+    int geom_dimension,
+    int max_vertices,
+    uint8_t depth,
     void *out_geom_vec
 ) nogil:
+    """Recursively subdivides geometry.
 
+    This will stop subdividing geometry when the following conditions occur:
+    * geometry is NULL (discards geometry, returns 0)
+    * dimension of geometry is less than parent (discards geometry, returns 0)
+    * recursion limit is reached (saves geometry, returns 1)
+    * geometry is a point or empty (saves geometry, returns 1)
+    * geometry has fewer coordinates than max_vertices (saves geometry, returns 1)
+
+    Will recurse into GeometryCollection and multi-part geometries.
+
+    Will subdivide the geometry into 4 tiles based on the midpoint X and Y values and
+    recurse over each tile.
+
+    Parameters
+    ----------
+    geos_handle : GEOSContextHandle_t
+    geom : GEOSGeometry pointer
+    geom_dimension : int
+        Geometry dimension of parent geometry, to detect dimension collapse.
+        point=0, line=1, polygon=2
+    max_vertices : int
+        Maximum number of vertices to target for subdivided geometry.
+
+    Returns
+    -------
+    Py_ssize_t
+        Count of geometries added by recursion.  Corresponds to count of geometries pushed
+        onto out_geom_vec.
+    """
+    cdef int type_id
+    cdef uint8_t stop = 0
     cdef Py_ssize_t part_idx = 0
     cdef Py_ssize_t geom_idx = 0
     cdef Py_ssize_t count = 0
@@ -104,6 +167,8 @@ cdef Py_ssize_t _subdivide_geometry(
     cdef double ymax = DBL_MIN
     cdef double xmin = DBL_MAX
     cdef double ymin = DBL_MAX
+    cdef double width = 0
+    cdef double height = 0
     cdef Py_ssize_t quadrant = 0
     cdef double center_x = DBL_MAX
     cdef double center_y = DBL_MAX
@@ -111,30 +176,32 @@ cdef Py_ssize_t _subdivide_geometry(
     cdef const GEOSGeometry *part = NULL
     cdef const GEOSGeometry *clipped_geom = NULL
 
-    # TODO: consolidate break conditions:
-    # hit recursion limit
-    # input is null, empty, point, or has < max_vertices (even if multi?)
+    if geom == NULL:
+        # All NULLs are filtered before recursion; any within recursion should be ignored.
+        return 0
 
-    if depth > 50:
-        # TODO: add better comment
+    if GEOSGeom_getDimensions_r(geos_handle, geom) < geom_dimension:
+        # If dimension of geometry is less than dimension of parent geometry, it was
+        # collapsed by preceding intersection operation; discard it.
+        return 0
+
+    type_id = GEOSGeomTypeId_r(geos_handle, geom)
+
+    # Stop recursion when:
+    # * recursion limit is reached
+    # * geometry is empty or a point type (not subdividable)
+    # * number of coordinates is below limit
+    if (
+        depth > MAX_RECURSION_DEPTH
+        or GEOSisEmpty_r(geos_handle, geom)
+        or type_id == 0
+        or GEOSGetNumCoordinates_r(geos_handle, geom) <= max_vertices
+    ):
         out_geom = GEOSGeom_clone_r(geos_handle, geom)
         (<GeometryVector>out_geom_vec).push(out_geom)
         return 1
 
     depth += 1
-
-    cdef int type_id = GEOSGeomTypeId_r(geos_handle, geom)
-
-    # if empty or singular point, return copy
-    if GEOSisEmpty_r(geos_handle, geom) or type_id == 0:
-        out_geom = GEOSGeom_clone_r(geos_handle, geom)
-        (<GeometryVector>out_geom_vec).push(out_geom)
-        return 1
-
-    # DOCUMENTATION NOTE: this will also strip any lower-dimension input geometries from
-    # input geometries
-    if GEOSGeom_getDimensions_r(geos_handle, geom) < geom_dimension:
-        return 0
 
     # Multi* or GeometryCollection: recurse over parts
     if type_id >= 4:
@@ -142,81 +209,98 @@ cdef Py_ssize_t _subdivide_geometry(
 
         for part_idx in range(num_parts):
             part = GEOSGetGeometryN_r(geos_handle, geom, part_idx)
-            if part == NULL:
-                # if passed in from top-level we may want to add to vector and return
-                # if results from clip, we want to discard
-                pass
+            if part != NULL:
+                if depth == 0:
+                    # calculate dimension to handle mixed GeometryCollection parts
+                    # only for top-level Multi* and GeometryCollections
+                    geom_dimension = GEOSGeom_getDimensions_r(geos_handle, part)
 
-            else:
-                count += _subdivide_geometry(geos_handle, part, geom_dimension, max_vertices, depth, out_geom_vec)
-
+                count += _subdivide_geometry(
+                            geos_handle, part, geom_dimension, max_vertices, depth,
+                            out_geom_vec)
         return count
 
-    # count points
-    num_coords = GEOSGetNumCoordinates_r(geos_handle, geom)
 
-    if num_coords <= max_vertices:
-        # done splitting, return
-        out_geom = GEOSGeom_clone_r(geos_handle, geom)
-        (<GeometryVector>out_geom_vec).push(out_geom)
-        return 1
+    if _bounds(geos_handle, geom, &xmin, &ymin, &xmax, &ymax) == 0:
+        # could not determine bounds of a valid geometry
+        # with gil:
+        raise RuntimeError("Could not calculate bounds of geometry")
 
-    get_bounds(geos_handle, geom, &xmin, &ymin, &xmax, &ymax)
-    # printf("bounds: %.0f, %.0f, %.0f, %.0f\n", xmin, ymin, xmax, ymax)
+    width = xmax - xmin
+    height = ymax - ymin
 
-    if (xmax - xmin) == 0 or (ymax - ymin) == 0:
-        # if bounds collapse to a point or a line, can't subdivide further
-        # TODO: figure out when this might happen, is it valid if input is a vertical
-        # horizontal line?
+    if width == 0 or height == 0:
+        # Dimension collapse and non-boundable geometries (empty, point) were handled above
+        if (width + height) > 0:
+            # This handles the case where the geometry is strictly vertical or horizontal;
+            # regardless of number of vertices, no point in subdividing further
+            out_geom = GEOSGeom_clone_r(geos_handle, geom)
+            (<GeometryVector>out_geom_vec).push(out_geom)
+            return 1
+
+        # Dimension collapse not caught previously, ignore this geometry
         return 0
 
     # split into 4 tiles from center of bounds
     center_x = (xmin + xmax) / 2
     center_y = (ymin + ymax) / 2
 
-    # try:
     for quadrant in range(4):
         if quadrant == 0:  # bottom left
-            clip_geom = create_box(geos_handle, xmin, ymin, center_x, center_y)
+            clip_geom = _box(geos_handle, xmin, ymin, center_x, center_y)
 
         elif quadrant == 1:  # top left
-            clip_geom = create_box(geos_handle, xmin, center_y, center_x, ymax)
+            clip_geom = _box(geos_handle, xmin, center_y, center_x, ymax)
 
         elif quadrant == 2:  # top right
-            clip_geom = create_box(geos_handle, center_x, center_y, xmax, ymax)
+            clip_geom = _box(geos_handle, center_x, center_y, xmax, ymax)
 
         else:  # bottom right
-            clip_geom = create_box(geos_handle, center_x, ymin, xmax, center_y)
+            clip_geom = _box(geos_handle, center_x, ymin, xmax, center_y)
+
+        if clip_geom == NULL:
+            # could not construct clip geom from valid coordinates
+            with gil:
+                raise RuntimeError("Could not construct clip geometry from coordinates")
 
         # clip by clip_geom
         # TODO: use precision version (what GEOS version?)
-        # TODO: if null
         clipped_geom = GEOSIntersection_r(geos_handle, geom, clip_geom)
+        if clipped_geom == NULL:
+            if clip_geom != NULL:
+                GEOSGeom_destroy_r(geos_handle, clip_geom)
+
+            with gil:
+                # TODO: we want the underlying GEOS error message here
+                raise RuntimeError("Intersection of geometry and clip geometry failed")
 
         # simplify geometry
-        # TODO: if NULL
         clipped_geom = GEOSSimplify_r(geos_handle, clipped_geom, 0)
+        if clipped_geom == NULL:
+            if clip_geom != NULL:
+                GEOSGeom_destroy_r(geos_handle, clip_geom)
 
-        if GEOSisEmpty_r(geos_handle, clipped_geom):
-            # printf("Clipped geom is empty, skip\n")
+            with gil:
+                # TODO: we want the underlying GEOS error message here
+                raise RuntimeError("Simplification of clip geometry failed")
+
+        if GEOSisEmpty_r(geos_handle, clipped_geom) != 0:
+            # This shouldn't happen but ignore it in case it does
             continue
 
-        # check if collapsed dimensions
-        # NOTE: this doesn't catch geometry collections that include lower dimensions
-        if GEOSGeom_getDimensions_r(geos_handle, clipped_geom) < GEOSGeom_getDimensions_r(geos_handle, geom):
-            # printf("Clip collapsed dimension, skip\n")
-            continue
+        # Recurse into clipped geometry
+        # NOTE: this clones clipped_geom as needed, so we need to cleanup ourselves
+        count += _subdivide_geometry(
+                    geos_handle, clipped_geom, geom_dimension, max_vertices, depth,
+                    out_geom_vec)
 
-        count += _subdivide_geometry(geos_handle, clipped_geom, geom_dimension, max_vertices, depth, out_geom_vec)
+
+        GEOSGeom_destroy_r(geos_handle, clip_geom)
+        clip_geom = NULL
 
         GEOSGeom_destroy_r(geos_handle, clipped_geom)
-        GEOSGeom_destroy_r(geos_handle, clip_geom)
+        clipped_geom = NULL
 
-
-    # TODO: how to cleanup if not using try / finally due to gil?
-    # finally:
-    # if clip_geom != NULL:
-    #     GEOSGeom_destroy_r(geos_handle, clip_geom)
 
     return count
 
