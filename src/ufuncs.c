@@ -1539,7 +1539,7 @@ static char relate_pattern_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT, NPY_
 static void relate_pattern_func(char** args, npy_intp* dimensions, npy_intp* steps,
                                 void* data) {
   GEOSGeometry *in1 = NULL, *in2 = NULL;
-  const char* pattern;
+  const char* pattern = NULL;
   npy_bool ret;
 
   /* get the pattern argument (only deal with scalar for now) */

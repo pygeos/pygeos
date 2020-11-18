@@ -3,7 +3,7 @@ import pygeos
 from pygeos import Geometry
 import numpy as np
 
-from .common import point, all_types, line_string, polygon, geometry_collection
+from .common import point, all_types, line_string, polygon, geometry_collection, empty
 
 UNARY_PREDICATES = (
     pygeos.is_empty,
@@ -120,6 +120,10 @@ def test_relate_pattern():
     assert not pygeos.relate_pattern(line_string, polygon, "F********")
 
 
+def test_relate_pattern_empty():
+    assert pygeos.relate_pattern(empty, empty, "*" * 9).item() is True
+
+
 @pytest.mark.parametrize("g1, g2", [(point, None), (None, point), (None, None)])
 def test_relate_pattern_none(g1, g2):
     assert pygeos.relate_pattern(g1, g2, "*" * 9).item() is False
@@ -133,9 +137,10 @@ def test_relate_pattern_incorrect_length():
         pygeos.relate_pattern(point, polygon, "**********")
 
 
-def test_relate_pattern_non_string():
+@pytest.mark.parametrize("pattern", [b"*********", 10, None])
+def test_relate_pattern_non_string(pattern):
     with pytest.raises(TypeError, match="expected string"):
-        pygeos.relate_pattern(point, polygon, b"*********")
+        pygeos.relate_pattern(point, polygon, pattern)
 
 
 def test_relate_pattern_non_scalar():
