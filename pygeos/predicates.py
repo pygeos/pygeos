@@ -781,8 +781,8 @@ def relate_pattern(a, b, pattern, **kwargs):
     against a specified pattern. If the string matches the pattern then
     ``True`` is returned, otherwise ``False``. The pattern specified can
     be an exact match (``0``, ``1`` or ``2``), a boolean match
-    (``T`` or ``F``), or a wildcard (``*``). For example, the pattern
-    for the `within` predicate is ``'T*F**F***'``.
+    (uppercase ``T`` or ``F``), or a wildcard (``*``). For example,
+    the pattern for the `within` predicate is ``'T*F**F***'``.
 
     Parameters
     ----------

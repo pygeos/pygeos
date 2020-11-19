@@ -1554,6 +1554,7 @@ static void relate_pattern_func(char** args, npy_intp* dimensions, npy_intp* ste
   if (PyUnicode_Check(in3)) {
     pattern = PyUnicode_AsUTF8(in3);
     if (pattern == NULL) {
+      /* error happened in PyUnicode_AsUTF8, error already set by Python */
       return;
     }
   } else {
