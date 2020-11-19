@@ -53,11 +53,13 @@ cdef class GeometryVector:
             self._values = NULL
 
     cdef GEOSGeometry* get(self, Py_ssize_t index) nogil:
-        # WARNING: this will likely raise segfaults for access outside allocated values
-
         # support negative indexing
         if index < 0:
             index = self._size + index
+
+        if index < 0 or index >= self._size:
+            with gil:
+                raise ValueError("index is outside bounds of vector")
 
         return self._values[index]
 
@@ -81,14 +83,18 @@ cdef class GeometryVector:
     cdef Py_ssize_t size(self) nogil:
         return self._size
 
-    # NOTE: returns GeometryObjects not GEOSGeometry
-    # corresponding view didn't work because views of pointer types not yet supported
     cdef to_array(self, GEOSContextHandle_t geos_handle):
+        # DOC: returns GeometryObjects not GEOSGeometry
+        # Note: corresponding view didn't work because views of pointer types not yet supported
         cdef Py_ssize_t i = 0
 
         out = np.empty(shape=(self._size, ), dtype=np.object)
         cdef object[:] out_view = out
 
+        # WARNING: this implicitly transfers ownership of GEOSGeometries
+        # to the caller; releasing these geometries here or calling
+        # to_array again later will likely lead to segfaults.
+        # TODO: clone geometries based on param?
         for i in range(self._size):
             out_view[i] = PyGEOS_CreateGeometry(<GEOSGeometry *>self._values[i], geos_handle)
 
@@ -121,10 +127,6 @@ cdef class IndexVector:
         self.clear()
 
     def __getitem__(self, index):
-        # check for valid bounds (TODO: requires gil)
-        # if index < 0 or index >= self._size:
-        #     raise ValueError("index is outside bounds of vector")
-
         return self.get(index)
 
     def __len__(self):
@@ -138,11 +140,13 @@ cdef class IndexVector:
             self._values = NULL
 
     cdef Py_ssize_t get(self, Py_ssize_t index) nogil:
-        # WARNING: this will likely raise segfaults for access outside allocated values
-
         # support negative indexing
         if index < 0:
             index = self._size + index
+
+        if index < 0 or index >= self._size:
+            with gil:
+                raise ValueError("index is outside bounds of vector")
 
         return self._values[index]
 

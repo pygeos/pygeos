@@ -23,7 +23,8 @@ from pygeos._geos cimport (
     GEOSisEmpty_r,
     GEOSGeom_destroy_r,
     get_geos_handle,
-    GEOSCoordSeq_setXY_r,
+    GEOSCoordSeq_setX_r,
+    GEOSCoordSeq_setY_r,
     GEOSGeom_createLinearRing_r,
     GEOSGeom_createPolygon_r,
     GEOSIntersection_r,
@@ -44,10 +45,9 @@ from pygeos._vector cimport (
 # initialize PyGEOS C API
 import_pygeos_c_api()
 
-cdef uint8_t MAX_RECURSION_DEPTH = 50
+cdef uint8_t MAX_RECURSION_DEPTH = 25
 
 
-# requires GEOS >= 3.8
 cdef GEOSGeometry* _box(
     GEOSContextHandle_t geos_handle,
     double xmin,
@@ -57,8 +57,6 @@ cdef GEOSGeometry* _box(
 ) nogil except NULL:
     """Creates a polygon starting at bottom left oriented counterclockwise
     (does not require gil).
-
-    Requires GEOS >= 3.8.
 
     Parameters
     ----------
@@ -88,11 +86,16 @@ cdef GEOSGeometry* _box(
         return NULL
 
     if not (
-        GEOSCoordSeq_setXY_r(geos_handle, coords, 0, xmin, ymin)
-        and GEOSCoordSeq_setXY_r(geos_handle, coords, 1, xmax, ymin)
-        and GEOSCoordSeq_setXY_r(geos_handle, coords, 2, xmax, ymax)
-        and GEOSCoordSeq_setXY_r(geos_handle, coords, 3, xmin, ymax)
-        and GEOSCoordSeq_setXY_r(geos_handle, coords, 4, xmin, ymin)
+        GEOSCoordSeq_setX_r(geos_handle, coords, 0, xmin)
+        and GEOSCoordSeq_setY_r(geos_handle, coords, 0, ymin)
+        and GEOSCoordSeq_setX_r(geos_handle, coords, 1, xmax)
+        and GEOSCoordSeq_setY_r(geos_handle, coords, 1, ymin)
+        and GEOSCoordSeq_setX_r(geos_handle, coords, 2, xmax)
+        and GEOSCoordSeq_setY_r(geos_handle, coords, 2, ymax)
+        and GEOSCoordSeq_setX_r(geos_handle, coords, 3, xmin)
+        and GEOSCoordSeq_setY_r(geos_handle, coords, 3, ymax)
+        and GEOSCoordSeq_setX_r(geos_handle, coords, 4, xmin)
+        and GEOSCoordSeq_setY_r(geos_handle, coords, 4, ymin)
     ):
         if coords != NULL:
             GEOSCoordSeq_destroy_r(geos_handle, coords)
@@ -118,6 +121,8 @@ cdef GEOSGeometry* _box(
 
 # returns count of geometries
 # max_vertices maybe uint32, and check bounds on input below
+# TODO: potential memory leaks:
+# geometries created higher on stack not cleaned up when exception raised w/ in recursion?
 cdef Py_ssize_t _subdivide_geometry(
     GEOSContextHandle_t geos_handle,
     const GEOSGeometry *geom,
@@ -175,6 +180,7 @@ cdef Py_ssize_t _subdivide_geometry(
     cdef GEOSGeometry *clip_geom = NULL
     cdef const GEOSGeometry *part = NULL
     cdef const GEOSGeometry *clipped_geom = NULL
+    cdef const GEOSGeometry *clipped_geom2 = NULL
 
     if geom == NULL:
         # All NULLs are filtered before recursion; any within recursion should be ignored.
@@ -275,38 +281,40 @@ cdef Py_ssize_t _subdivide_geometry(
                 raise RuntimeError("Intersection of geometry and clip geometry failed")
 
         # simplify geometry
-        clipped_geom = GEOSSimplify_r(geos_handle, clipped_geom, 0)
-        if clipped_geom == NULL:
+        clipped_geom2 = GEOSSimplify_r(geos_handle, clipped_geom, 0)
+        if clipped_geom2 == NULL:
             if clip_geom != NULL:
                 GEOSGeom_destroy_r(geos_handle, clip_geom)
+
+            if clipped_geom != NULL:
+                GEOSGeom_destroy_r(geos_handle, clipped_geom)
 
             with gil:
                 # TODO: we want the underlying GEOS error message here
                 raise RuntimeError("Simplification of clip geometry failed")
 
-        if GEOSisEmpty_r(geos_handle, clipped_geom) != 0:
-            # This shouldn't happen but ignore it in case it does
-            continue
-
-        # Recurse into clipped geometry
-        # NOTE: this clones clipped_geom as needed, so we need to cleanup ourselves
-        count += _subdivide_geometry(
-                    geos_handle, clipped_geom, geom_dimension, max_vertices, depth,
-                    out_geom_vec)
-
-
+        # Cleanup geometries no longer needed
         GEOSGeom_destroy_r(geos_handle, clip_geom)
         clip_geom = NULL
 
         GEOSGeom_destroy_r(geos_handle, clipped_geom)
         clipped_geom = NULL
 
+        # Recurse into clipped geometry
+        # NOTE: this clones clipped_geom2 as needed, so we need to cleanup ourselves
+        count += _subdivide_geometry(
+                    geos_handle, clipped_geom2, geom_dimension, max_vertices, depth,
+                    out_geom_vec)
+
+        GEOSGeom_destroy_r(geos_handle, clipped_geom2)
+        clipped_geom2 = NULL
 
     return count
 
 
 # TODO: decision: filter to only geometries (filter out empty / NULL)?
 # TODO: crosscheck ST_subdivide results
+# TODO: requires GEOS >= 3.7
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def subdivide(array, int max_vertices=256):

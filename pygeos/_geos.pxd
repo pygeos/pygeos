@@ -7,6 +7,7 @@ Example:
         SomeGEOSFunc(geos_handle, ...<other params>)
 """
 
+
 cdef extern from "geos_c.h":
     ctypedef void *GEOSContextHandle_t
 
@@ -19,9 +20,13 @@ cdef extern from "geos_c.h":
                                               unsigned int size,
                                               unsigned int dims) nogil except NULL
 
-    int GEOSCoordSeq_setXY_r(GEOSContextHandle_t handle,
-                             GEOSCoordSequence* s, unsigned int idx,
-                             double x, double y) nogil except 0
+    int GEOSCoordSeq_setX_r(GEOSContextHandle_t handle,
+                            GEOSCoordSequence* s, unsigned int idx,
+                            double val) nogil except 0
+
+    int GEOSCoordSeq_setY_r(GEOSContextHandle_t handle,
+                            GEOSCoordSequence* s, unsigned int idx,
+                            double val) nogil except 0
 
     void GEOSCoordSeq_destroy_r(GEOSContextHandle_t handle, GEOSCoordSequence* s) nogil
 

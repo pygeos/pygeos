@@ -9,12 +9,16 @@ from .common import (
     point_z,
     multi_point,
     line_string,
+    linear_ring,
     multi_line_string,
     polygon,
     multi_polygon,
     all_types,
     empty,
+    empty_point,
     empty_line_string,
+    empty_polygon,
+    point_nan,
 )
 
 CONSTRUCTIVE_NO_ARGS = (
@@ -246,8 +250,9 @@ def test_offset_curve_join_style():
         (point, point),
         (point_z, point_z),
         (line_string, line_string),
-        (multi_point, pygeos.get_parts(multi_point)),
-        (multi_line_string, pygeos.get_parts(multi_line_string)),
+        (linear_ring, linear_ring),
+        (multi_point, multi_point),
+        (multi_line_string, multi_line_string),
         (
             Geometry("POLYGON ((5 4, 5 0, 0 0, 0 5, 4 5, 4 8, 8 8, 8 4, 5 4))"),
             [
@@ -257,8 +262,44 @@ def test_offset_curve_join_style():
                 Geometry("POLYGON ((5 4, 5 0, 4 0, 4 4, 5 4))"),
             ],
         ),
+        (empty, empty),
+        (empty_point, empty_point),
+        (empty_line_string, empty_line_string),
+        (empty_polygon, empty_polygon),
     ],
 )
 def test_subdivide(geom, expected):
-    assert np.all(pygeos.equals(expected, pygeos.subdivide(expected, max_vertices=6)))
+    assert np.all(pygeos.equals(expected, pygeos.subdivide(geom, max_vertices=6)))
+
+
+def test_subdivide_nan():
+    assert not np.any(pygeos.is_empty(pygeos.subdivide(point_nan)))
+
+
+def test_subdivide_none():
+    assert np.all(pygeos.subdivide([None]) == None)
+
+    # make sure that mix of None and valid geometries are handled correctly
+    geom = pygeos.subdivide(
+        [
+            None,
+            point,
+            Geometry("POLYGON ((5 4, 5 0, 0 0, 0 5, 4 5, 4 8, 8 8, 8 4, 5 4))"),
+        ],
+        max_vertices=6,
+    )
+    assert len(geom) == 6
+    assert geom[0] is None
+    assert pygeos.equals(geom[1], point)
+    assert np.all(
+        pygeos.equals(
+            geom[2:],
+            [
+                Geometry("POLYGON ((4 0, 0 0, 0 4, 4 4, 4 0))"),
+                Geometry("POLYGON ((0 4, 0 5, 4 5, 4 4, 0 4))"),
+                Geometry("POLYGON ((4 5, 4 8, 8 8, 8 4, 4 4, 4 5))"),
+                Geometry("POLYGON ((5 4, 5 0, 4 0, 4 4, 5 4))"),
+            ],
+        )
+    )
 
