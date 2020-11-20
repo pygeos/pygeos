@@ -196,12 +196,10 @@ cdef Py_ssize_t _subdivide_geometry(
     # Stop recursion when:
     # * recursion limit is reached
     # * geometry is empty or a point type (not subdividable)
-    # * number of coordinates is below limit
     if (
         depth > MAX_RECURSION_DEPTH
         or GEOSisEmpty_r(geos_handle, geom)
         or type_id == 0
-        or GEOSGetNumCoordinates_r(geos_handle, geom) <= max_vertices
     ):
         out_geom = GEOSGeom_clone_r(geos_handle, geom)
         (<GeometryVector>out_geom_vec).push(out_geom)
@@ -209,7 +207,9 @@ cdef Py_ssize_t _subdivide_geometry(
 
     depth += 1
 
-    # Multi* or GeometryCollection: recurse over parts
+    # Recurse over parts in Multi* or GeometryCollection.
+    # We do this first because intersection may produce GeometryCollections with
+    # lower dimension parts; these need to be stripped out.
     if type_id >= 4:
         num_parts = GEOSGetNumGeometries_r(geos_handle, geom)
 
@@ -225,6 +225,12 @@ cdef Py_ssize_t _subdivide_geometry(
                             geos_handle, part, geom_dimension, max_vertices, depth,
                             out_geom_vec)
         return count
+
+    if GEOSGetNumCoordinates_r(geos_handle, geom) <= max_vertices:
+        out_geom = GEOSGeom_clone_r(geos_handle, geom)
+        (<GeometryVector>out_geom_vec).push(out_geom)
+        return 1
+
 
 
     if _bounds(geos_handle, geom, &xmin, &ymin, &xmax, &ymax) == 0:
@@ -270,7 +276,7 @@ cdef Py_ssize_t _subdivide_geometry(
                 raise RuntimeError("Could not construct clip geometry from coordinates")
 
         # clip by clip_geom
-        # TODO: use precision version (what GEOS version?)
+        # TODO: use precision version if available (GEOS >= 3.9)
         clipped_geom = GEOSIntersection_r(geos_handle, geom, clip_geom)
         if clipped_geom == NULL:
             if clip_geom != NULL:

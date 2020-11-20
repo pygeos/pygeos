@@ -251,8 +251,8 @@ def test_offset_curve_join_style():
         (point_z, point_z),
         (line_string, line_string),
         (linear_ring, linear_ring),
-        (multi_point, multi_point),
-        (multi_line_string, multi_line_string),
+        (multi_point, pygeos.get_parts(multi_point)),
+        (multi_line_string, pygeos.get_parts(multi_line_string)),
         (
             Geometry("POLYGON ((5 4, 5 0, 0 0, 0 5, 4 5, 4 8, 8 8, 8 4, 5 4))"),
             [
