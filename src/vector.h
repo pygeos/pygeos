@@ -1,11 +1,8 @@
 #ifndef _VECTOR_H
 #define _VECTOR_H
 
-#include <Python.h>
 #include <numpy/ndarraytypes.h>
 
-#include "geos.h"
-#include "kvec.h"
 #include "pygeom.h"
 
 /* A resizable vector with numpy indices.
@@ -14,7 +11,7 @@
 typedef struct {
   size_t n, m;
   npy_intp* a;
-} npy_intp_vec;
+} index_vec_t;
 
 /* A resizable vector with pointers to pygeos GeometryObjects.
  * Wraps the vector implementation in kvec.h as a type.
@@ -22,7 +19,7 @@ typedef struct {
 typedef struct {
   size_t n, m;
   GeometryObject** a;
-} geom_obj_vec;
+} geom_obj_vec_t;
 
 /* Copy values from arr to a new numpy integer array.
  *
@@ -30,6 +27,6 @@ typedef struct {
  * ----------
  * arr: dynamic vector array to convert to ndarray
  */
-extern PyArrayObject* npy_intp_vec_to_npy_arr(npy_intp_vec* arr);
+extern PyArrayObject* index_vec_to_npy_arr(index_vec_t* arr);
 
 #endif

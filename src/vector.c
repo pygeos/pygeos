@@ -11,10 +11,7 @@
 #include <numpy/ndarraytypes.h>
 #include <numpy/npy_3kcompat.h>
 
-#include "geos.h"
 #include "kvec.h"
-#include "pygeom.h"
-#include "strtree.h"
 #include "vector.h"
 
 /* Copy values from arr of indexes to a new numpy integer array.
@@ -24,8 +21,8 @@
  * arr: dynamic vector array to convert to ndarray
  */
 
-PyArrayObject* npy_intp_vec_to_npy_arr(npy_intp_vec* arr) {
-  npy_intp i;
+PyArrayObject* index_vec_to_npy_arr(index_vec_t* arr) {
+  Py_ssize_t i;
   npy_intp size = kv_size(*arr);
 
   npy_intp dims[1] = {size};
