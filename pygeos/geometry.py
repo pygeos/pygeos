@@ -26,6 +26,8 @@ __all__ = [
     "get_interior_ring",
     "get_geometry",
     "get_parts",
+    "get_precision",
+    "set_precision"
 ]
 
 
@@ -537,3 +539,84 @@ def get_num_geometries(geometry):
     0
     """
     return lib.get_num_geometries(geometry)
+
+
+
+@multithreading_enabled
+def get_precision(geometry):
+    """Get the precision of the geometry.
+
+    If the precision has not been previously set, it will be 0 (floating point precision).
+    Otherwise, it will return the grid size that was set on the geometry.
+
+    Returns NaN for not-a-geometry values.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    See also
+    --------
+    set_precision
+
+    Examples
+    --------
+    >>> get_precision(Geometry("POINT (1 1)")) == 0
+    True
+    >>> geometry = set_precision(Geometry("POINT (1 1)"), 1)
+    >>> get_precision(geometry) == 1
+    True
+    >>> np.isnan(get_precision(None))
+    True
+    """
+    return lib.get_precision(geometry)
+
+
+@multithreading_enabled
+def set_precision(geometry, grid_size=0, preserve_topology=False, keep_collapsed=False):
+    """Returns geometry with the precision set to the precision grid size, rounding all
+    coordinates in the geometry to the precision grid if less precise than the input
+    geometry.
+
+    Z values, if present, will not be modified.
+
+    If keep_collapsed is True, linestrings and linearrings will be retained
+    if they would otherwise collapse to empty geometry.  Polygons always collapse, even
+    if keep_collapsed is True.
+
+    Note: subsequent operations will always be performed in the precision
+    of the geometry with higher precision (smaller "grid_size"). That same precision will
+    be attached to the operation outputs.
+
+    Also note: input geometries should be geometrically valid; unexpected results may
+    occur if input geometries are not.
+
+    Returns None if geometry is None.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    grid_size : double, optional (default: 0)
+        precision grid size.  If 0, will use floating point precision.
+    preserve_topology : bool, optional (default: False)
+        If True, will attempt to preserve the topology of the geometry after rounding
+        coordinates.
+    keep_collapsed : bool, optional (default: False)
+        If True, will retain collapsed elements.
+
+    See also
+    --------
+    get_precision
+
+    Examples
+    --------
+    >>> set_precision(Geometry("POINT (0.9 0.9)"), 1)
+    <pygeos.Geometry POINT (1 1)>
+    >>> set_precision(Geometry("POINT (0.9 0.9 0.9)"), 1)
+    <pygeos.Geometry POINT Z (1 1 0.9)>
+    >>> set_precision(None) is None
+    True
+    """
+
+    return lib.set_precision(geometry, grid_size, preserve_topology, keep_collapsed)
+
