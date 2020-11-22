@@ -862,6 +862,8 @@ static void* get_z_data[1] = {GetZ};
 #endif
 static void* area_data[1] = {GEOSArea_r};
 static void* length_data[1] = {GEOSLength_r};
+
+#if GEOS_SINCE_3_6_0
 static int GetPrecision(void* context, void* a, double* b) {
   // GEOS returns -1 on error; 0 indicates floating point precision
   double out = GEOSGeom_getPrecision_r(context, a);
@@ -872,9 +874,7 @@ static int GetPrecision(void* context, void* a, double* b) {
   *(double*)b = out;
   return 1;
 }
-
 static void* get_precision_data[1] = {GetPrecision};
-#if GEOS_SINCE_3_6_0
 static int MinimumClearance(void* context, void* a, double* b) {
   // GEOSMinimumClearance deviates from the pattern of returning 0 on exception and 1 on
   // success for functions that return an int (it follows pattern for boolean functions
@@ -1547,6 +1547,7 @@ finish:
 }
 static PyUFuncGenericFunction relate_funcs[1] = {&relate_func};
 
+#if GEOS_SINCE_3_6_0
 static char set_precision_dtypes[5] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_BOOL, NPY_OBJECT};
 static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* steps,
                                void* data) {
@@ -1602,6 +1603,8 @@ static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* step
 }
 
 static PyUFuncGenericFunction set_precision_funcs[1] = {&set_precision_func};
+#endif
+
 
 /* define double -> geometry construction functions */
 static char points_dtypes[2] = {NPY_DOUBLE, NPY_OBJECT};
@@ -2429,7 +2432,6 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Y_d(get_y);
   DEFINE_Y_d(area);
   DEFINE_Y_d(length);
-  DEFINE_Y_d(get_precision);
 
   DEFINE_Y_i(get_type_id);
   DEFINE_Y_i(get_dimensions);
@@ -2456,7 +2458,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_CUSTOM(voronoi_polygons, 4);
   DEFINE_CUSTOM(is_valid_reason, 1);
   DEFINE_CUSTOM(relate, 2);
-  DEFINE_CUSTOM(set_precision, 4);
+
   DEFINE_GENERALIZED(points, 1, "(d)->()");
   DEFINE_GENERALIZED(linestrings, 1, "(i, d)->()");
   DEFINE_GENERALIZED(linearrings, 1, "(i, d)->()");
@@ -2473,6 +2475,8 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 
 #if GEOS_SINCE_3_6_0
   DEFINE_Y_d(minimum_clearance);
+  DEFINE_Y_d(get_precision);
+  DEFINE_CUSTOM(set_precision, 4);
 #endif
 
 #if GEOS_SINCE_3_7_0

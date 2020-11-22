@@ -364,6 +364,7 @@ def test_get_parts_invalid_geometry(geom):
         pygeos.get_parts(geom)
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_get_precision():
     geometries = all_types + (point_z, empty_point, empty_line_string, empty_polygon)
     # default is 0
@@ -378,6 +379,7 @@ def test_get_precision():
     assert np.all(np.isnan(pygeos.get_precision([None])))
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_set_precision():
     initial_geometry = pygeos.Geometry("POINT (0.9 0.9)")
     assert pygeos.get_precision(initial_geometry) == 0
@@ -400,14 +402,17 @@ def test_set_precision():
     assert np.all(np.isnan(pygeos.get_coordinates(pygeos.set_precision(point_nan, 1))))
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_set_precision_none():
     assert pygeos.set_precision(None, 0) is None
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_set_precision_nan():
     assert pygeos.set_precision(pygeos.Geometry("POINT (0.9 0.9)"), np.nan) is None
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_set_precision_preserve_topology():
     # bowtie
     geometry = pygeos.Geometry("POLYGON((0 0, 2.1 2.1, 2.1 0, 0 2.1, 0 0))")
@@ -440,6 +445,7 @@ def test_set_precision_preserve_topology():
     )
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_set_precision_keep_collapsed():
     geometry = pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)")
 
@@ -483,8 +489,14 @@ def test_set_precision_keep_collapsed():
     geometry = pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)")
 
     # by default, collapses to an empty linearring
-    assert pygeos.equals(pygeos.set_precision(geometry, 1, keep_collapsed=False), pygeos.Geometry("LINEARRING EMPTY"))
+    assert pygeos.equals(
+        pygeos.set_precision(geometry, 1, keep_collapsed=False),
+        pygeos.Geometry("LINEARRING EMPTY"),
+    )
 
     # unlike polygons, linear rings remain uncollapsed
-    assert pygeos.equals_exact(pygeos.set_precision(geometry, 1, keep_collapsed=True), pygeos.Geometry("LINEARRING (0 0, 0 0, 0 0, 0 0, 0 0)"))
+    assert pygeos.equals_exact(
+        pygeos.set_precision(geometry, 1, keep_collapsed=True),
+        pygeos.Geometry("LINEARRING (0 0, 0 0, 0 0, 0 0, 0 0)"),
+    )
 

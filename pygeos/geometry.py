@@ -27,7 +27,7 @@ __all__ = [
     "get_geometry",
     "get_parts",
     "get_precision",
-    "set_precision"
+    "set_precision",
 ]
 
 
@@ -541,7 +541,7 @@ def get_num_geometries(geometry):
     return lib.get_num_geometries(geometry)
 
 
-
+@requires_geos("3.6.0")
 @multithreading_enabled
 def get_precision(geometry):
     """Get the precision of the geometry.
@@ -572,6 +572,7 @@ def get_precision(geometry):
     return lib.get_precision(geometry)
 
 
+@requires_geos("3.6.0")
 @multithreading_enabled
 def set_precision(geometry, grid_size=0, preserve_topology=False, keep_collapsed=False):
     """Returns geometry with the precision set to the precision grid size, rounding all
