@@ -414,18 +414,6 @@ def test_set_precision_nan():
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_set_precision_preserve_topology():
-    # bowtie
-    geometry = pygeos.Geometry("POLYGON((0 0, 2.1 2.1, 2.1 0, 0 2.1, 0 0))")
-
-    # by default, retains invalid topology
-    assert pygeos.equals_exact(
-        pygeos.set_precision(geometry, 1, preserve_topology=False),
-        pygeos.Geometry("POLYGON((0 0, 2 2, 2 0, 0 2, 0 0))"),
-    )
-
-    # GEOS bug?  This should be True (instead we get first poly only)
-    # assert pygeos.equals_exact(pygeos.set_precision(geometry, 1, preserve_topology=True), pygeos.Geometry("MULTIPOLYGON (((1 1, 2 2, 2 0, 1 1)), ((0 0, 0 2, 1 1, 0 0)))"))
-
     # GEOS test case - geometry is valid initially but becomes
     # invalid after rounding
     geometry = pygeos.Geometry(
@@ -446,57 +434,22 @@ def test_set_precision_preserve_topology():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-def test_set_precision_keep_collapsed():
+def test_set_precision_collapse():
+    """Lines and polygons collapse to empty geometries if vertices are too close"""
     geometry = pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)")
-
-    # by default, collapses to an empty string
     assert pygeos.equals(
-        pygeos.set_precision(geometry, 1, keep_collapsed=False),
+        pygeos.set_precision(geometry, 1),
         pygeos.Geometry("LINESTRING EMPTY"),
     )
 
-    # keep collapsed retains line with rounded coordinates
-    assert pygeos.equals_exact(
-        pygeos.set_precision(geometry, 1, keep_collapsed=True),
-        pygeos.Geometry("LINESTRING (0 0, 0 0)"),
-    )
-
-    # inner vertex is dropped regardless of keep_collapsed
-    geometry = pygeos.Geometry("LINESTRING (0 0, 0.1 0.1, 1 1)")
-    assert pygeos.equals(
-        pygeos.set_precision(geometry, 1, keep_collapsed=False),
-        pygeos.Geometry("LINESTRING (0 0, 1 1)"),
-    )
-    assert pygeos.equals(
-        pygeos.set_precision(geometry, 1, keep_collapsed=True),
-        pygeos.Geometry("LINESTRING (0 0, 1 1)"),
-    )
-
-    geometry = pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))")
-
-    # by default, collapses to an empty string
-    assert pygeos.equals(
-        pygeos.set_precision(geometry, 1, keep_collapsed=False),
-        pygeos.Geometry("POLYGON EMPTY"),
-    )
-
-    # GEOS collapses polygons regardless of this flag
-    assert pygeos.equals(
-        pygeos.set_precision(geometry, 1, keep_collapsed=True),
-        pygeos.Geometry("POLYGON EMPTY"),
-    )
-
     geometry = pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)")
-
-    # by default, collapses to an empty linearring
     assert pygeos.equals(
-        pygeos.set_precision(geometry, 1, keep_collapsed=False),
+        pygeos.set_precision(geometry, 1),
         pygeos.Geometry("LINEARRING EMPTY"),
     )
 
-    # unlike polygons, linear rings remain uncollapsed
-    assert pygeos.equals_exact(
-        pygeos.set_precision(geometry, 1, keep_collapsed=True),
-        pygeos.Geometry("LINEARRING (0 0, 0 0, 0 0, 0 0, 0 0)"),
+    geometry = pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))")
+    assert pygeos.equals(
+        pygeos.set_precision(geometry, 1),
+        pygeos.Geometry("POLYGON EMPTY"),
     )
-

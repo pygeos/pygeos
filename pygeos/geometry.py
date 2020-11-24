@@ -574,16 +574,15 @@ def get_precision(geometry):
 
 @requires_geos("3.6.0")
 @multithreading_enabled
-def set_precision(geometry, grid_size=0, preserve_topology=False, keep_collapsed=False):
+def set_precision(geometry, grid_size=0, preserve_topology=False):
     """Returns geometry with the precision set to the precision grid size, rounding all
     coordinates in the geometry to the precision grid if less precise than the input
     geometry.
 
-    Z values, if present, will not be modified.
+    Line and polygon geometries may collapse to empty geometries if all vertices are
+    closer together than grid_size.
 
-    If keep_collapsed is True, linestrings and linearrings will be retained
-    if they would otherwise collapse to empty geometry.  Polygons always collapse, even
-    if keep_collapsed is True.
+    Z values, if present, will not be modified.
 
     Note: subsequent operations will always be performed in the precision
     of the geometry with higher precision (smaller "grid_size"). That same precision will
@@ -602,8 +601,6 @@ def set_precision(geometry, grid_size=0, preserve_topology=False, keep_collapsed
     preserve_topology : bool, optional (default: False)
         If True, will attempt to preserve the topology of the geometry after rounding
         coordinates.
-    keep_collapsed : bool, optional (default: False)
-        If True, will retain collapsed elements.
 
     See also
     --------
@@ -619,5 +616,5 @@ def set_precision(geometry, grid_size=0, preserve_topology=False, keep_collapsed
     True
     """
 
-    return lib.set_precision(geometry, grid_size, preserve_topology, keep_collapsed)
+    return lib.set_precision(geometry, grid_size, preserve_topology)
 

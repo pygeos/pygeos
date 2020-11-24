@@ -1548,7 +1548,7 @@ finish:
 static PyUFuncGenericFunction relate_funcs[1] = {&relate_func};
 
 #if GEOS_SINCE_3_6_0
-static char set_precision_dtypes[5] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_BOOL, NPY_OBJECT};
+static char set_precision_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
 static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* steps,
                                void* data) {
   GEOSGeometry* in1 = NULL;
@@ -1573,12 +1573,11 @@ static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* step
     double in2 = *(double*)ip2;
     // preserve topology
     npy_bool in3 = *(npy_bool*)ip3;
-    // keep collapsed coordinates
-    npy_bool in4 = *(npy_bool*)ip4;
     // flags:
     // GEOS_PREC_NO_TOPO (1<<0): if set, do not try to preserve topology
-    // GEOS_PREC_KEEP_COLLAPSED  (1<<1): if set: keep collapsed coordinates
-    int flags = (!in3) << 0 | in4 << 1;
+    // GEOS_PREC_KEEP_COLLAPSED  (1<<1): Not used because uncollapsed geometries are
+    // invalid and will not be retained in GEOS >= 3.9 anyway.
+    int flags = (!in3) << 0;
 
     if ((in1 == NULL) | npy_isnan(in2)) {
       // in case of a missing value: return NULL (None)
@@ -1597,14 +1596,13 @@ static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* step
 
   // fill the numpy array with PyObjects while holding the GIL
   if (errstate == PGERR_SUCCESS) {
-    geom_arr_to_npy(geom_arr, args[4], steps[4], dimensions[0]);
+    geom_arr_to_npy(geom_arr, args[3], steps[3], dimensions[0]);
   }
   free(geom_arr);
 }
 
 static PyUFuncGenericFunction set_precision_funcs[1] = {&set_precision_func};
 #endif
-
 
 /* define double -> geometry construction functions */
 static char points_dtypes[2] = {NPY_DOUBLE, NPY_OBJECT};
@@ -2476,7 +2474,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 #if GEOS_SINCE_3_6_0
   DEFINE_Y_d(minimum_clearance);
   DEFINE_Y_d(get_precision);
-  DEFINE_CUSTOM(set_precision, 4);
+  DEFINE_CUSTOM(set_precision, 3);
 #endif
 
 #if GEOS_SINCE_3_7_0
