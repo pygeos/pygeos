@@ -340,7 +340,8 @@ def test_get_parts_invalid_dimensions(geom):
 
 
 @pytest.mark.parametrize(
-    "geom", [point, line_string, polygon],
+    "geom",
+    [point, line_string, polygon],
 )
 def test_get_parts_non_multi(geom):
     """Non-multipart geometries should be returned identical to inputs"""
@@ -348,18 +349,21 @@ def test_get_parts_non_multi(geom):
 
 
 @pytest.mark.parametrize(
-    "geom", [None, [None], []],
+    "geom",
+    [None, [None], []],
 )
 def test_get_parts_None(geom):
     assert len(pygeos.get_parts(geom)) == 0
 
 
 @pytest.mark.parametrize(
-    "geom", ["foo", ["foo"], 42],
+    "geom",
+    ["foo", ["foo"], 42],
 )
 def test_get_parts_invalid_geometry(geom):
     with pytest.raises(
-        TypeError, match="One of the arguments is of incorrect type.",
+        TypeError,
+        match="One of the arguments is of incorrect type.",
     ):
         pygeos.get_parts(geom)
 
@@ -453,3 +457,20 @@ def test_set_precision_collapse():
         pygeos.set_precision(geometry, 1),
         pygeos.Geometry("POLYGON EMPTY"),
     )
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+def test_set_precision_intersection():
+    """Operations should use the highest precision of the inputs"""
+
+    box1 = pygeos.normalize(pygeos.box(0, 0, 0.9, 0.9))
+    box2 = pygeos.normalize(pygeos.box(0.75, 0, 1.75, 0.75))
+
+    assert pygeos.get_precision(pygeos.intersection(box1, box2)) == 0
+
+    # GEOS will use and keep the lowest precision
+    box1 = pygeos.set_precision(box1, 0.5)
+    box2 = pygeos.set_precision(box2, 1)
+    out = pygeos.intersection(box1, box2)
+    assert pygeos.get_precision(out) == 0.5
+    assert pygeos.equals(out, pygeos.Geometry("LINESTRING (1 1, 1 0)"))
