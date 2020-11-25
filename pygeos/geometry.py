@@ -579,6 +579,9 @@ def set_precision(geometry, grid_size=0, preserve_topology=False):
     coordinates in the geometry to the precision grid if less precise than the input
     geometry.
 
+    Duplicated vertices will be dropped from lines and polygons for grid sizes greater
+    than 0.
+
     Line and polygon geometries may collapse to empty geometries if all vertices are
     closer together than grid_size.
 
@@ -612,9 +615,10 @@ def set_precision(geometry, grid_size=0, preserve_topology=False):
     <pygeos.Geometry POINT (1 1)>
     >>> set_precision(Geometry("POINT (0.9 0.9 0.9)"), 1)
     <pygeos.Geometry POINT Z (1 1 0.9)>
+    >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0 1, 1 1)"), 1)
+    <pygeos.Geometry LINESTRING (0 0, 0 1, 1 1)>
     >>> set_precision(None) is None
     True
     """
 
     return lib.set_precision(geometry, grid_size, preserve_topology)
-

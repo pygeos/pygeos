@@ -405,6 +405,16 @@ def test_set_precision():
 
     assert np.all(np.isnan(pygeos.get_coordinates(pygeos.set_precision(point_nan, 1))))
 
+    # will not drop duplicated points in original
+    geometry = pygeos.set_precision(
+        pygeos.Geometry("LINESTRING (0 0, 0 0, 0 1, 1 1)"), 0
+    )
+    assert pygeos.equals(geometry, pygeos.Geometry("LINESTRING (0 0, 0 0, 0 1, 1 1)"))
+
+    # setting precision will remove duplicated points
+    geometry = pygeos.set_precision(geometry, 1)
+    assert pygeos.equals(geometry, pygeos.Geometry("LINESTRING (0 0, 0 1, 1 1)"))
+
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_set_precision_none():
