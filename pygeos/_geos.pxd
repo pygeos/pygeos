@@ -21,6 +21,13 @@ cdef extern from "geos_c.h":
     GEOSGeometry* GEOSGeom_clone_r(GEOSContextHandle_t handle,
                                    const GEOSGeometry* g) nogil except NULL
 
+    int GEOSGetNumGeometries_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
+    int GEOSGetNumCoordinates_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
+    int GEOSGetNumInteriorRings_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
+
+    const GEOSGeometry* GEOSGetExteriorRing_r(GEOSContextHandle_t handle, const GEOSGeometry* g)
+    const GEOSGeometry* GEOSGetInteriorRingN_r(GEOSContextHandle_t handle, const GEOSGeometry* g, int n)
+
 
 cdef class get_geos_handle:
     cdef GEOSContextHandle_t handle
