@@ -1,4 +1,6 @@
+import builtins
 import os
+from pathlib import Path
 import subprocess
 import sys
 from distutils.version import LooseVersion
@@ -7,7 +9,12 @@ from setuptools.command.build_ext import build_ext as _build_ext
 import logging
 import versioneer
 
-from Cython.Build import cythonize
+# Skip Cython build if not available
+try:
+    from Cython.Build import cythonize
+except ImportError:
+    cythonize = None
+
 
 log = logging.getLogger(__name__)
 ch = logging.StreamHandler()
@@ -23,11 +30,14 @@ if "all" in sys.warnoptions:
 def get_geos_config(option):
     """Get configuration option from the `geos-config` development utility
 
-    The PATH environment variable should include the path where geos-config is located.
+    The PATH environment variable should include the path where geos-config is
+    located, or the GEOS_CONFIG environment variable should point to the
+    executable.
     """
+    cmd = os.environ.get("GEOS_CONFIG", "geos-config")
     try:
         stdout, stderr = subprocess.Popen(
-            ["geos-config", option], stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            [cmd, option], stdout=subprocess.PIPE, stderr=subprocess.PIPE
         ).communicate()
     except OSError:
         return
@@ -39,7 +49,7 @@ def get_geos_config(option):
     return result
 
 
-def get_geos_paths(include_src=False):
+def get_geos_paths():
     """Obtain the paths for compiling and linking with the GEOS C-API
 
     First the presence of the GEOS_INCLUDE_PATH and GEOS_INCLUDE_PATH environment
@@ -55,10 +65,11 @@ def get_geos_paths(include_src=False):
     library_dir = os.environ.get("GEOS_LIBRARY_PATH")
     if include_dir and library_dir:
         return {
-            "include_dirs": [include_dir],
+            "include_dirs": ["./src", include_dir],
             "library_dirs": [library_dir],
             "libraries": ["geos_c"],
         }
+
     geos_version = get_geos_config("--version")
     if not geos_version:
         log.warning(
@@ -68,19 +79,22 @@ def get_geos_paths(include_src=False):
             MIN_GEOS_VERSION,
         )
         return {}
+
     if LooseVersion(geos_version) < LooseVersion(MIN_GEOS_VERSION):
         raise ImportError(
             "GEOS version should be >={}, found {}".format(
                 MIN_GEOS_VERSION, geos_version
             )
         )
+
     libraries = []
     library_dirs = []
-    include_dirs = []
+    include_dirs = ["./src"]
     extra_link_args = []
     for item in get_geos_config("--cflags").split():
         if item.startswith("-I"):
             include_dirs.extend(item[2:].split(":"))
+
     for item in get_geos_config("--clibs").split():
         if item.startswith("-L"):
             library_dirs.extend(item[2:].split(":"))
@@ -88,8 +102,6 @@ def get_geos_paths(include_src=False):
             libraries.append(item[2:])
         else:
             extra_link_args.append(item)
-    if include_src:
-        include_dirs.append("./src")
     return {
         "include_dirs": include_dirs,
         "library_dirs": library_dirs,
@@ -98,29 +110,70 @@ def get_geos_paths(include_src=False):
     }
 
 
-# Add numpy include dirs without importing numpy on module level.
-# See https://stackoverflow.com/questions/19919905/
-# how-to-bootstrap-numpy-installation-in-setup-py/21621689#21621689
 class build_ext(_build_ext):
     def finalize_options(self):
         _build_ext.finalize_options(self)
+
+        # Add numpy include dirs without importing numpy on module level.
+        # derived from scikit-hep:
+        # https://github.com/scikit-hep/root_numpy/pull/292
+
         # Prevent numpy from thinking it is still in its setup process:
-        __builtins__.__NUMPY_SETUP__ = False
+        try:
+            del builtins.__NUMPY_SETUP__
+        except AttributeError:
+            pass
+
         import numpy
 
         self.include_dirs.append(numpy.get_include())
 
 
-module_lib = Extension(
-    "pygeos.lib",
-    sources=["src/lib.c", "src/geos.c", "src/pygeom.c", "src/ufuncs.c", "src/coords.c", "src/strtree.c"],
-    **get_geos_paths()
-)
+ext_modules = []
 
+if "clean" in sys.argv:
+    # delete any previously Cythonized or compiled files in pygeos
+    p = Path("pygeos")
+    for pattern in ["*.c", "*.so", "*.pyd"]:
+        for filename in p.glob(pattern):
+            print("removing '{}'".format(filename))
+            filename.unlink()
 
-cython_modules = cythonize([
-    Extension("pygeos.flatcoords", ["pygeos/flatcoords.pyx"], **get_geos_paths(include_src=True))
-])
+elif "sdist" not in sys.argv:
+    ext_options = get_geos_paths()
+
+    ext_modules = [
+        Extension(
+            "pygeos.lib",
+            sources=[
+                "src/c_api.c",
+                "src/coords.c",
+                "src/geos.c",
+                "src/lib.c",
+                "src/pygeom.c",
+                "src/strtree.c",
+                "src/ufuncs.c",
+            ],
+            **ext_options,
+        )
+    ]
+
+    # Cython is required
+    if not cythonize:
+        sys.exit("ERROR: Cython is required to build pygeos from source.")
+
+    cython_modules = [
+        Extension("pygeos._geometry", ["pygeos/_geometry.pyx",], **ext_options,),
+        Extension("pygeos._geos", ["pygeos/_geos.pyx",], **ext_options,),
+        Extension("pygeos.flatcoords", ["pygeos/flatcoords.pyx"], **ext_options,),
+    ]
+
+    ext_modules += cythonize(
+        cython_modules,
+        compiler_directives={"language_level": "3"},
+        # enable once Cython >= 0.3 is released
+        # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
+    )
 
 
 try:
@@ -131,7 +184,7 @@ except IOError:
 
 version = versioneer.get_version()
 cmdclass = versioneer.get_cmdclass()
-cmdclass['build_ext'] = build_ext
+cmdclass["build_ext"] = build_ext
 
 setup(
     name="pygeos",
@@ -143,22 +196,22 @@ setup(
     author_email="caspervdw@gmail.com",
     license="BSD 3-Clause",
     packages=["pygeos"],
-    setup_requires=["numpy"],
-    install_requires=["numpy>=1.10"],
-    extras_require={
-        "test": ["pytest"],
-        "docs": ["sphinx", "numpydoc"],
-    },
+    install_requires=["numpy>=1.13"],
+    extras_require={"test": ["pytest"], "docs": ["sphinx", "numpydoc"],},
     python_requires=">=3",
     include_package_data=True,
-    data_files=[('geos_license', ['GEOS_LICENSE'])],
-    ext_modules=[module_lib] + cython_modules,
+    data_files=[("geos_license", ["GEOS_LICENSE"])],
+    ext_modules=ext_modules,
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Development Status :: 1 - Planning",
-        "Topic :: Scientific/Engineering :: Mathematics",
-        "Topic :: Scientific/Engineering :: GIS",
+        "Intended Audience :: Science/Research",
+        "Intended Audience :: Developers",
+        "Development Status :: 4 - Beta",
+        "Topic :: Scientific/Engineering",
+        "Topic :: Software Development",
         "Operating System :: Unix",
+        "Operating System :: MacOS",
+        "Operating System :: Microsoft :: Windows",
     ],
     cmdclass=cmdclass,
 )

@@ -65,6 +65,20 @@ def test_linestrings_from_xyz():
     assert str(actual) == "LINESTRING Z (0 2 0, 1 3 0)"
 
 
+@pytest.mark.parametrize(
+    "shape",
+    [
+        (2, 1, 2),  # 2 linestrings of 1 2D point
+        (1, 1, 2),  # 1 linestring of 1 2D point
+        (1, 2),  # 1 linestring of 1 2D point (scalar)
+        (2,),  # 1 2D point (scalar)
+    ],
+)
+def test_linestrings_invalid_shape(shape):
+    with pytest.raises(ValueError):
+        pygeos.linestrings(np.ones(shape))
+
+
 def test_linearrings():
     actual = pygeos.linearrings(box_tpl(0, 0, 1, 1))
     assert str(actual) == "LINEARRING (1 0, 1 1, 0 1, 0 0, 1 0)"
@@ -78,6 +92,32 @@ def test_linearrings_from_xy():
 def test_linearrings_unclosed():
     actual = pygeos.linearrings(box_tpl(0, 0, 1, 1)[:-1])
     assert str(actual) == "LINEARRING (1 0, 1 1, 0 1, 0 0, 1 0)"
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        (2, 1, 2),  # 2 linearrings of 1 2D point
+        (1, 1, 2),  # 1 linearring of 1 2D point
+        (1, 2),  # 1 linearring of 1 2D point (scalar)
+        (2, 2, 2),  # 2 linearrings of 2 2D points
+        (1, 2, 2),  # 1 linearring of 2 2D points
+        (2, 2),  # 1 linearring of 2 2D points (scalar)
+        (2, 3, 2),  # 2 linearrings of 3 2D points
+        (1, 3, 2),  # 1 linearring of 3 2D points
+        (3, 2),  # 1 linearring of 3 2D points (scalar)
+        (2,),  # 1 2D point (scalar)
+    ],
+)
+def test_linearrings_invalid_shape(shape):
+    coords = np.ones(shape)
+    with pytest.raises(ValueError):
+        pygeos.linearrings(coords)
+
+    # make sure the first coordinate != second coordinate
+    coords[..., 1] += 1
+    with pytest.raises(ValueError):
+        pygeos.linearrings(coords)
 
 
 def test_polygon_from_linearring():
@@ -128,6 +168,58 @@ def test_2_polygons_with_different_holes():
         [[box_tpl(1, 1, 3, 3)], [box_tpl(1, 1, 2, 2)]],
     )
     assert pygeos.area(actual).tolist() == [96.0, 24.0]
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        (2, 1, 2),  # 2 linearrings of 1 2D point
+        (1, 1, 2),  # 1 linearring of 1 2D point
+        (1, 2),  # 1 linearring of 1 2D point (scalar)
+        (2, 2, 2),  # 2 linearrings of 2 2D points
+        (1, 2, 2),  # 1 linearring of 2 2D points
+        (2, 2),  # 1 linearring of 2 2D points (scalar)
+        (2, 3, 2),  # 2 linearrings of 3 2D points
+        (1, 3, 2),  # 1 linearring of 3 2D points
+        (3, 2),  # 1 linearring of 3 2D points (scalar)
+        (2,),  # 1 2D point (scalar)
+    ],
+)
+def test_polygons_not_enough_points_in_shell(shape):
+    coords = np.ones(shape)
+    with pytest.raises(ValueError):
+        pygeos.polygons(coords)
+
+    # make sure the first coordinate != second coordinate
+    coords[..., 1] += 1
+    with pytest.raises(ValueError):
+        pygeos.polygons(coords)
+
+
+@pytest.mark.parametrize(
+    "shape",
+    [
+        (2, 1, 2),  # 2 linearrings of 1 2D point
+        (1, 1, 2),  # 1 linearring of 1 2D point
+        (1, 2),  # 1 linearring of 1 2D point (scalar)
+        (2, 2, 2),  # 2 linearrings of 2 2D points
+        (1, 2, 2),  # 1 linearring of 2 2D points
+        (2, 2),  # 1 linearring of 2 2D points (scalar)
+        (2, 3, 2),  # 2 linearrings of 3 2D points
+        (1, 3, 2),  # 1 linearring of 3 2D points
+        (3, 2),  # 1 linearring of 3 2D points (scalar)
+        (2,),  # 1 2D point (scalar)
+    ],
+)
+def test_polygons_not_enough_points_in_holes(shape):
+    coords = np.ones(shape)
+    with pytest.raises(ValueError):
+        pygeos.polygons(np.ones((1, 4, 2)), coords)
+
+    # make sure the first coordinate != second coordinate
+    coords[..., 1] += 1
+    with pytest.raises(ValueError):
+        pygeos.polygons(np.ones((1, 4, 2)), coords)
 
 
 @pytest.mark.parametrize(
@@ -208,3 +300,69 @@ def test_box_multiple():
     actual = pygeos.box(0, 0, [1, 2], [1, 2])
     assert str(actual[0]) == "POLYGON ((1 0, 1 1, 0 1, 0 0, 1 0))"
     assert str(actual[1]) == "POLYGON ((2 0, 2 2, 0 2, 0 0, 2 0))"
+
+
+class BaseGeometry(pygeos.Geometry):
+    @property
+    def type_id(self):
+        return pygeos.get_type_id(self)
+
+
+class Point(BaseGeometry):
+    @property
+    def x(self):
+        return pygeos.get_x(self)
+
+    @property
+    def y(self):
+        return pygeos.get_y(self)
+
+
+@pytest.fixture
+def with_point_in_registry():
+    orig = pygeos.lib.registry[0]
+    pygeos.lib.registry[0] = Point
+    yield
+    pygeos.lib.registry[0] = orig
+
+
+def test_subclasses(with_point_in_registry):
+    for point in [Point("POINT (1 1)"), pygeos.points(1, 1)]:
+        assert isinstance(point, Point)
+        assert pygeos.get_type_id(point) == pygeos.GeometryType.POINT
+        assert point.x == 1
+
+
+def test_prepare():
+    arr = np.array([pygeos.points(1, 1), None, pygeos.box(0, 0, 1, 1)])
+    assert arr[0]._ptr_prepared == 0
+    assert arr[2]._ptr_prepared == 0
+    pygeos.prepare(arr)
+    assert arr[0]._ptr_prepared != 0
+    assert arr[1] is None
+    assert arr[2]._ptr_prepared != 0
+
+    # preparing again actually does nothing
+    original = arr[0]._ptr_prepared
+    pygeos.prepare(arr)
+    assert arr[0]._ptr_prepared == original
+
+
+def test_destroy_prepared():
+    arr = np.array([pygeos.points(1, 1), None, pygeos.box(0, 0, 1, 1)])
+    pygeos.prepare(arr)
+    assert arr[0]._ptr_prepared != 0
+    assert arr[2]._ptr_prepared != 0
+    pygeos.destroy_prepared(arr)
+    assert arr[0]._ptr_prepared == 0
+    assert arr[1] is None
+    assert arr[2]._ptr_prepared == 0
+    pygeos.destroy_prepared(arr)  # does not error
+
+
+def test_subclass_is_geometry(with_point_in_registry):
+    assert pygeos.is_geometry(Point("POINT (1 1)"))
+
+
+def test_subclass_is_valid_input(with_point_in_registry):
+    assert pygeos.is_valid_input(Point("POINT (1 1)"))

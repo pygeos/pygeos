@@ -1,8 +1,9 @@
 import pytest
 import pygeos
+from pygeos import Geometry
 import numpy as np
 
-from .common import point, all_types
+from .common import point, all_types, line_string, polygon, geometry_collection, empty
 
 UNARY_PREDICATES = (
     pygeos.is_empty,
@@ -13,6 +14,7 @@ UNARY_PREDICATES = (
     pygeos.is_missing,
     pygeos.is_geometry,
     pygeos.is_valid_input,
+    pytest.param(pygeos.is_ccw, marks=pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")),
 )
 
 BINARY_PREDICATES = (
@@ -27,6 +29,10 @@ BINARY_PREDICATES = (
     pygeos.covers,
     pygeos.covered_by,
     pygeos.equals_exact,
+)
+
+BINARY_PREPARED_PREDICATES = tuple(
+    set(BINARY_PREDICATES) - {pygeos.equals, pygeos.equals_exact}
 )
 
 
@@ -90,3 +96,79 @@ def test_equals_exact_tolerance():
     # default value for tolerance
     assert pygeos.equals_exact(p1, p1).item() is True
     assert pygeos.equals_exact(p1, p2).item() is False
+
+
+def test_relate():
+    p1 = pygeos.points(0, 0)
+    p2 = pygeos.points(1, 1)
+    actual = pygeos.relate(p1, p2)
+    assert isinstance(actual, str)
+    assert actual == "FF0FFF0F2"
+
+
+@pytest.mark.parametrize("g1, g2", [(point, None), (None, point), (None, None)])
+def test_relate_none(g1, g2):
+    assert pygeos.relate(g1, g2) is None
+
+
+def test_relate_pattern():
+    line_string = pygeos.linestrings([(0, 0), (1, 0), (1, 1)])
+    polygon = pygeos.box(0, 0, 2, 2)
+    assert pygeos.relate(line_string, polygon) == "11F00F212"
+    assert pygeos.relate_pattern(line_string, polygon, "11F00F212")
+    assert pygeos.relate_pattern(line_string, polygon, "*********")
+    assert not pygeos.relate_pattern(line_string, polygon, "F********")
+
+
+def test_relate_pattern_empty():
+    assert pygeos.relate_pattern(empty, empty, "*" * 9).item() is True
+
+
+@pytest.mark.parametrize("g1, g2", [(point, None), (None, point), (None, None)])
+def test_relate_pattern_none(g1, g2):
+    assert pygeos.relate_pattern(g1, g2, "*" * 9).item() is False
+
+
+def test_relate_pattern_incorrect_length():
+    with pytest.raises(pygeos.GEOSException, match="Should be length 9"):
+        pygeos.relate_pattern(point, polygon, "**")
+
+    with pytest.raises(pygeos.GEOSException, match="Should be length 9"):
+        pygeos.relate_pattern(point, polygon, "**********")
+
+
+@pytest.mark.parametrize("pattern", [b"*********", 10, None])
+def test_relate_pattern_non_string(pattern):
+    with pytest.raises(TypeError, match="expected string"):
+        pygeos.relate_pattern(point, polygon, pattern)
+
+
+def test_relate_pattern_non_scalar():
+    with pytest.raises(ValueError, match="only supports scalar"):
+        pygeos.relate_pattern([point] *2, polygon, ["*********"] * 2)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+@pytest.mark.parametrize("geom, expected", [
+    (Geometry("LINEARRING (0 0, 0 1, 1 1, 0 0)"), False),
+    (Geometry("LINEARRING (0 0, 1 1, 0 1, 0 0)"), True),
+    (Geometry("LINESTRING (0 0, 0 1, 1 1, 0 0)"), False),
+    (Geometry("LINESTRING (0 0, 1 1, 0 1, 0 0)"), True),
+    (Geometry("LINESTRING (0 0, 1 1, 0 1)"), False),
+    (Geometry("LINESTRING (0 0, 0 1, 1 1)"), False),
+    (point, False),
+    (polygon, False),
+    (geometry_collection, False),
+    (None, False),
+])
+def test_is_ccw(geom, expected):
+    assert pygeos.is_ccw(geom) == expected
+
+
+@pytest.mark.parametrize("a", all_types)
+@pytest.mark.parametrize("func", BINARY_PREPARED_PREDICATES)
+def test_binary_prepared(a, func):
+    actual = func(a, point)
+    pygeos.lib.prepare(a)
+    result = func(a, point)
+    assert actual == result

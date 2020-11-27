@@ -1,19 +1,23 @@
 from enum import IntEnum
 import numpy as np
-from . import lib
+
 from . import Geometry  # NOQA
-from .decorators import multithreading_enabled
+from . import lib
+from . import _geometry
+from .decorators import multithreading_enabled, requires_geos
+
 
 __all__ = [
     "GeometryType",
     "get_type_id",
     "get_dimensions",
-    "get_coordinate_dimensions",
+    "get_coordinate_dimension",
     "get_num_coordinates",
     "get_srid",
     "set_srid",
     "get_x",
     "get_y",
+    "get_z",
     "get_exterior_ring",
     "get_num_points",
     "get_num_interior_rings",
@@ -21,13 +25,14 @@ __all__ = [
     "get_point",
     "get_interior_ring",
     "get_geometry",
+    "get_parts",
 ]
 
 
 class GeometryType(IntEnum):
     """The enumeration of GEOS geometry types"""
 
-    NAG = -1
+    MISSING = -1
     POINT = 0
     LINESTRING = 1
     LINEARRING = 2
@@ -45,7 +50,7 @@ class GeometryType(IntEnum):
 def get_type_id(geometry):
     """Returns the type ID of a geometry.
 
-    - None is -1
+    - None (missing) is -1
     - POINT is 0
     - LINESTRING is 1
     - LINEARRING is 2
@@ -102,7 +107,7 @@ def get_dimensions(geometry):
 
 
 @multithreading_enabled
-def get_coordinate_dimensions(geometry):
+def get_coordinate_dimension(geometry):
     """Returns the dimensionality of the coordinates in a geometry (2 or 3).
 
     Returns -1 for not-a-geometry values.
@@ -113,21 +118,21 @@ def get_coordinate_dimensions(geometry):
 
     Examples
     --------
-    >>> get_coordinate_dimensions(Geometry("POINT (0 0)"))
+    >>> get_coordinate_dimension(Geometry("POINT (0 0)"))
     2
-    >>> get_coordinate_dimensions(Geometry("POINT Z (0 0 0)"))
+    >>> get_coordinate_dimension(Geometry("POINT Z (0 0 0)"))
     3
-    >>> get_coordinate_dimensions(None)
+    >>> get_coordinate_dimension(None)
     -1
     """
-    return lib.get_coordinate_dimensions(geometry)
+    return lib.get_coordinate_dimension(geometry)
 
 
 @multithreading_enabled
 def get_num_coordinates(geometry):
     """Returns the total number of coordinates in a geometry.
 
-    Returns -1 for not-a-geometry values.
+    Returns 0 for not-a-geometry values.
 
     Parameters
     ----------
@@ -142,7 +147,7 @@ def get_num_coordinates(geometry):
     >>> get_num_coordinates(Geometry("GEOMETRYCOLLECTION (POINT(0 0), LINESTRING(0 0, 1 1))"))
     3
     >>> get_num_coordinates(None)
-    -1
+    0
     """
     return lib.get_num_coordinates(geometry)
 
@@ -212,7 +217,7 @@ def get_x(point):
 
     See also
     --------
-    get_y
+    get_y, get_z
 
     Examples
     --------
@@ -235,7 +240,7 @@ def get_y(point):
 
     See also
     --------
-    get_x
+    get_x, get_z
 
     Examples
     --------
@@ -247,7 +252,37 @@ def get_y(point):
     return lib.get_y(point)
 
 
+@requires_geos("3.7.0")
+@multithreading_enabled
+def get_z(point):
+    """Returns the z-coordinate of a point.
+
+    Requires at least GEOS 3.7.0.
+
+    Parameters
+    ----------
+    point : Geometry or array_like
+        Non-point geometries or geometries without 3rd dimension will result
+        in NaN being returned.
+
+    See also
+    --------
+    get_x, get_y
+
+    Examples
+    --------
+    >>> get_z(Geometry("POINT Z (1 2 3)"))
+    3.0
+    >>> get_z(Geometry("POINT (1 2)"))
+    nan
+    >>> get_z(Geometry("MULTIPOINT Z (1 1 1, 2 2 2)"))
+    nan
+    """
+    return lib.get_z(point)
+
+
 # linestrings
+
 
 @multithreading_enabled
 def get_point(geometry, index):
@@ -286,6 +321,8 @@ def get_point(geometry, index):
 def get_num_points(geometry):
     """Returns number of points in a linestring or linearring.
 
+    Returns 0 for not-a-geometry values.
+
     Parameters
     ----------
     geometry : Geometry or array_like
@@ -304,11 +341,14 @@ def get_num_points(geometry):
     4
     >>> get_num_points(Geometry("MULTIPOINT (0 0, 1 1, 2 2, 3 3)"))
     0
+    >>> get_num_points(None)
+    0
     """
     return lib.get_num_points(geometry)
 
 
 # polygons
+
 
 @multithreading_enabled
 def get_exterior_ring(geometry):
@@ -330,6 +370,7 @@ def get_exterior_ring(geometry):
     True
     """
     return lib.get_exterior_ring(geometry)
+
 
 @multithreading_enabled
 def get_interior_ring(geometry, index):
@@ -361,6 +402,8 @@ def get_interior_ring(geometry, index):
 def get_num_interior_rings(geometry):
     """Returns number of internal rings in a polygon
 
+    Returns 0 for not-a-geometry values.
+
     Parameters
     ----------
     geometry : Geometry or array_like
@@ -381,11 +424,14 @@ def get_num_interior_rings(geometry):
     1
     >>> get_num_interior_rings(Geometry("POINT (1 1)"))
     0
+    >>> get_num_interior_rings(None)
+    0
     """
     return lib.get_num_interior_rings(geometry)
 
 
 # collections
+
 
 @multithreading_enabled
 def get_geometry(geometry, index):
@@ -423,9 +469,52 @@ def get_geometry(geometry, index):
     return lib.get_geometry(geometry, np.intc(index))
 
 
+def get_parts(geometry, return_index=False):
+    """Gets parts of each GeometryCollection or Multi* geometry object; returns
+    a copy of each geometry in the GeometryCollection or Multi* geometry object.
+
+    Note: This does not return the individual parts of Multi* geometry objects in
+    a GeometryCollection.  You may need to call this function multiple times to
+    return individual parts of Multi* geometry objects in a GeometryCollection.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    return_index : bool, optional (default: False)
+        If True, will return a tuple of ndarrys of (parts, indexes), where indexes
+        are the indexes of the original geometries in the source array.
+
+    Returns
+    -------
+    ndarray of parts or tuple of (parts, indexes)
+
+    Examples
+    --------
+    >>> get_parts(Geometry("MULTIPOINT (0 1, 2 3)")).tolist()
+    [<pygeos.Geometry POINT (0 1)>, <pygeos.Geometry POINT (2 3)>]
+    >>> parts, index = get_parts([Geometry("MULTIPOINT (0 1)"), Geometry("MULTIPOINT (4 5, 6 7)")], return_index=True)
+    >>> parts.tolist()
+    [<pygeos.Geometry POINT (0 1)>, <pygeos.Geometry POINT (4 5)>, <pygeos.Geometry POINT (6 7)>]
+    >>> index.tolist()
+    [0, 1, 1]
+    """
+    geometry = np.asarray(geometry, dtype=np.object)
+    geometry = np.atleast_1d(geometry)
+
+    if geometry.ndim != 1:
+        raise ValueError("Array should be one dimensional")
+
+    if return_index:
+        return _geometry.get_parts(geometry)
+
+    return _geometry.get_parts(geometry)[0]
+
+
 @multithreading_enabled
 def get_num_geometries(geometry):
     """Returns number of geometries in a collection.
+
+    Returns 0 for not-a-geometry values.
 
     Parameters
     ----------
@@ -444,5 +533,7 @@ def get_num_geometries(geometry):
     4
     >>> get_num_geometries(Geometry("POINT (1 1)"))
     1
+    >>> get_num_geometries(None)
+    0
     """
     return lib.get_num_geometries(geometry)

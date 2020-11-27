@@ -10,6 +10,7 @@ __all__ = [
     "BufferJoinStyles",
     "boundary",
     "buffer",
+    "offset_curve",
     "centroid",
     "convex_hull",
     "delaunay_triangles",
@@ -43,7 +44,7 @@ def boundary(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
-        This function will raise for non-empty geometrycollections.
+        This function will return None for geometrycollections.
 
     Examples
     --------
@@ -55,10 +56,15 @@ def boundary(geometry, **kwargs):
     <pygeos.Geometry MULTIPOINT EMPTY>
     >>> boundary(Geometry("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))"))
     <pygeos.Geometry LINESTRING (0 0, 1 0, 1 1, 0 1, 0 0)>
-    >>> boundary(Geometry("MULTIPOINT (0 0, 1 2)")) is None
+    >>> boundary(Geometry("MULTIPOINT (0 0, 1 2)"))
+    <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>
+    >>> boundary(Geometry("MULTILINESTRING ((0 0, 1 1), (0 1, 1 0))"))
+    <pygeos.Geometry MULTIPOINT (0 0, 0 1, 1 0, 1 1)>
+    >>> boundary(Geometry("GEOMETRYCOLLECTION (POINT (0 0))")) is None
     True
     """
     return lib.boundary(geometry, **kwargs)
+
 
 @multithreading_enabled
 def buffer(
@@ -110,7 +116,7 @@ def buffer(
     >>> buffer(Geometry("POINT (10 10)"), 2, quadsegs=1)
     <pygeos.Geometry POLYGON ((12 10, 10 8, 8 10, 10 12, 12 10))>
     >>> buffer(Geometry("POINT (10 10)"), 2, quadsegs=2)
-    <pygeos.Geometry POLYGON ((12 10, 11.4 8.59, 10 8, 8.59 8.59, 8 10, 8.59 11.4, 10 12, 11.4 11.4, 12 10))>
+    <pygeos.Geometry POLYGON ((12 10, 11.4 8.59, 10 8, 8.59 8.59, 8 10, 8.59 11....>
     >>> buffer(Geometry("POINT (10 10)"), -2, quadsegs=1)
     <pygeos.Geometry POLYGON EMPTY>
     >>> line = Geometry("LINESTRING (10 10, 20 10)")
@@ -122,11 +128,11 @@ def buffer(
     <pygeos.Geometry POLYGON ((20 10, 10 10, 10 12, 20 12, 20 10))>
     >>> line2 = Geometry("LINESTRING (10 10, 20 10, 20 20)")
     >>> buffer(line2, 2, cap_style="flat", join_style="bevel")
-    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 22 10, 20 8, 10 8, 10 12, 18 12))>
+    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 22 10, 20 8, 10 8, 10 12, 18...>
     >>> buffer(line2, 2, cap_style="flat", join_style="mitre")
     <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 22 8, 10 8, 10 12, 18 12))>
     >>> buffer(line2, 2, cap_style="flat", join_style="mitre", mitre_limit=1)
-    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 21.8 9, 21 8.17, 10 8, 10 12, 18 12))>
+    <pygeos.Geometry POLYGON ((18 12, 18 20, 22 20, 21.8 9, 21 8.17, 10 8, 10 12...>
     >>> square = Geometry("POLYGON((0 0, 10 0, 10 10, 0 10, 0 0))")
     >>> buffer(square, 2, join_style="mitre")
     <pygeos.Geometry POLYGON ((-2 -2, -2 12, 12 12, 12 -2, -2 -2))>
@@ -161,6 +167,69 @@ def buffer(
         np.bool(single_sided),
         **kwargs
     )
+
+
+@multithreading_enabled
+def offset_curve(
+    geometry,
+    distance,
+    quadsegs=8,
+    join_style="round",
+    mitre_limit=5.0,
+    **kwargs
+):
+    """
+    Returns a (Multi)LineString at a distance from the object
+    on its right or its left side.
+
+    For positive distance the offset will be at the left side of
+    the input line and retain the same direction. For a negative
+    distance it will be at the right side and in the opposite
+    direction.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    distance : float or array_like
+        Specifies the offset distance from the input geometry. Negative
+        for right side offset, positive for left side offset.
+    quadsegs : int
+        Specifies the number of linear segments in a quarter circle in the
+        approximation of circular arcs.
+    join_style : {'round', 'bevel', 'sharp'}
+        Specifies the shape of outside corners. 'round' results in
+        rounded shapes. 'bevel' results in a beveled edge that touches the
+        original vertex. 'mitre' results in a single vertex that is beveled
+        depending on the ``mitre_limit`` parameter.
+    mitre_limit : float
+        Crops of 'mitre'-style joins if the point is displaced from the
+        buffered vertex by more than this limit.
+
+    Examples
+    --------
+    >>> line = Geometry("LINESTRING (0 0, 0 2)")
+    >>> offset_curve(line, 2)
+    <pygeos.Geometry LINESTRING (-2 0, -2 2)>
+    >>> offset_curve(line, -2)
+    <pygeos.Geometry LINESTRING (2 2, 2 0)>
+    """
+    if isinstance(join_style, str):
+        join_style = BufferJoinStyles[join_style.upper()].value
+    if not np.isscalar(quadsegs):
+        raise TypeError("quadsegs only accepts scalar values")
+    if not np.isscalar(join_style):
+        raise TypeError("join_style only accepts scalar values")
+    if not np.isscalar(mitre_limit):
+        raise TypeError("mitre_limit only accepts scalar values")
+    return lib.offset_curve(
+        geometry,
+        distance,
+        np.intc(quadsegs),
+        np.intc(join_style),
+        np.double(mitre_limit),
+        **kwargs
+    )
+
 
 @multithreading_enabled
 def centroid(geometry, **kwargs):
@@ -229,7 +298,7 @@ def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     >>> delaunay_triangles(points)
     <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((50 30, 60 30, 100 100, 50 30)))>
     >>> delaunay_triangles(points, only_edges=True)
-    <pygeos.Geometry MULTILINESTRING ((50 30, 100 100), (50 30, 60 30), (60 30, 100 100))>
+    <pygeos.Geometry MULTILINESTRING ((50 30, 100 100), (50 30, 60 30), (60 30, ...>
     >>> delaunay_triangles(Geometry("MULTIPOINT (50 30, 51 30, 60 30, 100 100)"), tolerance=2)
     <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((50 30, 60 30, 100 100, 50 30)))>
     >>> delaunay_triangles(Geometry("POLYGON ((50 30, 60 30, 100 100, 50 30))"))
@@ -392,7 +461,7 @@ def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
     <pygeos.Geometry LINESTRING (0 0, 0 20)>
     >>> polygon_with_hole = Geometry("POLYGON((0 0, 0 10, 10 10, 10 0, 0 0), (2 2, 2 4, 4 4, 4 2, 2 2))")
     >>> simplify(polygon_with_hole, tolerance=4, preserve_topology=True)
-    <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0), (2 2, 2 4, 4 4, 4 2, 2 2))>
+    <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0), (2 2, 2 4, 4 4, 4 2...>
     >>> simplify(polygon_with_hole, tolerance=4, preserve_topology=False)
     <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0))>
     """
@@ -456,7 +525,7 @@ def voronoi_polygons(
     --------
     >>> points = Geometry("MULTIPOINT (2 2, 4 2)")
     >>> voronoi_polygons(points)
-    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((3 0, 0 0, 0 4, 3 4, 3 0)), POLYGON ((3 4, 6 4, 6 0, 3 0, 3 4)))>
+    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((3 0, 0 0, 0 4, 3 4, 3 0)), PO...>
     >>> voronoi_polygons(points, only_edges=True)
     <pygeos.Geometry LINESTRING (3 4, 3 0)>
     >>> voronoi_polygons(Geometry("MULTIPOINT (2 2, 4 2, 4.2 2)"), 0.5, only_edges=True)

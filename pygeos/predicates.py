@@ -2,10 +2,11 @@ import warnings
 
 from . import lib
 from . import Geometry  # NOQA
-from .decorators import multithreading_enabled
+from .decorators import multithreading_enabled, requires_geos
 
 __all__ = [
     "has_z",
+    "is_ccw",
     "is_closed",
     "is_empty",
     "is_geometry",
@@ -26,6 +27,8 @@ __all__ = [
     "touches",
     "within",
     "equals_exact",
+    "relate",
+    "relate_pattern",
 ]
 
 
@@ -45,6 +48,41 @@ def has_z(geometry, **kwargs):
     True
     """
     return lib.has_z(geometry, **kwargs)
+
+
+@requires_geos("3.7.0")
+@multithreading_enabled
+def is_ccw(geometry, **kwargs):
+    """Returns True if a linestring or linearring is counterclockwise.
+
+    Note that there are no checks on whether lines are actually closed and
+    not self-intersecting, while this is a requirement for is_ccw. The recommended
+    usage of this function for linestrings is ``is_ccw(g) & is_simple(g)`` and for
+    linearrings ``is_ccw(g) & is_valid(g)``.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+        This function will return False for non-linear goemetries and for
+        lines with fewer than 4 points (including the closing point).
+
+    See also
+    --------
+    is_simple : Checks if a linestring is closed and simple.
+    is_valid : Checks additionally if the geometry is simple.
+
+    Examples
+    --------
+    >>> is_ccw(Geometry("LINEARRING (0 0, 0 1, 1 1, 0 0)"))
+    False
+    >>> is_ccw(Geometry("LINEARRING (0 0, 1 1, 0 1, 0 0)"))
+    True
+    >>> is_ccw(Geometry("LINESTRING (0 0, 1 1, 0 1)"))
+    False
+    >>> is_ccw(Geometry("POINT (0 0)"))
+    False
+    """
+    return lib.is_ccw(geometry, **kwargs)
 
 
 @multithreading_enabled
@@ -96,7 +134,7 @@ def is_empty(geometry, **kwargs):
     """
     return lib.is_empty(geometry, **kwargs)
 
-
+@multithreading_enabled
 def is_geometry(geometry, **kwargs):
     """Returns True if the object is a geometry
 
@@ -122,7 +160,7 @@ def is_geometry(geometry, **kwargs):
     """
     return lib.is_geometry(geometry, **kwargs)
 
-
+@multithreading_enabled
 def is_missing(geometry, **kwargs):
     """Returns True if the object is not a geometry (None)
 
@@ -149,7 +187,7 @@ def is_missing(geometry, **kwargs):
     """
     return lib.is_missing(geometry, **kwargs)
 
-
+@multithreading_enabled
 def is_valid_input(geometry, **kwargs):
     """Returns True if the object is a geometry or None
 
@@ -214,6 +252,9 @@ def is_simple(geometry, **kwargs):
     """Returns True if a Geometry has no anomalous geometric points, such as
     self-intersections or self tangency.
 
+    Note that polygons and linearrings are assumed to be simple. Use is_valid
+    to check these kind of geometries for self-intersections.
+
     Parameters
     ----------
     geometry : Geometry or array_like
@@ -222,6 +263,7 @@ def is_simple(geometry, **kwargs):
     See also
     --------
     is_ring : Checks additionally if the geometry is closed.
+    is_valid : Checks whether a geometry is well formed.
 
     Examples
     --------
@@ -304,6 +346,10 @@ def crosses(a, b, **kwargs):
     ----------
     a, b : Geometry or array_like
 
+    See also
+    --------
+    prepare : improve performance by preparing ``a`` (the first argument)
+
     Examples
     --------
     >>> line = Geometry("LINESTRING(0 0, 1 1)")
@@ -342,6 +388,7 @@ def contains(a, b, **kwargs):
     See also
     --------
     within : ``contains(A, B) == within(B, A)``
+    prepare : improve performance by preparing ``a`` (the first argument)
 
     Examples
     --------
@@ -383,6 +430,7 @@ def covered_by(a, b, **kwargs):
     See also
     --------
     covers : ``covered_by(A, B) == covers(B, A)``
+    prepare : improve performance by preparing ``a`` (the first argument)
 
     Examples
     --------
@@ -424,6 +472,7 @@ def covers(a, b, **kwargs):
     See also
     --------
     covered_by : ``covers(A, B) == covered_by(B, A)``
+    prepare : improve performance by preparing ``a`` (the first argument)
 
     Examples
     --------
@@ -468,6 +517,7 @@ def disjoint(a, b, **kwargs):
     See also
     --------
     intersects : ``disjoint(A, B) == ~intersects(A, B)``
+    prepare : improve performance by preparing ``a`` (the first argument)
 
     Examples
     --------
@@ -533,6 +583,7 @@ def intersects(a, b, **kwargs):
     See also
     --------
     disjoint : ``intersects(A, B) == ~disjoint(A, B)``
+    prepare : improve performance by preparing ``a`` (the first argument)
 
     Examples
     --------
@@ -557,6 +608,10 @@ def overlaps(a, b, **kwargs):
     Parameters
     ----------
     a, b : Geometry or array_like
+
+    See also
+    --------
+    prepare : improve performance by preparing ``a`` (the first argument)
 
     Examples
     --------
@@ -583,6 +638,10 @@ def touches(a, b, **kwargs):
     Parameters
     ----------
     a, b : Geometry or array_like
+
+    See also
+    --------
+    prepare : improve performance by preparing ``a`` (the first argument)
 
     Examples
     --------
@@ -622,6 +681,7 @@ def within(a, b, **kwargs):
     See also
     --------
     contains : ``within(A, B) == contains(B, A)``
+    prepare : improve performance by preparing ``a`` (the first argument)
 
     Examples
     --------
@@ -691,3 +751,51 @@ def equals_exact(a, b, tolerance=0.0, **kwargs):
     True
     """
     return lib.equals_exact(a, b, tolerance, **kwargs)
+
+
+def relate(a, b, **kwargs):
+    """
+    Returns a string representation of the DE-9IM intersection matrix.
+
+    Parameters
+    ----------
+    a, b : Geometry or array_like
+
+    Examples
+    --------
+    >>> point = Geometry("POINT (0 0)")
+    >>> line = Geometry("LINESTRING(0 0, 1 1)")
+    >>> relate(point, line)
+    'F0FFFF102'
+    """
+    return lib.relate(a, b, **kwargs)
+
+
+@multithreading_enabled
+def relate_pattern(a, b, pattern, **kwargs):
+    """
+    Returns True if the DE-9IM string code for the relationship between
+    the geometries satisfies the pattern, else False.
+
+    This function compares the DE-9IM code string for two geometries
+    against a specified pattern. If the string matches the pattern then
+    ``True`` is returned, otherwise ``False``. The pattern specified can
+    be an exact match (``0``, ``1`` or ``2``), a boolean match
+    (uppercase ``T`` or ``F``), or a wildcard (``*``). For example,
+    the pattern for the `within` predicate is ``'T*F**F***'``.
+
+    Parameters
+    ----------
+    a, b : Geometry or array_like
+    pattern : string
+
+    Examples
+    --------
+    >>> point = Geometry("POINT (0.5 0.5)")
+    >>> square = Geometry("POLYGON((0 0, 0 1, 1 1, 1 0, 0 0))")
+    >>> relate(point, square)
+    '0FFFFF212'
+    >>> relate_pattern(point, square, "T*F**F***")
+    True
+    """
+    return lib.relate_pattern(a, b, pattern, **kwargs)

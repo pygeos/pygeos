@@ -1,34 +1,39 @@
+import sys
 import numpy as np
 import pygeos
 import pytest
 
 from .common import point
 from .common import point_nan
+from .common import empty_point
 from .common import line_string
+from .common import empty_line_string
 from .common import linear_ring
 from .common import polygon
 from .common import polygon_with_hole
+from .common import empty_polygon
 from .common import multi_point
 from .common import multi_line_string
 from .common import multi_polygon
 from .common import geometry_collection
+from .common import empty as empty_geometry_collection
 from .common import point_z
 from .common import all_types
 
 
 def test_get_num_points():
-    actual = pygeos.get_num_points(all_types).tolist()
-    assert actual == [0, 3, 5, 0, 0, 0, 0, 0, 0]
+    actual = pygeos.get_num_points(all_types + (None,)).tolist()
+    assert actual == [0, 3, 5, 0, 0, 0, 0, 0, 0, 0]
 
 
 def test_get_num_interior_rings():
-    actual = pygeos.get_num_interior_rings(all_types + (polygon_with_hole,)).tolist()
-    assert actual == [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+    actual = pygeos.get_num_interior_rings(all_types + (polygon_with_hole, None))
+    assert actual.tolist() == [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]
 
 
 def test_get_num_geometries():
-    actual = pygeos.get_num_geometries(all_types).tolist()
-    assert actual == [1, 1, 1, 1, 2, 1, 2, 2, 0]
+    actual = pygeos.get_num_geometries(all_types + (None,)).tolist()
+    assert actual == [1, 1, 1, 1, 2, 1, 2, 2, 0, 0]
 
 
 @pytest.mark.parametrize(
@@ -127,14 +132,20 @@ def test_get_dimensions():
     assert actual == [0, 1, 1, 2, 0, 1, 2, 1, -1]
 
 
-def test_get_coordinate_dimensions():
-    actual = pygeos.get_coordinate_dimensions([point, point_z]).tolist()
-    assert actual == [2, 3]
+def test_get_coordinate_dimension():
+    actual = pygeos.get_coordinate_dimension([point, point_z, None]).tolist()
+    assert actual == [2, 3, -1]
 
 
 def test_get_num_coordinates():
-    actual = pygeos.get_num_coordinates(all_types).tolist()
-    assert actual == [1, 3, 5, 5, 2, 2, 10, 3, 0]
+    actual = pygeos.get_num_coordinates(all_types + (None,)).tolist()
+    assert actual == [1, 3, 5, 5, 2, 2, 10, 3, 0, 0]
+
+
+def test_get_srid():
+    """All geometry types have no SRID by default; None returns -1"""
+    actual = pygeos.get_srid(all_types + (None,)).tolist()
+    assert actual == [0, 0, 0, 0, 0, 0, 0, 0, 0, -1]
 
 
 def test_get_set_srid():
@@ -143,9 +154,21 @@ def test_get_set_srid():
     assert pygeos.get_srid(actual) == 4326
 
 
-@pytest.mark.parametrize("func", [pygeos.get_x, pygeos.get_y])
+@pytest.mark.parametrize(
+    "func",
+    [
+        pygeos.get_x,
+        pygeos.get_y,
+        pytest.param(
+            pygeos.get_z,
+            marks=pytest.mark.skipif(
+                pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7"
+            ),
+        ),
+    ],
+)
 @pytest.mark.parametrize("geom", all_types[1:])
-def test_get_xy_no_point(func, geom):
+def test_get_xyz_no_point(func, geom):
     assert np.isnan(func(geom))
 
 
@@ -155,6 +178,16 @@ def test_get_x():
 
 def test_get_y():
     assert pygeos.get_y([point, point_z]).tolist() == [3.0, 1.0]
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+def test_get_z():
+    assert pygeos.get_z([point_z]).tolist() == [1.0]
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
+def test_get_z_2d():
+    assert np.isnan(pygeos.get_z(point))
 
 
 @pytest.mark.parametrize("geom", all_types)
@@ -169,7 +202,9 @@ def test_adapt_ptr_raises():
         point._ptr += 1
 
 
-@pytest.mark.parametrize("geom", all_types + (pygeos.points(np.nan, np.nan),))
+@pytest.mark.parametrize(
+    "geom", all_types + (pygeos.points(np.nan, np.nan), empty_point)
+)
 def test_hash_same_equal(geom):
     assert hash(geom) == hash(pygeos.apply(geom, lambda x: x))
 
@@ -215,3 +250,116 @@ def test_set_nan_same_objects():
     # x = float("nan"); set([x, x]) also retuns a set with 1 element
     a = set([point_nan] * 10)
     assert len(a) == 1
+
+
+@pytest.mark.parametrize(
+    "geom",
+    [
+        point,
+        multi_point,
+        line_string,
+        multi_line_string,
+        polygon,
+        multi_polygon,
+        geometry_collection,
+        empty_point,
+        empty_line_string,
+        empty_polygon,
+        empty_geometry_collection,
+    ],
+)
+def test_get_parts(geom):
+    expected_num_parts = pygeos.get_num_geometries(geom)
+    expected_parts = pygeos.get_geometry(geom, range(0, expected_num_parts))
+
+    parts = pygeos.get_parts(geom)
+    assert len(parts) == expected_num_parts
+    assert np.all(pygeos.equals_exact(parts, expected_parts))
+
+
+def test_get_parts_array():
+    # note: this also verifies that None is handled correctly
+    # in the mix; internally it returns -1 for count of geometries
+    geom = np.array([None, empty_line_string, multi_point, point, multi_polygon])
+    expected_parts = []
+    for g in geom:
+        for i in range(0, pygeos.get_num_geometries(g)):
+            expected_parts.append(pygeos.get_geometry(g, i))
+
+    parts = pygeos.get_parts(geom)
+    assert len(parts) == len(expected_parts)
+    assert np.all(pygeos.equals_exact(parts, expected_parts))
+
+
+def test_get_parts_geometry_collection_multi():
+    """On the first pass, the individual Multi* geometry objects are returned
+    from the collection.  On the second pass, the individual singular geometry
+    objects within those are returned.
+    """
+    geom = pygeos.geometrycollections([multi_point, multi_line_string, multi_polygon])
+    expected_num_parts = pygeos.get_num_geometries(geom)
+    expected_parts = pygeos.get_geometry(geom, range(0, expected_num_parts))
+
+    parts = pygeos.get_parts(geom)
+    assert len(parts) == expected_num_parts
+    assert np.all(pygeos.equals_exact(parts, expected_parts))
+
+    expected_subparts = []
+    for g in np.asarray(expected_parts):
+        for i in range(0, pygeos.get_num_geometries(g)):
+            expected_subparts.append(pygeos.get_geometry(g, i))
+
+    subparts = pygeos.get_parts(parts)
+    assert len(subparts) == len(expected_subparts)
+    assert np.all(pygeos.equals_exact(subparts, expected_subparts))
+
+
+def test_get_parts_return_index():
+    geom = np.array([multi_point, point, multi_polygon])
+    expected_parts = []
+    expected_index = []
+    for i, g in enumerate(geom):
+        for j in range(0, pygeos.get_num_geometries(g)):
+            expected_parts.append(pygeos.get_geometry(g, j))
+            expected_index.append(i)
+
+    parts, index = pygeos.get_parts(geom, return_index=True)
+    assert len(parts) == len(expected_parts)
+    assert np.all(pygeos.equals_exact(parts, expected_parts))
+    assert np.array_equal(index, expected_index)
+
+
+@pytest.mark.parametrize(
+    "geom",
+    ([[None]], [[empty_point]], [[multi_point]], [[multi_point, multi_line_string]]),
+)
+def test_get_parts_invalid_dimensions(geom):
+    """Only 1D inputs are supported"""
+    with pytest.raises(ValueError, match="Array should be one dimensional"):
+        pygeos.get_parts(geom)
+
+
+@pytest.mark.parametrize(
+    "geom", [point, line_string, polygon],
+)
+def test_get_parts_non_multi(geom):
+    """Non-multipart geometries should be returned identical to inputs"""
+    assert np.all(pygeos.equals_exact(np.asarray(geom), pygeos.get_parts(geom)))
+
+
+@pytest.mark.parametrize(
+    "geom", [None, [None], []],
+)
+def test_get_parts_None(geom):
+    assert len(pygeos.get_parts(geom)) == 0
+
+
+@pytest.mark.parametrize(
+    "geom", ["foo", ["foo"], 42],
+)
+def test_get_parts_invalid_geometry(geom):
+    with pytest.raises(
+        TypeError, match="One of the arguments is of incorrect type.",
+    ):
+        pygeos.get_parts(geom)
+
