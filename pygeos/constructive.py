@@ -445,12 +445,12 @@ def point_on_surface(geometry, **kwargs):
 @requires_geos("3.7.0")
 @multithreading_enabled
 def reverse(geometry, **kwargs):
-    """Returns a copy of the Geometry with the order of coordinates reversed.
+    """Returns a copy of a Geometry with the order of coordinates reversed.
 
-    If the Geometry is a polygon with interior rings, the interior rings are also
+    If a Geometry is a polygon with interior rings, the interior rings are also
     reversed.
 
-    Points are unchanged.  None is returned when Geometry is None.
+    Points are unchanged. None is returned where Geometry is None.
 
     Parameters
     ----------
