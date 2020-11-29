@@ -172,7 +172,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
       Py_INCREF(obj);
       kv_push(GeometryObject*, _geoms, obj);
       count++;
-      GEOSSTRtree_insert_r(ctx, tree, geom, (void*)i);
+      GEOSSTRtree_insert_r(ctx, tree, geom, &i);
     }
   }
 
@@ -199,7 +199,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
  * */
 
 void query_callback(void* item, void* user_data) {
-  kv_push(npy_intp, *(npy_intp_vec*)user_data, (npy_intp)item);
+  kv_push(npy_intp, *(npy_intp_vec*)user_data, *(npy_intp*)item);
 }
 
 /* Evaluate the predicate function against a prepared version of geom
