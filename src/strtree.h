@@ -22,6 +22,7 @@ typedef struct {
   PyObject_HEAD void* ptr;
   npy_intp count;
   pg_geom_obj_vec _geoms;
+  npy_intp_vec _tree_indexes;
 } STRtreeObject;
 
 extern PyTypeObject STRtreeType;

@@ -104,6 +104,7 @@ static void STRtree_dealloc(STRtreeObject* self) {
     Py_XDECREF(kv_A(self->_geoms, i));
   }
   kv_destroy(self->_geoms);
+  kv_destroy(self->_tree_indexes);
   // free the PyObject
   Py_TYPE(self)->tp_free((PyObject*)self);
 }
@@ -115,6 +116,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
   npy_intp n, i, count = 0;
   GEOSGeometry* geom;
   pg_geom_obj_vec _geoms;
+  npy_intp_vec _tree_indexes;
   GeometryObject* obj;
 
   if (!PyArg_ParseTuple(args, "Oi", &arr, &node_capacity)) {
@@ -145,7 +147,11 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
   n = PyArray_SIZE((PyArrayObject*)arr);
 
   kv_init(_geoms);
+  kv_init(_tree_indexes);
+  kv_resize(npy_intp, _tree_indexes, n);
+
   for (i = 0; i < n; i++) {
+    kv_push(npy_intp, _tree_indexes, i);
     /* get the geometry */
     ptr = PyArray_GETPTR1((PyArrayObject*)arr, i);
     obj = *(GeometryObject**)ptr;
@@ -159,6 +165,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
         Py_XDECREF(kv_A(_geoms, i));
       }
       kv_destroy(_geoms);
+      kv_destroy(_tree_indexes);
       GEOS_FINISH;
       return NULL;
     }
@@ -172,7 +179,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
       Py_INCREF(obj);
       kv_push(GeometryObject*, _geoms, obj);
       count++;
-      GEOSSTRtree_insert_r(ctx, tree, geom, &i);
+      GEOSSTRtree_insert_r(ctx, tree, geom, &kv_A(_tree_indexes, i));
     }
   }
 
@@ -186,6 +193,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
   self->ptr = tree;
   self->count = count;
   self->_geoms = _geoms;
+  self->_tree_indexes = _tree_indexes;
   return (PyObject*)self;
 }
 
