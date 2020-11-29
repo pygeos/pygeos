@@ -868,7 +868,6 @@ static int GetPrecision(void* context, void* a, double* b) {
   // GEOS returns -1 on error; 0 indicates floating point precision
   double out = GEOSGeom_getPrecision_r(context, a);
   if (out == -1) {
-    *(double*)b = NPY_NAN;
     return 0;
   }
   *(double*)b = out;
@@ -1637,7 +1636,7 @@ static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* step
     // GEOS_PREC_NO_TOPO (1<<0): if set, do not try to preserve topology
     // GEOS_PREC_KEEP_COLLAPSED  (1<<1): Not used because uncollapsed geometries are
     // invalid and will not be retained in GEOS >= 3.9 anyway.
-    int flags = (!in3) << 0;
+    int flags = in3 ? 0 : GEOS_PREC_NO_TOPO;
 
     if ((in1 == NULL) | npy_isnan(in2)) {
       // in case of a missing value: return NULL (None)

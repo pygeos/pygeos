@@ -544,10 +544,10 @@ def get_num_geometries(geometry):
 @requires_geos("3.6.0")
 @multithreading_enabled
 def get_precision(geometry):
-    """Get the precision of the geometry.
+    """Get the precision of a geometry.
 
-    If the precision has not been previously set, it will be 0 (floating point precision).
-    Otherwise, it will return the grid size that was set on the geometry.
+    If a precision has not been previously set, it will be 0 (floating point precision).
+    Otherwise, it will return the grid size that was set on a geometry.
 
     Returns NaN for not-a-geometry values.
 
@@ -575,17 +575,12 @@ def get_precision(geometry):
 @requires_geos("3.6.0")
 @multithreading_enabled
 def set_precision(geometry, grid_size=0, preserve_topology=False):
-    """Returns geometry with the precision set to the precision grid size, rounding all
-    coordinates in the geometry to the precision grid if less precise than the input
-    geometry.
+    """Returns geometry with the precision set to a precision grid size.
 
-    Duplicated vertices will be dropped from lines and polygons for grid sizes greater
-    than 0.
-
-    Line and polygon geometries may collapse to empty geometries if all vertices are
-    closer together than grid_size.
-
-    Z values, if present, will not be modified.
+    Coordinates will be rounded if a precision grid is less precise than the input
+    geometry. Duplicated vertices will be dropped from lines and polygons for grid sizes greater
+    than 0. Line and polygon geometries may collapse to empty geometries if all vertices are
+    closer together than grid_size. Z values, if present, will not be modified.
 
     Note: subsequent operations will always be performed in the precision
     of the geometry with higher precision (smaller "grid_size"). That same precision will
@@ -602,7 +597,7 @@ def set_precision(geometry, grid_size=0, preserve_topology=False):
     grid_size : double, optional (default: 0)
         precision grid size.  If 0, will use floating point precision.
     preserve_topology : bool, optional (default: False)
-        If True, will attempt to preserve the topology of the geometry after rounding
+        If True, will attempt to preserve the topology of a geometry after rounding
         coordinates.
 
     See also

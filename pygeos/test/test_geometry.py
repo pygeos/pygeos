@@ -379,7 +379,9 @@ def test_get_precision():
     actual = pygeos.get_precision(geometry).tolist()
     assert actual == [1] * len(geometries)
 
-    assert np.isnan(pygeos.get_precision(None))
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+def test_get_precision_none():
     assert np.all(np.isnan(pygeos.get_precision([None])))
 
 
@@ -389,7 +391,6 @@ def test_set_precision():
     assert pygeos.get_precision(initial_geometry) == 0
 
     geometry = pygeos.set_precision(initial_geometry, 0)
-    print("geometry", geometry)
     assert pygeos.get_precision(geometry) == 0
     assert pygeos.equals(geometry, initial_geometry)
 
@@ -399,13 +400,10 @@ def test_set_precision():
     # original should remain unchanged
     assert pygeos.equals(initial_geometry, pygeos.Geometry("POINT (0.9 0.9)"))
 
-    geometry = pygeos.set_precision(pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1)
-    assert pygeos.get_precision(geometry) == 1
-    assert pygeos.equals(geometry, pygeos.Geometry("POINT Z (1 1 0.9)"))
 
-    assert np.all(np.isnan(pygeos.get_coordinates(pygeos.set_precision(point_nan, 1))))
-
-    # will not drop duplicated points in original
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+def test_set_precision_drop_coords():
+    # setting precision of 0 will not drop duplicated points in original
     geometry = pygeos.set_precision(
         pygeos.Geometry("LINESTRING (0 0, 0 0, 0 1, 1 1)"), 0
     )
@@ -414,6 +412,18 @@ def test_set_precision():
     # setting precision will remove duplicated points
     geometry = pygeos.set_precision(geometry, 1)
     assert pygeos.equals(geometry, pygeos.Geometry("LINESTRING (0 0, 0 1, 1 1)"))
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+def test_set_precision_z():
+    geometry = pygeos.set_precision(pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1)
+    assert pygeos.get_precision(geometry) == 1
+    assert pygeos.equals(geometry, pygeos.Geometry("POINT Z (1 1 0.9)"))
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+def test_set_precision_nan():
+    assert np.all(np.isnan(pygeos.get_coordinates(pygeos.set_precision(point_nan, 1))))
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
