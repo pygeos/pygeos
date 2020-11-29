@@ -11,6 +11,7 @@ Version 0.9 (unreleased)
 * Addition of a ``is_ccw()`` function for GEOS >= 3.7 (#201)
 * Addition of a ``minimum_clearance`` function for GEOS >= 3.6.0 (#223)
 * Addition of a ``offset_curve`` function (#229)
+* Addition of a ``relate_pattern`` function (#245)
 * Added support for pickling to ``Geometry`` objects (#190)
 * Limited the length of geometry repr to 80 characters (#189)
 * Argument in ``line_interpolate_point`` and ``line_locate_point``
@@ -26,6 +27,10 @@ Version 0.9 (unreleased)
 * API change: geometry and counting functions (``get_num_coordinates``,
   ``get_num_geometries``, ``get_num_interior_rings``, ``get_num_points``) now return 0
   for ``None`` input values instead of -1 (#218).
+* API change: ``intersection_all`` and ``symmetric_difference_all`` now ignore None values
+  instead of returning None if any value is None (#249).
+* API change: ``union_all`` now returns None (instead of ``GEOMETRYCOLLECTION EMPTY``) if
+  all input values are None (#249).
 * Fixed internal GEOS error code detection for ``get_dimensions`` and ``get_srid`` (#218).
 * Addition of ``prepare`` function that generates a GEOS prepared geometry which is stored on
   the Geometry object itself. All binary predicates (except ``equals``) make use of this (#92).
