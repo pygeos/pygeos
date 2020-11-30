@@ -64,13 +64,13 @@ PyMODINIT_FUNC PyInit_lib(void) {
 #define QUOTE(x) Q(x)
 
 #define GEOS_VERSION_PATCH_STR QUOTE(GEOS_VERSION_PATCH)
-  PyObject* py_geos_version_patch_digit = PyUnicode_Substring(PyUnicode_FromString(GEOS_VERSION_PATCH_STR), 0, 1);
+  int geos_version_patch_int = GEOS_VERSION_PATCH_STR[0] - '0';
 
   /* export the GEOS versions as python tuple and string */
   PyModule_AddObject(m, "geos_version",
                      PyTuple_Pack(3, PyLong_FromLong((long)GEOS_VERSION_MAJOR),
                                   PyLong_FromLong((long)GEOS_VERSION_MINOR),
-                                  PyLong_FromUnicodeObject(py_geos_version_patch_digit, 0)));
+                                  PyLong_FromLong((long)geos_version_patch_int)));
   PyModule_AddObject(m, "geos_capi_version",
                      PyTuple_Pack(3, PyLong_FromLong((long)GEOS_CAPI_VERSION_MAJOR),
                                   PyLong_FromLong((long)GEOS_CAPI_VERSION_MINOR),
