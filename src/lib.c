@@ -59,11 +59,18 @@ PyMODINIT_FUNC PyInit_lib(void) {
   import_array();
   import_umath();
 
+  /* add quotes to GEOS_VERSION_PATCH to handle (e.g.) 0beta1, then take the first digit */
+#define Q(x) #x
+#define QUOTE(x) Q(x)
+
+#define GEOS_VERSION_PATCH_STR QUOTE(GEOS_VERSION_PATCH)
+  PyObject* py_geos_version_patch_digit = PyUnicode_Substring(PyUnicode_FromString(GEOS_VERSION_PATCH_STR), 0, 1);
+
   /* export the GEOS versions as python tuple and string */
   PyModule_AddObject(m, "geos_version",
                      PyTuple_Pack(3, PyLong_FromLong((long)GEOS_VERSION_MAJOR),
                                   PyLong_FromLong((long)GEOS_VERSION_MINOR),
-                                  PyLong_FromLong((long)GEOS_VERSION_PATCH)));
+                                  PyLong_FromUnicodeObject(py_geos_version_patch_digit, 0)));
   PyModule_AddObject(m, "geos_capi_version",
                      PyTuple_Pack(3, PyLong_FromLong((long)GEOS_CAPI_VERSION_MAJOR),
                                   PyLong_FromLong((long)GEOS_CAPI_VERSION_MINOR),
