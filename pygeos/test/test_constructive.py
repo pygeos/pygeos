@@ -244,7 +244,7 @@ def test_offset_curve_non_scalar_kwargs():
 
 
 def test_offset_curve_join_style_invalid():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="join_style 'invalid' is not valid"):
         pygeos.offset_curve(line_string, 1.0, join_style="invalid")
 
 
