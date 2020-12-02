@@ -84,12 +84,12 @@ def test_float_arg_nan(geometry, func):
 
 
 def test_buffer_cap_style_invalid():
-    with pytest.raises(ValueError, match="cap_style 'invalid' is not valid"):
+    with pytest.raises(ValueError, match="'invalid' is not a valid option"):
         pygeos.buffer(point, 1, cap_style="invalid")
 
 
 def test_buffer_join_style_invalid():
-    with pytest.raises(ValueError, match="join_style 'invalid' is not valid"):
+    with pytest.raises(ValueError, match="'invalid' is not a valid option"):
         pygeos.buffer(point, 1, join_style="invalid")
 
 
@@ -244,7 +244,7 @@ def test_offset_curve_non_scalar_kwargs():
 
 
 def test_offset_curve_join_style_invalid():
-    with pytest.raises(ValueError, match="join_style 'invalid' is not valid"):
+    with pytest.raises(ValueError, match="'invalid' is not a valid option"):
         pygeos.offset_curve(line_string, 1.0, join_style="invalid")
 
 

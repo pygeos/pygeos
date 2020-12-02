@@ -1,8 +1,8 @@
-from enum import IntEnum
 import numpy as np
 from . import Geometry  # NOQA
 from . import lib
 from .decorators import requires_geos, multithreading_enabled
+from .enum import ParamEnum
 
 
 __all__ = [
@@ -27,22 +27,16 @@ __all__ = [
 ]
 
 
-class BufferCapStyles(IntEnum):
+class BufferCapStyles(ParamEnum):
     round = 1
     flat = 2
     square = 3
 
 
-VALID_BUFFER_CAP_STYLES = {e.name for e in BufferCapStyles}
-
-
-class BufferJoinStyles(IntEnum):
+class BufferJoinStyles(ParamEnum):
     round = 1
     mitre = 2
     bevel = 3
-
-
-VALID_BUFFER_JOIN_STYLES = {e.name for e in BufferJoinStyles}
 
 
 @multithreading_enabled
@@ -152,21 +146,9 @@ def buffer(
     True
     """
     if isinstance(cap_style, str):
-        if not cap_style in VALID_BUFFER_CAP_STYLES:
-            raise ValueError(
-                "cap_style '{}' is not valid, must be one of {}".format(
-                    cap_style, ", ".join(VALID_BUFFER_CAP_STYLES)
-                )
-            )
-        cap_style = BufferCapStyles[cap_style].value
+        cap_style = BufferCapStyles.get_value(cap_style)
     if isinstance(join_style, str):
-        if not join_style in VALID_BUFFER_JOIN_STYLES:
-            raise ValueError(
-                "join_style '{}' is not valid, must be one of {}".format(
-                    join_style, ", ".join(VALID_BUFFER_JOIN_STYLES)
-                )
-            )
-        join_style = BufferJoinStyles[join_style].value
+        join_style = BufferJoinStyles.get_value(join_style)
     if not np.isscalar(quadsegs):
         raise TypeError("quadsegs only accepts scalar values")
     if not np.isscalar(cap_style):
@@ -229,13 +211,7 @@ def offset_curve(
     <pygeos.Geometry LINESTRING (2 2, 2 0)>
     """
     if isinstance(join_style, str):
-        if not join_style in VALID_BUFFER_JOIN_STYLES:
-            raise ValueError(
-                "join_style '{}' is not valid, must be one of {}".format(
-                    join_style, ", ".join(VALID_BUFFER_JOIN_STYLES)
-                )
-            )
-        join_style = BufferJoinStyles[join_style].value
+        join_style = BufferJoinStyles.get_value(join_style)
     if not np.isscalar(quadsegs):
         raise TypeError("quadsegs only accepts scalar values")
     if not np.isscalar(join_style):
