@@ -59,7 +59,9 @@ PyMODINIT_FUNC PyInit_lib(void) {
   import_array();
   import_umath();
 
-  /* add quotes to GEOS_VERSION_PATCH to handle (e.g.) 0beta1, then take the first digit */
+  /* GEOS_VERSION_PATCH may contain non-integer characters, e.g., 0beta1
+     add quotes using https://gcc.gnu.org/onlinedocs/cpp/Stringizing.html
+     then take the first digit */
 #define Q(x) #x
 #define QUOTE(x) Q(x)
 
