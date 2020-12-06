@@ -12,16 +12,17 @@ typedef struct {
   npy_intp* a;
 } npy_intp_vec;
 
-/* A resizable vector with pointers to pygeos GeometryObjects */
+/* A resizable vector with addresses of geometries within tree geometries array */
 typedef struct {
   size_t n, m;
-  GeometryObject** a;
-} pg_geom_obj_vec;
+  GeometryObject*** a;
+} tree_geom_vec_t;
 
 typedef struct {
   PyObject_HEAD void* ptr;
-  npy_intp count;
-  pg_geom_obj_vec _geoms;
+  npy_intp count;           // count of geometries added to the tree
+  size_t _size;             // size of _geoms array (same as original size of input array)
+  GeometryObject** _geoms;  // array of input geometries
 } STRtreeObject;
 
 extern PyTypeObject STRtreeType;
