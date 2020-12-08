@@ -175,7 +175,7 @@ def geometrycollections(geometries):
 
 
 def prepare(geometry, **kwargs):
-    """Add a prepared geometry to a geometry, improving performance of other operations.
+    """Prepare a geometry, improving performance of other operations.
 
     A prepared geometry is a normal geometry with added information such as an
     index on the line segments. This improves the performance of the following operations:

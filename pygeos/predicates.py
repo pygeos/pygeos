@@ -191,7 +191,12 @@ def is_missing(geometry, **kwargs):
 
 @multithreading_enabled
 def is_prepared(geometry, **kwargs):
-    """Returns True if a Geometry is prepared
+    """Returns True if a Geometry is prepared.
+
+    Note that it is not necessary to check if a geometry is already prepared
+    before preparing it. It is more efficient to call ``prepare`` directly.
+
+    This function will return False for missing geometries (None).
 
     Parameters
     ----------
