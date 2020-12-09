@@ -166,7 +166,7 @@ def buffer(
         np.intc(cap_style),
         np.intc(join_style),
         mitre_limit,
-        np.bool(single_sided),
+        np.bool_(single_sided),
         **kwargs
     )
 

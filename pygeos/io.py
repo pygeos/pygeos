@@ -93,9 +93,9 @@ def to_wkt(
     return lib.to_wkt(
         geometry,
         np.intc(rounding_precision),
-        np.bool(trim),
+        np.bool_(trim),
         np.intc(output_dimension),
-        np.bool(old_3d),
+        np.bool_(old_3d),
         **kwargs,
     )
 
@@ -151,10 +151,10 @@ def to_wkb(
 
     return lib.to_wkb(
         geometry,
-        np.bool(hex),
+        np.bool_(hex),
         np.intc(output_dimension),
         np.intc(byte_order),
-        np.bool(include_srid),
+        np.bool_(include_srid),
         **kwargs,
     )
 
@@ -239,6 +239,8 @@ def from_shapely(geometry, **kwargs):
         arr = np.empty(1, dtype=object)
         arr[0] = geometry
         arr.shape = ()
-    else:
-        arr = np.asarray(geometry, dtype=object)
+    elif not isinstance(geometry, np.ndarray):
+        # geometry is a list/array-like
+        arr = np.empty(len(geometry), dtype=object)
+        arr[:] = geometry
     return lib.from_shapely(arr, **kwargs)
