@@ -27,6 +27,10 @@ Version 0.9 (unreleased)
 * API change: geometry and counting functions (``get_num_coordinates``,
   ``get_num_geometries``, ``get_num_interior_rings``, ``get_num_points``) now return 0
   for ``None`` input values instead of -1 (#218).
+* API change: ``intersection_all`` and ``symmetric_difference_all`` now ignore None values
+  instead of returning None if any value is None (#249).
+* API change: ``union_all`` now returns None (instead of ``GEOMETRYCOLLECTION EMPTY``) if
+  all input values are None (#249).
 * Fixed internal GEOS error code detection for ``get_dimensions`` and ``get_srid`` (#218).
 * Addition of ``prepare`` function that generates a GEOS prepared geometry which is stored on
   the Geometry object itself. All binary predicates (except ``equals``) make use of this (#92).
@@ -34,6 +38,7 @@ Version 0.9 (unreleased)
   functions if available (#246).
 * Ensure that ``python setup.py clean`` removes all previously Cythonized and compiled
   files (#239).
+* Addition of a ``reverse`` function for GEOS >= 3.7 (#254).
 * Addition of ``get_precision`` to get precision of a geometry and ``set_precision``
   to set the precision of a geometry (may round and reduce coordinates).
 
