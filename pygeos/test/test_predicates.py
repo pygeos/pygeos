@@ -188,4 +188,4 @@ def test_contains_properly():
         pygeos.contains_properly(polygon, polygon)
 
     polygon2 = _prepare_with_copy(polygon)
-    assert pygeos.contains_properly(polygon, polygon).item() is False
+    assert pygeos.contains_properly(polygon2, polygon).item() is False
