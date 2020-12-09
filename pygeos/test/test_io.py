@@ -25,6 +25,7 @@ class ShapelyGeometryMock:
         self.g = g
         self.__geom__ = g._ptr if hasattr(g, "_ptr") else g
 
+    @property
     def __array_interface__(self):
         # this should not be called
         raise NotImplementedError()

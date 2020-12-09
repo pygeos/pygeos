@@ -239,8 +239,13 @@ def from_shapely(geometry, **kwargs):
         arr = np.empty(1, dtype=object)
         arr[0] = geometry
         arr.shape = ()
+    elif geometry is None:
+        arr = geometry
     elif not isinstance(geometry, np.ndarray):
         # geometry is a list/array-like
         arr = np.empty(len(geometry), dtype=object)
         arr[:] = geometry
+    else:
+        # we already have a numpy array
+        arr = geometry
     return lib.from_shapely(arr, **kwargs)
