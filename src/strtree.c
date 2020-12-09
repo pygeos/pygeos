@@ -110,7 +110,7 @@ static void STRtree_dealloc(STRtreeObject* self) {
     GEOS_FINISH;
   }
   // free the geometries
-  for (i = 0; i < self->_size; i++) {
+  for (i = 0; i < self->_geoms_size; i++) {
     Py_XDECREF(self->_geoms[i]);
   }
 
@@ -123,7 +123,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
   int node_capacity;
   PyObject* arr;
   void *tree, *ptr;
-  npy_intp n, i, count = 0;
+  npy_intp n, i, counter = 0, count_indexed = 0;
   GEOSGeometry* geom;
   GeometryObject* obj;
   GeometryObject** _geoms;
@@ -167,7 +167,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
       GEOSSTRtree_destroy_r(ctx, tree);
 
       // free the geometries
-      for (i = 0; i < count; i++) {
+      for (i = 0; i < counter; i++) {
         Py_XDECREF(_geoms[i]);
       }
       free(_geoms);
@@ -180,10 +180,11 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
     if (geom == NULL || GEOSisEmpty_r(ctx, geom)) {
       _geoms[i] = NULL;
     } else {
-      /* perform the insert */
+      // NOTE: we must keep a reference to the GeometryObject added to the tree in order
+      // to avoid segfaults later.  See: https://github.com/pygeos/pygeos/pull/100.
       Py_INCREF(obj);
       _geoms[i] = obj;
-      count++;
+      count_indexed++;
 
       // Store the address of this geometry within _geoms array as the item data in the
       // tree.  This address is used to calculate the original index of the geometry in
@@ -191,6 +192,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
       // NOTE: the type of item data we store is GeometryObject**.
       GEOSSTRtree_insert_r(ctx, tree, geom, &(_geoms[i]));
     }
+    counter++;
   }
 
   STRtreeObject* self = (STRtreeObject*)type->tp_alloc(type, 0);
@@ -201,8 +203,8 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
   }
   GEOS_FINISH;
   self->ptr = tree;
-  self->count = count;
-  self->_size = n;
+  self->count = count_indexed;
+  self->_geoms_size = n;
   self->_geoms = _geoms;
   return (PyObject*)self;
 }

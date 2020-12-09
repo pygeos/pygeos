@@ -15,7 +15,7 @@ typedef struct {
 typedef struct {
   PyObject_HEAD void* ptr;
   npy_intp count;           // count of geometries added to the tree
-  size_t _size;             // size of _geoms array (same as original size of input array)
+  size_t _geoms_size;       // size of _geoms array (same as original size of input array)
   GeometryObject** _geoms;  // array of input geometries
 } STRtreeObject;
 
