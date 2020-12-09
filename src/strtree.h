@@ -6,12 +6,6 @@
 #include "geos.h"
 #include "pygeom.h"
 
-/* A resizable vector with numpy indices */
-typedef struct {
-  size_t n, m;
-  npy_intp* a;
-} npy_intp_vec;
-
 /* A resizable vector with addresses of geometries within tree geometries array */
 typedef struct {
   size_t n, m;

@@ -15,6 +15,7 @@
 #include "kvec.h"
 #include "pygeom.h"
 #include "strtree.h"
+#include "vector.h"
 
 /* GEOS function that takes a prepared geometry and a regular geometry
  * and returns bool value */
@@ -411,7 +412,7 @@ static PyObject* STRtree_query_bulk(STRtreeObject* self, PyObject* args) {
   int predicate_id = 0;  // default no predicate
   GEOSGeometry* geom = NULL;
   GEOSPreparedGeometry* prepared_geom = NULL;
-  npy_intp_vec src_indexes;  // Indices of input geometries
+  index_vec_t src_indexes;  // Indices of input geometries
   npy_intp i, j, n, size, geom_index;
   FuncGEOS_YpY_b* predicate_func = NULL;
   char* head_ptr = (char*)self->_geoms;
