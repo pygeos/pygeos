@@ -452,7 +452,7 @@ def contains_properly(a, b, **kwargs):
     >>> area2 = Geometry("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))")
     >>> area3 = Geometry("POLYGON((1 1, 2 1, 2 2, 1 2, 1 1))")
     >>> from pygeos import prepare
-    >>> prepare(area1)
+    >>> prepare(area1);
 
     ``area1`` and ``area2`` have a common border:
 
