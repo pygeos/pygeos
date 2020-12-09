@@ -165,10 +165,27 @@ def test_is_ccw(geom, expected):
     assert pygeos.is_ccw(geom) == expected
 
 
+def _prepare_with_copy(geometry):
+    """Prepare without modifying inplace"""
+    geometry = pygeos.apply(geometry, lambda x: x)  # makes a copy
+    pygeos.prepare(geometry)
+    return geometry
+
+
 @pytest.mark.parametrize("a", all_types)
 @pytest.mark.parametrize("func", BINARY_PREPARED_PREDICATES)
 def test_binary_prepared(a, func):
     actual = func(a, point)
-    pygeos.lib.prepare(a)
-    result = func(a, point)
+    result = func(_prepare_with_copy(a), point)
     assert actual == result
+
+
+def test_contains_properly():
+    # polygon contains itself, but does not properly contains itself
+    assert pygeos.contains(polygon, polygon).item() is True
+
+    with pytest.raises(pygeos.GEOSException):
+        pygeos.contains_properly(polygon, polygon)
+
+    polygon2 = _prepare_with_copy(polygon)
+    assert pygeos.contains_properly(polygon, polygon).item() is False
