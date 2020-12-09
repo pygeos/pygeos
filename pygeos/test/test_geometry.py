@@ -432,7 +432,7 @@ def test_set_precision_none():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-def test_set_precision_nan():
+def test_set_precision_grid_size_nan():
     assert pygeos.set_precision(pygeos.Geometry("POINT (0.9 0.9)"), np.nan) is None
 
 
@@ -458,37 +458,38 @@ def test_set_precision_preserve_topology():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-def test_set_precision_collapse():
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        (
+            pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
+            pygeos.Geometry("LINESTRING EMPTY"),
+        ),
+        (
+            pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)"),
+            pygeos.Geometry("LINEARRING EMPTY"),
+        ),
+        (
+            pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))"),
+            pygeos.Geometry("POLYGON EMPTY"),
+        ),
+    ],
+)
+def test_set_precision_collapse(geometry, expected):
     """Lines and polygons collapse to empty geometries if vertices are too close"""
-    geometry = pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)")
-    assert pygeos.equals(
-        pygeos.set_precision(geometry, 1),
-        pygeos.Geometry("LINESTRING EMPTY"),
-    )
-
-    geometry = pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)")
-    assert pygeos.equals(
-        pygeos.set_precision(geometry, 1),
-        pygeos.Geometry("LINEARRING EMPTY"),
-    )
-
-    geometry = pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))")
-    assert pygeos.equals(
-        pygeos.set_precision(geometry, 1),
-        pygeos.Geometry("POLYGON EMPTY"),
-    )
+    assert pygeos.equals(pygeos.set_precision(geometry, 1), expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_set_precision_intersection():
-    """Operations should use the highest precision of the inputs"""
+    """Operations should use the most precise presision grid size of the inputs"""
 
     box1 = pygeos.normalize(pygeos.box(0, 0, 0.9, 0.9))
     box2 = pygeos.normalize(pygeos.box(0.75, 0, 1.75, 0.75))
 
     assert pygeos.get_precision(pygeos.intersection(box1, box2)) == 0
 
-    # GEOS will use and keep the lowest precision
+    # GEOS will use and keep the most precise precision grid size
     box1 = pygeos.set_precision(box1, 0.5)
     box2 = pygeos.set_precision(box2, 1)
     out = pygeos.intersection(box1, box2)

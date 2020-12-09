@@ -546,8 +546,8 @@ def get_num_geometries(geometry):
 def get_precision(geometry):
     """Get the precision of a geometry.
 
-    If a precision has not been previously set, it will be 0 (floating point precision).
-    Otherwise, it will return the grid size that was set on a geometry.
+    If a precision has not been previously set, it will be 0 (double precision).
+    Otherwise, it will return the precision grid size that was set on a geometry.
 
     Returns NaN for not-a-geometry values.
 
@@ -561,11 +561,11 @@ def get_precision(geometry):
 
     Examples
     --------
-    >>> get_precision(Geometry("POINT (1 1)")) == 0
-    True
-    >>> geometry = set_precision(Geometry("POINT (1 1)"), 1)
-    >>> get_precision(geometry) == 1
-    True
+    >>> get_precision(Geometry("POINT (1 1)"))
+    0.0
+    >>> geometry = set_precision(Geometry("POINT (1 1)"), 1.0)
+    >>> get_precision(geometry)
+    1.0
     >>> np.isnan(get_precision(None))
     True
     """
@@ -574,8 +574,10 @@ def get_precision(geometry):
 
 @requires_geos("3.6.0")
 @multithreading_enabled
-def set_precision(geometry, grid_size=0, preserve_topology=False):
+def set_precision(geometry, grid_size, preserve_topology=False):
     """Returns geometry with the precision set to a precision grid size.
+
+    By default, geometries use double precision coordinates (grid_size = 0).
 
     Coordinates will be rounded if a precision grid is less precise than the input
     geometry. Duplicated vertices will be dropped from lines and polygons for grid sizes greater
@@ -594,8 +596,10 @@ def set_precision(geometry, grid_size=0, preserve_topology=False):
     Parameters
     ----------
     geometry : Geometry or array_like
-    grid_size : double, optional (default: 0)
-        precision grid size.  If 0, will use floating point precision.
+    grid_size : double
+        precision grid size.  If 0, will use double precision (will not modify geometry
+        if precision grid size was not previously set).  If this value is more
+        precise than input geometry, the input geometry will not be modified.
     preserve_topology : bool, optional (default: False)
         If True, will attempt to preserve the topology of a geometry after rounding
         coordinates.
@@ -606,13 +610,13 @@ def set_precision(geometry, grid_size=0, preserve_topology=False):
 
     Examples
     --------
-    >>> set_precision(Geometry("POINT (0.9 0.9)"), 1)
+    >>> set_precision(Geometry("POINT (0.9 0.9)"), 1.0)
     <pygeos.Geometry POINT (1 1)>
-    >>> set_precision(Geometry("POINT (0.9 0.9 0.9)"), 1)
+    >>> set_precision(Geometry("POINT (0.9 0.9 0.9)"), 1.0)
     <pygeos.Geometry POINT Z (1 1 0.9)>
-    >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0 1, 1 1)"), 1)
+    >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0 1, 1 1)"), 1.0)
     <pygeos.Geometry LINESTRING (0 0, 0 1, 1 1)>
-    >>> set_precision(None) is None
+    >>> set_precision(None, 1.0) is None
     True
     """
 

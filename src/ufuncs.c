@@ -865,7 +865,8 @@ static void* length_data[1] = {GEOSLength_r};
 
 #if GEOS_SINCE_3_6_0
 static int GetPrecision(void* context, void* a, double* b) {
-  // GEOS returns -1 on error; 0 indicates floating point precision
+  // GEOS returns -1 on error; 0 indicates double precision; > 0 indicates a precision
+  // grid size was set for this geometry.
   double out = GEOSGeom_getPrecision_r(context, a);
   if (out == -1) {
     return 0;
