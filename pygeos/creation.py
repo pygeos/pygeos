@@ -196,7 +196,7 @@ def prepare(geometry, **kwargs):
     --------
     destroy_prepared
     """
-    return lib.prepare(geometry, **kwargs)
+    lib.prepare(geometry, **kwargs)
 
 
 def destroy_prepared(geometry, **kwargs):
@@ -214,4 +214,4 @@ def destroy_prepared(geometry, **kwargs):
     --------
     prepare
     """
-    return lib.destroy_prepared(geometry, **kwargs)
+    lib.destroy_prepared(geometry, **kwargs)
