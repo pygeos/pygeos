@@ -56,9 +56,9 @@ class ConstructiveSuite:
         pygeos.delaunay_triangles(self.points)
 
 
-
 class GetParts:
     """Benchmarks for getting individual parts from 100 multipolygons of 100 polygons each"""
+
     def setup(self):
         self.multipolygons = np.array([pygeos.multipolygons(pygeos.polygons(np.random.random((2, 100, 2)))) for i in range(10000)], dtype=object)
 
@@ -75,3 +75,46 @@ class GetParts:
             parts.append(pygeos.get_geometry(self.multipolygons[i], range(num_parts)))
 
         parts = np.concatenate(parts)
+
+
+class STRtree:
+    """Benchmarks queries against STRtree"""
+
+    def setup(self):
+        # create irregular polygons using union of buffered random points
+        points = pygeos.points(np.random.random((1000, 2)))
+        self.polygons = pygeos.get_parts(pygeos.union_all(pygeos.buffer(points, 0.025)))
+        self.tree = pygeos.STRtree(self.polygons)
+
+    def time_tree_create(self):
+        pygeos.STRtree(self.polygons)
+
+    def time_tree_query_bulk(self):
+        self.tree.query_bulk(self.polygons)
+
+    def time_tree_query_bulk_intersects(self):
+        self.tree.query_bulk(self.polygons, predicate="intersects")
+
+    def time_tree_query_bulk_within(self):
+        self.tree.query_bulk(self.polygons, predicate="within")
+
+    def time_tree_query_bulk_contains(self):
+        self.tree.query_bulk(self.polygons, predicate="contains")
+
+    def time_tree_query_bulk_overlaps(self):
+        self.tree.query_bulk(self.polygons, predicate="overlaps")
+
+    def time_tree_query_bulk_crosses(self):
+        self.tree.query_bulk(self.polygons, predicate="crosses")
+
+    def time_tree_query_bulk_touches(self):
+        self.tree.query_bulk(self.polygons, predicate="touches")
+
+    def time_tree_query_bulk_covers(self):
+        self.tree.query_bulk(self.polygons, predicate="covers")
+
+    def time_tree_query_bulk_covered_by(self):
+        self.tree.query_bulk(self.polygons, predicate="covered_by")
+
+    def time_tree_query_bulk_contains_properly(self):
+        self.tree.query_bulk(self.polygons, predicate="contains_properly")
