@@ -81,9 +81,7 @@ class STRtree:
     """Benchmarks queries against STRtree"""
 
     def setup(self):
-        # create irregular polygons using union of buffered random points
-        points = pygeos.points(np.random.random((1000, 2)))
-        self.polygons = pygeos.get_parts(pygeos.union_all(pygeos.buffer(points, 0.025)))
+        self.polygons = pygeos.polygons(np.random.random((100, 3, 2)))
         self.tree = pygeos.STRtree(self.polygons)
 
     def time_tree_create(self):
