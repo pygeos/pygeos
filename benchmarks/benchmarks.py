@@ -81,11 +81,19 @@ class STRtree:
     """Benchmarks queries against STRtree"""
 
     def setup(self):
-        self.polygons = pygeos.polygons(np.random.random((100, 3, 2)))
+        # create irregular polygons my merging overlapping point buffers
+        self.polygons = pygeos.get_parts(
+            pygeos.union_all(
+                pygeos.buffer(pygeos.points(np.random.random((2000, 2)) * 500), 5)
+            )
+        )
         self.tree = pygeos.STRtree(self.polygons)
+        # initialize the tree by making a tiny query first
+        self.tree.query(pygeos.points(0, 0))
 
     def time_tree_create(self):
-        pygeos.STRtree(self.polygons)
+        tree = pygeos.STRtree(self.polygons)
+        tree.query(pygeos.points(0, 0))
 
     def time_tree_query_bulk(self):
         self.tree.query_bulk(self.polygons)
