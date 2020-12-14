@@ -195,12 +195,12 @@ class STRtree:
         """Returns the index of the nearest item in the tree for each input
         geometry.
 
-        Indexes of tree geometries are arbitrary if there are multiple geometries
-        at the same minimum distance from the input geometry, or intersect with
-        it.  The specific indexes vary based on the leafsize of the tree among
-        other parameters.  Thus, while you can expect this function to return
-        one of the nearest neighbors, you cannot expect it to return a particular
-        one.
+        If there are multiple equidistant or intersected geometries in tree, all
+        should be returned.  Tree indexes are returned in the order they are visited
+        for each input geometry and may not be in ascending index order; no meaningful
+        order is implied.
+
+        The distance, if returned, will be 0 for any intersected geometries in the tree.
 
         Any geometry that is None or empty in the input geometries is omitted from
         the output.
@@ -226,7 +226,14 @@ class STRtree:
         >>> tree.nearest(pygeos.points(1,1)).tolist()
         [[0], [1]]
         >>> tree.nearest([pygeos.box(1,1,3,3)]).tolist()
-        [[0], [1]]
+        [[0, 0, 0], [1, 2, 3]]
+        >>> index, distance = tree.nearest(pygeos.points(0.5,0.5), return_distance=True)
+        >>> index.tolist()
+        [[0, 0], [0, 1]]
+        >>> distance.round(4).tolist()
+        [0.7071, 0.7071]
+        >>> tree.nearest(None).tolist()
+        [[], []]
         """
 
         geometry = np.asarray(geometry, dtype=np.object)
