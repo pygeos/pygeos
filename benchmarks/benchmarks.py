@@ -2,6 +2,10 @@ import numpy as np
 import pygeos
 
 
+# Seed the numpy random generator for more reproducible benchmarks
+np.random.seed(0)
+
+
 class PointPolygonTimeSuite:
     """Benchmarks running on 100000 points and one polygon"""
     def setup(self):
