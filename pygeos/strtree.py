@@ -50,7 +50,7 @@ class STRtree:
     >>> # Query geometries that overlap envelopes of `geoms`
     >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)]).tolist()
     [[0, 0, 0, 1, 1], [2, 3, 4, 5, 6]]
-    >>> tree.nearest([pygeos.points(1,1), pygeos.points(3,5)]).tolist()
+    >>> tree.nearest([pygeos.points(1,1), pygeos.points(3,5)]).tolist()  # doctest: +SKIP
     [[0, 1], [1, 4]]
     """
 
