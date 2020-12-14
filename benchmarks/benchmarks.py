@@ -75,3 +75,60 @@ class GetParts:
             parts.append(pygeos.get_geometry(self.multipolygons[i], range(num_parts)))
 
         parts = np.concatenate(parts)
+
+
+class STRtree:
+    """Benchmarks queries against STRtree"""
+
+    def setup(self):
+        # create irregular polygons my merging overlapping point buffers
+        self.polygons = pygeos.get_parts(
+            pygeos.union_all(
+                pygeos.buffer(pygeos.points(np.random.random((2000, 2)) * 500), 5)
+            )
+        )
+        self.tree = pygeos.STRtree(self.polygons)
+        # initialize the tree by making a tiny query first
+        self.tree.query(pygeos.points(0, 0))
+
+        # create points that extend beyond the domain of the above polygons to ensure
+        # some don't overlap
+        self.points = pygeos.points((np.random.random((2000, 2)) * 750) - 125)
+
+        self.point_tree = pygeos.STRtree(pygeos.points(np.random.random((2000, 2)) * 750))
+        self.point_tree.query(pygeos.points(0,0))
+
+    def time_tree_nearest_points(self):
+        self.point_tree.nearest(self.points)
+
+    def time_tree_nearest_poly(self):
+        self.tree.nearest(self.points)
+
+    def time_tree_nearest_poly_python(self):
+        # use an arbitrary search tolerance that seems appropriate for the density of
+        # geometries
+        tolerance = 200
+        b = pygeos.buffer(self.points, tolerance, quadsegs=1)
+        left, right = self.tree.query_bulk(b)
+        dist = pygeos.distance(self.points.take(left), self.polygons.take(right))
+
+        # sort by left, distance
+        ix = np.lexsort((right, dist, left))
+        left = left[ix]
+        right = right[ix]
+        dist = dist[ix]
+
+        run_start = np.r_[True, left[:-1] != left[1:]]
+        run_counts = np.diff(np.r_[np.nonzero(run_start)[0], left.shape[0]])
+
+        mins = dist[run_start]
+
+        # spread to rest of array so we can extract out all within each group that match
+        all_mins=np.repeat(mins, run_counts)
+        ix = dist == all_mins
+        left = left[ix]
+        right = right[ix]
+        dist = dist[ix]
+
+        # arrays are now roughly representative of what tree.nearest would provide, though
+        # some nearest neighbors may be missed if they are outside tolerance
