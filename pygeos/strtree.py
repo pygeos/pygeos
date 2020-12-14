@@ -49,6 +49,8 @@ class STRtree:
     >>> # Query geometries that overlap envelopes of `geoms`
     >>> tree.query_bulk([pygeos.box(2, 2, 4, 4), pygeos.box(5, 5, 6, 6)]).tolist()
     [[0, 0, 0, 1, 1], [2, 3, 4, 5, 6]]
+    >>> tree.nearest([pygeos.points(1,1), pygeos.points(3,5)]).tolist()
+    [[0, 1], [1, 4]]
     """
 
     def __init__(self, geometries, leafsize=5):
@@ -186,3 +188,48 @@ class STRtree:
             predicate = BinaryPredicate[predicate].value
 
         return self._tree.query_bulk(geometry, predicate)
+
+
+    def nearest(self, geometry, return_distance=False):
+        """Returns the index of the nearest item in the tree for each input
+        geometry.
+
+        Indexes of tree geometries are arbitrary if there are multiple geometries
+        at the same minimum distance from the input geometry, or intersect with
+        it.  The specific indexes vary based on the leafsize of the tree among
+        other parameters.  Thus, while you can expect this function to return
+        one of the nearest neighbors, you cannot expect it to return a particular
+        one.
+
+        Any geometry that is None or empty in the input geometries is omitted from
+        the output.
+
+        Parameters
+        ----------
+        geometry : Geometry or array_like
+            Input geometries to query the tree.
+        return_distance : bool, optional (default: False)
+            If True, will return tuple of (ndarray of indexes of shape (2,n), ndarray of
+            distances of shape (n)).
+
+        Returns
+        -------
+        ndarray with shape (2, n) or tuple of (ndarray of shape (2,n), ndarray of shape(n))
+            The first subarray contains input geometry indexes.
+            The second subarray contains tree geometry indexes.
+
+        Examples
+        --------
+        >>> import pygeos
+        >>> tree = pygeos.STRtree(pygeos.points(np.arange(10), np.arange(10)))
+        >>> tree.nearest(pygeos.points(1,1)).tolist()
+        [[0], [1]]
+        >>> tree.nearest([pygeos.box(1,1,3,3)]).tolist()
+        [[0], [1]]
+        """
+
+        geometry = np.asarray(geometry, dtype=np.object)
+        if geometry.ndim == 0:
+            geometry = np.expand_dims(geometry, 0)
+
+        return self._tree.nearest(geometry)

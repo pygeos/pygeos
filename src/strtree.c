@@ -2,6 +2,7 @@
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 
 #include <Python.h>
+#include <float.h>
 #include <structmember.h>
 
 #define NO_IMPORT_ARRAY
@@ -191,6 +192,9 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
       // the input array.
       // NOTE: the type of item data we store is GeometryObject**.
       GEOSSTRtree_insert_r(ctx, tree, geom, &(_geoms[i]));
+
+      // FIXME: remove
+      printf("%i: inserted %p\n", i, &(_geoms[i]));
     }
     counter++;
   }
@@ -467,7 +471,6 @@ static PyObject* STRtree_query_bulk(STRtreeObject* self, PyObject* args) {
   }
 
   kv_init(src_indexes);
-  kv_init(target_geoms);
 
   GEOS_INIT_THREADS;
 
@@ -553,6 +556,264 @@ static PyObject* STRtree_query_bulk(STRtreeObject* self, PyObject* args) {
   return (PyObject*)result;
 }
 
+
+/* Calculate the distance between items in the tree and the src_geom.
+ * Note: this is only called by the tree after first evaluating the overlap between
+ * the the envelope of a tree node and the query geometry.  It may not be called for
+ * all equidistant results.
+ *
+ * Parameters
+ * ----------
+ * item1: address of geometry in tree geometries (_geoms)
+ * item2: pointer to GeometryObject* of query geometry
+ * distance: pointer to distance that gets updated in this function
+ * userdata: instance of tree_nearest_userdata_t, includes vector to cache nearest distance
+ * pairs visited by this function, GEOS context handle, and minimum observed distance.
+ *
+ * Returns
+ * -------
+ * 0 on error (caller immediately exits and returns NULL); 1 on success
+ * */
+int distance_callback(const void* item1, const void* item2, double* distance,
+                      void* userdata) {
+  GEOSGeometry* tree_geom = NULL;
+  GEOSGeometry* query_geom = NULL;
+  size_t pairs_size;
+
+  GeometryObject* tree_pg_geom = *((GeometryObject**)item1);
+  // Note: this is guarded for NULL during construction of tree; no need to check here.
+  get_geom(tree_pg_geom, &tree_geom);
+
+  GeometryObject* query_pg_geom = *((GeometryObject**)item2);
+  // Note: this is guarded for NULL in calling function; no need to check here.
+  get_geom(query_pg_geom, &query_geom);
+
+  // FIXME: remove
+  printf("Tree geom ptr: %p\n", item1);
+
+  tree_nearest_userdata_t* params = (tree_nearest_userdata_t*)userdata;
+
+  // TODO: GEOSDistanceIndexed for GEOS >= 3.7
+  // see comments here about inputs: https://trac.osgeo.org/geos/ticket/1007
+  // might be downsides since we want to prepare the query geom and reuse the index
+  // across distance queries (check benchmarks...)
+  // TODO: GEOSPreparedDistance for GEOS >= 3.9 to use prepared geoms
+
+  // distance returns 1 on success, 0 on error
+  if (GEOSDistance_r(params->ctx, query_geom, tree_geom, distance) == 0) {
+    return 0;
+  }
+
+  double calc_distance = *distance;
+
+  // store any pairs that are smaller than the minimum distance observed so far
+  // and update min_distance
+  if (calc_distance <= params->min_distance) {
+    printf("distance < min_distance; pushing onto vector: %f\n", calc_distance);
+    params->min_distance = calc_distance;
+
+    // if smaller than last item in vector, remove that item first
+    pairs_size = kv_size(*(params->dist_pairs));
+    if (pairs_size > 0 &&
+        calc_distance < (kv_A(*(params->dist_pairs), pairs_size - 1)).distance) {
+      printf("Distance is less than last item in vector; removing it: %f\n",
+             (kv_A(*(params->dist_pairs), pairs_size - 1)).distance);
+      kv_pop(*(params->dist_pairs));
+    }
+
+    tree_geom_dist_vec_item_t dist_pair =
+        (tree_geom_dist_vec_item_t){(GeometryObject**)item1, calc_distance};
+    kv_push(tree_geom_dist_vec_item_t, *(params->dist_pairs), dist_pair);
+  }
+
+  return 1;
+}
+
+/* Find the nearest item in the tree to each input geometry.  Returns indices of
+ * source array, tree items, and distance between them.
+ *
+ * If there are multiple equidistant items, smome will be returned.
+ *
+ * Returns a tuple of empty arrays (shape (2,0), shape (0,)) if tree is empty.
+ *
+ *
+ * Returns
+ * -------
+ * tuple of ([arr indexes, tree indexes], distances)
+ * */
+
+static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* arr) {
+  PyArrayObject* pg_geoms;
+  GeometryObject* pg_geom = NULL;
+  GEOSGeometry* geom = NULL;
+  GeometryObject** nearest_result = NULL;
+  npy_intp i, n, size, geom_index;
+  size_t j;
+  char* head_ptr = (char*)self->_geoms;
+  tree_nearest_userdata_t userdata;
+  double distance;
+  PyArrayObject* result_indexes;    // array of [source index, tree index]
+  PyArrayObject* result_distances;  // array of distances
+  PyObject* result;                 // tuple of (indexes array, distance array)
+
+  // Indices of input geometries
+  index_vec_t src_indexes;
+
+  // Pairs of addresses in tree geometries and distances; used in userdata
+  tree_geom_dist_vec_t dist_pairs;
+
+  // Addresses in tree geometries (_geoms) that match tree
+  tree_geom_vec_t nearest_geoms;
+
+  // Distances of nearest items
+  tree_dist_vec_t nearest_dist;
+
+  if (self->ptr == NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
+    return NULL;
+  }
+  if (!PyArray_Check(arr)) {
+    PyErr_SetString(PyExc_TypeError, "Not an ndarray");
+    return NULL;
+  }
+
+  pg_geoms = (PyArrayObject*)arr;
+  if (!PyArray_ISOBJECT(pg_geoms)) {
+    PyErr_SetString(PyExc_TypeError, "Array should be of object dtype");
+    return NULL;
+  }
+
+  if (PyArray_NDIM(pg_geoms) != 1) {
+    PyErr_SetString(PyExc_TypeError, "Array should be one dimensional");
+    return NULL;
+  }
+
+  if (self->count == 0) {
+    npy_intp dims[2] = {3, 0};
+    return PyArray_SimpleNew(2, dims, NPY_INTP);
+  }
+
+  n = PyArray_SIZE(pg_geoms);
+
+  // preallocate arrays to size of input array; for a non-empty tree, there should be
+  // at least 1 nearest item per input geometry
+  kv_init(src_indexes);
+  kv_resize(npy_intp, src_indexes, n);
+  kv_init(nearest_geoms);
+  kv_resize(GeometryObject**, nearest_geoms, n);
+  kv_init(nearest_dist);
+  kv_resize(double, nearest_dist, n);
+
+  GEOS_INIT_THREADS;
+
+  // initialize userdata context and dist_pairs vector
+  userdata.ctx = ctx;
+  userdata.dist_pairs = &dist_pairs;
+
+  for (i = 0; i < n; i++) {
+    printf("---------------------------\n\nIn loop %i\n", i);
+    // get pygeos geometry from input geometry array
+    pg_geom = *(GeometryObject**)PyArray_GETPTR1(pg_geoms, i);
+    if (!get_geom(pg_geom, &geom)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      break;
+    }
+    if (geom == NULL) {
+      continue;
+    }
+    if (GEOSisEmpty_r(ctx, geom)) {
+      continue;
+    }
+
+    kv_init(dist_pairs);
+
+    // reset loop-dependent values of userdata
+    userdata.min_distance = DBL_MAX;
+
+    nearest_result = (GeometryObject**)GEOSSTRtree_nearest_generic_r(
+        ctx, self->ptr, &pg_geom, geom, distance_callback, &userdata);
+
+    printf("Nearest result %p\n", nearest_result);
+
+    // NULL is returned when there is an error
+    if (nearest_result == NULL) {
+      errstate = PGERR_GEOS_EXCEPTION;
+      kv_destroy(dist_pairs);
+      kv_destroy(src_indexes);
+      kv_destroy(nearest_geoms);
+      kv_destroy(nearest_dist);
+      break;
+    }
+
+    printf("Size of dist_pairs vector %zu\n", kv_size(dist_pairs));
+
+    for (j = 0; j < kv_size(dist_pairs); j++) {
+      distance = kv_A(dist_pairs, j).distance;
+
+      // only keep entries from the smallest distances for this input geometry
+      // Note: there may be multiple equidistant tree items
+      if (distance <= userdata.min_distance) {
+        kv_push(npy_intp, src_indexes, i);
+        kv_push(GeometryObject**, nearest_geoms, kv_A(dist_pairs, j).geom);
+        kv_push(double, nearest_dist, distance);
+      }
+    }
+
+    kv_destroy(dist_pairs);
+  }
+
+  GEOS_FINISH_THREADS;
+
+  if (errstate != PGERR_SUCCESS) {
+    return NULL;
+  }
+
+  printf("Size of indexes %zu, geoms %zu, distances %zu\n", kv_size(src_indexes),
+         kv_size(nearest_geoms), kv_size(nearest_dist));
+
+
+  size = kv_size(src_indexes);
+
+  // Create array of indexes
+  npy_intp index_dims[2] = {2, size};
+  result_indexes = (PyArrayObject*)PyArray_SimpleNew(2, index_dims, NPY_INTP);
+  if (result_indexes == NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "could not allocate numpy array");
+    return NULL;
+  }
+
+  // Create array of distances
+  npy_intp distance_dims[1] = {size};
+  result_distances = (PyArrayObject*)PyArray_SimpleNew(1, distance_dims, NPY_DOUBLE);
+  if (result_distances == NULL) {
+    PyErr_SetString(PyExc_RuntimeError, "could not allocate numpy array");
+    return NULL;
+  }
+
+  for (i = 0; i < size; i++) {
+    // assign value into numpy arrays
+    *(npy_intp*)PyArray_GETPTR2(result_indexes, 0, i) = kv_A(src_indexes, i);
+
+    // Calculate index using offset of its address compared to head of _geoms
+    geom_index =
+        (npy_intp)(((char*)kv_A(nearest_geoms, i) - head_ptr) / sizeof(GeometryObject*));
+    *(npy_intp*)PyArray_GETPTR2(result_indexes, 1, i) = geom_index;
+
+    *(double*)PyArray_GETPTR1(result_distances, i) = kv_A(nearest_dist, i);
+  }
+
+  kv_destroy(src_indexes);
+  kv_destroy(nearest_geoms);
+  kv_destroy(nearest_dist);
+
+  // return a tuple of (indexes array, distances array)
+  result = PyTuple_New(2);
+  PyTuple_SET_ITEM(result, 0, (PyObject*)result_indexes);
+  PyTuple_SET_ITEM(result, 1, (PyObject*)result_distances);
+
+  return (PyObject*)result;
+}
+
 static PyMemberDef STRtree_members[] = {
     {"_ptr", T_PYSSIZET, offsetof(STRtreeObject, ptr), READONLY,
      "Pointer to GEOSSTRtree"},
@@ -570,6 +831,8 @@ static PyMethodDef STRtree_methods[] = {
      "Queries the index for all items whose extents intersect the given search "
      "geometries, and optionally tests them "
      "against predicate function if provided. "},
+    {"nearest", (PyCFunction)STRtree_nearest, METH_O,
+     "Queries the index for the nearest item to each of the given search geometries"},
     {NULL} /* Sentinel */
 };
 
