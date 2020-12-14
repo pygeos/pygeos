@@ -39,9 +39,6 @@ typedef struct {
   double min_distance;
 } tree_nearest_userdata_t;
 
-
-
-
 typedef struct {
   PyObject_HEAD void* ptr;
   npy_intp count;           // count of geometries added to the tree

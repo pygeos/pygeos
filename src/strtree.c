@@ -194,7 +194,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
       GEOSSTRtree_insert_r(ctx, tree, geom, &(_geoms[i]));
 
       // FIXME: remove
-      printf("%i: inserted %p\n", i, &(_geoms[i]));
+      // printf("%i: inserted %p\n", i, &(_geoms[i]));
     }
     counter++;
   }
@@ -471,6 +471,7 @@ static PyObject* STRtree_query_bulk(STRtreeObject* self, PyObject* args) {
   }
 
   kv_init(src_indexes);
+  kv_init(target_geoms);
 
   GEOS_INIT_THREADS;
 
@@ -642,6 +643,8 @@ int distance_callback(const void* item1, const void* item2, double* distance,
  * tuple of ([arr indexes, tree indexes], distances)
  * */
 
+#if GEOS_SINCE_3_6_0
+
 static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* arr) {
   PyArrayObject* pg_geoms;
   GeometryObject* pg_geom = NULL;
@@ -730,6 +733,8 @@ static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* arr) {
     // reset loop-dependent values of userdata
     userdata.min_distance = DBL_MAX;
 
+    // TODO: create a box around geom to use for query; expand it slightly
+
     nearest_result = (GeometryObject**)GEOSSTRtree_nearest_generic_r(
         ctx, self->ptr, &pg_geom, geom, distance_callback, &userdata);
 
@@ -814,6 +819,9 @@ static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* arr) {
   return (PyObject*)result;
 }
 
+#endif // GEOS_SINCE_3_6_0
+
+
 static PyMemberDef STRtree_members[] = {
     {"_ptr", T_PYSSIZET, offsetof(STRtreeObject, ptr), READONLY,
      "Pointer to GEOSSTRtree"},
@@ -821,6 +829,7 @@ static PyMemberDef STRtree_members[] = {
      "The number of geometries inside the tree"},
     {NULL} /* Sentinel */
 };
+
 
 static PyMethodDef STRtree_methods[] = {
     {"query", (PyCFunction)STRtree_query, METH_VARARGS,
@@ -831,10 +840,13 @@ static PyMethodDef STRtree_methods[] = {
      "Queries the index for all items whose extents intersect the given search "
      "geometries, and optionally tests them "
      "against predicate function if provided. "},
+     #if GEOS_SINCE_3_6_0
     {"nearest", (PyCFunction)STRtree_nearest, METH_O,
      "Queries the index for the nearest item to each of the given search geometries"},
+    #endif
     {NULL} /* Sentinel */
 };
+
 
 PyTypeObject STRtreeType = {
     PyVarObject_HEAD_INIT(NULL, 0).tp_name = "pygeos.lib.STRtree",
