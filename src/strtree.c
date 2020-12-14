@@ -598,12 +598,6 @@ int distance_callback(const void* item1, const void* item2, double* distance,
 
   tree_nearest_userdata_t* params = (tree_nearest_userdata_t*)userdata;
 
-  // TODO: GEOSDistanceIndexed for GEOS >= 3.7
-  // see comments here about inputs: https://trac.osgeo.org/geos/ticket/1007
-  // might be downsides since we want to prepare the query geom and reuse the index
-  // across distance queries (check benchmarks...)
-  // TODO: GEOSPreparedDistance for GEOS >= 3.9 to use prepared geoms
-
   // distance returns 1 on success, 0 on error
   if (GEOSDistance_r(params->ctx, query_geom, tree_geom, &calc_distance) == 0) {
     return 0;

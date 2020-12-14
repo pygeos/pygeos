@@ -39,6 +39,9 @@ Version 0.9 (unreleased)
 * Ensure that ``python setup.py clean`` removes all previously Cythonized and compiled
   files (#239).
 * Addition of a ``reverse`` function for GEOS >= 3.7 (#254).
+* Addition of a ``nearest`` function to ``STRtree`` for GEOS >= 3.6 to find the nearest
+  neighbors (#272).
+
 
 Version 0.8 (2020-09-06)
 ------------------------
