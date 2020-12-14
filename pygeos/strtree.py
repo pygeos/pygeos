@@ -223,16 +223,16 @@ class STRtree:
         --------
         >>> import pygeos
         >>> tree = pygeos.STRtree(pygeos.points(np.arange(10), np.arange(10)))
-        >>> tree.nearest(pygeos.points(1,1)).tolist()
+        >>> tree.nearest(pygeos.points(1,1)).tolist()  # doctest: +SKIP
         [[0], [1]]
-        >>> tree.nearest([pygeos.box(1,1,3,3)]).tolist()
+        >>> tree.nearest([pygeos.box(1,1,3,3)]).tolist()  # doctest: +SKIP
         [[0, 0, 0], [1, 2, 3]]
-        >>> index, distance = tree.nearest(pygeos.points(0.5,0.5), return_distance=True)
-        >>> index.tolist()
+        >>> index, distance = tree.nearest(pygeos.points(0.5,0.5), return_distance=True)  # doctest: +SKIP
+        >>> index.tolist()  # doctest: +SKIP
         [[0, 0], [0, 1]]
-        >>> distance.round(4).tolist()
+        >>> distance.round(4).tolist()  # doctest: +SKIP
         [0.7071, 0.7071]
-        >>> tree.nearest(None).tolist()
+        >>> tree.nearest(None).tolist()  # doctest: +SKIP
         [[], []]
         """
 
