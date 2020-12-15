@@ -191,7 +191,7 @@ class STRtree:
         return self._tree.query_bulk(geometry, predicate)
 
     @requires_geos("3.6.0")
-    def nearest(self, geometry, return_distance=False):
+    def nearest(self, geometry, max_distance=None, return_distance=False):
         """Returns the index of the nearest item in the tree for each input
         geometry.
 
@@ -199,6 +199,12 @@ class STRtree:
         should be returned.  Tree indexes are returned in the order they are visited
         for each input geometry and may not be in ascending index order; no meaningful
         order is implied.
+
+        The max_distance used to search for nearest items in the tree may have a
+        significant impact on performance by reducing the number of input geometries
+        that are evaluated for nearest items in the tree.  Only those input geometries
+        with at least one tree item within +/- max_distance beyond their envelope will
+        be evaluated.
 
         The distance, if returned, will be 0 for any intersected geometries in the tree.
 
@@ -209,6 +215,11 @@ class STRtree:
         ----------
         geometry : Geometry or array_like
             Input geometries to query the tree.
+        max_distance : float, optional (default: None)
+            Maximum distance within which to query for nearest items in tree.  By default
+            will return nearest tree item for each input geometry regardless of distance.
+            If provided, only those pairs of input geometry and nearest tree item within
+            this distance will be included in the results.  0 and None are equivalent.
         return_distance : bool, optional (default: False)
             If True, will return tuple of (ndarray of indexes of shape (2,n), ndarray of
             distances of shape (n)).
@@ -240,7 +251,10 @@ class STRtree:
         if geometry.ndim == 0:
             geometry = np.expand_dims(geometry, 0)
 
-        if return_distance:
-            return self._tree.nearest(geometry)
+        # a distance of 0 means no max_distance is used
+        max_distance = max_distance or 0
 
-        return self._tree.nearest(geometry)[0]
+        if return_distance:
+            return self._tree.nearest(geometry, max_distance)
+
+        return self._tree.nearest(geometry, max_distance)[0]

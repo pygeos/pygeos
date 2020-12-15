@@ -12,6 +12,7 @@
 #include <numpy/ndarraytypes.h>
 #include <numpy/npy_3kcompat.h>
 
+#include "coords.h"
 #include "geos.h"
 #include "kvec.h"
 #include "pygeom.h"
@@ -554,6 +555,20 @@ static PyObject* STRtree_query_bulk(STRtreeObject* self, PyObject* args) {
   return (PyObject*)result;
 }
 
+/* Callback called by strtree_query with item data of each intersecting geometry
+ * and a counter to increment each time this function is called.  Used to prescreen
+ * geometries for intersections with the tree.
+ *
+ * Parameters
+ * ----------
+ * item: address of intersected geometry in the tree geometries (_geoms) array.
+ *
+ * user_data: pointer to size_t counter incremented on every call to this function
+ * */
+void prescreen_query_callback(void* item, void* user_data) {
+  (*(size_t*)user_data)++;
+  }
+
 /* Calculate the distance between items in the tree and the src_geom.
  * Note: this is only called by the tree after first evaluating the overlap between
  * the the envelope of a tree node and the query geometry.  It may not be called for
@@ -646,13 +661,17 @@ int distance_callback(const void* item1, const void* item2, double* distance,
 
 #if GEOS_SINCE_3_6_0
 
-static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* arr) {
+static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* args) {
+  PyObject* arr;
+  double max_distance = 0;
   PyArrayObject* pg_geoms;
   GeometryObject* pg_geom = NULL;
   GEOSGeometry* geom = NULL;
+  GEOSGeometry* envelope = NULL;
   GeometryObject** nearest_result = NULL;
   npy_intp i, n, size, geom_index;
-  size_t j;
+  size_t j, query_counter;
+  double xmin, ymin, xmax, ymax;
   char* head_ptr = (char*)self->_geoms;
   tree_nearest_userdata_t userdata;
   double distance;
@@ -676,6 +695,11 @@ static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* arr) {
     PyErr_SetString(PyExc_RuntimeError, "Tree is uninitialized");
     return NULL;
   }
+
+  if (!PyArg_ParseTuple(args, "Od", &arr, &max_distance)) {
+    return NULL;
+  }
+
   if (!PyArray_Check(arr)) {
     PyErr_SetString(PyExc_TypeError, "Not an ndarray");
     return NULL;
@@ -734,6 +758,38 @@ static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* arr) {
       continue;
     }
 
+    if (max_distance > 0) {
+      // if max_distance is defined, prescreen geometries using simple bbox expansion
+      if (get_bounds(ctx, geom, &xmin, &ymin, &xmax, &ymax) == 0) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        kv_destroy(src_indexes);
+        kv_destroy(nearest_geoms);
+        kv_destroy(nearest_dist);
+        break;
+      }
+
+      envelope = create_box(ctx, xmin - max_distance, ymin - max_distance,
+                            xmax + max_distance, ymax + max_distance);
+      if (envelope == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        kv_destroy(src_indexes);
+        kv_destroy(nearest_geoms);
+        kv_destroy(nearest_dist);
+        break;
+      }
+
+      query_counter = 0;
+      GEOSSTRtree_query_r(ctx, self->ptr, envelope, prescreen_query_callback,
+                          &query_counter);
+
+      GEOSGeom_destroy_r(ctx, envelope);
+
+      if (query_counter == 0) {
+        // no features are within max_distance, skip distance calculations
+        continue;
+      }
+    }
+
     // reset loop-dependent values of userdata
     kv_init(dist_pairs);
     userdata.min_distance = DBL_MAX;
@@ -755,8 +811,10 @@ static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* arr) {
       distance = kv_A(dist_pairs, j).distance;
 
       // only keep entries from the smallest distances for this input geometry
+      // only keep entries within max_distance, if nonzero
       // Note: there may be multiple equidistant or intersected tree items
-      if (distance <= userdata.min_distance) {
+      if (distance <= userdata.min_distance &&
+          (max_distance == 0 || distance <= max_distance)) {
         kv_push(npy_intp, src_indexes, i);
         kv_push(GeometryObject**, nearest_geoms, kv_A(dist_pairs, j).geom);
         kv_push(double, nearest_dist, distance);
@@ -834,7 +892,7 @@ static PyMethodDef STRtree_methods[] = {
      "geometries, and optionally tests them "
      "against predicate function if provided. "},
 #if GEOS_SINCE_3_6_0
-    {"nearest", (PyCFunction)STRtree_nearest, METH_O,
+    {"nearest", (PyCFunction)STRtree_nearest, METH_VARARGS,
      "Queries the index for the nearest item to each of the given search geometries"},
 #endif
     {NULL} /* Sentinel */

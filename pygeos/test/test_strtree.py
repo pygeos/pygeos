@@ -1310,10 +1310,31 @@ def test_nearest_polygons(poly_tree, geometry, expected):
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 @pytest.mark.parametrize(
+    "geometry,max_distance,expected",
+    [
+        # using unset max_distance should return all nearest
+        (pygeos.points(0.5, 0.5), 0, [[0, 0], [0, 1]]),
+
+        # using large max_distance should return all nearest
+        (pygeos.points(0.5, 0.5), 10, [[0, 0], [0, 1]]),
+
+        # using small max_distance should return no results
+        (pygeos.points(0.5, 0.5), 0.1, [[], []]),
+
+        # using small max_distance should only return results in that distance
+        ([pygeos.points(0.5, 0.5), pygeos.points(0, 0)], 0.1, [[1], [0]]),
+    ],
+)
+def test_nearest_max_distance(tree, geometry, max_distance, expected):
+    assert_array_equal(tree.nearest(geometry, max_distance=max_distance), expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.parametrize(
     "geometry,expected",
     [(pygeos.points(0, 0), [0.0]), (pygeos.points(0.5, 0.5), [0.7071, 0.7071])],
 )
-def test_nearest_distance(tree, geometry, expected):
+def test_nearest_return_distance(tree, geometry, expected):
     assert_array_equal(
         np.round(tree.nearest(geometry, return_distance=True)[1], 4), expected
     )
