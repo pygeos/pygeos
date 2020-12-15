@@ -38,8 +38,10 @@
  */
 int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double* ymin,
                double* xmax, double* ymax) {
+
   if (geom == NULL || GEOSisEmpty_r(ctx, geom)) {
     *xmin = *ymin = *xmax = *ymax = NPY_NAN;
+    return 1;
   }
 
 #if GEOS_SINCE_3_7_0
@@ -49,6 +51,7 @@ int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double
         GEOSGeom_getXMax_r(ctx, geom, xmax) && GEOSGeom_getYMax_r(ctx, geom, ymax))) {
     return 0;
   }
+
   return 1;
 
 #else
