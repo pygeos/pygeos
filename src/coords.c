@@ -39,6 +39,8 @@
 int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double* ymin,
                double* xmax, double* ymax) {
 
+  int retval = 1;
+
   if (geom == NULL || GEOSisEmpty_r(ctx, geom)) {
     *xmin = *ymin = *xmax = *ymax = NPY_NAN;
     return 1;
@@ -52,11 +54,9 @@ int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double
     return 0;
   }
 
-  return 1;
-
 #else
   // extract coordinates from envelope
-  int retval = 1;
+
   GEOSGeometry* envelope = NULL;
   const GEOSGeometry* ring = NULL;
   const GEOSCoordSequence* coord_seq = NULL;
@@ -65,9 +65,9 @@ int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double
   /* construct the envelope */
   envelope = GEOSEnvelope_r(ctx, geom);
   if (envelope == NULL) {
-    retval = 0;
-    goto finish;
+    return 0;
   }
+
   size = GEOSGetNumCoordinates_r(ctx, envelope);
 
   /* get the bbox depending on the number of coordinates in the envelope */
