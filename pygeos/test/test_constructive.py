@@ -306,3 +306,28 @@ def test_reverse_none():
 def test_reverse_invalid_type(geom):
     with pytest.raises(TypeError, match="One of the arguments is of incorrect type"):
         pygeos.reverse(geom)
+
+
+@pytest.mark.parametrize("geometry", all_types)
+def test_clip_by_rect(geometry):
+    actual = pygeos.clip_by_rect([geometry, geometry], 0.0, 0.0, 1.0, 1.0)
+    assert actual.shape == (2,)
+    assert actual[0] is None or isinstance(actual[0], Geometry)
+
+
+def test_clip_by_rect_missing():
+    actual = pygeos.clip_by_rect(None, 0, 0, 1, 1)
+    assert actual is None
+
+
+def test_clip_by_rect_empty():
+    actual = pygeos.clip_by_rect(empty_polygon, 0, 0, 1, 1)
+    assert actual == Geometry("GEOMETRYCOLLECTION EMPTY")
+
+
+def test_clip_by_rect_missing_non_scalar_kwargs():
+    msg = "only accepts scalar values"
+    with pytest.raises(TypeError, match=msg):
+        pygeos.clip_by_rect([line_string, line_string], 0, 0, 1, np.array([0, 1]))
+
+
