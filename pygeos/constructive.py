@@ -20,6 +20,7 @@ __all__ = [
     "make_valid",
     "normalize",
     "point_on_surface",
+    "polygonize",
     "reverse",
     "simplify",
     "snap",
@@ -440,6 +441,32 @@ def point_on_surface(geometry, **kwargs):
     <pygeos.Geometry POINT EMPTY>
     """
     return lib.point_on_surface(geometry, **kwargs)
+
+
+def polygonize(geometries, **kwargs):
+    """Creates polygons formed from the linework of a set of Geometries.
+
+    Polygonizes a set of Geometries which contain linework that
+    represents the edges of a planar graph. All types of Geometry are
+    accepted as input; the constituent linework is extracted as the edges
+    to be polygonized.
+
+    Parameters
+    ----------
+    geometries : array_like
+        An array of geometries.
+
+    Examples
+    --------
+    >>> lines = [
+    ...     pygeos.Geometry("LINESTRING (0 0, 1 1)"),
+    ...     pygeos.Geometry("LINESTRING (0 0, 0 1)"),
+    ...     pygeos.Geometry("LINESTRING (0 1, 1 1)"),
+    ... ]
+    >>> polygonize(lines)
+    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))>
+    """
+    return lib.polygonize(geometries, **kwargs)
 
 
 @requires_geos("3.7.0")
