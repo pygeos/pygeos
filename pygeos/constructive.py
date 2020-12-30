@@ -459,9 +459,9 @@ def polygonize(geometries, **kwargs):
     Examples
     --------
     >>> lines = [
-    ...     pygeos.Geometry("LINESTRING (0 0, 1 1)"),
-    ...     pygeos.Geometry("LINESTRING (0 0, 0 1)"),
-    ...     pygeos.Geometry("LINESTRING (0 1, 1 1)"),
+    ...     Geometry("LINESTRING (0 0, 1 1)"),
+    ...     Geometry("LINESTRING (0 0, 0 1)"),
+    ...     Geometry("LINESTRING (0 1, 1 1)"),
     ... ]
     >>> polygonize(lines)
     <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))>
