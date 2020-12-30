@@ -1,4 +1,4 @@
-from collections.abc import Collection
+from collections.abc import Sized
 
 import numpy as np
 
@@ -241,7 +241,7 @@ def from_shapely(geometry, **kwargs):
         arr = np.empty(1, dtype=object)
         arr[0] = geometry
         arr.shape = ()
-    elif not isinstance(geometry, np.ndarray) and isinstance(geometry, Collection):
+    elif not isinstance(geometry, np.ndarray) and isinstance(geometry, Sized):
         # geometry is a list/array-like
         arr = np.empty(len(geometry), dtype=object)
         arr[:] = geometry
