@@ -51,6 +51,7 @@ def test_set_operations_prec_not_supported(func, grid_size):
         func(point, point, grid_size)
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="GEOS < 3.9")
 @pytest.mark.parametrize("func", SET_OPERATIONS)
 def test_set_operation_prec_nonscalar_grid_size(func):
     with pytest.raises(ValueError, match="grid_size parameter only accepts scalar values"):
@@ -59,6 +60,7 @@ def test_set_operation_prec_nonscalar_grid_size(func):
         assert isinstance(actual[0], Geometry)
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="GEOS < 3.9")
 @pytest.mark.parametrize("a", all_types)
 @pytest.mark.parametrize("func", SET_OPERATIONS)
 @pytest.mark.parametrize("grid_size", [0])
