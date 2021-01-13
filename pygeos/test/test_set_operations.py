@@ -1,6 +1,8 @@
+from pygeos.geometry import get_precision
 import pytest
 import pygeos
 from pygeos import Geometry
+from pygeos.decorators import UnsupportedGEOSOperation
 
 from .common import point, all_types, polygon, multi_polygon
 
@@ -37,6 +39,31 @@ non_polygon_types = [
 @pytest.mark.parametrize("func", SET_OPERATIONS)
 def test_set_operation_array(a, func):
     actual = func([a, a], point)
+    assert actual.shape == (2,)
+    assert isinstance(actual[0], Geometry)
+
+
+@pytest.mark.skipif(pygeos.geos_version >= (3, 9, 0), reason="GEOS >= 3.9")
+@pytest.mark.parametrize("func", SET_OPERATIONS)
+@pytest.mark.parametrize("grid_size", [0, 1])
+def test_set_operations_prec_not_supported(func, grid_size):
+    with pytest.raises(UnsupportedGEOSOperation, match="grid_size parameter requires GEOS >= 3.9.0"):
+        func(point, point, grid_size)
+
+
+@pytest.mark.parametrize("func", SET_OPERATIONS)
+def test_set_operation_prec_nonscalar_grid_size(func):
+    with pytest.raises(ValueError, match="grid_size parameter only accepts scalar values"):
+        actual = func(point, point, grid_size=[1])
+        assert actual.shape == (2,)
+        assert isinstance(actual[0], Geometry)
+
+
+@pytest.mark.parametrize("a", all_types)
+@pytest.mark.parametrize("func", SET_OPERATIONS)
+@pytest.mark.parametrize("grid_size", [0])
+def test_set_operation_prec_array(a, func, grid_size):
+    actual = func([a, a], point, grid_size=grid_size)
     assert actual.shape == (2,)
     assert isinstance(actual[0], Geometry)
 

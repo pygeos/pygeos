@@ -1,6 +1,6 @@
 import numpy as np
 from . import lib, Geometry, GeometryType
-from .decorators import requires_geos
+from .decorators import requires_geos, UnsupportedGEOSOperation
 from .decorators import multithreading_enabled
 
 __all__ = [
@@ -16,13 +16,19 @@ __all__ = [
 ]
 
 @multithreading_enabled
-def difference(a, b, **kwargs):
+def difference(a, b, grid_size=None, **kwargs):
     """Returns the part of geometry A that does not intersect with geometry B.
+
+    If grid_size is nonzero, input coordinates will be snapped to a precision grid of that
+    size and resulting coordinates will be snapped to that same grid.  If 0, this
+    operation will use double precision coordinates.
 
     Parameters
     ----------
     a : Geometry or array_like
     b : Geometry or array_like
+    grid_size : float, optional (default: None).
+        precision grid size; requires GEOS >= 3.9.0.
 
     Examples
     --------
@@ -34,16 +40,32 @@ def difference(a, b, **kwargs):
     >>> difference(line, None) is None
     True
     """
+
+    if grid_size is not None:
+        if lib.geos_version < (3,9,0):
+            raise UnsupportedGEOSOperation("grid_size parameter requires GEOS >= 3.9.0")
+
+        if not np.isscalar(grid_size):
+            raise ValueError("grid_size parameter only accepts scalar values")
+
+        return lib.difference_prec(a, b, grid_size, **kwargs)
+
     return lib.difference(a, b, **kwargs)
 
 @multithreading_enabled
-def intersection(a, b, **kwargs):
+def intersection(a, b, grid_size=None, **kwargs):
     """Returns the geometry that is shared between input geometries.
+
+    If grid_size is nonzero, input coordinates will be snapped to a precision grid of that
+    size and resulting coordinates will be snapped to that same grid.  If 0, this
+    operation will use double precision coordinates.
 
     Parameters
     ----------
     a : Geometry or array_like
     b : Geometry or array_like
+    grid_size : float, optional (default: None).
+        precision grid size; requires GEOS >= 3.9.0.
 
     See also
     --------
@@ -55,6 +77,16 @@ def intersection(a, b, **kwargs):
     >>> intersection(line, Geometry("LINESTRING(1 1, 3 3)"))
     <pygeos.Geometry LINESTRING (1 1, 2 2)>
     """
+
+    if grid_size is not None:
+        if lib.geos_version < (3,9,0):
+            raise UnsupportedGEOSOperation("grid_size parameter requires GEOS >= 3.9.0")
+
+        if not np.isscalar(grid_size):
+            raise ValueError("grid_size parameter only accepts scalar values")
+
+        return lib.intersection_prec(a, b, grid_size, **kwargs)
+
     return lib.intersection(a, b, **kwargs)
 
 @multithreading_enabled
@@ -89,7 +121,7 @@ def intersection_all(geometries, axis=0, **kwargs):
     return lib.intersection.reduce(geometries, axis=axis, **kwargs)
 
 @multithreading_enabled
-def symmetric_difference(a, b, **kwargs):
+def symmetric_difference(a, b, grid_size=None, **kwargs):
     """Returns the geometry that represents the portions of input geometries
     that do not intersect.
 
@@ -97,6 +129,8 @@ def symmetric_difference(a, b, **kwargs):
     ----------
     a : Geometry or array_like
     b : Geometry or array_like
+    grid_size : float, optional (default: None).
+        precision grid size; requires GEOS >= 3.9.0.
 
     See also
     --------
@@ -108,6 +142,16 @@ def symmetric_difference(a, b, **kwargs):
     >>> symmetric_difference(line, Geometry("LINESTRING(1 1, 3 3)"))
     <pygeos.Geometry MULTILINESTRING ((0 0, 1 1), (2 2, 3 3))>
     """
+
+    if grid_size is not None:
+        if lib.geos_version < (3,9,0):
+            raise UnsupportedGEOSOperation("grid_size parameter requires GEOS >= 3.9.0")
+
+        if not np.isscalar(grid_size):
+            raise ValueError("grid_size parameter only accepts scalar values")
+
+        return lib.symmetric_difference_prec(a, b, grid_size, **kwargs)
+
     return lib.symmetric_difference(a, b, **kwargs)
 
 @multithreading_enabled
@@ -142,13 +186,15 @@ def symmetric_difference_all(geometries, axis=0, **kwargs):
     return lib.symmetric_difference.reduce(geometries, axis=axis, **kwargs)
 
 @multithreading_enabled
-def union(a, b, **kwargs):
+def union(a, b, grid_size=None, **kwargs):
     """Merges geometries into one.
 
     Parameters
     ----------
     a : Geometry or array_like
     b : Geometry or array_like
+    grid_size : float, optional (default: None).
+        precision grid size; requires GEOS >= 3.9.0.
 
     See also
     --------
@@ -162,6 +208,16 @@ def union(a, b, **kwargs):
     >>> union(line, None) is None
     True
     """
+
+    if grid_size is not None:
+        if lib.geos_version < (3,9,0):
+            raise UnsupportedGEOSOperation("grid_size parameter requires GEOS >= 3.9.0")
+
+        if not np.isscalar(grid_size):
+            raise ValueError("grid_size parameter only accepts scalar values")
+
+        return lib.union_prec(a, b, grid_size, **kwargs)
+
     return lib.union(a, b, **kwargs)
 
 @multithreading_enabled
