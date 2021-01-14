@@ -21,7 +21,7 @@ REDUCE_SET_OPERATIONS = (
     # (pygeos.coverage_union_all, pygeos.coverage_union) is tested seperately
 )
 
-# TEMP:
+# operations that support fixed precision
 REDUCE_SET_OPERATIONS_PREC = ((pygeos.union_all, pygeos.union),)
 
 
@@ -141,7 +141,7 @@ def test_set_operation_reduce_all_none_arr(n, func, related_func):
 
 
 @pytest.mark.skipif(pygeos.geos_version >= (3, 9, 0), reason="GEOS >= 3.9")
-@pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS)
+@pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS_PREC)
 @pytest.mark.parametrize("grid_size", [0, 1])
 def test_set_operation_prec_reduce_not_supported(func, related_func, grid_size):
     with pytest.raises(
@@ -151,7 +151,7 @@ def test_set_operation_prec_reduce_not_supported(func, related_func, grid_size):
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="GEOS < 3.9")
-@pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS)
+@pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS_PREC)
 def test_set_operation_prec_reduce_nonscalar_grid_size(func, related_func):
     with pytest.raises(
         ValueError, match="grid_size parameter only accepts scalar values"
@@ -310,7 +310,8 @@ def test_coverage_union_non_polygon_inputs(geom_1, geom_2):
             1,
             pygeos.Geometry("POLYGON ((0 5, 0 10, 5 10, 5 5, 5 0, 0 0, 0 5))"),
         ),
-        # grid_size much larger than effective precision
+        # grid_size much larger than effective precision causes rounding to nearest
+        # multiple of 10
         (
             [pygeos.box(0.1, 0.1, 5, 5), pygeos.box(0, 0.2, 5.1, 10)],
             10,

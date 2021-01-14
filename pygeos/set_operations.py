@@ -1,5 +1,5 @@
 import numpy as np
-from . import lib, Geometry, GeometryType
+from . import lib, Geometry, GeometryType, box
 from .decorators import requires_geos, UnsupportedGEOSOperation
 from .decorators import multithreading_enabled
 
@@ -39,6 +39,10 @@ def difference(a, b, grid_size=None, **kwargs):
     <pygeos.Geometry LINESTRING (0 0, 2 2)>
     >>> difference(line, None) is None
     True
+    >>> difference(box(0,0,2,2),box(1,1,3,3))
+    <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0))>
+    >>> difference(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1) # doctest: +SKIP
+    <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0))>
     """
 
     if grid_size is not None:
@@ -76,6 +80,10 @@ def intersection(a, b, grid_size=None, **kwargs):
     >>> line = Geometry("LINESTRING(0 0, 2 2)")
     >>> intersection(line, Geometry("LINESTRING(1 1, 3 3)"))
     <pygeos.Geometry LINESTRING (1 1, 2 2)>
+    >>> intersection(box(0,0,2,2),box(1,1,3,3))
+    <pygeos.Geometry POLYGON ((1 1, 1 2, 2 2, 2 1, 1 1))>
+    >>> intersection(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1) # doctest: +SKIP
+    <pygeos.Geometry POLYGON ((1 1, 1 2, 2 2, 2 1, 1 1))>
     """
 
     if grid_size is not None:
@@ -125,6 +133,10 @@ def symmetric_difference(a, b, grid_size=None, **kwargs):
     """Returns the geometry that represents the portions of input geometries
     that do not intersect.
 
+    If grid_size is nonzero, input coordinates will be snapped to a precision grid of that
+    size and resulting coordinates will be snapped to that same grid.  If 0, this
+    operation will use double precision coordinates.
+
     Parameters
     ----------
     a : Geometry or array_like
@@ -141,6 +153,10 @@ def symmetric_difference(a, b, grid_size=None, **kwargs):
     >>> line = Geometry("LINESTRING(0 0, 2 2)")
     >>> symmetric_difference(line, Geometry("LINESTRING(1 1, 3 3)"))
     <pygeos.Geometry MULTILINESTRING ((0 0, 1 1), (2 2, 3 3))>
+    >>> symmetric_difference(box(0,0,2,2),box(1,1,3,3))
+    <pygeos.Geometry MULTIPOLYGON (((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0)), ((1 3,...>
+    >>> symmetric_difference(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1) # doctest: +SKIP
+    <pygeos.Geometry MULTIPOLYGON (((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0)), ((1 3,...>
     """
 
     if grid_size is not None:
@@ -189,6 +205,10 @@ def symmetric_difference_all(geometries, axis=0, **kwargs):
 def union(a, b, grid_size=None, **kwargs):
     """Merges geometries into one.
 
+    If grid_size is nonzero, input coordinates will be snapped to a precision grid of that
+    size and resulting coordinates will be snapped to that same grid.  If 0, this
+    operation will use double precision coordinates.
+
     Parameters
     ----------
     a : Geometry or array_like
@@ -207,6 +227,10 @@ def union(a, b, grid_size=None, **kwargs):
     <pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>
     >>> union(line, None) is None
     True
+    >>> union(box(0,0,2,2),box(1,1,3,3))
+    <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
+    >>> union(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1) # doctest: +SKIP
+    <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
     """
 
     if grid_size is not None:
@@ -254,6 +278,11 @@ def union_all(geometries, grid_size=None, axis=0, **kwargs):
     <pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>
     >>> union_all([[line_1, line_2, None]], axis=1).tolist()
     [<pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>]
+    >>> union_all([box(0,0,2,2),box(1,1,3,3)])
+    <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
+    >>> union_all([box(0.1,0.2,2.1,2.1),box(1,1,3,3)], grid_size=1) # doctest: +SKIP
+    <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
+
     """
     # for union_all, GEOS provides an efficient route through first creating
     # GeometryCollections
