@@ -29,7 +29,7 @@ class ShapelyGeometryMock:
     def __array_interface__(self):
         # this should not be called
         # (starting with numpy 1.20 it is called, but not used)
-        return None
+        return dict()
 
 
 def test_from_wkt():
