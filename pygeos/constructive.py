@@ -265,6 +265,9 @@ def clip_by_rect(geometry, xmin, ymin, xmax, ymax, **kwargs):
     not guaranteed to be valid. No exceptions will be raised for topological
     errors.
 
+    Note: empty geometries or geometries that do not overlap with the
+    specified bounds will result in GEOMETRYCOLLECTION EMPTY.
+
     Parameters
     ----------
     geometry : Geometry or array_like
