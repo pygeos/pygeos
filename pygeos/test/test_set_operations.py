@@ -1,10 +1,13 @@
-from pygeos.geometry import get_precision
+import numpy as np
 import pytest
 import pygeos
 from pygeos import Geometry
 from pygeos.decorators import UnsupportedGEOSOperation
 
 from .common import point, all_types, polygon, multi_polygon
+
+# fixed-precision operations raise GEOS exceptions on mixed dimension geometry collections
+all_single_types = [g for g in all_types if not pygeos.get_type_id(g)==7]
 
 SET_OPERATIONS = (
     pygeos.difference,
@@ -67,7 +70,7 @@ def test_set_operation_prec_nonscalar_grid_size(func):
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="GEOS < 3.9")
-@pytest.mark.parametrize("a", all_types)
+@pytest.mark.parametrize("a", all_single_types)
 @pytest.mark.parametrize("func", SET_OPERATIONS)
 @pytest.mark.parametrize("grid_size", [0])
 def test_set_operation_prec_array(a, func, grid_size):
@@ -157,6 +160,13 @@ def test_set_operation_prec_reduce_nonscalar_grid_size(func, related_func):
         ValueError, match="grid_size parameter only accepts scalar values"
     ):
         func([point, point], grid_size=[1])
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="GEOS < 3.9")
+@pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS_PREC)
+def test_set_operation_prec_reduce_grid_size_nan(func, related_func):
+    actual = func([point, point], grid_size=np.nan)
+    assert actual is None
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="GEOS < 3.9")
