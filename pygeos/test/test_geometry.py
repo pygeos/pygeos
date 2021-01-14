@@ -339,32 +339,20 @@ def test_get_parts_invalid_dimensions(geom):
         pygeos.get_parts(geom)
 
 
-@pytest.mark.parametrize(
-    "geom",
-    [point, line_string, polygon],
-)
+@pytest.mark.parametrize("geom", [point, line_string, polygon])
 def test_get_parts_non_multi(geom):
     """Non-multipart geometries should be returned identical to inputs"""
     assert np.all(pygeos.equals_exact(np.asarray(geom), pygeos.get_parts(geom)))
 
 
-@pytest.mark.parametrize(
-    "geom",
-    [None, [None], []],
-)
+@pytest.mark.parametrize("geom", [None, [None], []])
 def test_get_parts_None(geom):
     assert len(pygeos.get_parts(geom)) == 0
 
 
-@pytest.mark.parametrize(
-    "geom",
-    ["foo", ["foo"], 42],
-)
+@pytest.mark.parametrize("geom", ["foo", ["foo"], 42])
 def test_get_parts_invalid_geometry(geom):
-    with pytest.raises(
-        TypeError,
-        match="One of the arguments is of incorrect type.",
-    ):
+    with pytest.raises(TypeError, match="One of the arguments is of incorrect type."):
         pygeos.get_parts(geom)
 
 

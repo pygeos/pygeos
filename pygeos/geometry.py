@@ -500,7 +500,7 @@ def get_parts(geometry, return_index=False):
     >>> index.tolist()
     [0, 1, 1]
     """
-    geometry = np.asarray(geometry, dtype=np.object)
+    geometry = np.asarray(geometry, dtype=np.object_)
     geometry = np.atleast_1d(geometry)
 
     if geometry.ndim != 1:
@@ -546,8 +546,9 @@ def get_num_geometries(geometry):
 def get_precision(geometry):
     """Get the precision of a geometry.
 
-    If a precision has not been previously set, it will be 0 (double precision).
-    Otherwise, it will return the precision grid size that was set on a geometry.
+    If a precision has not been previously set, it will be 0 (double
+    precision). Otherwise, it will return the precision grid size that was
+    set on a geometry.
 
     Returns NaN for not-a-geometry values.
 
@@ -579,30 +580,32 @@ def set_precision(geometry, grid_size, preserve_topology=False):
 
     By default, geometries use double precision coordinates (grid_size = 0).
 
-    Coordinates will be rounded if a precision grid is less precise than the input
-    geometry. Duplicated vertices will be dropped from lines and polygons for grid sizes greater
-    than 0. Line and polygon geometries may collapse to empty geometries if all vertices are
-    closer together than grid_size. Z values, if present, will not be modified.
+    Coordinates will be rounded if a precision grid is less precise than the
+    input geometry. Duplicated vertices will be dropped from lines and
+    polygons for grid sizes greater than 0. Line and polygon geometries may
+    collapse to empty geometries if all vertices are closer together than
+    grid_size. Z values, if present, will not be modified.
 
-    Note: subsequent operations will always be performed in the precision
-    of the geometry with higher precision (smaller "grid_size"). That same precision will
-    be attached to the operation outputs.
+    Note: subsequent operations will always be performed in the precision of
+    the geometry with higher precision (smaller "grid_size"). That same
+    precision will be attached to the operation outputs.
 
-    Also note: input geometries should be geometrically valid; unexpected results may
-    occur if input geometries are not.
+    Also note: input geometries should be geometrically valid; unexpected
+    results may occur if input geometries are not.
 
     Returns None if geometry is None.
 
     Parameters
     ----------
     geometry : Geometry or array_like
-    grid_size : double
-        precision grid size.  If 0, will use double precision (will not modify geometry
-        if precision grid size was not previously set).  If this value is more
-        precise than input geometry, the input geometry will not be modified.
+    grid_size : float
+        Precision grid size. If 0, will use double precision (will not modify
+        geometry if precision grid size was not previously set). If this
+        value is more precise than input geometry, the input geometry will
+        not be modified.
     preserve_topology : bool, optional (default: False)
-        If True, will attempt to preserve the topology of a geometry after rounding
-        coordinates.
+        If True, will attempt to preserve the topology of a geometry after
+        rounding coordinates.
 
     See also
     --------
