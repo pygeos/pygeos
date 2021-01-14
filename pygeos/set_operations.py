@@ -221,15 +221,21 @@ def union(a, b, grid_size=None, **kwargs):
     return lib.union(a, b, **kwargs)
 
 @multithreading_enabled
-def union_all(geometries, axis=0, **kwargs):
+def union_all(geometries, grid_size=None, axis=0, **kwargs):
     """Returns the union of multiple geometries.
 
     This function ignores None values when other Geometry elements are present.
     If all elements of the given axis are None, None is returned.
 
+    If grid_size is nonzero, input coordinates will be snapped to a precision grid of that
+    size and resulting coordinates will be snapped to that same grid.  If 0, this
+    operation will use double precision coordinates.
+
     Parameters
     ----------
     geometries : array_like
+    grid_size : float, optional (default: None).
+        precision grid size; requires GEOS >= 3.9.0.
     axis : int
         Axis along which the operation is performed. The default (zero)
         performs the operation over the first dimension of the input array.
@@ -261,7 +267,18 @@ def union_all(geometries, axis=0, **kwargs):
         )
     # create_collection acts on the inner axis
     collections = lib.create_collection(geometries, GeometryType.GEOMETRYCOLLECTION)
-    result = lib.unary_union(collections, **kwargs)
+
+    if grid_size is not None:
+        if lib.geos_version < (3,9,0):
+            raise UnsupportedGEOSOperation("grid_size parameter requires GEOS >= 3.9.0")
+
+        if not np.isscalar(grid_size):
+            raise ValueError("grid_size parameter only accepts scalar values")
+
+        result = lib.unary_union_prec(collections, grid_size, **kwargs)
+
+    else:
+        result = lib.unary_union(collections, **kwargs)
     # for consistency with other _all functions, we replace GEOMETRY COLLECTION EMPTY
     # if the original collection had no geometries
     only_none = lib.get_num_geometries(collections) == 0

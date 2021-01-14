@@ -509,6 +509,11 @@ static void* line_interpolate_point_normalized_data[1] = {
 
 static void* simplify_data[1] = {GEOSSimplify_r};
 static void* simplify_preserve_topology_data[1] = {GEOSTopologyPreserveSimplify_r};
+
+#if GEOS_SINCE_3_9_0
+static void* unary_union_prec_data[1] = {GEOSUnaryUnionPrec_r};
+#endif
+
 typedef void* FuncGEOS_Yd_Y(void* context, void* a, double b);
 static char Yd_Y_dtypes[3] = {NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT};
 static void Yd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -2726,6 +2731,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_YYd_Y(intersection_prec);
   DEFINE_YYd_Y(symmetric_difference_prec);
   DEFINE_YYd_Y(union_prec);
+  DEFINE_Yd_Y(unary_union_prec);
 #endif
 
   Py_DECREF(ufunc);
