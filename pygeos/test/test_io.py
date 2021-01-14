@@ -28,7 +28,8 @@ class ShapelyGeometryMock:
     @property
     def __array_interface__(self):
         # this should not be called
-        raise NotImplementedError()
+        # (starting with numpy 1.20 it is called, but not used)
+        raise None
 
 
 def test_from_wkt():
