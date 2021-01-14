@@ -32,6 +32,7 @@ def difference(a, b, grid_size=None, **kwargs):
 
     Examples
     --------
+    >>> from pygeos.constructive import normalize
     >>> line = Geometry("LINESTRING (0 0, 2 2)")
     >>> difference(line, Geometry("LINESTRING (1 1, 3 3)"))
     <pygeos.Geometry LINESTRING (0 0, 1 1)>
@@ -39,9 +40,9 @@ def difference(a, b, grid_size=None, **kwargs):
     <pygeos.Geometry LINESTRING (0 0, 2 2)>
     >>> difference(line, None) is None
     True
-    >>> difference(box(0,0,2,2),box(1,1,3,3))
+    >>> normalize(difference(box(0,0,2,2),box(1,1,3,3)))
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0))>
-    >>> difference(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1) # doctest: +SKIP
+    >>> normalize(difference(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1)) # doctest: +SKIP
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0))>
     """
 
@@ -77,12 +78,13 @@ def intersection(a, b, grid_size=None, **kwargs):
 
     Examples
     --------
+    >>> from pygeos.constructive import normalize
     >>> line = Geometry("LINESTRING(0 0, 2 2)")
     >>> intersection(line, Geometry("LINESTRING(1 1, 3 3)"))
     <pygeos.Geometry LINESTRING (1 1, 2 2)>
-    >>> intersection(box(0,0,2,2),box(1,1,3,3))
+    >>> normalize(intersection(box(0,0,2,2),box(1,1,3,3)))
     <pygeos.Geometry POLYGON ((1 1, 1 2, 2 2, 2 1, 1 1))>
-    >>> intersection(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1) # doctest: +SKIP
+    >>> normalize(intersection(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1)) # doctest: +SKIP
     <pygeos.Geometry POLYGON ((1 1, 1 2, 2 2, 2 1, 1 1))>
     """
 
@@ -150,13 +152,14 @@ def symmetric_difference(a, b, grid_size=None, **kwargs):
 
     Examples
     --------
+    >>> from pygeos.constructive import normalize
     >>> line = Geometry("LINESTRING(0 0, 2 2)")
     >>> symmetric_difference(line, Geometry("LINESTRING(1 1, 3 3)"))
     <pygeos.Geometry MULTILINESTRING ((0 0, 1 1), (2 2, 3 3))>
-    >>> symmetric_difference(box(0,0,2,2),box(1,1,3,3))
-    <pygeos.Geometry MULTIPOLYGON (((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0)), ((1 3,...>
-    >>> symmetric_difference(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1) # doctest: +SKIP
-    <pygeos.Geometry MULTIPOLYGON (((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0)), ((1 3,...>
+    >>> normalize(symmetric_difference(box(0,0,2,2),box(1,1,3,3)))
+    <pygeos.Geometry MULTIPOLYGON (((1 2, 1 3, 3 3, 3 1, 2 1, 2 2, 1 2)), ((0 0,...>
+    >>> normalize(symmetric_difference(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1)) # doctest: +SKIP
+    <pygeos.Geometry MULTIPOLYGON (((1 2, 1 3, 3 3, 3 1, 2 1, 2 2, 1 2)), ((0 0,...>
     """
 
     if grid_size is not None:
@@ -222,14 +225,15 @@ def union(a, b, grid_size=None, **kwargs):
 
     Examples
     --------
+    >>> from pygeos.constructive import normalize
     >>> line = Geometry("LINESTRING(0 0, 2 2)")
     >>> union(line, Geometry("LINESTRING(2 2, 3 3)"))
     <pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>
     >>> union(line, None) is None
     True
-    >>> union(box(0,0,2,2),box(1,1,3,3))
+    >>> normalize(union(box(0,0,2,2),box(1,1,3,3)))
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
-    >>> union(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1) # doctest: +SKIP
+    >>> normalize(union(box(0.1,0.2,2.1,2.1),box(1,1,3,3), grid_size=1)) # doctest: +SKIP
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
     """
 
@@ -272,15 +276,16 @@ def union_all(geometries, grid_size=None, axis=0, **kwargs):
 
     Examples
     --------
+    >>> from pygeos.constructive import normalize
     >>> line_1 = Geometry("LINESTRING(0 0, 2 2)")
     >>> line_2 = Geometry("LINESTRING(2 2, 3 3)")
     >>> union_all([line_1, line_2])
     <pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>
     >>> union_all([[line_1, line_2, None]], axis=1).tolist()
     [<pygeos.Geometry MULTILINESTRING ((0 0, 2 2), (2 2, 3 3))>]
-    >>> union_all([box(0,0,2,2),box(1,1,3,3)])
+    >>> normalize(union_all([box(0,0,2,2),box(1,1,3,3)]))
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
-    >>> union_all([box(0.1,0.2,2.1,2.1),box(1,1,3,3)], grid_size=1) # doctest: +SKIP
+    >>> normalize(union_all([box(0.1,0.2,2.1,2.1),box(1,1,3,3)], grid_size=1)) # doctest: +SKIP
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
 
     """
