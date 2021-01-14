@@ -42,6 +42,7 @@ Version 0.9 (unreleased)
 * Addition of ``get_precision`` to get precision of a geometry and ``set_precision``
   to set the precision of a geometry (may round and reduce coordinates).
 * Addition of a ``polygonize`` function (#275).
+* Addition of a ``clip_by_rect`` function (#273).
 
 Version 0.8 (2020-09-06)
 ------------------------
