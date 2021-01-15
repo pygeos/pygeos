@@ -72,11 +72,19 @@ def test_set_operation_prec_nonscalar_grid_size(func):
 @pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="GEOS < 3.9")
 @pytest.mark.parametrize("a", all_single_types)
 @pytest.mark.parametrize("func", SET_OPERATIONS)
-@pytest.mark.parametrize("grid_size", [0])
+@pytest.mark.parametrize("grid_size", [0, 1, 2])
 def test_set_operation_prec_array(a, func, grid_size):
     actual = func([a, a], point, grid_size=grid_size)
     assert actual.shape == (2,)
     assert isinstance(actual[0], Geometry)
+
+    # results should match the operation when the precision is previously set
+    # to same grid_size
+    b = pygeos.set_precision(a, grid_size=grid_size)
+    point2 = pygeos.set_precision(point, grid_size=grid_size)
+    expected = func([b, b], point2)
+
+    assert pygeos.equals(pygeos.normalize(actual), pygeos.normalize(expected)).all()
 
 
 @pytest.mark.parametrize("n", range(1, 5))
@@ -309,7 +317,7 @@ def test_coverage_union_non_polygon_inputs(geom_1, geom_2):
         # grid_size is at effective precision, expect no change
         (
             [pygeos.box(0.1, 0.1, 5, 5), pygeos.box(0, 0.2, 5.1, 10)],
-            0,
+            0.1,
             pygeos.Geometry(
                 "POLYGON ((0 0.2, 0 10, 5.1 10, 5.1 0.2, 5 0.2, 5 0.1, 0.1 0.1, 0.1 0.2, 0 0.2))"
             ),
@@ -326,6 +334,12 @@ def test_coverage_union_non_polygon_inputs(geom_1, geom_2):
             [pygeos.box(0.1, 0.1, 5, 5), pygeos.box(0, 0.2, 5.1, 10)],
             10,
             pygeos.Geometry('POLYGON ((0 10, 10 10, 10 0, 0 0, 0 10))')
+        ),
+        # grid_size is so large that polygons collapse to empty
+        (
+            [pygeos.box(0.1, 0.1, 5, 5), pygeos.box(0, 0.2, 5.1, 10)],
+            100,
+            pygeos.Geometry('POLYGON EMPTY')
         )
     ],
 )
