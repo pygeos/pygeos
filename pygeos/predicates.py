@@ -194,7 +194,8 @@ def is_prepared(geometry, **kwargs):
     """Returns True if a Geometry is prepared.
 
     Note that it is not necessary to check if a geometry is already prepared
-    before preparing it. It is more efficient to call ``prepare`` directly.
+    before preparing it. It is more efficient to call ``prepare`` directly
+    because it will skip geometries that are already prepared.
 
     This function will return False for missing geometries (None).
 
@@ -215,6 +216,8 @@ def is_prepared(geometry, **kwargs):
     >>> from pygeos import prepare; prepare(geometry);
     >>> is_prepared(geometry)
     True
+    >>> is_prepared(None)
+    False
     """
     return lib.is_prepared(geometry, **kwargs)
 
