@@ -12,6 +12,7 @@ __all__ = [
     "buffer",
     "offset_curve",
     "centroid",
+    "clip_by_rect",
     "convex_hull",
     "delaunay_triangles",
     "envelope",
@@ -20,6 +21,7 @@ __all__ = [
     "make_valid",
     "normalize",
     "point_on_surface",
+    "reverse",
     "simplify",
     "snap",
     "voronoi_polygons",
@@ -36,6 +38,7 @@ class BufferJoinStyles(IntEnum):
     ROUND = 1
     MITRE = 2
     BEVEL = 3
+
 
 @multithreading_enabled
 def boundary(geometry, **kwargs):
@@ -164,19 +167,14 @@ def buffer(
         np.intc(cap_style),
         np.intc(join_style),
         mitre_limit,
-        np.bool(single_sided),
+        np.bool_(single_sided),
         **kwargs
     )
 
 
 @multithreading_enabled
 def offset_curve(
-    geometry,
-    distance,
-    quadsegs=8,
-    join_style="round",
-    mitre_limit=5.0,
-    **kwargs
+    geometry, distance, quadsegs=8, join_style="round", mitre_limit=5.0, **kwargs
 ):
     """
     Returns a (Multi)LineString at a distance from the object
@@ -257,6 +255,50 @@ def centroid(geometry, **kwargs):
     """
     return lib.centroid(geometry, **kwargs)
 
+
+@multithreading_enabled
+def clip_by_rect(geometry, xmin, ymin, xmax, ymax, **kwargs):
+    """
+    Returns the portion of a geometry within a rectangle.
+
+    The geometry is clipped in a fast but possibly dirty way. The output is
+    not guaranteed to be valid. No exceptions will be raised for topological
+    errors.
+
+    Note: empty geometries or geometries that do not overlap with the
+    specified bounds will result in GEOMETRYCOLLECTION EMPTY.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+        The geometry to be clipped
+    xmin : float
+        Minimum x value of the rectangle
+    ymin : float
+        Minimum y value of the rectangle
+    xmax : float
+        Maximum x value of the rectangle
+    ymax : float
+        Maximum y value of the rectangle
+
+    Examples
+    --------
+    >>> line = Geometry("LINESTRING (0 0, 10 10)")
+    >>> clip_by_rect(line, 0., 0., 1., 1.)
+    <pygeos.Geometry LINESTRING (0 0, 1 1)>
+    """
+    if not all(np.isscalar(val) for val in [xmin, ymin, xmax, ymax]):
+        raise TypeError("xmin/ymin/xmax/ymax only accepts scalar values")
+    return lib.clip_by_rect(
+        geometry,
+        np.double(xmin),
+        np.double(ymin),
+        np.double(xmax),
+        np.double(ymax),
+        **kwargs
+    )
+
+
 @multithreading_enabled
 def convex_hull(geometry, **kwargs):
     """Computes the minimum convex geometry that encloses an input geometry.
@@ -273,6 +315,7 @@ def convex_hull(geometry, **kwargs):
     <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>
     """
     return lib.convex_hull(geometry, **kwargs)
+
 
 @multithreading_enabled
 def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
@@ -310,6 +353,7 @@ def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     """
     return lib.delaunay_triangles(geometry, tolerance, only_edges, **kwargs)
 
+
 @multithreading_enabled
 def envelope(geometry, **kwargs):
     """Computes the minimum bounding box that encloses an input geometry.
@@ -330,6 +374,7 @@ def envelope(geometry, **kwargs):
     <pygeos.Geometry POINT EMPTY>
     """
     return lib.envelope(geometry, **kwargs)
+
 
 @multithreading_enabled
 def extract_unique_points(geometry, **kwargs):
@@ -397,6 +442,7 @@ def make_valid(geometry, **kwargs):
     """
     return lib.make_valid(geometry, **kwargs)
 
+
 @multithreading_enabled
 def normalize(geometry, **kwargs):
     """Converts Geometry to normal form (or canonical form).
@@ -416,6 +462,7 @@ def normalize(geometry, **kwargs):
     <pygeos.Geometry MULTILINESTRING ((2 2, 3 3), (0 0, 1 1))>
     """
     return lib.normalize(geometry, **kwargs)
+
 
 @multithreading_enabled
 def point_on_surface(geometry, **kwargs):
@@ -437,6 +484,38 @@ def point_on_surface(geometry, **kwargs):
     <pygeos.Geometry POINT EMPTY>
     """
     return lib.point_on_surface(geometry, **kwargs)
+
+
+@requires_geos("3.7.0")
+@multithreading_enabled
+def reverse(geometry, **kwargs):
+    """Returns a copy of a Geometry with the order of coordinates reversed.
+
+    If a Geometry is a polygon with interior rings, the interior rings are also
+    reversed.
+
+    Points are unchanged. None is returned where Geometry is None.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    See also
+    --------
+    is_ccw : Checks if a Geometry is clockwise.
+
+    Examples
+    --------
+    >>> reverse(Geometry("LINESTRING (0 0, 1 2)"))
+    <pygeos.Geometry LINESTRING (1 2, 0 0)>
+    >>> reverse(Geometry("POLYGON ((0 0, 1 0, 1 1, 0 1, 0 0))"))
+    <pygeos.Geometry POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))>
+    >>> reverse(None) is None
+    True
+    """
+
+    return lib.reverse(geometry, **kwargs)
+
 
 @multithreading_enabled
 def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
@@ -470,6 +549,7 @@ def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
     else:
         return lib.simplify(geometry, tolerance, **kwargs)
 
+
 @multithreading_enabled
 def snap(geometry, reference, tolerance, **kwargs):
     """Snaps an input geometry to reference geometry's vertices.
@@ -499,6 +579,7 @@ def snap(geometry, reference, tolerance, **kwargs):
     """
     return lib.snap(geometry, reference, tolerance, **kwargs)
 
+
 @multithreading_enabled
 def voronoi_polygons(
     geometry, tolerance=0.0, extend_to=None, only_edges=False, **kwargs
@@ -523,9 +604,10 @@ def voronoi_polygons(
 
     Examples
     --------
+    >>> from pygeos import normalize
     >>> points = Geometry("MULTIPOINT (2 2, 4 2)")
-    >>> voronoi_polygons(points)
-    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((3 0, 0 0, 0 4, 3 4, 3 0)), PO...>
+    >>> normalize(voronoi_polygons(points))
+    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((3 0, 3 4, 6 4, 6 0, 3 0)), PO...>
     >>> voronoi_polygons(points, only_edges=True)
     <pygeos.Geometry LINESTRING (3 4, 3 0)>
     >>> voronoi_polygons(Geometry("MULTIPOINT (2 2, 4 2, 4.2 2)"), 0.5, only_edges=True)
