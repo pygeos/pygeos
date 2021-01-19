@@ -490,7 +490,7 @@ def point_on_surface(geometry, **kwargs):
 def polygonize(geometries, **kwargs):
     """Creates polygons formed from the linework of a set of Geometries.
 
-    Polygonizes a set of Geometries which contain linework that
+    Polygonizes an array of Geometries that contain linework which
     represents the edges of a planar graph. All types of Geometry are
     accepted as input; the constituent linework is extracted as the edges
     to be polygonized.
