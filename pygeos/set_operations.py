@@ -24,7 +24,8 @@ def difference(a, b, grid_size=None, **kwargs):
     grid of that size and resulting coordinates will be snapped to that same
     grid.  If 0, this operation will use double precision coordinates.  If None,
     the highest precision of the inputs will be used, which may be previously
-    set using set_precision.
+    set using set_precision.  Note: returned geometry does not have precision
+    set unless specified previously by set_precision.
 
     Parameters
     ----------
@@ -53,7 +54,7 @@ def difference(a, b, grid_size=None, **kwargs):
     >>> normalize(difference(box1, box2))
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0))>
     >>> box1 = box(0.1, 0.2, 2.1, 2.1)
-    >>> normalize(difference(box1, box2, grid_size=1)) # doctest: +SKIP
+    >>> difference(box1, box2, grid_size=1) # doctest: +SKIP
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 1, 2 1, 2 0, 0 0))>
     """
 
@@ -77,7 +78,8 @@ def intersection(a, b, grid_size=None, **kwargs):
     grid of that size and resulting coordinates will be snapped to that same
     grid.  If 0, this operation will use double precision coordinates.  If None,
     the highest precision of the inputs will be used, which may be previously
-    set using set_precision.
+    set using set_precision.  Note: returned geometry does not have precision
+    set unless specified previously by set_precision.
 
     Parameters
     ----------
@@ -103,7 +105,7 @@ def intersection(a, b, grid_size=None, **kwargs):
     >>> normalize(intersection(box1, box2))
     <pygeos.Geometry POLYGON ((1 1, 1 2, 2 2, 2 1, 1 1))>
     >>> box1 = box(0.1, 0.2, 2.1, 2.1)
-    >>> normalize(intersection(box1, box2, grid_size=1)) # doctest: +SKIP
+    >>> intersection(box1, box2, grid_size=1) # doctest: +SKIP
     <pygeos.Geometry POLYGON ((1 1, 1 2, 2 2, 2 1, 1 1))>
     """
 
@@ -160,7 +162,8 @@ def symmetric_difference(a, b, grid_size=None, **kwargs):
     grid of that size and resulting coordinates will be snapped to that same
     grid.  If 0, this operation will use double precision coordinates.  If None,
     the highest precision of the inputs will be used, which may be previously
-    set using set_precision.
+    set using set_precision.  Note: returned geometry does not have precision
+    set unless specified previously by set_precision.
 
     Parameters
     ----------
@@ -186,7 +189,7 @@ def symmetric_difference(a, b, grid_size=None, **kwargs):
     >>> normalize(symmetric_difference(box1, box2))
     <pygeos.Geometry MULTIPOLYGON (((1 2, 1 3, 3 3, 3 1, 2 1, 2 2, 1 2)), ((0 0,...>
     >>> box1 = box(0.1, 0.2, 2.1, 2.1)
-    >>> normalize(symmetric_difference(box1, box2, grid_size=1)) # doctest: +SKIP
+    >>> symmetric_difference(box1, box2, grid_size=1) # doctest: +SKIP
     <pygeos.Geometry MULTIPOLYGON (((1 2, 1 3, 3 3, 3 1, 2 1, 2 2, 1 2)), ((0 0,...>
     """
 
@@ -242,7 +245,8 @@ def union(a, b, grid_size=None, **kwargs):
     grid of that size and resulting coordinates will be snapped to that same
     grid.  If 0, this operation will use double precision coordinates.  If None,
     the highest precision of the inputs will be used, which may be previously
-    set using set_precision.
+    set using set_precision.  Note: returned geometry does not have precision
+    set unless specified previously by set_precision.
 
     Parameters
     ----------
@@ -270,7 +274,7 @@ def union(a, b, grid_size=None, **kwargs):
     >>> normalize(union(box1, box2))
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
     >>> box1 = box(0.1, 0.2, 2.1, 2.1)
-    >>> normalize(union(box1, box2, grid_size=1)) # doctest: +SKIP
+    >>> union(box1, box2, grid_size=1) # doctest: +SKIP
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
     """
 
@@ -297,7 +301,8 @@ def union_all(geometries, grid_size=None, axis=None, **kwargs):
     grid of that size and resulting coordinates will be snapped to that same
     grid.  If 0, this operation will use double precision coordinates.  If None,
     the highest precision of the inputs will be used, which may be previously
-    set using set_precision.
+    set using set_precision.  Note: returned geometry does not have precision
+    set unless specified previously by set_precision.
 
     Parameters
     ----------
@@ -330,7 +335,7 @@ def union_all(geometries, grid_size=None, axis=None, **kwargs):
     >>> normalize(union_all([box1, box2]))
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
     >>> box1 = box(0.1, 0.2, 2.1, 2.1)
-    >>> normalize(union_all([box1, box2], grid_size=1)) # doctest: +SKIP
+    >>> union_all([box1, box2], grid_size=1) # doctest: +SKIP
     <pygeos.Geometry POLYGON ((0 0, 0 2, 1 2, 1 3, 3 3, 3 1, 2 1, 2 0, 0 0))>
 
     """

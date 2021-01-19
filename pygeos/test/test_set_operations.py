@@ -195,14 +195,15 @@ def test_set_operation_prec_reduce_1dim(n, func, related_func, grid_size):
 @pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS_PREC)
 def test_set_operation_prec_reduce_axis(func, related_func):
     data = [[point] * 2] * 3  # shape = (3, 2)
-    actual = func(data, grid_size=1)
-    assert actual.shape == (2,)
-    actual = func(data, grid_size=1, axis=0)  # default
+    actual = func(data, grid_size=1, axis=None)  # default
+    assert isinstance(actual, Geometry)  # scalar output
+    actual = func(data, grid_size=1, axis=0)
     assert actual.shape == (2,)
     actual = func(data, grid_size=1, axis=1)
     assert actual.shape == (3,)
     actual = func(data, grid_size=1, axis=-1)
     assert actual.shape == (3,)
+
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="GEOS < 3.9")
