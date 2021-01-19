@@ -438,6 +438,11 @@ def test_polygonize_array():
     assert result[0] == expected
     assert result[1] == expected
 
+    result = pygeos.polygonize(arr, axis=1)
+    assert result.shape == (2,)
+    result = pygeos.polygonize(arr, axis=0)
+    assert result.shape == (3,)
+
     arr = np.array([[lines, lines], [lines, lines], [lines, lines]])
     assert arr.shape == (3, 2, 3)
     result = pygeos.polygonize(arr)

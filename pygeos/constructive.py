@@ -499,6 +499,10 @@ def polygonize(geometries, **kwargs):
     ----------
     geometries : array_like
         An array of geometries.
+    axis : int
+        Axis along which the geometries are polygonized.
+        The default is to perform a reduction over the last dimension
+        of the input array. A 1D array results in a scalar geometry.
 
     Examples
     --------
