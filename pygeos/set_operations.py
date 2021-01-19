@@ -120,7 +120,7 @@ def intersection(a, b, grid_size=None, **kwargs):
 
 
 @multithreading_enabled
-def intersection_all(geometries, axis=0, **kwargs):
+def intersection_all(geometries, axis=None, **kwargs):
     """Returns the intersection of multiple geometries.
 
     This function ignores None values when other Geometry elements are present.
@@ -129,10 +129,10 @@ def intersection_all(geometries, axis=0, **kwargs):
     Parameters
     ----------
     geometries : array_like
-    axis : int
-        Axis along which the operation is performed. The default (zero)
-        performs the operation over the first dimension of the input array.
-        axis may be negative, in which case it counts from the last to the
+    axis : int (default None)
+        Axis along which the operation is performed. The default (None)
+        performs the operation over all axes, returning a scalar value.
+        Axis may be negative, in which case it counts from the last to the
         first axis.
 
     See also
@@ -203,7 +203,7 @@ def symmetric_difference(a, b, grid_size=None, **kwargs):
 
 
 @multithreading_enabled
-def symmetric_difference_all(geometries, axis=0, **kwargs):
+def symmetric_difference_all(geometries, axis=None, **kwargs):
     """Returns the symmetric difference of multiple geometries.
 
     This function ignores None values when other Geometry elements are present.
@@ -212,10 +212,10 @@ def symmetric_difference_all(geometries, axis=0, **kwargs):
     Parameters
     ----------
     geometries : array_like
-    axis : int
-        Axis along which the operation is performed. The default (zero)
-        performs the operation over the first dimension of the input array.
-        axis may be negative, in which case it counts from the last to the
+    axis : int (default None)
+        Axis along which the operation is performed. The default (None)
+        performs the operation over all axes, returning a scalar value.
+        Axis may be negative, in which case it counts from the last to the
         first axis.
 
     See also
@@ -287,7 +287,7 @@ def union(a, b, grid_size=None, **kwargs):
 
 
 @multithreading_enabled
-def union_all(geometries, grid_size=None, axis=0, **kwargs):
+def union_all(geometries, grid_size=None, axis=None, **kwargs):
     """Returns the union of multiple geometries.
 
     This function ignores None values when other Geometry elements are present.
@@ -305,10 +305,10 @@ def union_all(geometries, grid_size=None, axis=0, **kwargs):
     grid_size : float, optional (default: None).
         Precision grid size; requires GEOS >= 3.9.0.  Will use the highest
         precision of the inputs by default.
-    axis : int
-        Axis along which the operation is performed. The default (zero)
-        performs the operation over the first dimension of the input array.
-        axis may be negative, in which case it counts from the last to the
+    axis : int (default None)
+        Axis along which the operation is performed. The default (None)
+        performs the operation over all axes, returning a scalar value.
+        Axis may be negative, in which case it counts from the last to the
         first axis.
 
     See also
@@ -401,7 +401,7 @@ def coverage_union(a, b, **kwargs):
 
 @requires_geos("3.8.0")
 @multithreading_enabled
-def coverage_union_all(geometries, axis=0, **kwargs):
+def coverage_union_all(geometries, axis=None, **kwargs):
     """Returns the union of multiple polygons of a geometry collection.
     This is an optimized version of union which assumes the polygons
     to be non-overlapping.
@@ -411,10 +411,10 @@ def coverage_union_all(geometries, axis=0, **kwargs):
     Parameters
     ----------
     geometries : array_like
-    axis : int
-        Axis along which the operation is performed. The default (zero)
-        performs the operation over the first dimension of the input array.
-        axis may be negative, in which case it counts from the last to the
+    axis : int (default None)
+        Axis along which the operation is performed. The default (None)
+        performs the operation over all axes, returning a scalar value.
+        Axis may be negative, in which case it counts from the last to the
         first axis.
 
     See also

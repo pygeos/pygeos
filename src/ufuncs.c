@@ -321,6 +321,27 @@ finish:
 }
 static PyUFuncGenericFunction YY_b_p_funcs[1] = {&YY_b_p_func};
 
+static char is_prepared_dtypes[2] = {NPY_OBJECT, NPY_BOOL};
+static void is_prepared_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                             void* data) {
+  GEOSGeometry* in1 = NULL;
+  GEOSPreparedGeometry* in1_prepared = NULL;
+
+  GEOS_INIT_THREADS;
+
+  UNARY_LOOP {
+    /* get the geometry: return on error */
+    if (!get_geom_with_prepared(*(GeometryObject**)ip1, &in1, &in1_prepared)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      break;
+    }
+    *(npy_bool*)op1 = (in1_prepared != NULL);
+  }
+
+  GEOS_FINISH_THREADS;
+}
+static PyUFuncGenericFunction is_prepared_funcs[1] = {&is_prepared_func};
+
 /* Define the geom -> geom functions (Y_Y) */
 static void* envelope_data[1] = {GEOSEnvelope_r};
 static void* convex_hull_data[1] = {GEOSConvexHull_r};
@@ -2530,6 +2551,11 @@ TODO relate functions
                                   PyUFunc_None, #NAME, "", 0);                   \
   PyDict_SetItemString(d, #NAME, ufunc)
 
+#define DEFINE_YY_Y_REORDERABLE(NAME)                                            \
+  ufunc = PyUFunc_FromFuncAndData(YY_Y_funcs, NAME##_data, YY_Y_dtypes, 1, 2, 1, \
+                                  PyUFunc_ReorderableNone, #NAME, "", 0);        \
+  PyDict_SetItemString(d, #NAME, ufunc)
+
 #define DEFINE_Y_d(NAME)                                                       \
   ufunc = PyUFunc_FromFuncAndData(Y_d_funcs, NAME##_data, Y_d_dtypes, 1, 1, 1, \
                                   PyUFunc_None, #NAME, "", 0);                 \
@@ -2596,6 +2622,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_YY_b(equals);
   DEFINE_YY_b_p(covers);
   DEFINE_YY_b_p(covered_by);
+  DEFINE_CUSTOM(is_prepared, 1);
 
   DEFINE_Y_Y(envelope);
   DEFINE_Y_Y(convex_hull);
@@ -2621,10 +2648,13 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Yd_Y(simplify);
   DEFINE_Yd_Y(simplify_preserve_topology);
 
-  DEFINE_YY_Y(intersection);
+  // 'REORDERABLE' sets PyUFunc_ReorderableNone instead of PyUFunc_None as 'identity',
+  // meaning that the order of arguments does not matter. This enables reduction over
+  // multiple (or all) axes.
+  DEFINE_YY_Y_REORDERABLE(intersection);
   DEFINE_YY_Y(difference);
-  DEFINE_YY_Y(symmetric_difference);
-  DEFINE_YY_Y(union);
+  DEFINE_YY_Y_REORDERABLE(symmetric_difference);
+  DEFINE_YY_Y_REORDERABLE(union);
   DEFINE_YY_Y(shared_paths);
 
   DEFINE_Y_d(get_x);
