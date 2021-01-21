@@ -4,7 +4,7 @@ Changelog
 Version 0.9 (unreleased)
 ------------------------
 
-**Major changes**
+**Major enhancements**
 
 * Addition of ``prepare`` function that generates a GEOS prepared geometry which is stored on
   the Geometry object itself. All binary predicates (except ``equals``) make use of this.
@@ -35,7 +35,7 @@ Version 0.9 (unreleased)
 * Argument in ``line_interpolate_point`` and ``line_locate_point``
   was renamed from ``normalize`` to ``normalized`` (#209)
 
-**Enhancements**
+**Added GEOS functions**
 
 * Release the GIL for ``is_geometry()``, ``is_missing()``, and
   ``is_valid_input()`` (#207)
