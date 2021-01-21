@@ -7,6 +7,3 @@ dependencies:
   - numpy==1.19.*
   - numpydoc==1.1.*
   - Cython==0.29.*
-  # include those here to ensure we get the latest versions
-  - sphinx
-  - sphinx_rtd_theme
