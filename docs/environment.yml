@@ -1,6 +1,6 @@
 name: pygeos
 channels:
-  - conda-forge
+  - defaults
 dependencies:
   - python==3.8.*
   - geos==3.8.*
