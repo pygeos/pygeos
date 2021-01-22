@@ -60,6 +60,16 @@ Version 0.9 (unreleased)
   files (#239)
 * Handle GEOS beta versions  (#262)
 
+**Acknowledgments**
+
+Thanks to everyone who contributed to this release!
+People with a "+" by their names contributed a patch for the first time.
+
+* Brendan Ward
+* Casper van der Wel
+* Joris Van den Bossche
+* Mike Taves
+
 
 Version 0.8 (2020-09-06)
 ------------------------
@@ -90,10 +100,7 @@ Version 0.8 (2020-09-06)
 
 **Acknowledgments**
 
-Thanks to everyone who contributed to this release!
-People with a "+" by their names contributed a patch for the first time.
-
-* Brendan Ward
+Thanks to everyone who Mike T
 * Casper van der Wel
 * Joris Van den Bossche
 * Krishna Chaitanya +
