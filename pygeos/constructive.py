@@ -495,6 +495,12 @@ def polygonize(geometries, **kwargs):
     accepted as input; the constituent linework is extracted as the edges
     to be polygonized.
 
+    This function returns the polygons within a GeometryCollection.
+    Individual Polygons can be obtained using `get_geometry` to get
+    a single polygon or `get_parts` to get an array of polygons.
+    MultiPolygons can be constructed from the output using
+    ``pygeos.multipolygons(pygeos.get_parts(pygeos.polygonize(geometries)))``.
+
     Parameters
     ----------
     geometries : array_like
@@ -503,6 +509,14 @@ def polygonize(geometries, **kwargs):
         Axis along which the geometries are polygonized.
         The default is to perform a reduction over the last dimension
         of the input array. A 1D array results in a scalar geometry.
+
+    Returns
+    -------
+    GeometryCollection or array of GeometryCollections
+
+    See Also
+    --------
+    get_parts, get_geometry
 
     Examples
     --------
