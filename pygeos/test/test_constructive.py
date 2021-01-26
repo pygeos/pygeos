@@ -438,11 +438,6 @@ def test_polygonize_array():
     assert result[0] == expected
     assert result[1] == expected
 
-    result = pygeos.polygonize(arr, axis=1)
-    assert result.shape == (2,)
-    result = pygeos.polygonize(arr, axis=0)
-    assert result.shape == (3,)
-
     arr = np.array([[lines, lines], [lines, lines], [lines, lines]])
     assert arr.shape == (3, 2, 3)
     result = pygeos.polygonize(arr)
@@ -450,6 +445,22 @@ def test_polygonize_array():
     assert result.shape == (3, 2)
     for res in result.flatten():
         assert res == expected
+
+
+@pytest.mark.skipif(
+    np.__version__ < "1.15", reason="axis keyword for gufunc introduced in np 1.15"
+)
+def test_polygonize_array_axis():
+    lines = [
+        pygeos.Geometry("LINESTRING (0 0, 1 1)"),
+        pygeos.Geometry("LINESTRING (0 0, 0 1)"),
+        pygeos.Geometry("LINESTRING (0 1, 1 1)"),
+    ]
+    arr = np.array([lines, lines])  # shape (2, 3)
+    result = pygeos.polygonize(arr, axis=1)
+    assert result.shape == (2,)
+    result = pygeos.polygonize(arr, axis=0)
+    assert result.shape == (3,)
 
 
 def test_polygonize_missing():
