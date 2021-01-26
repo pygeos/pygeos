@@ -257,7 +257,7 @@ static PyUFuncGenericFunction YY_b_funcs[1] = {&YY_b_func};
 static void* contains_func_tuple[2] = {GEOSContains_r, GEOSPreparedContains_r};
 static void* contains_data[1] = {contains_func_tuple};
 static char GEOSContainsProperly(void* context, void* g1, void* g2) {
-  const GEOSPreparedGeometry* prepared_geom_tmp;
+  const GEOSPreparedGeometry* prepared_geom_tmp = NULL;
   char ret;
 
   prepared_geom_tmp = GEOSPrepare_r(context, g1);
