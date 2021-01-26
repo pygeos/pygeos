@@ -256,7 +256,19 @@ static PyUFuncGenericFunction YY_b_funcs[1] = {&YY_b_func};
 /* Define the geom, geom -> bool functions (YY_b) prepared */
 static void* contains_func_tuple[2] = {GEOSContains_r, GEOSPreparedContains_r};
 static void* contains_data[1] = {contains_func_tuple};
-static void* contains_properly_func_tuple[2] = {NULL, GEOSPreparedContainsProperly_r};
+static char GEOSContainsProperly(void* context, void* g1, void* g2) {
+  const GEOSPreparedGeometry* prepared_geom_tmp;
+  char ret;
+
+  prepared_geom_tmp = GEOSPrepare_r(context, g1);
+  if (prepared_geom_tmp == NULL) {
+      return 2;
+    }
+  ret = GEOSPreparedContainsProperly_r(context, prepared_geom_tmp, g2);
+  GEOSPreparedGeom_destroy_r(context, prepared_geom_tmp);
+  return ret;
+}
+static void* contains_properly_func_tuple[2] = {GEOSContainsProperly, GEOSPreparedContainsProperly_r};
 static void* contains_properly_data[1] = {contains_properly_func_tuple};
 static void* covered_by_func_tuple[2] = {GEOSCoveredBy_r, GEOSPreparedCoveredBy_r};
 static void* covered_by_data[1] = {covered_by_func_tuple};
@@ -300,10 +312,6 @@ static void YY_b_p_func(char** args, npy_intp* dimensions, npy_intp* steps, void
       ret = 0;
     } else {
       if (in1_prepared == NULL) {
-        if (func == NULL) {
-          errstate = PGERR_GEOS_EXCEPTION;
-          goto finish;
-        }
         /* call the GEOS function */
         ret = func(ctx, in1, in2);
       } else {

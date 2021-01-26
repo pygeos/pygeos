@@ -470,7 +470,9 @@ def contains_properly(a, b, **kwargs):
     "contain properly" itself, which contrasts with the `contains` function,
     where common points on the boundary are allowed.
 
-    Important: this function only works for prepared geometries.
+    Note: this function will prepare the geometries under the hood if needed.
+    You can prepare the geometries in advance to avoid repeated preparation
+    when calling this function multiple times.
 
     Parameters
     ----------
@@ -486,8 +488,6 @@ def contains_properly(a, b, **kwargs):
     >>> area1 = Geometry("POLYGON((0 0, 3 0, 3 3, 0 3, 0 0))")
     >>> area2 = Geometry("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))")
     >>> area3 = Geometry("POLYGON((1 1, 2 1, 2 2, 1 2, 1 1))")
-    >>> from pygeos import prepare
-    >>> prepare(area1);
 
     ``area1`` and ``area2`` have a common border:
 
@@ -503,8 +503,6 @@ def contains_properly(a, b, **kwargs):
     >>> contains_properly(area1, area3)
     True
     """
-    # TODO Do this always or leave to the user?
-    # pygeos.prepare(a)
     return lib.contains_properly(a, b, **kwargs)
 
 
