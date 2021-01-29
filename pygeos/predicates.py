@@ -369,13 +369,11 @@ def is_valid_reason(geometry, **kwargs):
 
 @multithreading_enabled
 def crosses(a, b, **kwargs):
-    """Returns True if the intersection of two geometries spatially crosses.
+    """Returns True if A and B spatially cross.
 
-    That is: the geometries have some, but not all interior points in common.
-    The geometries must intersect and the intersection must have a
-    dimensionality less than the maximum dimension of the two input geometries.
-    Additionally, the intersection of the two geometries must not equal either
-    of the source geometries.
+    A crosses B if they have some but not all interior points in common,
+    the intersection is one dimension less than the maximum dimension of A or B,
+    and the intersection is not equal to either A or B.
 
     Parameters
     ----------
@@ -637,8 +635,12 @@ def intersects(a, b, **kwargs):
 
 @multithreading_enabled
 def overlaps(a, b, **kwargs):
-    """Returns True if A and B intersect, but one does not completely contain
-    the other.
+    """Returns True if A and B spatially overlap.
+
+    A and B overlap if they have some but not all points in common, have the
+    same dimension, and the intersection of the interiors of the two geometries
+    has the same dimension as the geometries themselves.  That is, only polyons
+    can overlap other polygons and only lines can overlap other lines.
 
     Parameters
     ----------
@@ -650,14 +652,23 @@ def overlaps(a, b, **kwargs):
 
     Examples
     --------
-    >>> line = Geometry("LINESTRING(0 0, 1 1)")
-    >>> overlaps(line, line)
+    >>> poly = Geometry("POLYGON ((0 0, 0 4, 4 4, 4 0, 0 0))")
+    >>> overlaps(poly, poly)
     False
-    >>> overlaps(line, Geometry("LINESTRING(0 0, 2 2)"))
+    >>> overlaps(poly, Geometry("POLYGON ((0 0, 0 2, 2 2, 2 0, 0 0))"))
     False
-    >>> overlaps(line, Geometry("LINESTRING(0.5 0.5, 2 2)"))
+    >>> overlaps(poly, Geometry("POLYGON ((2 2, 2 6, 6 6, 6 2, 2 2))"))
     True
-    >>> overlaps(line, Geometry("POINT (0.5 0.5)"))
+    >>> line = Geometry("LINESTRING (2 2, 6 6)")
+    >>> overlaps(poly, line)
+    False
+    >>> overlaps(line, Geometry("LINESTRING (0 0, 4 4)"))
+    True
+    >>> overlaps(line, Geometry("LINESTRING (6 0, 0 6)"))
+    >>> False
+    >>> overlaps(poly, Geometry("POINT (2 2)"))
+    False
+    >>> overlaps(poly, None)
     False
     >>> overlaps(None, None)
     False
