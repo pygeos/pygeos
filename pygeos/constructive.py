@@ -15,6 +15,7 @@ __all__ = [
     "clip_by_rect",
     "convex_hull",
     "delaunay_triangles",
+    "densify",
     "envelope",
     "extract_unique_points",
     "build_area",
@@ -352,6 +353,39 @@ def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>
     """
     return lib.delaunay_triangles(geometry, tolerance, only_edges, **kwargs)
+
+
+@requires_geos("3.10.0")
+@multithreading_enabled
+def densify(geometry, tolerance, **kwargs):
+    """Adds vertices to line segments based on tolerance.
+
+    Additional vertices will be added to every line segment in an input geometry
+    so that segments are no greater than tolerance.  New vertices will evenly
+    subdivide each segment.
+
+    Only linear components of input geometries are densified; other geometries
+    are returned unmodified.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    tolerance : float or array_like
+        Additional vertices will be added so that all line segments are no
+        greater than this value.  Must be greater than 0.
+
+    Examples
+    --------
+    >>> line = Geometry("LINESTRING (0 0, 0 10)")
+    >>> densify(line, tolerance=6)
+    <pygeos.Geometry LINESTRING (0 0, 0 5, 0 10)>
+    >>> poly = Geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))")
+    >>> densify(poly, tolerance=6)
+    <pygeos.Geometry POLYGON ((0 0, 5 0, 10 0, 10 5, 10 10, 5 10, 0 10, 0 5, 0 0))>
+    >>> densify(None, tolerance=5) is None
+    True
+    """
+    return lib.densify(geometry, tolerance, **kwargs)
 
 
 @multithreading_enabled
