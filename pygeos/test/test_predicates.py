@@ -14,6 +14,7 @@ UNARY_PREDICATES = (
     pygeos.is_missing,
     pygeos.is_geometry,
     pygeos.is_valid_input,
+    pygeos.is_prepared,
     pytest.param(pygeos.is_ccw, marks=pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")),
 )
 
@@ -41,7 +42,7 @@ BINARY_PREPARED_PREDICATES = tuple(
 def test_unary_array(geometry, func):
     actual = func([geometry, geometry])
     assert actual.shape == (2,)
-    assert actual.dtype == np.bool
+    assert actual.dtype == np.bool_
 
 
 @pytest.mark.parametrize("func", UNARY_PREDICATES)
@@ -65,7 +66,7 @@ def test_unary_missing(func):
 def test_binary_array(a, func):
     actual = func([a, a], point)
     assert actual.shape == (2,)
-    assert actual.dtype == np.bool
+    assert actual.dtype == np.bool_
 
 
 @pytest.mark.parametrize("func", BINARY_PREDICATES)
@@ -88,10 +89,10 @@ def test_equals_exact_tolerance():
     p2 = pygeos.points(50.1, 4.1)
     actual = pygeos.equals_exact([p1, p2, None], p1, tolerance=0.05)
     np.testing.assert_allclose(actual, [True, False, False])
-    assert actual.dtype == np.bool
+    assert actual.dtype == np.bool_
     actual = pygeos.equals_exact([p1, p2, None], p1, tolerance=0.2)
     np.testing.assert_allclose(actual, [True, True, False])
-    assert actual.dtype == np.bool
+    assert actual.dtype == np.bool_
 
     # default value for tolerance
     assert pygeos.equals_exact(p1, p1).item() is True
@@ -165,10 +166,25 @@ def test_is_ccw(geom, expected):
     assert pygeos.is_ccw(geom) == expected
 
 
+def _prepare_with_copy(geometry):
+    """Prepare without modifying inplace"""
+    geometry = pygeos.apply(geometry, lambda x: x)  # makes a copy
+    pygeos.prepare(geometry)
+    return geometry
+
+
 @pytest.mark.parametrize("a", all_types)
 @pytest.mark.parametrize("func", BINARY_PREPARED_PREDICATES)
 def test_binary_prepared(a, func):
     actual = func(a, point)
-    pygeos.lib.prepare(a)
-    result = func(a, point)
+    result = func(_prepare_with_copy(a), point)
     assert actual == result
+
+@pytest.mark.parametrize("geometry", all_types + (empty,))
+def test_is_prepared_true(geometry):
+    assert pygeos.is_prepared(_prepare_with_copy(geometry))
+
+
+@pytest.mark.parametrize("geometry", all_types + (empty, None))
+def test_is_prepared_false(geometry):
+    assert not pygeos.is_prepared(geometry)

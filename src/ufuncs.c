@@ -321,6 +321,27 @@ finish:
 }
 static PyUFuncGenericFunction YY_b_p_funcs[1] = {&YY_b_p_func};
 
+static char is_prepared_dtypes[2] = {NPY_OBJECT, NPY_BOOL};
+static void is_prepared_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                             void* data) {
+  GEOSGeometry* in1 = NULL;
+  GEOSPreparedGeometry* in1_prepared = NULL;
+
+  GEOS_INIT_THREADS;
+
+  UNARY_LOOP {
+    /* get the geometry: return on error */
+    if (!get_geom_with_prepared(*(GeometryObject**)ip1, &in1, &in1_prepared)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      break;
+    }
+    *(npy_bool*)op1 = (in1_prepared != NULL);
+  }
+
+  GEOS_FINISH_THREADS;
+}
+static PyUFuncGenericFunction is_prepared_funcs[1] = {&is_prepared_func};
+
 /* Define the geom -> geom functions (Y_Y) */
 static void* envelope_data[1] = {GEOSEnvelope_r};
 static void* convex_hull_data[1] = {GEOSConvexHull_r};
@@ -509,6 +530,11 @@ static void* line_interpolate_point_normalized_data[1] = {
 
 static void* simplify_data[1] = {GEOSSimplify_r};
 static void* simplify_preserve_topology_data[1] = {GEOSTopologyPreserveSimplify_r};
+
+#if GEOS_SINCE_3_9_0
+static void* unary_union_prec_data[1] = {GEOSUnaryUnionPrec_r};
+#endif
+
 typedef void* FuncGEOS_Yd_Y(void* context, void* a, double b);
 static char Yd_Y_dtypes[3] = {NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT};
 static void Yd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -743,13 +769,13 @@ static void YY_Y_func_reduce(char** args, npy_intp* dimensions, npy_intp* steps,
       // 1. (not NULL, not NULL); run the GEOS function
       if ((in1 != NULL) && (in2 != NULL)) {
         out = func(ctx, in1, in2);
-  
+
         // Discard in1 if it was a temporary intermediate
         if (do_destroy) {
           GEOSGeom_destroy_r(ctx, in1);
         }
 
-        // Mark the newly generated geometry as intermediate. Note: out will become in1. 
+        // Mark the newly generated geometry as intermediate. Note: out will become in1.
         do_destroy = 1;
 
         // Break on error (we do this after discarding in1 to avoid memleaks)
@@ -876,7 +902,19 @@ static void* get_z_data[1] = {GetZ};
 #endif
 static void* area_data[1] = {GEOSArea_r};
 static void* length_data[1] = {GEOSLength_r};
+
 #if GEOS_SINCE_3_6_0
+static int GetPrecision(void* context, void* a, double* b) {
+  // GEOS returns -1 on error; 0 indicates double precision; > 0 indicates a precision
+  // grid size was set for this geometry.
+  double out = GEOSGeom_getPrecision_r(context, a);
+  if (out == -1) {
+    return 0;
+  }
+  *(double*)b = out;
+  return 1;
+}
+static void* get_precision_data[1] = {GetPrecision};
 static int MinimumClearance(void* context, void* a, double* b) {
   // GEOSMinimumClearance deviates from the pattern of returning 0 on exception and 1 on
   // success for functions that return an int (it follows pattern for boolean functions
@@ -1139,6 +1177,62 @@ finish:
 }
 static PyUFuncGenericFunction YYd_d_funcs[1] = {&YYd_d_func};
 
+
+#if GEOS_SINCE_3_9_0
+
+/* Define the geom, geom, double -> geom functions (YYd_Y) */
+static void* intersection_prec_data[1] = {GEOSIntersectionPrec_r};
+static void* difference_prec_data[1] = {GEOSDifferencePrec_r};
+static void* symmetric_difference_prec_data[1] = {GEOSSymDifferencePrec_r};
+static void* union_prec_data[1] = {GEOSUnionPrec_r};
+typedef void* FuncGEOS_YYd_Y(void* context, void* a, void* b, double c);
+static char YYd_Y_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT};
+
+static void YYd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
+  FuncGEOS_YYd_Y* func = (FuncGEOS_YYd_Y*)data;
+  GEOSGeometry *in1 = NULL, *in2 = NULL;
+  GEOSGeometry** geom_arr;
+
+  // allocate a temporary array to store output GEOSGeometry objects
+  geom_arr = malloc(sizeof(void*) * dimensions[0]);
+  CHECK_ALLOC(geom_arr);
+
+  GEOS_INIT_THREADS;
+
+  TERNARY_LOOP {
+    // get the geometries: return on error
+    if (!get_geom(*(GeometryObject**)ip1, &in1) ||
+        !get_geom(*(GeometryObject**)ip2, &in2)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
+    }
+    double in3 = *(double*)ip3;
+    if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3)) {
+      // in case of a missing value: return NULL (None)
+      geom_arr[i] = NULL;
+    } else {
+      geom_arr[i] = func(ctx, in1, in2, in3);
+      if (geom_arr[i] == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        break;
+      }
+    }
+  }
+
+  GEOS_FINISH_THREADS;
+
+  // fill the numpy array with PyObjects while holding the GIL
+  if (errstate == PGERR_SUCCESS) {
+    geom_arr_to_npy(geom_arr, args[3], steps[3], dimensions[0]);
+  }
+  free(geom_arr);
+}
+static PyUFuncGenericFunction YYd_Y_funcs[1] = {&YYd_Y_func};
+#endif
+
+
 /* Define functions with unique call signatures */
 
 static void* null_data[1] = {NULL};
@@ -1338,6 +1432,67 @@ static void snap_func(char** args, npy_intp* dimensions, npy_intp* steps, void* 
   free(geom_arr);
 }
 static PyUFuncGenericFunction snap_funcs[1] = {&snap_func};
+
+static char clip_by_rect_dtypes[6] = {NPY_OBJECT, NPY_DOUBLE, NPY_DOUBLE,
+                                      NPY_DOUBLE, NPY_DOUBLE, NPY_OBJECT};
+static void clip_by_rect_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                              void* data) {
+  char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4];
+  npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4];
+  npy_intp n = dimensions[0];
+  npy_intp i;
+  GEOSGeometry** geom_arr;
+  GEOSGeometry* in1 = NULL;
+
+  CHECK_NO_INPLACE_OUTPUT(5);
+
+  if ((is2 != 0) | (is3 != 0) | (is4 != 0) | (is5 != 0)) {
+    PyErr_Format(PyExc_ValueError,
+                 "clip_by_rect function called with non-scalar parameters");
+    return;
+  }
+
+  double xmin = *(double*)ip2;
+  double ymin = *(double*)ip3;
+  double xmax = *(double*)ip4;
+  double ymax = *(double*)ip5;
+
+  // allocate a temporary array to store output GEOSGeometry objects
+  geom_arr = malloc(sizeof(void*) * n);
+  CHECK_ALLOC(geom_arr);
+
+  GEOS_INIT_THREADS;
+
+  for (i = 0; i < n; i++, ip1 += is1) {
+    /* get the geometry: return on error */
+    if (!get_geom(*(GeometryObject**)ip1, &in1)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
+    }
+
+    if (in1 == NULL) {
+      // in case of a missing value: return NULL (None)
+      geom_arr[i] = NULL;
+    } else {
+      geom_arr[i] = GEOSClipByRect_r(ctx, in1, xmin, ymin, xmax, ymax);
+      if (geom_arr[i] == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        break;
+      }
+    }
+  }
+
+  GEOS_FINISH_THREADS;
+
+  // fill the numpy array with PyObjects while holding the GIL
+  if (errstate == PGERR_SUCCESS) {
+    geom_arr_to_npy(geom_arr, args[5], steps[5], dimensions[0]);
+  }
+  free(geom_arr);
+}
+static PyUFuncGenericFunction clip_by_rect_funcs[1] = {&clip_by_rect_func};
 
 static char equals_exact_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_BOOL};
 static void equals_exact_func(char** args, npy_intp* dimensions, npy_intp* steps,
@@ -1608,6 +1763,63 @@ finish:
   GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction relate_pattern_funcs[1] = {&relate_pattern_func};
+
+#if GEOS_SINCE_3_6_0
+static char set_precision_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
+static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                               void* data) {
+  GEOSGeometry* in1 = NULL;
+  GEOSGeometry** geom_arr;
+
+  CHECK_NO_INPLACE_OUTPUT(4);
+
+  // allocate a temporary array to store output GEOSGeometry objects
+  geom_arr = malloc(sizeof(void*) * dimensions[0]);
+  CHECK_ALLOC(geom_arr);
+
+  GEOS_INIT_THREADS;
+
+  QUATERNARY_LOOP {
+    // get the geometry: return on error
+    if (!get_geom(*(GeometryObject**)ip1, &in1)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
+    }
+    // grid size
+    double in2 = *(double*)ip2;
+    // preserve topology
+    npy_bool in3 = *(npy_bool*)ip3;
+    // flags:
+    // GEOS_PREC_NO_TOPO (1<<0): if set, do not try to preserve topology
+    // GEOS_PREC_KEEP_COLLAPSED  (1<<1): Not used because uncollapsed geometries are
+    // invalid and will not be retained in GEOS >= 3.9 anyway.
+    int flags = in3 ? 0 : GEOS_PREC_NO_TOPO;
+
+    if ((in1 == NULL) | npy_isnan(in2)) {
+      // in case of a missing value: return NULL (None)
+      geom_arr[i] = NULL;
+    } else {
+      geom_arr[i] = GEOSGeom_setPrecision_r(ctx, in1, in2, flags);
+      if (geom_arr[i] == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        break;
+      }
+    }
+  }
+
+  GEOS_FINISH_THREADS;
+
+  // fill the numpy array with PyObjects while holding the GIL
+  if (errstate == PGERR_SUCCESS) {
+    geom_arr_to_npy(geom_arr, args[3], steps[3], dimensions[0]);
+  }
+  free(geom_arr);
+}
+
+static PyUFuncGenericFunction set_precision_funcs[1] = {&set_precision_func};
+#endif
 
 /* define double -> geometry construction functions */
 static char points_dtypes[2] = {NPY_DOUBLE, NPY_OBJECT};
@@ -2339,6 +2551,11 @@ TODO relate functions
                                   PyUFunc_None, #NAME, "", 0);                   \
   PyDict_SetItemString(d, #NAME, ufunc)
 
+#define DEFINE_YY_Y_REORDERABLE(NAME)                                            \
+  ufunc = PyUFunc_FromFuncAndData(YY_Y_funcs, NAME##_data, YY_Y_dtypes, 1, 2, 1, \
+                                  PyUFunc_ReorderableNone, #NAME, "", 0);        \
+  PyDict_SetItemString(d, #NAME, ufunc)
+
 #define DEFINE_Y_d(NAME)                                                       \
   ufunc = PyUFunc_FromFuncAndData(Y_d_funcs, NAME##_data, Y_d_dtypes, 1, 1, 1, \
                                   PyUFunc_None, #NAME, "", 0);                 \
@@ -2361,6 +2578,11 @@ TODO relate functions
 
 #define DEFINE_YYd_d(NAME)                                                         \
   ufunc = PyUFunc_FromFuncAndData(YYd_d_funcs, NAME##_data, YYd_d_dtypes, 1, 3, 1, \
+                                  PyUFunc_None, #NAME, "", 0);                     \
+  PyDict_SetItemString(d, #NAME, ufunc)
+
+#define DEFINE_YYd_Y(NAME)                                                         \
+  ufunc = PyUFunc_FromFuncAndData(YYd_Y_funcs, NAME##_data, YYd_Y_dtypes, 1, 3, 1, \
                                   PyUFunc_None, #NAME, "", 0);                     \
   PyDict_SetItemString(d, #NAME, ufunc)
 
@@ -2400,6 +2622,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_YY_b(equals);
   DEFINE_YY_b_p(covers);
   DEFINE_YY_b_p(covered_by);
+  DEFINE_CUSTOM(is_prepared, 1);
 
   DEFINE_Y_Y(envelope);
   DEFINE_Y_Y(convex_hull);
@@ -2425,10 +2648,13 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Yd_Y(simplify);
   DEFINE_Yd_Y(simplify_preserve_topology);
 
-  DEFINE_YY_Y(intersection);
+  // 'REORDERABLE' sets PyUFunc_ReorderableNone instead of PyUFunc_None as 'identity',
+  // meaning that the order of arguments does not matter. This enables reduction over
+  // multiple (or all) axes.
+  DEFINE_YY_Y_REORDERABLE(intersection);
   DEFINE_YY_Y(difference);
-  DEFINE_YY_Y(symmetric_difference);
-  DEFINE_YY_Y(union);
+  DEFINE_YY_Y_REORDERABLE(symmetric_difference);
+  DEFINE_YY_Y_REORDERABLE(union);
   DEFINE_YY_Y(shared_paths);
 
   DEFINE_Y_d(get_x);
@@ -2455,6 +2681,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_CUSTOM(buffer, 7);
   DEFINE_CUSTOM(offset_curve, 5);
   DEFINE_CUSTOM(snap, 3);
+  DEFINE_CUSTOM(clip_by_rect, 5);
   DEFINE_CUSTOM(equals_exact, 3);
 
   DEFINE_CUSTOM(delaunay_triangles, 3);
@@ -2478,6 +2705,8 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 
 #if GEOS_SINCE_3_6_0
   DEFINE_Y_d(minimum_clearance);
+  DEFINE_Y_d(get_precision);
+  DEFINE_CUSTOM(set_precision, 3);
 #endif
 
 #if GEOS_SINCE_3_7_0
@@ -2492,6 +2721,14 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Y_Y(make_valid);
   DEFINE_Y_Y(build_area);
   DEFINE_Y_Y(coverage_union);
+#endif
+
+#if GEOS_SINCE_3_9_0
+  DEFINE_YYd_Y(difference_prec);
+  DEFINE_YYd_Y(intersection_prec);
+  DEFINE_YYd_Y(symmetric_difference_prec);
+  DEFINE_YYd_Y(union_prec);
+  DEFINE_Yd_Y(unary_union_prec);
 #endif
 
   Py_DECREF(ufunc);
