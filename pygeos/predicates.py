@@ -386,21 +386,28 @@ def crosses(a, b, **kwargs):
     Examples
     --------
     >>> line = Geometry("LINESTRING(0 0, 1 1)")
+    >>> # A contains B:
     >>> crosses(line, Geometry("POINT (0.5 0.5)"))
     False
+    >>> # A and B intersect at a point but do not share all points:
     >>> crosses(line, Geometry("MULTIPOINT ((0 1), (0.5 0.5))"))
     True
     >>> crosses(line, Geometry("LINESTRING(0 1, 1 0)"))
     True
+    >>> # A is contained by B; their intersection is a line (same dimension):
     >>> crosses(line, Geometry("LINESTRING(0 0, 2 2)"))
     False
     >>> area = Geometry("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))")
+    >>> # A contains B:
     >>> crosses(area, line)
     False
+    >>> # A and B intersect with a line (lower dimension) but do not share all points:
     >>> crosses(area, Geometry("LINESTRING(0 0, 2 2)"))
     True
+    >>> # A contains B:
     >>> crosses(area, Geometry("POINT (0.5 0.5)"))
     False
+    >>> # A contains some but not all points of B; they intersect at a point:
     >>> crosses(area, Geometry("MULTIPOINT ((2 2), (0.5 0.5))"))
     True
     """
@@ -642,6 +649,8 @@ def overlaps(a, b, **kwargs):
     has the same dimension as the geometries themselves.  That is, only polyons
     can overlap other polygons and only lines can overlap other lines.
 
+    If either A or B are None, the output is always False.
+
     Parameters
     ----------
     a, b : Geometry or array_like
@@ -653,20 +662,26 @@ def overlaps(a, b, **kwargs):
     Examples
     --------
     >>> poly = Geometry("POLYGON ((0 0, 0 4, 4 4, 4 0, 0 0))")
+    >>> # A and B share all points (are spatially equal):
     >>> overlaps(poly, poly)
     False
+    >>> # A contains B; all points of B are within A:
     >>> overlaps(poly, Geometry("POLYGON ((0 0, 0 2, 2 2, 2 0, 0 0))"))
     False
+    >>> # A partially overlaps with B:
     >>> overlaps(poly, Geometry("POLYGON ((2 2, 2 6, 6 6, 6 2, 2 2))"))
     True
     >>> line = Geometry("LINESTRING (2 2, 6 6)")
+    >>> # A and B are different dimensions; they cannot overlap:
     >>> overlaps(poly, line)
     False
+    >>> overlaps(poly, Geometry("POINT (2 2)"))
+    False
+    >>> # A and B share some but not all points:
     >>> overlaps(line, Geometry("LINESTRING (0 0, 4 4)"))
     True
+    >>> # A and B intersect only at a point (lower dimension); they do not overlap
     >>> overlaps(line, Geometry("LINESTRING (6 0, 0 6)"))
-    False
-    >>> overlaps(poly, Geometry("POINT (2 2)"))
     False
     >>> overlaps(poly, None)
     False
