@@ -665,7 +665,7 @@ def overlaps(a, b, **kwargs):
     >>> overlaps(line, Geometry("LINESTRING (0 0, 4 4)"))
     True
     >>> overlaps(line, Geometry("LINESTRING (6 0, 0 6)"))
-    >>> False
+    False
     >>> overlaps(poly, Geometry("POINT (2 2)"))
     False
     >>> overlaps(poly, None)
