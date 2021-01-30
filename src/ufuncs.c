@@ -256,8 +256,20 @@ static PyUFuncGenericFunction YY_b_funcs[1] = {&YY_b_func};
 /* Define the geom, geom -> bool functions (YY_b) prepared */
 static void* contains_func_tuple[2] = {GEOSContains_r, GEOSPreparedContains_r};
 static void* contains_data[1] = {contains_func_tuple};
-// static void* contains_properly_func_tuple[2] = {..., GEOSPreparedContainsProperly_r};
-// static void* contains_properly_data[1] = {contains_properly_func_tuple};
+static char GEOSContainsProperly(void* context, void* g1, void* g2) {
+  const GEOSPreparedGeometry* prepared_geom_tmp = NULL;
+  char ret;
+
+  prepared_geom_tmp = GEOSPrepare_r(context, g1);
+  if (prepared_geom_tmp == NULL) {
+      return 2;
+    }
+  ret = GEOSPreparedContainsProperly_r(context, prepared_geom_tmp, g2);
+  GEOSPreparedGeom_destroy_r(context, prepared_geom_tmp);
+  return ret;
+}
+static void* contains_properly_func_tuple[2] = {GEOSContainsProperly, GEOSPreparedContainsProperly_r};
+static void* contains_properly_data[1] = {contains_properly_func_tuple};
 static void* covered_by_func_tuple[2] = {GEOSCoveredBy_r, GEOSPreparedCoveredBy_r};
 static void* covered_by_data[1] = {covered_by_func_tuple};
 static void* covers_func_tuple[2] = {GEOSCovers_r, GEOSPreparedCovers_r};
@@ -530,6 +542,11 @@ static void* line_interpolate_point_normalized_data[1] = {
 
 static void* simplify_data[1] = {GEOSSimplify_r};
 static void* simplify_preserve_topology_data[1] = {GEOSTopologyPreserveSimplify_r};
+
+#if GEOS_SINCE_3_9_0
+static void* unary_union_prec_data[1] = {GEOSUnaryUnionPrec_r};
+#endif
+
 typedef void* FuncGEOS_Yd_Y(void* context, void* a, double b);
 static char Yd_Y_dtypes[3] = {NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT};
 static void Yd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -1171,6 +1188,62 @@ finish:
   GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction YYd_d_funcs[1] = {&YYd_d_func};
+
+
+#if GEOS_SINCE_3_9_0
+
+/* Define the geom, geom, double -> geom functions (YYd_Y) */
+static void* intersection_prec_data[1] = {GEOSIntersectionPrec_r};
+static void* difference_prec_data[1] = {GEOSDifferencePrec_r};
+static void* symmetric_difference_prec_data[1] = {GEOSSymDifferencePrec_r};
+static void* union_prec_data[1] = {GEOSUnionPrec_r};
+typedef void* FuncGEOS_YYd_Y(void* context, void* a, void* b, double c);
+static char YYd_Y_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_OBJECT};
+
+static void YYd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
+  FuncGEOS_YYd_Y* func = (FuncGEOS_YYd_Y*)data;
+  GEOSGeometry *in1 = NULL, *in2 = NULL;
+  GEOSGeometry** geom_arr;
+
+  // allocate a temporary array to store output GEOSGeometry objects
+  geom_arr = malloc(sizeof(void*) * dimensions[0]);
+  CHECK_ALLOC(geom_arr);
+
+  GEOS_INIT_THREADS;
+
+  TERNARY_LOOP {
+    // get the geometries: return on error
+    if (!get_geom(*(GeometryObject**)ip1, &in1) ||
+        !get_geom(*(GeometryObject**)ip2, &in2)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
+    }
+    double in3 = *(double*)ip3;
+    if ((in1 == NULL) | (in2 == NULL) | npy_isnan(in3)) {
+      // in case of a missing value: return NULL (None)
+      geom_arr[i] = NULL;
+    } else {
+      geom_arr[i] = func(ctx, in1, in2, in3);
+      if (geom_arr[i] == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        break;
+      }
+    }
+  }
+
+  GEOS_FINISH_THREADS;
+
+  // fill the numpy array with PyObjects while holding the GIL
+  if (errstate == PGERR_SUCCESS) {
+    geom_arr_to_npy(geom_arr, args[3], steps[3], dimensions[0]);
+  }
+  free(geom_arr);
+}
+static PyUFuncGenericFunction YYd_Y_funcs[1] = {&YYd_Y_func};
+#endif
+
 
 /* Define functions with unique call signatures */
 
@@ -2520,6 +2593,11 @@ TODO relate functions
                                   PyUFunc_None, #NAME, "", 0);                     \
   PyDict_SetItemString(d, #NAME, ufunc)
 
+#define DEFINE_YYd_Y(NAME)                                                         \
+  ufunc = PyUFunc_FromFuncAndData(YYd_Y_funcs, NAME##_data, YYd_Y_dtypes, 1, 3, 1, \
+                                  PyUFunc_None, #NAME, "", 0);                     \
+  PyDict_SetItemString(d, #NAME, ufunc)
+
 #define DEFINE_CUSTOM(NAME, N_IN)                                                     \
   ufunc = PyUFunc_FromFuncAndData(NAME##_funcs, null_data, NAME##_dtypes, 1, N_IN, 1, \
                                   PyUFunc_None, #NAME, "", 0);                        \
@@ -2552,6 +2630,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_YY_b_p(crosses);
   DEFINE_YY_b_p(within);
   DEFINE_YY_b_p(contains);
+  DEFINE_YY_b_p(contains_properly);
   DEFINE_YY_b_p(overlaps);
   DEFINE_YY_b(equals);
   DEFINE_YY_b_p(covers);
@@ -2655,6 +2734,14 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Y_Y(make_valid);
   DEFINE_Y_Y(build_area);
   DEFINE_Y_Y(coverage_union);
+#endif
+
+#if GEOS_SINCE_3_9_0
+  DEFINE_YYd_Y(difference_prec);
+  DEFINE_YYd_Y(intersection_prec);
+  DEFINE_YYd_Y(symmetric_difference_prec);
+  DEFINE_YYd_Y(union_prec);
+  DEFINE_Yd_Y(unary_union_prec);
 #endif
 
   Py_DECREF(ufunc);
