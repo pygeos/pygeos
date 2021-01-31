@@ -166,6 +166,7 @@ elif "sdist" not in sys.argv:
 
     cython_modules = [
         Extension("pygeos._geometry", ["pygeos/_geometry.pyx",], **ext_options,),
+        Extension("pygeos._bulk_creation", ["pygeos/_bulk_creation.pyx",], **ext_options,),
         Extension("pygeos._geos", ["pygeos/_geos.pyx",], **ext_options,),
     ]
 

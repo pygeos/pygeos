@@ -13,6 +13,7 @@ from .linear import *
 from .coordinates import *
 from .strtree import *
 from .io import *
+from ._bulk_creation import collections_1d
 
 from ._version import get_versions
 
