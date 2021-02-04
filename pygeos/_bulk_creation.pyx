@@ -14,7 +14,8 @@ from pygeos._geos cimport (
     GEOSGeom_destroy_r,
     GEOSGeom_clone_r,
     GEOSGeom_createCollection_r,
-    get_geos_handle
+    GEOSGeomTypeId_r,
+    get_geos_handle,
 )
 from pygeos._pygeos_api cimport (
     import_pygeos_c_api,
@@ -28,12 +29,20 @@ import_pygeos_c_api()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def collections_1d(object geometries, object indices, int geom_type = 7, int ndim = 2):
+def collections_1d(
+    object geometries,
+    object indices,
+    int geometry_type = 7,
+    int ndim = 2
+):
     cdef Py_ssize_t geom_idx = 0
     cdef Py_ssize_t coll_idx = 0
     cdef Py_ssize_t coll_size = 0
     cdef GEOSGeometry *geom = NULL
     cdef GEOSGeometry *coll = NULL
+    cdef int expected_type = -1
+    cdef int expected_type_alt = -1
+    cdef int curr_type = -1
 
     # Cast input arrays and define memoryviews for later usage
     geometries = np.asarray(geometries, dtype=np.object)
@@ -49,6 +58,18 @@ def collections_1d(object geometries, object indices, int geom_type = 7, int ndi
 
     if geometries_view.size != indices_view.size:
         raise ValueError("geometries and indices do not have equal size.")
+
+    if geometry_type == 4:  # MULTIPOINT
+        expected_type = 0
+    elif geometry_type == 5:  # MULTILINESTRING
+        expected_type = 1
+        expected_type_alt = 2
+    elif geometry_type == 6:  # MULTIPOLYGON
+        expected_type = 3
+    elif geometry_type == 7:
+        pass
+    else:
+        raise ValueError(f"Invalid geometry_type: {geometry_type}.")
 
     if n_geoms == 0:
         # return immediately if there are no geometries to return
@@ -85,6 +106,17 @@ def collections_1d(object geometries, object indices, int geom_type = 7, int ndi
                         "One of the arguments is of incorrect type. Please provide only Geometry objects."
                     )
 
+                # Check geometry subtype for non-geometrycollections
+                if geometry_type != 7:
+                    curr_type = GEOSGeomTypeId_r(geos_handle, geom)
+                    if curr_type != expected_type and curr_type != expected_type_alt:
+                        # deallocate previous temp geometries (preventing memory leaks)
+                        for geom_idx in range(coll_size):
+                            GEOSGeom_destroy_r(geos_handle, <GEOSGeometry *>temp_geoms_view[geom_idx])
+                        raise TypeError(
+                            f"One of the arguments has unexpected geometry type {curr_type}."
+                        )
+
                 # ignore missing values
                 if geom == NULL:
                     continue
@@ -96,7 +128,7 @@ def collections_1d(object geometries, object indices, int geom_type = 7, int ndi
             # create the collection
             coll = GEOSGeom_createCollection_r(
                 geos_handle,
-                geom_type, 
+                geometry_type, 
                 <GEOSGeometry**> &temp_geoms_view[0],
                 <unsigned int>coll_size
             )
