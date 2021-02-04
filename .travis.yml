@@ -10,7 +10,6 @@ before_install:
   - pip install numpy cython
 
 install:
-  - python setup.py build_ext --inplace
   - pip install . --no-deps
 
 script:
