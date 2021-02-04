@@ -1,0 +1,25 @@
+arch:
+  - ppc64le
+  - s390x
+  - arm64
+
+language: minimal
+
+matrix:
+  include:
+  - os: linux  # now
+    env: PYTHON_VERSION="3.8" CONDA_FORGE=1 DEPS="numpy geos cython"
+
+install:
+  - wget https://repo.anaconda.com/pkgs/misc/conda-execs/conda-latest-$TRAVIS_OS_NAME-64.exe -O conda.exe
+  - chmod +x conda.exe
+  - export CONDA_ALWAYS_YES=1
+  - if [ $CONDA_FORGE ]; then ./conda.exe config --add channels conda-forge; fi
+  - ./conda.exe create --prefix $HOME/miniconda python=$PYTHON_VERSION conda pytest $DEPS
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - python setup.py build_ext --inplace
+  - pip install . --no-deps
+
+script:
+  - pytest --doctest-modules
