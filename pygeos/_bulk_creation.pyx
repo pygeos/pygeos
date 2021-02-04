@@ -45,12 +45,12 @@ def collections_1d(object[:] geometries, int[:] indices, int geom_type = 7, int 
     assert indices.size == n_geoms
 
     # A temporary array for the geometries that will be given to CreateCollection.
-    # Its size equals n_geoms. Repeatedly appending to a vector probably
-    # has more overhead. At some point we might do a guess here and then
-    # resize the buffer if necessary.
+    # Its size equals n_geoms, which is much too large in most cases. But it will
+    # give overhead to investigate the optimal size at this point.
     temp_geoms = np.empty(shape=(n_geoms, ), dtype=np.intp)
     cdef np.intp_t[:] temp_geoms_view = temp_geoms
 
+    # The final target array
     result = np.empty(shape=(n_colls, ), dtype=np.object_)
     cdef object[:] result_view = result
 
@@ -67,8 +67,9 @@ def collections_1d(object[:] geometries, int[:] indices, int geom_type = 7, int 
                     # deallocate previous temp geometries (preventing memory leaks)
                     for geom_idx in range(coll_size):
                         GEOSGeom_destroy_r(geos_handle, <GEOSGeometry *>temp_geoms_view[geom_idx])
-                    raise TypeError("One of the arguments is of incorrect type. "
-                                    "Please provide only Geometry objects.")
+                      raise TypeError(
+                        "One of the arguments is of incorrect type. Please provide only Geometry objects."
+                    )
 
                 # ignore missing values
                 if geom == NULL:
@@ -86,8 +87,8 @@ def collections_1d(object[:] geometries, int[:] indices, int geom_type = 7, int 
                 <unsigned int>coll_size
             )
 
-            # cast part back to <GEOSGeometry> to discard const qualifier
-            # pending issue #227
-            result_view[coll_idx] = PyGEOS_CreateGeometry(<GEOSGeometry *>coll, geos_handle)
+            result_view[coll_idx] = PyGEOS_CreateGeometry(
+                coll, geos_handle
+            )
 
     return result
