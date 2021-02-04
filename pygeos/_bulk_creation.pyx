@@ -28,21 +28,26 @@ import_pygeos_c_api()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def collections_1d(object[:] geometries, int[:] indices, int geom_type = 7, int ndim = 2):
+def collections_1d(object geometries, object indices, int geom_type = 7, int ndim = 2):
     cdef Py_ssize_t geom_idx = 0
     cdef Py_ssize_t coll_idx = 0
     cdef Py_ssize_t coll_size = 0
     cdef GEOSGeometry *geom = NULL
     cdef GEOSGeometry *coll = NULL
 
-    cdef Py_ssize_t n_geoms = geometries.size
-    cdef Py_ssize_t n_colls = indices[indices.size - 1] + 1
+    cdef object[:] geometries_view = np.asarray(geometries, dtype=np.object)
+    cdef int[:] indices_view = np.asarray(indices, dtype=np.int32)
+
+    if geometries_view.size != indices_view.size:
+        raise ValueError("Geometries and indices array should have equal size.")
+
+    cdef Py_ssize_t n_geoms = geometries_view.size
+    cdef Py_ssize_t n_colls = indices_view[indices_view.size - 1] + 1
+    
 
     if n_geoms == 0:
         # return immediately if there are no geometries to return
         return np.empty(shape=(0, ), dtype=np.object_)
-
-    assert indices.size == n_geoms
 
     # A temporary array for the geometries that will be given to CreateCollection.
     # Its size equals n_geoms, which is much too large in most cases. But it will
@@ -60,14 +65,14 @@ def collections_1d(object[:] geometries, int[:] indices, int geom_type = 7, int 
 
             # fill the temporary array with geometries belonging to this collection
             for geom_idx in range(geom_idx, n_geoms):
-                if indices[geom_idx] != coll_idx:
+                if indices_view[geom_idx] != coll_idx:
                     break
 
-                if PyGEOS_GetGEOSGeometry(<PyObject *>geometries[geom_idx], &geom) == 0:
+                if PyGEOS_GetGEOSGeometry(<PyObject *>geometries_view[geom_idx], &geom) == 0:
                     # deallocate previous temp geometries (preventing memory leaks)
                     for geom_idx in range(coll_size):
                         GEOSGeom_destroy_r(geos_handle, <GEOSGeometry *>temp_geoms_view[geom_idx])
-                      raise TypeError(
+                    raise TypeError(
                         "One of the arguments is of incorrect type. Please provide only Geometry objects."
                     )
 
