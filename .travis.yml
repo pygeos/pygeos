@@ -7,6 +7,10 @@ dist: focal
 language: python
 python: "3.8"
 
+branches:
+  only:
+  - master
+
 before_install:
   - sudo apt-get --yes install libgeos-dev
   - pip install numpy cython
