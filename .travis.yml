@@ -3,7 +3,9 @@ arch:
   - s390x
   - arm64
 os: linux
+dist: focal
 language: python
+python: "3.8"
 
 before_install:
   - sudo apt-get --yes install libgeos-dev
