@@ -35,19 +35,27 @@ def collections_1d(object geometries, object indices, int geom_type = 7, int ndi
     cdef GEOSGeometry *geom = NULL
     cdef GEOSGeometry *coll = NULL
 
-    cdef object[:] geometries_view = np.asarray(geometries, dtype=np.object)
-    cdef int[:] indices_view = np.asarray(indices, dtype=np.int32)
-
-    if geometries_view.size != indices_view.size:
-        raise ValueError("Geometries and indices array should have equal size.")
+    # Cast input arrays and define memoryviews for later usage
+    geometries = np.asarray(geometries, dtype=np.object)
+    if geometries.ndim != 1:
+        raise TypeError("geometries is not a one-dimensional array.")
+    cdef object[:] geometries_view = geometries
+    indices = np.asarray(indices, dtype=np.int32)
+    if indices.ndim != 1:
+        raise TypeError("indices is not a one-dimensional array.")
+    cdef int[:] indices_view = indices
 
     cdef Py_ssize_t n_geoms = geometries_view.size
-    cdef Py_ssize_t n_colls = indices_view[indices_view.size - 1] + 1
-    
+
+    if geometries_view.size != indices_view.size:
+        raise ValueError("geometries and indices do not have equal size.")
 
     if n_geoms == 0:
         # return immediately if there are no geometries to return
-        return np.empty(shape=(0, ), dtype=np.object_)
+        return np.empty(shape=(0, ), dtype=np.object_)  
+
+    if np.any(indices[1:] < indices[:-1]):
+        raise ValueError("The indices array should be sorted.")  
 
     # A temporary array for the geometries that will be given to CreateCollection.
     # Its size equals n_geoms, which is much too large in most cases. But it will
@@ -56,6 +64,7 @@ def collections_1d(object geometries, object indices, int geom_type = 7, int ndi
     cdef np.intp_t[:] temp_geoms_view = temp_geoms
 
     # The final target array
+    cdef Py_ssize_t n_colls = indices_view[indices_view.size - 1] + 1
     result = np.empty(shape=(n_colls, ), dtype=np.object_)
     cdef object[:] result_view = result
 
