@@ -13,7 +13,7 @@ before_install:
 
 install:
   - python setup.py build_ext --inplace
-  - pip install . --no-deps -vv --no-build-isolation
+  - pip install . --no-deps --no-build-isolation
 
 script:
   - pytest --doctest-modules
