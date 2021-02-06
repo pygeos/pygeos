@@ -491,9 +491,13 @@ def polygonize(geometries, **kwargs):
     """Creates polygons formed from the linework of a set of Geometries.
 
     Polygonizes an array of Geometries that contain linework which
-    represents the edges of a planar graph. All types of Geometry are
-    accepted as input; the constituent linework is extracted as the edges
-    to be polygonized.
+    represents the edges of a planar graph. Any type of Geometry may be
+    provided as input; only the constituent lines and rings will be used to
+    create the output polygons.
+
+    Lines or rings that when combined do not completely close a polygon
+    will result in an empty GeometryCollection.  Duplicate segments are
+    ignored.
 
     This function returns the polygons within a GeometryCollection.
     Individual Polygons can be obtained using `get_geometry` to get
