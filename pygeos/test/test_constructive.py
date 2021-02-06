@@ -448,7 +448,8 @@ def test_polygonize_array():
 
 
 @pytest.mark.skipif(
-    np.__version__ < "1.15", reason="axis keyword for gufunc introduced in np 1.15"
+    np.__version__ < "1.15",
+    reason="axis keyword for generalized ufunc introduced in np 1.15",
 )
 def test_polygonize_array_axis():
     lines = [
