@@ -43,6 +43,12 @@
   Py_XDECREF(*out);                                      \
   *out = ret
 
+#define OUTPUT_Y_I(I, RET_PTR)                              \
+  PyObject* ret##I = GeometryObject_FromGEOS(RET_PTR, ctx); \
+  PyObject** out##I = (PyObject**)op##I;                    \
+  Py_XDECREF(*out##I);                                      \
+  *out##I = ret##I
+
 // Fail if inputs output multiple times on the same place in memory. That would
 // lead to segfaults as the same GEOSGeometry would be 'owned' by multiple PyObjects.
 #define CHECK_NO_INPLACE_OUTPUT(N)                                                \
@@ -1189,7 +1195,6 @@ finish:
 }
 static PyUFuncGenericFunction YYd_d_funcs[1] = {&YYd_d_func};
 
-
 #if GEOS_SINCE_3_9_0
 
 /* Define the geom, geom, double -> geom functions (YYd_Y) */
@@ -1243,7 +1248,6 @@ static void YYd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void*
 }
 static PyUFuncGenericFunction YYd_Y_funcs[1] = {&YYd_Y_func};
 #endif
-
 
 /* Define functions with unique call signatures */
 
@@ -1819,6 +1823,69 @@ finish:
   GEOS_FINISH;
 }
 static PyUFuncGenericFunction polygonize_funcs[1] = {&polygonize_func};
+
+static char polygonize_full_dtypes[5] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT, NPY_OBJECT,
+                                         NPY_OBJECT};
+static void polygonize_full_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                                 void* data) {
+  GEOSGeometry* geom = NULL;
+  unsigned int n_geoms;
+
+  GEOSGeometry* collection = NULL;
+  GEOSGeometry* cuts = NULL;
+  GEOSGeometry* dangles = NULL;
+  GEOSGeometry* invalidRings = NULL;
+
+  GEOS_INIT;
+
+  GEOSGeometry** geoms = malloc(sizeof(void*) * dimensions[1]);
+  if (geoms == NULL) {
+    errstate = PGERR_NO_MALLOC;
+    goto finish;
+  }
+
+  SINGLE_COREDIM_LOOP_OUTER_NOUT4 {
+    n_geoms = 0;
+    SINGLE_COREDIM_LOOP_INNER {
+      if (!get_geom(*(GeometryObject**)cp1, &geom)) {
+        errstate = PGERR_NOT_A_GEOMETRY;
+        goto finish;
+      }
+      if (geom == NULL) {
+        continue;
+      }
+      geoms[n_geoms] = geom;
+      n_geoms++;
+    }
+    collection =
+        GEOSGeom_createCollection_r(ctx, GEOS_GEOMETRYCOLLECTION, geoms, n_geoms);
+    if (collection == NULL) {
+      errstate = PGERR_GEOS_EXCEPTION;
+      goto finish;
+    }
+
+    GEOSGeometry* ret_ptr =
+        GEOSPolygonize_full_r(ctx, collection, &cuts, &dangles, &invalidRings);
+    if (ret_ptr == NULL) {
+      errstate = PGERR_GEOS_EXCEPTION;
+      goto finish;
+    }
+    OUTPUT_Y_I(1, ret_ptr);
+    OUTPUT_Y_I(2, cuts);
+    OUTPUT_Y_I(3, dangles);
+    OUTPUT_Y_I(4, invalidRings);
+  }
+
+finish:
+  if (collection != NULL) {
+    free(collection);
+  }
+  if (geoms != NULL) {
+    free(geoms);
+  }
+  GEOS_FINISH;
+}
+static PyUFuncGenericFunction polygonize_full_funcs[1] = {&polygonize_full_func};
 
 #if GEOS_SINCE_3_6_0
 static char set_precision_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
@@ -2652,6 +2719,12 @@ TODO relate functions
                                               SIGNATURE);                                \
   PyDict_SetItemString(d, #NAME, ufunc)
 
+#define DEFINE_GENERALIZED_NOUT4(NAME, N_IN, SIGNATURE)                                  \
+  ufunc = PyUFunc_FromFuncAndDataAndSignature(NAME##_funcs, null_data, NAME##_dtypes, 1, \
+                                              N_IN, 4, PyUFunc_None, #NAME, "", 0,       \
+                                              SIGNATURE);                                \
+  PyDict_SetItemString(d, #NAME, ufunc)
+
 int init_ufuncs(PyObject* m, PyObject* d) {
   PyObject* ufunc;
 
@@ -2746,6 +2819,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_CUSTOM(relate, 2);
   DEFINE_CUSTOM(relate_pattern, 3);
   DEFINE_GENERALIZED(polygonize, 1, "(d)->()");
+  DEFINE_GENERALIZED_NOUT4(polygonize_full, 1, "(d)->(),(),(),()");
 
   DEFINE_GENERALIZED(points, 1, "(d)->()");
   DEFINE_GENERALIZED(linestrings, 1, "(i, d)->()");
