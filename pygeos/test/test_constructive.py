@@ -530,12 +530,12 @@ def test_densify_none():
         # tolerance causes one vertex per segment
         (
             pygeos.Geometry("LINESTRING (0 0, 0 10)"),
-            6,
+            5,
             pygeos.Geometry("LINESTRING (0 0, 0 5, 0 10)"),
         ),
         (
             Geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))"),
-            6,
+            5,
             pygeos.Geometry(
                 "POLYGON ((0 0, 5 0, 10 0, 10 5, 10 10, 5 10, 0 10, 0 5, 0 0))"
             ),
@@ -546,7 +546,7 @@ def test_densify_none():
                 pygeos.Geometry("LINESTRING (0 0, 0 10)"),
                 pygeos.Geometry("LINESTRING (0 0, 0 2)"),
             ],
-            6,
+            5,
             [
                 pygeos.Geometry("LINESTRING (0 0, 0 5, 0 10)"),
                 pygeos.Geometry("LINESTRING (0 0, 0 2)"),
@@ -557,7 +557,7 @@ def test_densify_none():
                 pygeos.Geometry("LINESTRING (0 0, 0 10)"),
                 pygeos.Geometry("LINESTRING (0 0, 0 2)"),
             ],
-            [6],
+            [5],
             [
                 pygeos.Geometry("LINESTRING (0 0, 0 5, 0 10)"),
                 pygeos.Geometry("LINESTRING (0 0, 0 2)"),
@@ -568,7 +568,7 @@ def test_densify_none():
                 pygeos.Geometry("LINESTRING (0 0, 0 10)"),
                 pygeos.Geometry("LINESTRING (0 0, 0 2)"),
             ],
-            [6, 1.5],
+            [5, 1.5],
             [
                 pygeos.Geometry("LINESTRING (0 0, 0 5, 0 10)"),
                 pygeos.Geometry("LINESTRING (0 0, 0 1, 0 2)"),
