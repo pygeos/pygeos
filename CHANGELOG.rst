@@ -8,6 +8,19 @@ Version 0.10 (unreleased)
 
 * ...
 
+**API Changes**
+
+* STRtree default leaf size is now 10 instead of 5, for somewhat better performance
+  under normal conditions.
+
+**Added GEOS functions**
+
+* Addition of a ``contains_properly`` function (#267).
+* Addition of a ``polygonize`` function (#275).
+
+**Bug fixes**
+* Fixed portability issue for ARM architecture (#293)
+
 **Acknowledgments**
 
 Thanks to everyone who contributed to this release!
