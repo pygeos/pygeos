@@ -548,7 +548,7 @@ static void* unary_union_prec_data[1] = {GEOSUnaryUnionPrec_r};
 #endif
 
 #if GEOS_SINCE_3_10_0
-static void* densify_data[1] = {GEOSDensify_r};
+static void* segmentize_data[1] = {GEOSDensify_r};
 #endif
 
 typedef void* FuncGEOS_Yd_Y(void* context, void* a, double b);
@@ -2792,7 +2792,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 #endif
 
 #if GEOS_SINCE_3_10_0
-  DEFINE_Yd_Y(densify);
+  DEFINE_Yd_Y(segmentize);
 #endif
 
   Py_DECREF(ufunc);

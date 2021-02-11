@@ -17,7 +17,7 @@ Version 0.10 (unreleased)
 
 * Addition of a ``contains_properly`` function (#267)
 * Addition of a ``polygonize`` function (#275)
-* Addition of a ``densify`` function for GEOS >= 3.10 (#299)
+* Addition of a ``segmentize`` function for GEOS >= 3.10 (#299)
 
 **Bug fixes**
 

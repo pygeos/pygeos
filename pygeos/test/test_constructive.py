@@ -473,15 +473,15 @@ def test_polygonize_missing():
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 @pytest.mark.parametrize("geometry", all_types)
 @pytest.mark.parametrize("tolerance", [-1, 0])
-def test_densify_invalid_tolerance(geometry, tolerance):
+def test_segmentize_invalid_tolerance(geometry, tolerance):
     with pytest.raises(GEOSException, match="IllegalArgumentException"):
-        pygeos.densify(geometry, tolerance=tolerance)
+        pygeos.segmentize(geometry, tolerance=tolerance)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 @pytest.mark.parametrize("geometry", all_types)
-def test_densify_tolerance_nan(geometry):
-    actual = pygeos.densify(geometry, tolerance=np.nan)
+def test_segmentize_tolerance_nan(geometry):
+    actual = pygeos.segmentize(geometry, tolerance=np.nan)
     assert actual == None
 
 
@@ -495,21 +495,21 @@ def test_densify_tolerance_nan(geometry):
         empty_polygon,
     ],
 )
-def test_densify_empty(geometry):
-    actual = pygeos.densify(geometry, tolerance=5)
+def test_segmentize_empty(geometry):
+    actual = pygeos.segmentize(geometry, tolerance=5)
     assert pygeos.equals(actual, geometry).all()
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 @pytest.mark.parametrize("geometry", [point, point_z, multi_point])
-def test_densify_no_change(geometry):
-    actual = pygeos.densify(geometry, tolerance=5)
+def test_segmentize_no_change(geometry):
+    actual = pygeos.segmentize(geometry, tolerance=5)
     assert pygeos.equals(actual, geometry).all()
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
-def test_densify_none():
-    assert pygeos.densify(None, tolerance=5) is None
+def test_segmentize_none():
+    assert pygeos.segmentize(None, tolerance=5) is None
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
@@ -576,6 +576,6 @@ def test_densify_none():
         ),
     ],
 )
-def test_densify(geometry, tolerance, expected):
-    actual = pygeos.densify(geometry, tolerance)
+def test_segmentize(geometry, tolerance, expected):
+    actual = pygeos.segmentize(geometry, tolerance)
     assert pygeos.equals(actual, geometry).all()
