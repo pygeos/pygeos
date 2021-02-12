@@ -68,6 +68,16 @@ PyMODINIT_FUNC PyInit_lib(void) {
 #define GEOS_VERSION_PATCH_STR QUOTE(GEOS_VERSION_PATCH)
   int geos_version_patch_int = GEOS_VERSION_PATCH_STR[0] - '0';
 
+  char geos_version_buffer[16];
+  char geos_capi_version_buffer[32];
+
+  snprintf(geos_version_buffer, 16, "%i.%i.%i", GEOS_VERSION_MAJOR, GEOS_VERSION_MINOR,
+           geos_version_patch_int);
+
+  snprintf(geos_capi_version_buffer, 32, "%i.%i.%i-CAPI-%i.%i.%i", GEOS_VERSION_MAJOR,
+           GEOS_VERSION_MINOR, geos_version_patch_int, GEOS_CAPI_VERSION_MAJOR,
+           GEOS_CAPI_VERSION_MINOR, GEOS_CAPI_VERSION_PATCH);
+
   /* export the GEOS versions as python tuple and string */
   PyModule_AddObject(m, "geos_version",
                      PyTuple_Pack(3, PyLong_FromLong((long)GEOS_VERSION_MAJOR),
@@ -78,9 +88,9 @@ PyMODINIT_FUNC PyInit_lib(void) {
                                   PyLong_FromLong((long)GEOS_CAPI_VERSION_MINOR),
                                   PyLong_FromLong((long)GEOS_CAPI_VERSION_PATCH)));
 
-  PyModule_AddObject(m, "geos_version_string", PyUnicode_FromString(GEOS_VERSION));
+  PyModule_AddObject(m, "geos_version_string", PyUnicode_FromString(geos_version_buffer));
   PyModule_AddObject(m, "geos_capi_version_string",
-                     PyUnicode_FromString(GEOS_CAPI_VERSION));
+                     PyUnicode_FromString(geos_capi_version_buffer));
 
   if (init_ufuncs(m, d) < 0) {
     return NULL;
