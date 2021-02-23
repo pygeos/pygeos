@@ -1181,16 +1181,16 @@ def test_query_bulk_intersects_polygons(poly_tree, geometry, expected):
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-def test_nearest_empty_tree():
+def test_nearest_all_empty_tree():
     tree = pygeos.STRtree([])
-    assert_array_equal(tree.nearest(point), [[], []])
+    assert_array_equal(tree.nearest_all(point), [[], []])
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-@pytest.mark.parametrize("geometry", ["I am not a geometry", "I am not a geometry"])
-def test_nearest_invalid_geom(tree, geometry):
+@pytest.mark.parametrize("geometry", ["I am not a geometry"])
+def test_nearest_all_invalid_geom(tree, geometry):
     with pytest.raises(TypeError):
-        tree.nearest(geometry)
+        tree.nearest_all(geometry)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -1198,22 +1198,22 @@ def test_nearest_invalid_geom(tree, geometry):
     "geometry,return_distance,expected",
     [(None, False, [[], []]), ([None], False, [[], []]), (None, True, ([[], []], []))],
 )
-def test_nearest_none(tree, geometry, return_distance, expected):
+def test_nearest_all_none(tree, geometry, return_distance, expected):
     if return_distance:
-        index, distance = tree.nearest(geometry, return_distance=True)
+        index, distance = tree.nearest_all(geometry, return_distance=True)
         assert_array_equal(index, expected[0])
         assert_array_equal(distance, expected[1])
 
     else:
-        assert_array_equal(tree.nearest(geometry), expected)
+        assert_array_equal(tree.nearest_all(geometry), expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 @pytest.mark.parametrize(
     "geometry,expected", [(empty, [[], []]), ([empty, point], [[1, 1], [2, 3]])]
 )
-def test_nearest_empty_geom(tree, geometry, expected):
-    assert_array_equal(tree.nearest(geometry), expected)
+def test_nearest_all_empty_geom(tree, geometry, expected):
+    assert_array_equal(tree.nearest_all(geometry), expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -1252,8 +1252,8 @@ def test_nearest_empty_geom(tree, geometry, expected):
         ),
     ],
 )
-def test_nearest_points(tree, geometry, expected):
-    assert_array_equal(tree.nearest(geometry), expected)
+def test_nearest_all_points(tree, geometry, expected):
+    assert_array_equal(tree.nearest_all(geometry), expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -1279,8 +1279,8 @@ def test_nearest_points(tree, geometry, expected):
         (pygeos.multipoints([[5, 7], [7, 5]]), [[0, 0], [5, 6]]),
     ],
 )
-def test_nearest_lines(line_tree, geometry, expected):
-    assert_array_equal(line_tree.nearest(geometry), expected)
+def test_nearest_all_lines(line_tree, geometry, expected):
+    assert_array_equal(line_tree.nearest_all(geometry), expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -1304,8 +1304,8 @@ def test_nearest_lines(line_tree, geometry, expected):
         (pygeos.multipoints([[5, 7], [7, 5]]), [[0], [6]]),
     ],
 )
-def test_nearest_polygons(poly_tree, geometry, expected):
-    assert_array_equal(poly_tree.nearest(geometry), expected)
+def test_nearest_all_polygons(poly_tree, geometry, expected):
+    assert_array_equal(poly_tree.nearest_all(geometry), expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -1313,7 +1313,7 @@ def test_nearest_polygons(poly_tree, geometry, expected):
     "geometry,max_distance,expected",
     [
         # using unset max_distance should return all nearest
-        (pygeos.points(0.5, 0.5), 0, [[0, 0], [0, 1]]),
+        (pygeos.points(0.5, 0.5), None, [[0, 0], [0, 1]]),
 
         # using large max_distance should return all nearest
         (pygeos.points(0.5, 0.5), 10, [[0, 0], [0, 1]]),
@@ -1325,16 +1325,24 @@ def test_nearest_polygons(poly_tree, geometry, expected):
         ([pygeos.points(0.5, 0.5), pygeos.points(0, 0)], 0.1, [[1], [0]]),
     ],
 )
-def test_nearest_max_distance(tree, geometry, max_distance, expected):
-    assert_array_equal(tree.nearest(geometry, max_distance=max_distance), expected)
+def test_nearest_all_max_distance(tree, geometry, max_distance, expected):
+    assert_array_equal(tree.nearest_all(geometry, max_distance=max_distance), expected)
 
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.parametrize(
+    "geometry,max_distance",[(pygeos.points(0.5, 0.5), 0), (pygeos.points(0.5, 0.5), -1)]
+)
+def test_nearest_all_invalid_max_distance(tree, geometry, max_distance):
+    with pytest.raises(ValueError, match="max_distance must be greater than 0"):
+        tree.nearest_all(geometry, max_distance=max_distance)
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 @pytest.mark.parametrize(
     "geometry,expected",
     [(pygeos.points(0, 0), [0.0]), (pygeos.points(0.5, 0.5), [0.7071, 0.7071])],
 )
-def test_nearest_return_distance(tree, geometry, expected):
+def test_nearest_all_return_distance(tree, geometry, expected):
     assert_array_equal(
-        np.round(tree.nearest(geometry, return_distance=True)[1], 4), expected
+        np.round(tree.nearest_all(geometry, return_distance=True)[1], 4), expected
     )

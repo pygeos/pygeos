@@ -661,9 +661,10 @@ int distance_callback(const void* item1, const void* item2, double* distance,
 
 #if GEOS_SINCE_3_6_0
 
-static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* args) {
+static PyObject* STRtree_nearest_all(STRtreeObject* self, PyObject* args) {
   PyObject* arr;
-  double max_distance = 0;
+  double max_distance = 0; // default of 0 indicates max_distance not set
+  int use_max_distance = 0; // flag for the above
   PyArrayObject* pg_geoms;
   GeometryObject* pg_geom = NULL;
   GEOSGeometry* geom = NULL;
@@ -698,6 +699,9 @@ static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* args) {
 
   if (!PyArg_ParseTuple(args, "Od", &arr, &max_distance)) {
     return NULL;
+  }
+  if (max_distance > 0) {
+    use_max_distance = 1;
   }
 
   if (!PyArray_Check(arr)) {
@@ -758,7 +762,7 @@ static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* args) {
       continue;
     }
 
-    if (max_distance > 0) {
+    if (use_max_distance) {
       // if max_distance is defined, prescreen geometries using simple bbox expansion
       if (get_bounds(ctx, geom, &xmin, &ymin, &xmax, &ymax) == 0) {
         errstate = PGERR_GEOS_EXCEPTION;
@@ -814,7 +818,7 @@ static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* args) {
       // only keep entries within max_distance, if nonzero
       // Note: there may be multiple equidistant or intersected tree items
       if (distance <= userdata.min_distance &&
-          (max_distance == 0 || distance <= max_distance)) {
+          (!use_max_distance|| distance <= max_distance)) {
         kv_push(npy_intp, src_indexes, i);
         kv_push(GeometryObject**, nearest_geoms, kv_A(dist_pairs, j).geom);
         kv_push(double, nearest_dist, distance);
@@ -892,8 +896,8 @@ static PyMethodDef STRtree_methods[] = {
      "geometries, and optionally tests them "
      "against predicate function if provided. "},
 #if GEOS_SINCE_3_6_0
-    {"nearest", (PyCFunction)STRtree_nearest, METH_VARARGS,
-     "Queries the index for the nearest item to each of the given search geometries"},
+    {"nearest_all", (PyCFunction)STRtree_nearest_all, METH_VARARGS,
+     "Queries the index for all nearest item(s) to each of the given search geometries"},
 #endif
     {NULL} /* Sentinel */
 };

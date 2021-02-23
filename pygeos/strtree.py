@@ -191,12 +191,12 @@ class STRtree:
         return self._tree.query_bulk(geometry, predicate)
 
     @requires_geos("3.6.0")
-    def nearest(self, geometry, max_distance=None, return_distance=False):
-        """Returns the index of the nearest item in the tree for each input
+    def nearest_all(self, geometry, max_distance=None, return_distance=False):
+        """Returns the index of the nearest item(s) in the tree for each input
         geometry.
 
         If there are multiple equidistant or intersected geometries in tree, all
-        should be returned.  Tree indexes are returned in the order they are visited
+        are returned.  Tree indexes are returned in the order they are visited
         for each input geometry and may not be in ascending index order; no meaningful
         order is implied.
 
@@ -216,34 +216,34 @@ class STRtree:
         geometry : Geometry or array_like
             Input geometries to query the tree.
         max_distance : float, optional (default: None)
-            Maximum distance within which to query for nearest items in tree.  By default
-            will return nearest tree item for each input geometry regardless of distance.
-            If provided, only those pairs of input geometry and nearest tree item within
-            this distance will be included in the results.  0 and None are equivalent.
+            Maximum distance within which to query for nearest items in tree.
+            Must be greater than 0.
         return_distance : bool, optional (default: False)
-            If True, will return tuple of (ndarray of indexes of shape (2,n), ndarray of
-            distances of shape (n)).
+            If True, will return distances in addition to indexes.
 
         Returns
         -------
-        ndarray with shape (2, n) or tuple of (ndarray of shape (2,n), ndarray of shape(n))
-            The first subarray contains input geometry indexes.
-            The second subarray contains tree geometry indexes.
+        indices or tuple of (indices, distances)
+            indices is an ndarray of shape (2,n) and distances (if present) an
+            ndarray of shape (n).
+            The first subarray of indices contains input geometry indices.
+            The second subarray of indices contains tree geometry indices.
 
         Examples
         --------
         >>> import pygeos
         >>> tree = pygeos.STRtree(pygeos.points(np.arange(10), np.arange(10)))
-        >>> tree.nearest(pygeos.points(1,1)).tolist()  # doctest: +SKIP
+        >>> tree.nearest_all(pygeos.points(1,1)).tolist()  # doctest: +SKIP
         [[0], [1]]
-        >>> tree.nearest([pygeos.box(1,1,3,3)]).tolist()  # doctest: +SKIP
+        >>> tree.nearest_all([pygeos.box(1,1,3,3)]).tolist()  # doctest: +SKIP
         [[0, 0, 0], [1, 2, 3]]
-        >>> index, distance = tree.nearest(pygeos.points(0.5,0.5), return_distance=True)  # doctest: +SKIP
+        >>> points = pygeos.points(0.5,0.5)
+        >>> index, distance = tree.nearest_all(points, return_distance=True)  # doctest: +SKIP
         >>> index.tolist()  # doctest: +SKIP
         [[0, 0], [0, 1]]
         >>> distance.round(4).tolist()  # doctest: +SKIP
         [0.7071, 0.7071]
-        >>> tree.nearest(None).tolist()  # doctest: +SKIP
+        >>> tree.nearest_all(None).tolist()  # doctest: +SKIP
         [[], []]
         """
 
@@ -251,10 +251,13 @@ class STRtree:
         if geometry.ndim == 0:
             geometry = np.expand_dims(geometry, 0)
 
+        if max_distance is not None and max_distance <= 0:
+            raise ValueError("max_distance must be greater than 0")
+
         # a distance of 0 means no max_distance is used
         max_distance = max_distance or 0
 
         if return_distance:
-            return self._tree.nearest(geometry, max_distance)
+            return self._tree.nearest_all(geometry, max_distance)
 
-        return self._tree.nearest(geometry, max_distance)[0]
+        return self._tree.nearest_all(geometry, max_distance)[0]
