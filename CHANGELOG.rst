@@ -6,8 +6,8 @@ Version 0.10 (unreleased)
 
 **Major enhancements**
 
-* Addition of a ``nearest`` function to ``STRtree`` for GEOS >= 3.6 to find the nearest
-  neighbors (#272).
+* Addition of ``nearest`` and ``nearest_all`` functions to ``STRtree`` for
+  GEOS >= 3.6 to find the nearest neighbors (#272).
 
 **API Changes**
 
