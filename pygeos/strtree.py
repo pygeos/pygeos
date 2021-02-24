@@ -195,9 +195,10 @@ class STRtree:
         """Returns the index of the nearest item in the tree for each input
         geometry.
 
-        If there are multiple equidistant or intersected geometries in tree,
-        only a single result is returned, based on the order that tree
-        geometries are visited; this order may be nondeterministic.
+        If there are multiple equidistant or intersected geometries in the tree,
+        only a single result is returned for each input geometry, based on the
+        order that tree geometries are visited; this order may be
+        nondeterministic.
 
         Any geometry that is None or empty in the input geometries is omitted
         from the output.

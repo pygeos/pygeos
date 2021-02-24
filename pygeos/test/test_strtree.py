@@ -1245,6 +1245,86 @@ def test_nearest_points_equidistant(tree, geometry, expected):
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        (pygeos.points(0.5, 0.5), [[0], [0]]),
+        (pygeos.points(1.5, 0.5), [[0], [0]]),
+        (pygeos.box(0.5, 1.5, 1, 2), [[0], [1]]),
+        (pygeos.linestrings([[0, 0.5], [1, 2.5]]), [[0], [0]]),
+    ],
+)
+def test_nearest_lines(line_tree, geometry, expected):
+    assert_array_equal(line_tree.nearest(geometry), expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.xfail(reason="equidistant geometries may produce nondeterministic results")
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        # at junction between 2 lines
+        (pygeos.points(2, 2), [1, 2]),
+        # contains one line, intersects with another
+        (box(0, 0, 1, 1), [0, 1]),
+        # overlaps 2 lines
+        (box(0.5, 0.5, 1.5, 1.5), [0, 1]),
+        # box overlaps 2 lines and intersects endpoints of 2 more
+        (box(3, 3, 5, 5), [2, 3, 4, 5]),
+        (pygeos.buffer(pygeos.points(2.5, 2.5), HALF_UNIT_DIAG), [1, 2]),
+        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [2, 3]),
+        # multipoints at endpoints of 2 lines each
+        (pygeos.multipoints([[5, 5], [7, 7]]), [4, 5, 6, 7]),
+        # second point in multipoint at endpoints of 2 lines
+        (pygeos.multipoints([[5.5, 5], [7, 7]]), [6, 7]),
+        # multipoints are equidistant from 2 lines
+        (pygeos.multipoints([[5, 7], [7, 5]]), [5, 6]),
+    ],
+)
+def test_nearest_lines_equidistant(line_tree, geometry, expected):
+    result = line_tree.nearest(geometry)
+    assert result[1] in expected
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        (pygeos.points(0, 0), [[0], [0]]),
+        (pygeos.points(2, 2), [[0], [2]]),
+        (pygeos.box(0, 5, 1, 6), [[0], [3]]),
+        (pygeos.multipoints([[5, 7], [7, 5]]), [[0], [6]]),
+    ],
+)
+def test_nearest_polygons(poly_tree, geometry, expected):
+    assert_array_equal(poly_tree.nearest(geometry), expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.xfail(reason="equidistant geometries may produce nondeterministic results")
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        # 2 polygons in tree overlap point
+        (pygeos.points(0.5, 0.5), [0, 1]),
+        # box overlaps multiple polygons
+        (box(0, 0, 1, 1), [0, 1]),
+        (box(0.5, 0.5, 1.5, 1.5), [0, 1, 2]),
+        (box(3, 3, 5, 5), [3, 4, 5]),
+        (pygeos.buffer(pygeos.points(2.5, 2.5), HALF_UNIT_DIAG), [2, 3]),
+        # completely overlaps one polygon, touches 2 others
+        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [2, 3, 4]),
+        # each point in multi point intersects a polygon in tree
+        (pygeos.multipoints([[5, 5], [7, 7]]), [5, 7]),
+        (pygeos.multipoints([[5.5, 5], [7, 7]]), [5, 7]),
+    ],
+)
+def test_nearest_polygons_equidistant(poly_tree, geometry, expected):
+    result = poly_tree.nearest(geometry)
+    assert result[1] in expected
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_nearest_all_empty_tree():
     tree = pygeos.STRtree([])
     assert_array_equal(tree.nearest_all(point), [[], []])
@@ -1331,7 +1411,7 @@ def test_nearest_all_points(tree, geometry, expected):
         (box(0, 0, 1, 1), [[0, 0], [0, 1]]),
         # overlaps 2 lines
         (box(0.5, 0.5, 1.5, 1.5), [[0, 0], [0, 1]]),
-        # second box overlaps 2 lines at intersects endpoints of 2 more
+        # second box overlaps 2 lines and intersects endpoints of 2 more
         ([box(0, 0, 0.5, 0.5), box(3, 3, 5, 5)], [[0, 1, 1, 1, 1], [0, 2, 3, 4, 5]]),
         (pygeos.buffer(pygeos.points(2.5, 2.5), HALF_UNIT_DIAG), [[0, 0], [1, 2]]),
         (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [[0, 0], [2, 3]]),

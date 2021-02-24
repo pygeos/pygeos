@@ -229,22 +229,28 @@ class STRtree:
     def time_tree_nearest_points(self):
         self.point_tree.nearest(self.points)
 
-    def time_tree_nearest_points_small_max_distance(self):
-        # returns >300 results
-        self.point_tree.nearest(self.points, max_distance=5)
+    def time_tree_nearest_all_points(self):
+        self.point_tree.nearest_all(self.points)
 
-    def time_tree_nearest_points_large_max_distance(self):
+    def time_tree_nearest_all_points_small_max_distance(self):
+        # returns >300 results
+        self.point_tree.nearest_all(self.points, max_distance=5)
+
+    def time_tree_nearest_all_points_large_max_distance(self):
         # measures the overhead of using a distance that would encompass all tree points
-        self.point_tree.nearest(self.points, max_distance=1000)
+        self.point_tree.nearest_all(self.points, max_distance=1000)
 
     def time_tree_nearest_poly(self):
         self.tree.nearest(self.points)
 
-    def time_tree_nearest_poly_small_max_distance(self):
-        # returns >300 results
-        self.tree.nearest(self.points, max_distance=5)
+    def time_tree_nearest_all_poly(self):
+        self.tree.nearest_all(self.points)
 
-    def time_tree_nearest_poly_python(self):
+    def time_tree_nearest_all_poly_small_max_distance(self):
+        # returns >300 results
+        self.tree.nearest_all(self.points, max_distance=5)
+
+    def time_tree_nearest_all_poly_python(self):
         # returns all input points
 
         # use an arbitrary search tolerance that seems appropriate for the density of
@@ -272,5 +278,5 @@ class STRtree:
         right = right[ix]
         dist = dist[ix]
 
-        # arrays are now roughly representative of what tree.nearest would provide, though
-        # some nearest neighbors may be missed if they are outside tolerance
+        # arrays are now roughly representative of what tree.nearest_all would provide, though
+        # some nearest_all neighbors may be missed if they are outside tolerance
