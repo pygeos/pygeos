@@ -191,6 +191,52 @@ class STRtree:
         return self._tree.query_bulk(geometry, predicate)
 
     @requires_geos("3.6.0")
+    def nearest(self, geometry):
+        """Returns the index of the nearest item in the tree for each input
+        geometry.
+
+        If there are multiple equidistant or intersected geometries in tree,
+        only a single result is returned, based on the order that tree
+        geometries are visited; this order may be nondeterministic.
+
+        Any geometry that is None or empty in the input geometries is omitted
+        from the output.
+
+        Parameters
+        ----------
+        geometry : Geometry or array_like
+            Input geometries to query the tree.
+
+        Returns
+        -------
+        ndarray with shape (2, n)
+            The first subarray contains input geometry indexes.
+            The second subarray contains tree geometry indexes.
+
+        See also
+        --------
+        nearest_all: returns all equidistant geometries and optional distances
+
+        Examples
+        --------
+        >>> import pygeos
+        >>> tree = pygeos.STRtree(pygeos.points(np.arange(10), np.arange(10)))
+        >>> tree.nearest(pygeos.points(1,1)).tolist()  # doctest: +SKIP
+        [[0], [1]]
+        >>> tree.nearest([pygeos.box(1,1,3,3)]).tolist()  # doctest: +SKIP
+        [[0], [1]]
+        >>> points = pygeos.points(0.5,0.5)
+        >>> tree.nearest([None, pygeos.points(10,10)]).tolist()  # doctest: +SKIP
+        [[1], [9]]
+        """
+
+        geometry = np.asarray(geometry, dtype=np.object)
+        if geometry.ndim == 0:
+            geometry = np.expand_dims(geometry, 0)
+
+        return self._tree.nearest(geometry)
+
+    @requires_geos("3.6.0")
     def nearest_all(self, geometry, max_distance=None, return_distance=False):
         """Returns the index of the nearest item(s) in the tree for each input
         geometry.
@@ -228,6 +274,10 @@ class STRtree:
             ndarray of shape (n).
             The first subarray of indices contains input geometry indices.
             The second subarray of indices contains tree geometry indices.
+
+        See also
+        --------
+        nearest: returns singular nearest geometry for each input
 
         Examples
         --------

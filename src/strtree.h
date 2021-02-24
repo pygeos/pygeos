@@ -12,14 +12,14 @@ typedef struct {
   GeometryObject*** a;
 } tree_geom_vec_t;
 
-/* A struct to hold pairs of GeometryObject** and distance for use in STRtree::nearest */
+/* A struct to hold pairs of GeometryObject** and distance for use in STRtree::nearest_all */
 typedef struct {
   GeometryObject** geom;
   double distance;
 } tree_geom_dist_vec_item_t;
 
 /* A resizeable vector with pairs of GeometryObject** and distance for use in
- * STRtree::nearest */
+ * STRtree::nearest_all */
 typedef struct {
   size_t n, m;
   tree_geom_dist_vec_item_t* a;

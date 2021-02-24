@@ -1181,6 +1181,70 @@ def test_query_bulk_intersects_polygons(poly_tree, geometry, expected):
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+def test_nearest_empty_tree():
+    tree = pygeos.STRtree([])
+    assert_array_equal(tree.nearest(point), [[], []])
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.parametrize("geometry", ["I am not a geometry"])
+def test_nearest_invalid_geom(tree, geometry):
+    with pytest.raises(TypeError):
+        tree.nearest(geometry)
+
+
+# TODO: add into regular results
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [(None, [[], []]), ([None], [[], []])],
+)
+def test_nearest_none(tree, geometry, expected):
+    assert_array_equal(tree.nearest_all(geometry), expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        (pygeos.points(0.25, 0.25), [[0], [0]]),
+        (pygeos.points(0.75, 0.75), [[0], [1]]),
+        (pygeos.points(1, 1), [[0], [1]]),
+        ([pygeos.points(1, 1), pygeos.points(0, 0)], [[0, 1], [1, 0]]),
+        ([pygeos.points(1, 1), pygeos.points(0.25, 1)], [[0, 1], [1, 1]]),
+        ([pygeos.points(-10, -10), pygeos.points(100, 100)], [[0, 1], [0, 9]]),
+        (box(0.5, 0.5, 0.75, 0.75), [[0], [1]]),
+        (pygeos.buffer(pygeos.points(2.5, 2.5), HALF_UNIT_DIAG), [[0], [2]]),
+        (pygeos.buffer(pygeos.points(3, 3), HALF_UNIT_DIAG), [[0], [3]]),
+        (pygeos.multipoints([[5.5, 5], [7, 7]]), [[0], [7]]),
+        (pygeos.multipoints([[5, 7], [7, 5]]), [[0], [6]]),
+        (None, [[], []]),
+        ([None], [[], []]),
+    ],
+)
+def test_nearest_points(tree, geometry, expected):
+    assert_array_equal(tree.nearest(geometry), expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.xfail(reason="equidistant geometries may produce nondeterministic results")
+@pytest.mark.parametrize(
+    "geometry,expected",
+    [
+        # 2 equidistant points in tree
+        (pygeos.points(0.5, 0.5), [0, 1]),
+        # multiple points in box
+        (box(0, 0, 3, 3), [0, 1, 2, 3]),
+        # return nearest point in tree for each point in multipoint
+        (pygeos.multipoints([[5, 5], [7, 7]]), [5, 7]),
+    ],
+)
+def test_nearest_points_equidistant(tree, geometry, expected):
+    result = tree.nearest(geometry)
+    assert result[1] in expected
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_nearest_all_empty_tree():
     tree = pygeos.STRtree([])
     assert_array_equal(tree.nearest_all(point), [[], []])
@@ -1314,13 +1378,10 @@ def test_nearest_all_polygons(poly_tree, geometry, expected):
     [
         # using unset max_distance should return all nearest
         (pygeos.points(0.5, 0.5), None, [[0, 0], [0, 1]]),
-
         # using large max_distance should return all nearest
         (pygeos.points(0.5, 0.5), 10, [[0, 0], [0, 1]]),
-
         # using small max_distance should return no results
         (pygeos.points(0.5, 0.5), 0.1, [[], []]),
-
         # using small max_distance should only return results in that distance
         ([pygeos.points(0.5, 0.5), pygeos.points(0, 0)], 0.1, [[1], [0]]),
     ],
@@ -1331,11 +1392,13 @@ def test_nearest_all_max_distance(tree, geometry, max_distance, expected):
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 @pytest.mark.parametrize(
-    "geometry,max_distance",[(pygeos.points(0.5, 0.5), 0), (pygeos.points(0.5, 0.5), -1)]
+    "geometry,max_distance",
+    [(pygeos.points(0.5, 0.5), 0), (pygeos.points(0.5, 0.5), -1)],
 )
 def test_nearest_all_invalid_max_distance(tree, geometry, max_distance):
     with pytest.raises(ValueError, match="max_distance must be greater than 0"):
         tree.nearest_all(geometry, max_distance=max_distance)
+
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 @pytest.mark.parametrize(
