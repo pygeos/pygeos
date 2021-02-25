@@ -584,7 +584,7 @@ def polygonize_full(geometries, **kwargs):
     ...     Geometry("LINESTRING (0 0, 0 1, 1 1)"),
     ...     Geometry("LINESTRING (0 1, 1 1)"),
     ... ]
-    >>> polygonize_full(lines)
+    >>> polygonize_full(lines)  # doctest: +NORMALIZE_WHITESPACE
     (<pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))>,
      <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>,
      <pygeos.Geometry GEOMETRYCOLLECTION (LINESTRING (0 1, 1 1))>,
