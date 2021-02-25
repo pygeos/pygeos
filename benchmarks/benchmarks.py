@@ -194,7 +194,7 @@ class STRtree:
 
         # create points on a grid for testing equidistant nearest neighbors
         # creates 2025 points
-        grid_coords = np.mgrid[:45,:45].T.reshape(-1,2)
+        grid_coords = np.mgrid[:45, :45].T.reshape(-1, 2)
         self.grid_point_tree = pygeos.STRtree(pygeos.points(grid_coords))
         self.grid_points = pygeos.points(grid_coords + 0.5)
 
@@ -237,6 +237,39 @@ class STRtree:
 
     def time_tree_nearest_points_equidistant(self):
         self.grid_point_tree.nearest(self.grid_points)
+
+    def time_tree_nearest_points_equidistant_manual_all(self):
+        # try to find all equidistant neighbors ourselves given single nearest
+        # result
+        l, r = self.grid_point_tree.nearest(self.grid_points)
+        # calculate distance to nearest neighbor
+        dist = pygeos.distance(self.grid_points.take(l), self.grid_point_tree.geometries.take(r))
+        # include a slight epsilon to ensure nearest are within this radius
+        b = pygeos.buffer(self.grid_points, dist + 1e-8)
+
+        # query the tree for others in the same buffer distance
+        left, right = self.grid_point_tree.query_bulk(b, predicate='intersects')
+        dist = pygeos.distance(
+            self.grid_points.take(left), self.grid_point_tree.geometries.take(right)
+        )
+
+        # sort by left, distance
+        ix = np.lexsort((right, dist, left))
+        left = left[ix]
+        right = right[ix]
+        dist = dist[ix]
+
+        run_start = np.r_[True, left[:-1] != left[1:]]
+        run_counts = np.diff(np.r_[np.nonzero(run_start)[0], left.shape[0]])
+
+        mins = dist[run_start]
+
+        # spread to rest of array so we can extract out all within each group that match
+        all_mins = np.repeat(mins, run_counts)
+        ix = dist == all_mins
+        left = left[ix]
+        right = right[ix]
+        dist = dist[ix]
 
     def time_tree_nearest_all_points(self):
         self.point_tree.nearest_all(self.points)
