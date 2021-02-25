@@ -570,7 +570,8 @@ def polygonize_full(geometries, **kwargs):
 
     Returns
     -------
-    tuple of 4 GeometryCollections or array of shape (N, 4) of GeometryCollections
+    (polgyons, cuts, dangles, invalid)
+        tuple of 4 GeometryCollections or arrays of GeometryCollections
 
     See Also
     --------
