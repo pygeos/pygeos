@@ -192,6 +192,12 @@ class STRtree:
         )
         self.point_tree.query(pygeos.points(0, 0))
 
+        # create points on a grid for testing equidistant nearest neighbors
+        # creates 2025 points
+        grid_coords = np.mgrid[:45,:45].T.reshape(-1,2)
+        self.grid_point_tree = pygeos.STRtree(pygeos.points(grid_coords))
+        self.grid_points = pygeos.points(grid_coords + 0.5)
+
     def time_tree_create(self):
         tree = pygeos.STRtree(self.polygons)
         tree.query(pygeos.points(0, 0))
@@ -229,8 +235,14 @@ class STRtree:
     def time_tree_nearest_points(self):
         self.point_tree.nearest(self.points)
 
+    def time_tree_nearest_points_equidistant(self):
+        self.grid_point_tree.nearest(self.grid_points)
+
     def time_tree_nearest_all_points(self):
         self.point_tree.nearest_all(self.points)
+
+    def time_tree_nearest_all_points_equidistant(self):
+        self.grid_point_tree.nearest_all(self.grid_points)
 
     def time_tree_nearest_all_points_small_max_distance(self):
         # returns >300 results
