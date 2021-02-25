@@ -239,6 +239,10 @@ class STRtree:
         self.grid_point_tree.nearest(self.grid_points)
 
     def time_tree_nearest_points_equidistant_manual_all(self):
+        # This benchmark approximates nearest_all for equidistant results
+        # starting from singular nearest neighbors and searching for more
+        # within same distance.
+
         # try to find all equidistant neighbors ourselves given single nearest
         # result
         l, r = self.grid_point_tree.nearest(self.grid_points)
