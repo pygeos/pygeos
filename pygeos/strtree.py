@@ -231,7 +231,7 @@ class STRtree:
         [[1], [9]]
         """
 
-        geometry = np.asarray(geometry, dtype=np.object)
+        geometry = np.asarray(geometry, dtype=object)
         if geometry.ndim == 0:
             geometry = np.expand_dims(geometry, 0)
 
@@ -298,7 +298,7 @@ class STRtree:
         [[], []]
         """
 
-        geometry = np.asarray(geometry, dtype=np.object)
+        geometry = np.asarray(geometry, dtype=object)
         if geometry.ndim == 0:
             geometry = np.expand_dims(geometry, 0)
 

@@ -576,7 +576,7 @@ void prescreen_query_callback(void* item, void* user_data) { (*(size_t*)user_dat
  * ----------
  * item1: address of geometry in tree geometries (_geoms)
  *
- * item2: pointer to GeometryObject* of query geometry
+ * item2: pointer to GEOSGeometry* of query geometry
  *
  * distance: pointer to distance that gets updated in this function
  *
@@ -589,19 +589,14 @@ void prescreen_query_callback(void* item, void* user_data) { (*(size_t*)user_dat
 int nearest_distance_callback(const void* item1, const void* item2, double* distance,
                               void* userdata) {
   GEOSGeometry* tree_geom = NULL;
-  GEOSGeometry* query_geom = NULL;
   const GEOSContextHandle_t* ctx = (GEOSContextHandle_t*)userdata;
 
   GeometryObject* tree_pg_geom = *((GeometryObject**)item1);
   // Note: this is guarded for NULL during construction of tree; no need to check here.
   get_geom(tree_pg_geom, &tree_geom);
 
-  GeometryObject* query_pg_geom = *((GeometryObject**)item2);
-  // Note: this is guarded for NULL in calling function; no need to check here.
-  get_geom(query_pg_geom, &query_geom);
-
   // distance returns 1 on success, 0 on error
-  return GEOSDistance_r(*ctx, query_geom, tree_geom, distance);
+  return GEOSDistance_r(*ctx, (GEOSGeometry*)item2, tree_geom, distance);
 }
 
 /* Calculate the distance between items in the tree and the src_geom.
@@ -619,7 +614,7 @@ int nearest_distance_callback(const void* item1, const void* item2, double* dist
  * ----------
  * item1: address of geometry in tree geometries (_geoms)
  *
- * item2: pointer to GeometryObject* of query geometry
+ * item2: pointer to GEOSGeometry* of query geometry
  *
  * distance: pointer to distance that gets updated in this function
  *
@@ -635,7 +630,6 @@ int nearest_distance_callback(const void* item1, const void* item2, double* dist
 int nearest_all_distance_callback(const void* item1, const void* item2, double* distance,
                                   void* userdata) {
   GEOSGeometry* tree_geom = NULL;
-  GEOSGeometry* query_geom = NULL;
   size_t pairs_size;
   double calc_distance;
 
@@ -643,14 +637,10 @@ int nearest_all_distance_callback(const void* item1, const void* item2, double* 
   // Note: this is guarded for NULL during construction of tree; no need to check here.
   get_geom(tree_pg_geom, &tree_geom);
 
-  GeometryObject* query_pg_geom = *((GeometryObject**)item2);
-  // Note: this is guarded for NULL in calling function; no need to check here.
-  get_geom(query_pg_geom, &query_geom);
-
   tree_nearest_userdata_t* params = (tree_nearest_userdata_t*)userdata;
 
   // distance returns 1 on success, 0 on error
-  if (GEOSDistance_r(params->ctx, query_geom, tree_geom, &calc_distance) == 0) {
+  if (GEOSDistance_r(params->ctx, (GEOSGeometry*)item2, tree_geom, &calc_distance) == 0) {
     return 0;
   }
 
@@ -761,7 +751,7 @@ static PyObject* STRtree_nearest(STRtreeObject* self, PyObject* arr) {
     // pass in ctx as userdata because we need it for distance calculation in
     // the callback
     nearest_result = (GeometryObject**)GEOSSTRtree_nearest_generic_r(
-        ctx, self->ptr, &pg_geom, geom, nearest_distance_callback, &ctx);
+        ctx, self->ptr, geom, geom, nearest_distance_callback, &ctx);
 
     // GEOSSTRtree_nearest_r returns NULL on error
     if (nearest_result == NULL) {
@@ -959,7 +949,7 @@ static PyObject* STRtree_nearest_all(STRtreeObject* self, PyObject* args) {
     userdata.min_distance = DBL_MAX;
 
     nearest_result = (GeometryObject**)GEOSSTRtree_nearest_generic_r(
-        ctx, self->ptr, &pg_geom, geom, nearest_all_distance_callback, &userdata);
+        ctx, self->ptr, geom, geom, nearest_all_distance_callback, &userdata);
 
     // GEOSSTRtree_nearest_generic_r returns NULL on error
     if (nearest_result == NULL) {
