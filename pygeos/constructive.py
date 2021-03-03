@@ -12,14 +12,17 @@ __all__ = [
     "buffer",
     "offset_curve",
     "centroid",
+    "clip_by_rect",
     "convex_hull",
     "delaunay_triangles",
+    "segmentize",
     "envelope",
     "extract_unique_points",
     "build_area",
     "make_valid",
     "normalize",
     "point_on_surface",
+    "polygonize",
     "reverse",
     "simplify",
     "snap",
@@ -166,7 +169,7 @@ def buffer(
         np.intc(cap_style),
         np.intc(join_style),
         mitre_limit,
-        np.bool(single_sided),
+        np.bool_(single_sided),
         **kwargs
     )
 
@@ -253,6 +256,49 @@ def centroid(geometry, **kwargs):
     <pygeos.Geometry POINT EMPTY>
     """
     return lib.centroid(geometry, **kwargs)
+
+
+@multithreading_enabled
+def clip_by_rect(geometry, xmin, ymin, xmax, ymax, **kwargs):
+    """
+    Returns the portion of a geometry within a rectangle.
+
+    The geometry is clipped in a fast but possibly dirty way. The output is
+    not guaranteed to be valid. No exceptions will be raised for topological
+    errors.
+
+    Note: empty geometries or geometries that do not overlap with the
+    specified bounds will result in GEOMETRYCOLLECTION EMPTY.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+        The geometry to be clipped
+    xmin : float
+        Minimum x value of the rectangle
+    ymin : float
+        Minimum y value of the rectangle
+    xmax : float
+        Maximum x value of the rectangle
+    ymax : float
+        Maximum y value of the rectangle
+
+    Examples
+    --------
+    >>> line = Geometry("LINESTRING (0 0, 10 10)")
+    >>> clip_by_rect(line, 0., 0., 1., 1.)
+    <pygeos.Geometry LINESTRING (0 0, 1 1)>
+    """
+    if not all(np.isscalar(val) for val in [xmin, ymin, xmax, ymax]):
+        raise TypeError("xmin/ymin/xmax/ymax only accepts scalar values")
+    return lib.clip_by_rect(
+        geometry,
+        np.double(xmin),
+        np.double(ymin),
+        np.double(xmax),
+        np.double(ymax),
+        **kwargs
+    )
 
 
 @multithreading_enabled
@@ -442,6 +488,54 @@ def point_on_surface(geometry, **kwargs):
     return lib.point_on_surface(geometry, **kwargs)
 
 
+def polygonize(geometries, **kwargs):
+    """Creates polygons formed from the linework of a set of Geometries.
+
+    Polygonizes an array of Geometries that contain linework which
+    represents the edges of a planar graph. Any type of Geometry may be
+    provided as input; only the constituent lines and rings will be used to
+    create the output polygons.
+
+    Lines or rings that when combined do not completely close a polygon
+    will result in an empty GeometryCollection.  Duplicate segments are
+    ignored.
+
+    This function returns the polygons within a GeometryCollection.
+    Individual Polygons can be obtained using `get_geometry` to get
+    a single polygon or `get_parts` to get an array of polygons.
+    MultiPolygons can be constructed from the output using
+    ``pygeos.multipolygons(pygeos.get_parts(pygeos.polygonize(geometries)))``.
+
+    Parameters
+    ----------
+    geometries : array_like
+        An array of geometries.
+    axis : int
+        Axis along which the geometries are polygonized.
+        The default is to perform a reduction over the last dimension
+        of the input array. A 1D array results in a scalar geometry.
+
+    Returns
+    -------
+    GeometryCollection or array of GeometryCollections
+
+    See Also
+    --------
+    get_parts, get_geometry
+
+    Examples
+    --------
+    >>> lines = [
+    ...     Geometry("LINESTRING (0 0, 1 1)"),
+    ...     Geometry("LINESTRING (0 0, 0 1)"),
+    ...     Geometry("LINESTRING (0 1, 1 1)"),
+    ... ]
+    >>> polygonize(lines)
+    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))>
+    """
+    return lib.polygonize(geometries, **kwargs)
+
+
 @requires_geos("3.7.0")
 @multithreading_enabled
 def reverse(geometry, **kwargs):
@@ -471,6 +565,39 @@ def reverse(geometry, **kwargs):
     """
 
     return lib.reverse(geometry, **kwargs)
+
+
+@requires_geos("3.10.0")
+@multithreading_enabled
+def segmentize(geometry, tolerance, **kwargs):
+    """Adds vertices to line segments based on tolerance.
+
+    Additional vertices will be added to every line segment in an input geometry
+    so that segments are no greater than tolerance.  New vertices will evenly
+    subdivide each segment.
+
+    Only linear components of input geometries are densified; other geometries
+    are returned unmodified.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    tolerance : float or array_like
+        Additional vertices will be added so that all line segments are no
+        greater than this value.  Must be greater than 0.
+
+    Examples
+    --------
+    >>> line = Geometry("LINESTRING (0 0, 0 10)")
+    >>> segmentize(line, tolerance=5)
+    <pygeos.Geometry LINESTRING (0 0, 0 5, 0 10)>
+    >>> poly = Geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))")
+    >>> segmentize(poly, tolerance=5)
+    <pygeos.Geometry POLYGON ((0 0, 5 0, 10 0, 10 5, 10 10, 5 10, 0 10, 0 5, 0 0))>
+    >>> segmentize(None, tolerance=5) is None
+    True
+    """
+    return lib.segmentize(geometry, tolerance, **kwargs)
 
 
 @multithreading_enabled
@@ -560,9 +687,10 @@ def voronoi_polygons(
 
     Examples
     --------
+    >>> from pygeos import normalize
     >>> points = Geometry("MULTIPOINT (2 2, 4 2)")
-    >>> voronoi_polygons(points)
-    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((3 0, 0 0, 0 4, 3 4, 3 0)), PO...>
+    >>> normalize(voronoi_polygons(points))
+    <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((3 0, 3 4, 6 4, 6 0, 3 0)), PO...>
     >>> voronoi_polygons(points, only_edges=True)
     <pygeos.Geometry LINESTRING (3 4, 3 0)>
     >>> voronoi_polygons(Geometry("MULTIPOINT (2 2, 4 2, 4.2 2)"), 0.5, only_edges=True)

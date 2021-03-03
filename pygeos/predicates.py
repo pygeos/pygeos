@@ -11,6 +11,7 @@ __all__ = [
     "is_empty",
     "is_geometry",
     "is_missing",
+    "is_prepared",
     "is_ring",
     "is_simple",
     "is_valid",
@@ -18,6 +19,7 @@ __all__ = [
     "is_valid_reason",
     "crosses",
     "contains",
+    "contains_properly",
     "covered_by",
     "covers",
     "disjoint",
@@ -187,6 +189,40 @@ def is_missing(geometry, **kwargs):
     """
     return lib.is_missing(geometry, **kwargs)
 
+
+@multithreading_enabled
+def is_prepared(geometry, **kwargs):
+    """Returns True if a Geometry is prepared.
+
+    Note that it is not necessary to check if a geometry is already prepared
+    before preparing it. It is more efficient to call ``prepare`` directly
+    because it will skip geometries that are already prepared.
+
+    This function will return False for missing geometries (None).
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    See also
+    --------
+    is_valid_input : check if an object is a geometry or None
+    prepare : prepare a geometry
+
+    Examples
+    --------
+    >>> geometry = Geometry("POINT (0 0)")
+    >>> is_prepared(Geometry("POINT (0 0)"))
+    False
+    >>> from pygeos import prepare; prepare(geometry);
+    >>> is_prepared(geometry)
+    True
+    >>> is_prepared(None)
+    False
+    """
+    return lib.is_prepared(geometry, **kwargs)
+
+
 @multithreading_enabled
 def is_valid_input(geometry, **kwargs):
     """Returns True if the object is a geometry or None
@@ -334,13 +370,11 @@ def is_valid_reason(geometry, **kwargs):
 
 @multithreading_enabled
 def crosses(a, b, **kwargs):
-    """Returns True if the intersection of two geometries spatially crosses.
+    """Returns True if A and B spatially cross.
 
-    That is: the geometries have some, but not all interior points in common.
-    The geometries must intersect and the intersection must have a
-    dimensionality less than the maximum dimension of the two input geometries.
-    Additionally, the intersection of the two geometries must not equal either
-    of the source geometries.
+    A crosses B if they have some but not all interior points in common,
+    the intersection is one dimension less than the maximum dimension of A or B,
+    and the intersection is not equal to either A or B.
 
     Parameters
     ----------
@@ -353,21 +387,28 @@ def crosses(a, b, **kwargs):
     Examples
     --------
     >>> line = Geometry("LINESTRING(0 0, 1 1)")
+    >>> # A contains B:
     >>> crosses(line, Geometry("POINT (0.5 0.5)"))
     False
+    >>> # A and B intersect at a point but do not share all points:
     >>> crosses(line, Geometry("MULTIPOINT ((0 1), (0.5 0.5))"))
     True
     >>> crosses(line, Geometry("LINESTRING(0 1, 1 0)"))
     True
+    >>> # A is contained by B; their intersection is a line (same dimension):
     >>> crosses(line, Geometry("LINESTRING(0 0, 2 2)"))
     False
     >>> area = Geometry("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))")
+    >>> # A contains B:
     >>> crosses(area, line)
     False
+    >>> # A and B intersect with a line (lower dimension) but do not share all points:
     >>> crosses(area, Geometry("LINESTRING(0 0, 2 2)"))
     True
+    >>> # A contains B:
     >>> crosses(area, Geometry("POINT (0.5 0.5)"))
     False
+    >>> # A contains some but not all points of B; they intersect at a point:
     >>> crosses(area, Geometry("MULTIPOINT ((2 2), (0.5 0.5))"))
     True
     """
@@ -381,6 +422,10 @@ def contains(a, b, **kwargs):
     A contains B if no points of B lie in the exterior of A and at least one
     point of the interior of B lies in the interior of A.
 
+    Note: following this definition, a geometry does not contain its boundary,
+    but it does contain itself. See `contains_properly` for a version where
+    a geometry does not contain itself.
+
     Parameters
     ----------
     a, b : Geometry or array_like
@@ -388,6 +433,7 @@ def contains(a, b, **kwargs):
     See also
     --------
     within : ``contains(A, B) == within(B, A)``
+    contains_properly : contains with no common boundary points
     prepare : improve performance by preparing ``a`` (the first argument)
 
     Examples
@@ -417,6 +463,52 @@ def contains(a, b, **kwargs):
     False
     """
     return lib.contains(a, b, **kwargs)
+
+
+@multithreading_enabled
+def contains_properly(a, b, **kwargs):
+    """Returns True if geometry B is completely inside geometry A, with no
+    common boundary points.
+
+    A contains B properly if B intersects the interior of A but not the
+    boundary (or exterior). This means that a geometry A does not
+    "contain properly" itself, which contrasts with the `contains` function,
+    where common points on the boundary are allowed.
+
+    Note: this function will prepare the geometries under the hood if needed.
+    You can prepare the geometries in advance to avoid repeated preparation
+    when calling this function multiple times.
+
+    Parameters
+    ----------
+    a, b : Geometry or array_like
+
+    See also
+    --------
+    contains : contains which allows common boundary points
+    prepare : improve performance by preparing ``a`` (the first argument)
+
+    Examples
+    --------
+    >>> area1 = Geometry("POLYGON((0 0, 3 0, 3 3, 0 3, 0 0))")
+    >>> area2 = Geometry("POLYGON((0 0, 1 0, 1 1, 0 1, 0 0))")
+    >>> area3 = Geometry("POLYGON((1 1, 2 1, 2 2, 1 2, 1 1))")
+
+    ``area1`` and ``area2`` have a common border:
+
+    >>> contains(area1, area2)
+    True
+    >>> contains_properly(area1, area2)
+    False
+
+    ``area3`` is completely inside ``area1`` with no common border:
+
+    >>> contains(area1, area3)
+    True
+    >>> contains_properly(area1, area3)
+    True
+    """
+    return lib.contains_properly(a, b, **kwargs)
 
 
 @multithreading_enabled
@@ -602,8 +694,14 @@ def intersects(a, b, **kwargs):
 
 @multithreading_enabled
 def overlaps(a, b, **kwargs):
-    """Returns True if A and B intersect, but one does not completely contain
-    the other.
+    """Returns True if A and B spatially overlap.
+
+    A and B overlap if they have some but not all points in common, have the
+    same dimension, and the intersection of the interiors of the two geometries
+    has the same dimension as the geometries themselves.  That is, only polyons
+    can overlap other polygons and only lines can overlap other lines.
+
+    If either A or B are None, the output is always False.
 
     Parameters
     ----------
@@ -615,14 +713,29 @@ def overlaps(a, b, **kwargs):
 
     Examples
     --------
-    >>> line = Geometry("LINESTRING(0 0, 1 1)")
-    >>> overlaps(line, line)
+    >>> poly = Geometry("POLYGON ((0 0, 0 4, 4 4, 4 0, 0 0))")
+    >>> # A and B share all points (are spatially equal):
+    >>> overlaps(poly, poly)
     False
-    >>> overlaps(line, Geometry("LINESTRING(0 0, 2 2)"))
+    >>> # A contains B; all points of B are within A:
+    >>> overlaps(poly, Geometry("POLYGON ((0 0, 0 2, 2 2, 2 0, 0 0))"))
     False
-    >>> overlaps(line, Geometry("LINESTRING(0.5 0.5, 2 2)"))
+    >>> # A partially overlaps with B:
+    >>> overlaps(poly, Geometry("POLYGON ((2 2, 2 6, 6 6, 6 2, 2 2))"))
     True
-    >>> overlaps(line, Geometry("POINT (0.5 0.5)"))
+    >>> line = Geometry("LINESTRING (2 2, 6 6)")
+    >>> # A and B are different dimensions; they cannot overlap:
+    >>> overlaps(poly, line)
+    False
+    >>> overlaps(poly, Geometry("POINT (2 2)"))
+    False
+    >>> # A and B share some but not all points:
+    >>> overlaps(line, Geometry("LINESTRING (0 0, 4 4)"))
+    True
+    >>> # A and B intersect only at a point (lower dimension); they do not overlap
+    >>> overlaps(line, Geometry("LINESTRING (6 0, 0 6)"))
+    False
+    >>> overlaps(poly, None)
     False
     >>> overlaps(None, None)
     False
