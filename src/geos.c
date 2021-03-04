@@ -513,23 +513,17 @@ GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, doub
   }
 
   // Construct linear ring then use to construct polygon
-  // Note: coords are owned by ring
+  // Note: coords are owned by ring; if ring fails to construct, it will
+  // automatically clean up the coords
   ring = GEOSGeom_createLinearRing_r(ctx, coords);
   if (ring == NULL) {
-    if (coords != NULL) {
-      GEOSCoordSeq_destroy_r(ctx, coords);
-    }
-
     return NULL;
   }
 
-  // Note: ring is owned by polygon
+  // Note: ring is owned by polygon; if polygon fails to construct, it will
+  // automatically clean up the ring
   geom = GEOSGeom_createPolygon_r(ctx, ring, NULL, 0);
   if (geom == NULL) {
-    if (ring != NULL) {
-      GEOSGeom_destroy_r(ctx, ring);
-    }
-
     return NULL;
   }
 
