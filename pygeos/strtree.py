@@ -20,7 +20,8 @@ class BinaryPredicate(ParamEnum):
     contains_properly = 9
 
 
- VALID_PREDICATES = {e.name for e in BinaryPredicate}
+# DEPRECATED: to be removed on a future release
+VALID_PREDICATES = {e.name for e in BinaryPredicate}
 
 
 class STRtree:
