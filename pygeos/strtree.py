@@ -20,6 +20,9 @@ class BinaryPredicate(ParamEnum):
     contains_properly = 9
 
 
+ VALID_PREDICATES = {e.name for e in BinaryPredicate}
+
+
 class STRtree:
     """A query-only R-tree created using the Sort-Tile-Recursive (STR)
     algorithm.
