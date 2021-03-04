@@ -111,11 +111,7 @@ def box(x1, y1, x2, y2):
     x2 : array_like
     y2 : array_like
     """
-    x1, y1, x2, y2 = np.broadcast_arrays(x1, y1, x2, y2)
-    rings = np.array(((x2, y1), (x2, y2), (x1, y2), (x1, y1)))
-    # bring first two axes to the last two positions
-    rings = rings.transpose(list(range(2, rings.ndim)) + [0, 1])
-    return polygons(rings)
+    return lib.box(x1, y1, x2, y2)
 
 
 def multipoints(geometries):
@@ -188,8 +184,8 @@ def prepare(geometry, **kwargs):
     Note that if a prepared geometry is modified, the newly created Geometry object is
     not prepared. In that case, ``prepare`` should be called again.
 
-    This function does not recompute previously prepared geometries; 
-    it is efficient to call this function on an array that partially contains prepared geometries. 
+    This function does not recompute previously prepared geometries;
+    it is efficient to call this function on an array that partially contains prepared geometries.
 
     Parameters
     ----------

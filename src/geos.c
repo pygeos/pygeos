@@ -4,8 +4,8 @@
 #include "geos.h"
 
 #include <Python.h>
-#include <structmember.h>
 #include <numpy/npy_math.h>
+#include <structmember.h>
 
 /* This initializes a globally accessible GEOSException object */
 PyObject* geos_exception[1] = {NULL};
@@ -354,7 +354,6 @@ void geos_notice_handler(const char* message, void* userdata) {
   snprintf(userdata, 1024, "%s", message);
 }
 
-
 /* Extract bounds from geometry.
  *
  * Bounds coordinates will be set to NPY_NAN if geom is NULL, empty, or does not have an
@@ -378,7 +377,6 @@ void geos_notice_handler(const char* message, void* userdata) {
  */
 int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double* ymin,
                double* xmax, double* ymax) {
-
   int retval = 1;
 
   if (geom == NULL || GEOSisEmpty_r(ctx, geom)) {
@@ -483,7 +481,7 @@ finish:
  */
 GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, double xmax,
                          double ymax) {
-  if (xmin == NPY_NAN || ymin == NPY_NAN || xmax == NPY_NAN || ymax == NPY_NAN) {
+  if (npy_isnan(xmin) | npy_isnan(ymin) | npy_isnan(xmax) | npy_isnan(ymax)) {
     return NULL;
   }
 
