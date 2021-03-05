@@ -16,6 +16,8 @@ Version 0.10 (unreleased)
 * Deprecated ``VALID_PREDICATES`` set from ``pygeos.strtree`` package; these can be constructed
   in downstream libraries using the ``pygeos.strtree.BinaryPredicate`` enum.
   This will be removed in a future release.
+* ``points``, ``linestrings``, ``linearrings``, and ``polygons`` now return a ``GEOSException``
+  instead of a ``ValueError`` for invalid input.
 
 **Added GEOS functions**
 
