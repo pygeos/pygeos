@@ -1249,15 +1249,16 @@ static PyUFuncGenericFunction YYd_Y_funcs[1] = {&YYd_Y_func};
 #endif
 
 /* Define functions with unique call signatures */
-static char box_dtypes[5] = {NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE, NPY_OBJECT};
+static char box_dtypes[6] = {NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
+                             NPY_DOUBLE, NPY_INT,    NPY_OBJECT};
 static void box_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
-  char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3];
-  npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3];
+  char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4];
+  npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4];
   npy_intp n = dimensions[0];
   npy_intp i;
   GEOSGeometry** geom_arr;
 
-  CHECK_NO_INPLACE_OUTPUT(5);
+  CHECK_NO_INPLACE_OUTPUT(6);
 
   // allocate a temporary array to store output GEOSGeometry objects
   geom_arr = malloc(sizeof(void*) * n);
@@ -1265,9 +1266,9 @@ static void box_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 
   GEOS_INIT_THREADS;
 
-  for (i = 0; i < n; i++, ip1 += is1, ip2 += is2, ip3 += is3, ip4 += is4) {
-    geom_arr[i] =
-        create_box(ctx, *(double*)ip1, *(double*)ip2, *(double*)ip3, *(double*)ip4);
+  for (i = 0; i < n; i++, ip1 += is1, ip2 += is2, ip3 += is3, ip4 += is4, ip5 += is5) {
+    geom_arr[i] = create_box(ctx, *(double*)ip1, *(double*)ip2, *(double*)ip3,
+                             *(double*)ip4, *(int*)ip5);
     if (geom_arr[i] == NULL) {
       // result will be NULL for any nan coordinates, which is OK;
       // otherwise raise an error
@@ -1284,7 +1285,7 @@ static void box_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 
   // fill the numpy array with PyObjects while holding the GIL
   if (errstate == PGERR_SUCCESS) {
-    geom_arr_to_npy(geom_arr, args[4], steps[4], dimensions[0]);
+    geom_arr_to_npy(geom_arr, args[5], steps[5], dimensions[0]);
   }
   free(geom_arr);
 }
@@ -2785,7 +2786,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 
   DEFINE_YYd_d(hausdorff_distance_densify);
 
-  DEFINE_CUSTOM(box, 4);
+  DEFINE_CUSTOM(box, 5);
   DEFINE_CUSTOM(buffer, 7);
   DEFINE_CUSTOM(offset_curve, 5);
   DEFINE_CUSTOM(snap, 3);

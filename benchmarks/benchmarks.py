@@ -66,13 +66,6 @@ class ConstructiveSuite:
     def time_box(self):
         pygeos.box(*np.hstack([self.coords, self.coords + 100]).T)
 
-    def time_box_prev(self):
-        # previous implementation of box
-        x1, y1, x2, y2 = np.hstack([self.coords, self.coords + 100]).T
-        rings = np.array(((x2, y1), (x2, y2), (x1, y2), (x1, y1)))
-        rings = rings.transpose(list(range(2, rings.ndim)) + [0, 1])
-        pygeos.polygons(rings)
-
 
 class ClipSuite:
     """Benchmarks for different methods of clipping geometries by boxes"""

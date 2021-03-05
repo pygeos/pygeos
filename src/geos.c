@@ -473,6 +473,8 @@ finish:
  * ymin: minimum Y value
  * xmax: maximum X value
  * ymax: maximum Y value
+ * ccw: if 1, box will be created in counterclockwise direction from bottom right;
+ *  otherwise will be created in clockwise direction from bottom left.
  *
  * Returns
  * -------
@@ -480,7 +482,7 @@ finish:
  * NULL on failure or NPY_NAN coordinates
  */
 GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, double xmax,
-                         double ymax) {
+                         double ymax, int ccw) {
   if (npy_isnan(xmin) | npy_isnan(ymin) | npy_isnan(xmax) | npy_isnan(ymax)) {
     return NULL;
   }
@@ -495,21 +497,42 @@ GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, doub
     return NULL;
   }
 
-  if (!(GEOSCoordSeq_setX_r(ctx, coords, 0, xmin) &&
-        GEOSCoordSeq_setY_r(ctx, coords, 0, ymin) &&
-        GEOSCoordSeq_setX_r(ctx, coords, 1, xmax) &&
-        GEOSCoordSeq_setY_r(ctx, coords, 1, ymin) &&
-        GEOSCoordSeq_setX_r(ctx, coords, 2, xmax) &&
-        GEOSCoordSeq_setY_r(ctx, coords, 2, ymax) &&
-        GEOSCoordSeq_setX_r(ctx, coords, 3, xmin) &&
-        GEOSCoordSeq_setY_r(ctx, coords, 3, ymax) &&
-        GEOSCoordSeq_setX_r(ctx, coords, 4, xmin) &&
-        GEOSCoordSeq_setY_r(ctx, coords, 4, ymin))) {
-    if (coords != NULL) {
-      GEOSCoordSeq_destroy_r(ctx, coords);
-    }
+  if (ccw) {
+    // Start from bottom right (xmax, ymin) to match shapely
+    if (!(GEOSCoordSeq_setX_r(ctx, coords, 0, xmax) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 0, ymin) &&
+          GEOSCoordSeq_setX_r(ctx, coords, 1, xmax) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 1, ymax) &&
+          GEOSCoordSeq_setX_r(ctx, coords, 2, xmin) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 2, ymax) &&
+          GEOSCoordSeq_setX_r(ctx, coords, 3, xmin) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 3, ymin) &&
+          GEOSCoordSeq_setX_r(ctx, coords, 4, xmax) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 4, ymin))) {
+      if (coords != NULL) {
+        GEOSCoordSeq_destroy_r(ctx, coords);
+      }
 
-    return NULL;
+      return NULL;
+    }
+  } else {
+    // Start from bottom left (min, ymin) to match shapely
+    if (!(GEOSCoordSeq_setX_r(ctx, coords, 0, xmin) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 0, ymin) &&
+          GEOSCoordSeq_setX_r(ctx, coords, 1, xmin) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 1, ymax) &&
+          GEOSCoordSeq_setX_r(ctx, coords, 2, xmax) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 2, ymax) &&
+          GEOSCoordSeq_setX_r(ctx, coords, 3, xmax) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 3, ymin) &&
+          GEOSCoordSeq_setX_r(ctx, coords, 4, xmin) &&
+          GEOSCoordSeq_setY_r(ctx, coords, 4, ymin))) {
+      if (coords != NULL) {
+        GEOSCoordSeq_destroy_r(ctx, coords);
+      }
+
+      return NULL;
+    }
   }
 
   // Construct linear ring then use to construct polygon
