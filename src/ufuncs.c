@@ -1862,40 +1862,45 @@ static PyUFuncGenericFunction set_precision_funcs[1] = {&set_precision_func};
 /* define double -> geometry construction functions */
 static char points_dtypes[2] = {NPY_DOUBLE, NPY_OBJECT};
 static void points_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
-  GEOSGeometry* ret_ptr = NULL;
   GEOSCoordSequence* coord_seq = NULL;
-  PyObject* ret = NULL;
+  GEOSGeometry** geom_arr;
 
-  GEOS_INIT;
+  // allocate a temporary array to store output GEOSGeometry objects
+  geom_arr = malloc(sizeof(void*) * dimensions[0]);
+  CHECK_ALLOC(geom_arr);
+
+  GEOS_INIT_THREADS;
 
   SINGLE_COREDIM_LOOP_OUTER {
     coord_seq = GEOSCoordSeq_create_r(ctx, 1, n_c1);
     if (coord_seq == NULL) {
       errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
       goto finish;
     }
     SINGLE_COREDIM_LOOP_INNER {
       if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, 0, i_c1, *(double*)cp1)) {
-        GEOSCoordSeq_destroy_r(ctx, coord_seq);
         errstate = PGERR_GEOS_EXCEPTION;
+        GEOSCoordSeq_destroy_r(ctx, coord_seq);
         goto finish;
       }
     }
-    ret_ptr = GEOSGeom_createPoint_r(ctx, coord_seq);
+    geom_arr[i] = GEOSGeom_createPoint_r(ctx, coord_seq);
     // Note: coordinate sequence is owned by point; if point fails to construct, it will
     // automatically clean up the coordinate sequence
-    if (ret_ptr == NULL) {
+    if (geom_arr[i] == NULL) {
       errstate = PGERR_GEOS_EXCEPTION;
       goto finish;
     }
-    ret = GeometryObject_FromGEOS(ret_ptr, ctx);
-    PyObject** out = (PyObject**)op1;
-    Py_XDECREF(*out);
-    *out = ret;
   }
 
 finish:
-  GEOS_FINISH;
+  GEOS_FINISH_THREADS;
+  // fill the numpy array with PyObjects while holding the GIL
+  if (errstate == PGERR_SUCCESS) {
+    geom_arr_to_npy(geom_arr, args[1], steps[1], dimensions[0]);
+  }
+  free(geom_arr);
 }
 static PyUFuncGenericFunction points_funcs[1] = {&points_func};
 
@@ -1924,8 +1929,8 @@ static void linestrings_func(char** args, npy_intp* dimensions, npy_intp* steps,
       }
     }
     ret_ptr = GEOSGeom_createLineString_r(ctx, coord_seq);
-    // Note: coordinate sequence is owned by linestring; if linestring fails to construct, it will
-    // automatically clean up the coordinate sequence
+    // Note: coordinate sequence is owned by linestring; if linestring fails to construct,
+    // it will automatically clean up the coordinate sequence
     if (ret_ptr == NULL) {
       errstate = PGERR_GEOS_EXCEPTION;
       goto finish;
@@ -1989,8 +1994,8 @@ static void linearrings_func(char** args, npy_intp* dimensions, npy_intp* steps,
       }
     }
     ret_ptr = GEOSGeom_createLinearRing_r(ctx, coord_seq);
-    // Note: coordinate sequence is owned by linearring; if linearring fails to construct, it will
-    // automatically clean up the coordinate sequence
+    // Note: coordinate sequence is owned by linearring; if linearring fails to construct,
+    // it will automatically clean up the coordinate sequence
     if (ret_ptr == NULL) {
       errstate = PGERR_GEOS_EXCEPTION;
       goto finish;

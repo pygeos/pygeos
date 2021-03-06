@@ -18,18 +18,19 @@ __all__ = [
 ]
 
 
-def _wrap_construct_ufunc(func, coords, y=None, z=None):
+def _wrap_construct_ufunc(func, coords, y=None, z=None, **kwargs):
     if y is None:
-        return func(coords)
+        return func(coords, **kwargs)
     x = coords
     if z is None:
         coords = np.broadcast_arrays(x, y)
     else:
         coords = np.broadcast_arrays(x, y, z)
-    return func(np.stack(coords, axis=-1))
+    return func(np.stack(coords, axis=-1), **kwargs)
 
 
-def points(coords, y=None, z=None):
+@multithreading_enabled
+def points(coords, y=None, z=None, **kwargs):
     """Create an array of points.
 
     Note that GEOS >=3.10 automatically converts POINT (nan nan) to
@@ -43,7 +44,7 @@ def points(coords, y=None, z=None):
     y : array_like
     z : array_like
     """
-    return _wrap_construct_ufunc(lib.points, coords, y, z)
+    return _wrap_construct_ufunc(lib.points, coords, y, z, **kwargs)
 
 
 def linestrings(coords, y=None, z=None):
@@ -75,6 +76,7 @@ def linearrings(coords, y=None, z=None):
     z : array_like
     """
     return _wrap_construct_ufunc(lib.linearrings, coords, y, z)
+
 
 @multithreading_enabled
 def polygons(shells, holes=None):
@@ -188,8 +190,8 @@ def prepare(geometry, **kwargs):
     Note that if a prepared geometry is modified, the newly created Geometry object is
     not prepared. In that case, ``prepare`` should be called again.
 
-    This function does not recompute previously prepared geometries; 
-    it is efficient to call this function on an array that partially contains prepared geometries. 
+    This function does not recompute previously prepared geometries;
+    it is efficient to call this function on an array that partially contains prepared geometries.
 
     Parameters
     ----------
