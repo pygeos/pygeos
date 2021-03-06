@@ -1882,6 +1882,7 @@ static void points_func(char** args, npy_intp* dimensions, npy_intp* steps, void
       if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, 0, i_c1, *(double*)cp1)) {
         errstate = PGERR_GEOS_EXCEPTION;
         GEOSCoordSeq_destroy_r(ctx, coord_seq);
+        destroy_geom_arr(ctx, geom_arr, i - 1);
         goto finish;
       }
     }
@@ -1890,6 +1891,7 @@ static void points_func(char** args, npy_intp* dimensions, npy_intp* steps, void
     // automatically clean up the coordinate sequence
     if (geom_arr[i] == NULL) {
       errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
       goto finish;
     }
   }
@@ -1928,6 +1930,7 @@ static void linestrings_func(char** args, npy_intp* dimensions, npy_intp* steps,
         if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, i_c1, i_c2, *(double*)cp2)) {
           errstate = PGERR_GEOS_EXCEPTION;
           GEOSCoordSeq_destroy_r(ctx, coord_seq);
+          destroy_geom_arr(ctx, geom_arr, i - 1);
           goto finish;
         }
       }
@@ -1937,6 +1940,7 @@ static void linestrings_func(char** args, npy_intp* dimensions, npy_intp* steps,
     // it will automatically clean up the coordinate sequence
     if (geom_arr[i] == NULL) {
       errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
       goto finish;
     }
   }
@@ -1955,12 +1959,16 @@ static PyUFuncGenericFunction linestrings_funcs[1] = {&linestrings_func};
 static char linearrings_dtypes[2] = {NPY_DOUBLE, NPY_OBJECT};
 static void linearrings_func(char** args, npy_intp* dimensions, npy_intp* steps,
                              void* data) {
-  GEOSGeometry* ret_ptr = NULL;
   GEOSCoordSequence* coord_seq = NULL;
-  PyObject* ret = NULL;
+  GEOSGeometry** geom_arr;
   char ring_closure = 0;
   double first_coord, last_coord;
-  GEOS_INIT;
+
+  // allocate a temporary array to store output GEOSGeometry objects
+  geom_arr = malloc(sizeof(void*) * dimensions[0]);
+  CHECK_ALLOC(geom_arr);
+
+  GEOS_INIT_THREADS;
 
   DOUBLE_COREDIM_LOOP_OUTER {
     /* check if first and last coords are equal; duplicate if necessary */
@@ -1977,13 +1985,15 @@ static void linearrings_func(char** args, npy_intp* dimensions, npy_intp* steps,
     coord_seq = GEOSCoordSeq_create_r(ctx, n_c1 + ring_closure, n_c2);
     if (coord_seq == NULL) {
       errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
       goto finish;
     }
     DOUBLE_COREDIM_LOOP_INNER_1 {
       DOUBLE_COREDIM_LOOP_INNER_2 {
         if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, i_c1, i_c2, *(double*)cp2)) {
-          GEOSCoordSeq_destroy_r(ctx, coord_seq);
           errstate = PGERR_GEOS_EXCEPTION;
+          GEOSCoordSeq_destroy_r(ctx, coord_seq);
+          destroy_geom_arr(ctx, geom_arr, i - 1);
           goto finish;
         }
       }
@@ -1991,29 +2001,33 @@ static void linearrings_func(char** args, npy_intp* dimensions, npy_intp* steps,
     /* add the closing coordinate if necessary */
     if (ring_closure) {
       DOUBLE_COREDIM_LOOP_INNER_2 {
-        if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, n_c1, i_c2,
-                                        *(double*)(ip1 + i_c2 * cs2))) {
-          GEOSCoordSeq_destroy_r(ctx, coord_seq);
+        first_coord = *(double*)(ip1 + i_c2 * cs2);
+        if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, n_c1, i_c2, first_coord)) {
           errstate = PGERR_GEOS_EXCEPTION;
+          GEOSCoordSeq_destroy_r(ctx, coord_seq);
+          destroy_geom_arr(ctx, geom_arr, i - 1);
           goto finish;
         }
       }
     }
-    ret_ptr = GEOSGeom_createLinearRing_r(ctx, coord_seq);
+    geom_arr[i] = GEOSGeom_createLinearRing_r(ctx, coord_seq);
     // Note: coordinate sequence is owned by linearring; if linearring fails to construct,
     // it will automatically clean up the coordinate sequence
-    if (ret_ptr == NULL) {
+    if (geom_arr[i] == NULL) {
       errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
       goto finish;
     }
-    ret = GeometryObject_FromGEOS(ret_ptr, ctx);
-    PyObject** out = (PyObject**)op1;
-    Py_XDECREF(*out);
-    *out = ret;
   }
 
 finish:
-  GEOS_FINISH;
+  GEOS_FINISH_THREADS;
+
+  // fill the numpy array with PyObjects while holding the GIL
+  if (errstate == PGERR_SUCCESS) {
+    geom_arr_to_npy(geom_arr, args[1], steps[1], dimensions[0]);
+  }
+  free(geom_arr);
 }
 static PyUFuncGenericFunction linearrings_funcs[1] = {&linearrings_func};
 

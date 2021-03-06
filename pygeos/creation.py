@@ -62,7 +62,8 @@ def linestrings(coords, y=None, z=None, **kwargs):
     return _wrap_construct_ufunc(lib.linestrings, coords, y, z, **kwargs)
 
 
-def linearrings(coords, y=None, z=None):
+@multithreading_enabled
+def linearrings(coords, y=None, z=None, **kwargs):
     """Create an array of linearrings.
 
     If the provided coords do not constitute a closed linestring, the first
@@ -76,7 +77,7 @@ def linearrings(coords, y=None, z=None):
     y : array_like
     z : array_like
     """
-    return _wrap_construct_ufunc(lib.linearrings, coords, y, z)
+    return _wrap_construct_ufunc(lib.linearrings, coords, y, z, **kwargs)
 
 
 @multithreading_enabled
