@@ -8,6 +8,8 @@ Version 0.10 (unreleased)
 
 * Addition of ``nearest`` and ``nearest_all`` functions to ``STRtree`` for
   GEOS >= 3.6 to find the nearest neighbors (#272).
+* Released GIL for ``points``, ``linestrings``, ``linearrings``, and 
+  (partially) ``polygons`` (#310).
 
 **API Changes**
 
@@ -17,7 +19,7 @@ Version 0.10 (unreleased)
   in downstream libraries using the ``pygeos.strtree.BinaryPredicate`` enum.
   This will be removed in a future release.
 * ``points``, ``linestrings``, ``linearrings``, and ``polygons`` now return a ``GEOSException``
-  instead of a ``ValueError`` for invalid input.
+  instead of a ``ValueError`` for invalid input (#310).
 
 **Added GEOS functions**
 
@@ -28,6 +30,8 @@ Version 0.10 (unreleased)
 **Bug fixes**
 
 * Fixed portability issue for ARM architecture (#293)
+* Fixed segfault in ``linearrings`` and ``box`` when constructing a geometry with nan 
+  coordinates (#310).
 
 **Acknowledgments**
 
