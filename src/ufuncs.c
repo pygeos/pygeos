@@ -262,13 +262,14 @@ static char GEOSContainsProperly(void* context, void* g1, void* g2) {
 
   prepared_geom_tmp = GEOSPrepare_r(context, g1);
   if (prepared_geom_tmp == NULL) {
-      return 2;
-    }
+    return 2;
+  }
   ret = GEOSPreparedContainsProperly_r(context, prepared_geom_tmp, g2);
   GEOSPreparedGeom_destroy_r(context, prepared_geom_tmp);
   return ret;
 }
-static void* contains_properly_func_tuple[2] = {GEOSContainsProperly, GEOSPreparedContainsProperly_r};
+static void* contains_properly_func_tuple[2] = {GEOSContainsProperly,
+                                                GEOSPreparedContainsProperly_r};
 static void* contains_properly_data[1] = {contains_properly_func_tuple};
 static void* covered_by_func_tuple[2] = {GEOSCoveredBy_r, GEOSPreparedCoveredBy_r};
 static void* covered_by_data[1] = {covered_by_func_tuple};
@@ -545,6 +546,10 @@ static void* simplify_preserve_topology_data[1] = {GEOSTopologyPreserveSimplify_
 
 #if GEOS_SINCE_3_9_0
 static void* unary_union_prec_data[1] = {GEOSUnaryUnionPrec_r};
+#endif
+
+#if GEOS_SINCE_3_10_0
+static void* segmentize_data[1] = {GEOSDensify_r};
 #endif
 
 typedef void* FuncGEOS_Yd_Y(void* context, void* a, double b);
@@ -1189,7 +1194,6 @@ finish:
 }
 static PyUFuncGenericFunction YYd_d_funcs[1] = {&YYd_d_func};
 
-
 #if GEOS_SINCE_3_9_0
 
 /* Define the geom, geom, double -> geom functions (YYd_Y) */
@@ -1243,7 +1247,6 @@ static void YYd_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void*
 }
 static PyUFuncGenericFunction YYd_Y_funcs[1] = {&YYd_Y_func};
 #endif
-
 
 /* Define functions with unique call signatures */
 
@@ -1776,6 +1779,50 @@ finish:
 }
 static PyUFuncGenericFunction relate_pattern_funcs[1] = {&relate_pattern_func};
 
+static char polygonize_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static void polygonize_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                            void* data) {
+  GEOSGeometry* geom = NULL;
+  unsigned int n_geoms;
+
+  GEOS_INIT;
+
+  GEOSGeometry** geoms = malloc(sizeof(void*) * dimensions[1]);
+  if (geoms == NULL) {
+    errstate = PGERR_NO_MALLOC;
+    goto finish;
+  }
+
+  SINGLE_COREDIM_LOOP_OUTER {
+    n_geoms = 0;
+    SINGLE_COREDIM_LOOP_INNER {
+      if (!get_geom(*(GeometryObject**)cp1, &geom)) {
+        errstate = PGERR_NOT_A_GEOMETRY;
+        goto finish;
+      }
+      if (geom == NULL) {
+        continue;
+      }
+      geoms[n_geoms] = geom;
+      n_geoms++;
+    }
+
+    GEOSGeometry* ret_ptr = GEOSPolygonize_r(ctx, geoms, n_geoms);
+    if (ret_ptr == NULL) {
+      errstate = PGERR_GEOS_EXCEPTION;
+      goto finish;
+    }
+    OUTPUT_Y;
+  }
+
+finish:
+  if (geoms != NULL) {
+    free(geoms);
+  }
+  GEOS_FINISH;
+}
+static PyUFuncGenericFunction polygonize_funcs[1] = {&polygonize_func};
+
 #if GEOS_SINCE_3_6_0
 static char set_precision_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
 static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* steps,
@@ -1988,8 +2035,7 @@ static char create_collection_dtypes[3] = {NPY_OBJECT, NPY_INT, NPY_OBJECT};
 static void create_collection_func(char** args, npy_intp* dimensions, npy_intp* steps,
                                    void* data) {
   GEOSGeometry *g, *g_copy;
-  int n_geoms, type;
-  char actual_type, expected_type, alt_expected_type;
+  int n_geoms, type, actual_type, expected_type, alt_expected_type;
 
   GEOS_INIT;
 
@@ -2357,7 +2403,9 @@ static void to_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps, void
   GEOSWKBWriter* writer;
   unsigned char* wkb;
   size_t size;
+#if !GEOS_SINCE_3_10_0
   char has_empty;
+#endif  // !GEOS_SINCE_3_10_0
 
   if ((is2 != 0) | (is3 != 0) | (is4 != 0) | (is5 != 0)) {
     PyErr_Format(PyExc_ValueError, "to_wkb function called with non-scalar parameters");
@@ -2399,7 +2447,8 @@ static void to_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps, void
       Py_INCREF(Py_None);
       *out = Py_None;
     } else {
-      // WKB Does not allow empty points.
+#if !GEOS_SINCE_3_10_0
+      // WKB Does not allow empty points in GEOS<3.10.
       // We check for that and patch the POINT EMPTY if necessary
       has_empty = has_point_empty(ctx, in1);
       if (has_empty == 2) {
@@ -2411,16 +2460,20 @@ static void to_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps, void
       } else {
         temp_geom = in1;
       }
-
+#else
+      temp_geom = in1;
+#endif  // !GEOS_SINCE_3_10_0
       if (hex) {
         wkb = GEOSWKBWriter_writeHEX_r(ctx, writer, temp_geom, &size);
       } else {
         wkb = GEOSWKBWriter_write_r(ctx, writer, temp_geom, &size);
       }
+#if !GEOS_SINCE_3_10_0
       // Destroy the temp_geom if it was patched (POINT EMPTY patch)
       if (has_empty) {
         GEOSGeom_destroy_r(ctx, temp_geom);
       }
+#endif  // !GEOS_SINCE_3_10_0
       if (wkb == NULL) {
         errstate = PGERR_GEOS_EXCEPTION;
         goto finish;
@@ -2702,6 +2755,8 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_CUSTOM(is_valid_reason, 1);
   DEFINE_CUSTOM(relate, 2);
   DEFINE_CUSTOM(relate_pattern, 3);
+  DEFINE_GENERALIZED(polygonize, 1, "(d)->()");
+
   DEFINE_GENERALIZED(points, 1, "(d)->()");
   DEFINE_GENERALIZED(linestrings, 1, "(i, d)->()");
   DEFINE_GENERALIZED(linearrings, 1, "(i, d)->()");
@@ -2742,6 +2797,10 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_YYd_Y(symmetric_difference_prec);
   DEFINE_YYd_Y(union_prec);
   DEFINE_Yd_Y(unary_union_prec);
+#endif
+
+#if GEOS_SINCE_3_10_0
+  DEFINE_Yd_Y(segmentize);
 #endif
 
   Py_DECREF(ufunc);
