@@ -1250,7 +1250,7 @@ static PyUFuncGenericFunction YYd_Y_funcs[1] = {&YYd_Y_func};
 
 /* Define functions with unique call signatures */
 static char box_dtypes[6] = {NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
-                             NPY_DOUBLE, NPY_INT,    NPY_OBJECT};
+                             NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
 static void box_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
   char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4];
   npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4];

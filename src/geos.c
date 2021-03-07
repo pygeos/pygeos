@@ -482,7 +482,7 @@ finish:
  * NULL on failure or NPY_NAN coordinates
  */
 GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, double xmax,
-                         double ymax, int ccw) {
+                         double ymax, char ccw) {
   if (npy_isnan(xmin) | npy_isnan(ymin) | npy_isnan(xmax) | npy_isnan(ymax)) {
     return NULL;
   }

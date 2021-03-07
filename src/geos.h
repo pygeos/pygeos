@@ -144,6 +144,6 @@ extern int init_geos(PyObject* m);
 int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double* ymin,
                double* xmax, double* ymax);
 GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, double xmax,
-                         double ymax, int ccw);
+                         double ymax, char ccw);
 
 #endif  // _GEOS_H
