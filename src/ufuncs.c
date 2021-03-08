@@ -1268,7 +1268,7 @@ static void box_func(char** args, npy_intp* dimensions, npy_intp* steps, void* d
 
   for (i = 0; i < n; i++, ip1 += is1, ip2 += is2, ip3 += is3, ip4 += is4, ip5 += is5) {
     geom_arr[i] = create_box(ctx, *(double*)ip1, *(double*)ip2, *(double*)ip3,
-                             *(double*)ip4, *(int*)ip5);
+                             *(double*)ip4, *(char*)ip5);
     if (geom_arr[i] == NULL) {
       // result will be NULL for any nan coordinates, which is OK;
       // otherwise raise an error
