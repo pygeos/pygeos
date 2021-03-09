@@ -10,17 +10,26 @@ from . import geos_capi_version_string
 
 ShapelyGeometry = None
 shapely_compatible = None
+shapely_lgeos = None
+shapely_geom_factory = None
+shapely_wkb_loads = None
 _shapely_checked = False
 
 def check_shapely_version():
     global ShapelyGeometry
     global shapely_compatible
+    global shapely_lgeos
+    global shapely_geom_factory
+    global shapely_wkb_loads
     global _shapely_checked
 
     if not _shapely_checked:
         try:
             from shapely.geos import geos_version_string
+            from shapely.geos import lgeos as shapely_lgeos
             from shapely.geometry.base import BaseGeometry as ShapelyGeometry
+            from shapely.geometry.base import geom_factory as shapely_geom_factory
+            from shapely.wkb import loads as shapely_wkb_loads
 
             # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
             # pygeos has something like: "3.6.2-CAPI-1.10.2"
@@ -40,7 +49,7 @@ def check_shapely_version():
         _shapely_checked = True
 
 
-__all__ = ["from_shapely", "from_wkb", "from_wkt", "to_wkb", "to_wkt"]
+__all__ = ["from_shapely", "from_wkb", "from_wkt", "to_shapely", "to_wkb", "to_wkt"]
 
 
 def to_wkt(
@@ -178,6 +187,56 @@ def to_wkb(
         np.bool_(include_srid),
         **kwargs,
     )
+
+
+def to_shapely(geometry):
+    """
+    Converts PyGEOS geometries to Shapely.
+    
+    Parameters
+    ----------
+    geometry : shapely Geometry object or array_like
+
+    Examples
+    --------
+    >>> to_shapely(Geometry("POINT (1 1)"))   # doctest: +SKIP
+    <shapely.geometry.point.Point at 0x7f0c3d737908>
+
+    Notes
+    -----
+    If PyGEOS and Shapely do not use the same GEOS version,
+    the conversion happens through the WKB format and will thus be slower.
+    """
+    check_shapely_version()
+    if shapely_compatible is None:
+        raise ImportError("This function requires shapely")
+
+    unpack = geometry is None or isinstance(geometry, Geometry)
+    if unpack:
+        geometry = (geometry,)
+
+    if shapely_compatible:
+        geometry = [
+            None
+            if g is None
+            else shapely_geom_factory(shapely_lgeos.GEOSGeom_clone(g._ptr))
+            for g in geometry
+        ]
+    else:
+        geometry = to_wkb(geometry)
+        geometry = [
+            None
+            if g is None
+            else shapely_wkb_loads(g)
+            for g in geometry
+        ]
+
+    if unpack:
+        return geometry[0]
+    else:
+        arr = np.empty(len(geometry), dtype=object)
+        arr[:] = geometry
+        return arr
 
 
 def from_wkt(geometry, **kwargs):
