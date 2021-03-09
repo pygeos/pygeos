@@ -1,3 +1,4 @@
+import warnings
 from collections.abc import Sized
 
 import numpy as np
@@ -7,19 +8,32 @@ from . import lib
 from . import geos_capi_version_string
 
 
-shapely_geos_version = None
 ShapelyGeometry = None
+shapely_compatible = None
 _shapely_checked = False
 
 def check_shapely_version():
-    global shapely_geos_version
     global ShapelyGeometry
+    global shapely_compatible
     global _shapely_checked
 
     if not _shapely_checked:
         try:
-            from shapely.geos import geos_version_string as shapely_geos_version
+            from shapely.geos import geos_version_string
             from shapely.geometry.base import BaseGeometry as ShapelyGeometry
+
+            # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
+            # pygeos has something like: "3.6.2-CAPI-1.10.2"
+            shapely_compatible = True
+            if not geos_version_string.startswith(geos_capi_version_string):
+                shapely_compatible = False
+                warnings.warn(
+                    "The shapely GEOS version ({}) is incompatible "
+                    "with the PyGEOS GEOS version ({}). "
+                    "Conversions between both will be slow".format(
+                        geos_version_string, geos_capi_version_string
+                    )
+                )
         except ImportError:
             pass
 
@@ -103,7 +117,12 @@ def to_wkt(
 
 
 def to_wkb(
-    geometry, hex=False, output_dimension=3, byte_order=-1, include_srid=False, **kwargs
+    geometry,
+    hex=False,
+    output_dimension=3,
+    byte_order=-1,
+    include_srid=False,
+    **kwargs
 ):
     r"""
     Converts to the Well-Known Binary (WKB) representation of a Geometry.
@@ -206,9 +225,8 @@ def from_wkb(geometry, **kwargs):
 
 
 def from_shapely(geometry, **kwargs):
-    """Creates geometries from shapely Geometry objects.
-
-    This function requires the GEOS version of PyGEOS and shapely to be equal.
+    """
+    Creates geometries from shapely Geometry objects.
 
     Parameters
     ----------
@@ -219,33 +237,47 @@ def from_shapely(geometry, **kwargs):
     >>> from shapely.geometry import Point   # doctest: +SKIP
     >>> from_shapely(Point(1, 2))   # doctest: +SKIP
     <pygeos.Geometry POINT (1 2)>
+
+    Notes
+    -----
+    If PyGEOS and Shapely do not use the same GEOS version,
+    the conversion happens through the WKB format and will thus be slower.
     """
     check_shapely_version()
-
-    if shapely_geos_version is None:
+    if shapely_compatible is None:
         raise ImportError("This function requires shapely")
 
-    # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
-    # pygeos has something like: "3.6.2-CAPI-1.10.2"
-    if not shapely_geos_version.startswith(geos_capi_version_string):
-        raise ImportError(
-            "The shapely GEOS version ({}) is incompatible with the GEOS "
-            "version PyGEOS was compiled with ({})".format(
-                shapely_geos_version, geos_capi_version_string
-            )
-        )
+    if shapely_compatible:
+        if isinstance(geometry, ShapelyGeometry):
+            # this so that the __array_interface__ of the shapely geometry is not
+            # used, converting the Geometry to its coordinates
+            arr = np.empty(1, dtype=object)
+            arr[0] = geometry
+            arr.shape = ()
+        elif not isinstance(geometry, np.ndarray) and isinstance(geometry, Sized):
+            # geometry is a list/array-like
+            arr = np.empty(len(geometry), dtype=object)
+            arr[:] = geometry
+        else:
+            # we already have a numpy array or we are None
+            arr = geometry
 
-    if isinstance(geometry, ShapelyGeometry):
-        # this so that the __array_interface__ of the shapely geometry is not
-        # used, converting the Geometry to its coordinates
-        arr = np.empty(1, dtype=object)
-        arr[0] = geometry
-        arr.shape = ()
-    elif not isinstance(geometry, np.ndarray) and isinstance(geometry, Sized):
-        # geometry is a list/array-like
-        arr = np.empty(len(geometry), dtype=object)
-        arr[:] = geometry
+        return lib.from_shapely(arr, **kwargs)
     else:
-        # we already have a numpy array or we are None
-        arr = geometry
-    return lib.from_shapely(arr, **kwargs)
+        unpack = geometry is None or isinstance(geometry, ShapelyGeometry)
+        if unpack:
+            geometry = (geometry,)
+
+        arr = [
+            None
+            if g is None
+            else b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf8\x7f\x00\x00\x00\x00\x00\x00\xf8\x7f'
+            if g.is_empty and g.geom_type == "Point"
+            else g.wkb
+            for g in geometry
+        ]
+
+        if unpack:
+            arr = arr[0]
+
+        return from_wkb(arr)
