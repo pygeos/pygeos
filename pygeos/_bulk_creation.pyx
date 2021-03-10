@@ -35,12 +35,10 @@ def collections_1d(
     int geometry_type = 7,
     int ndim = 2
 ):
-    cdef Py_ssize_t geom_idx = 0
+    cdef Py_ssize_t geom_idx_1 = 0
     cdef Py_ssize_t coll_idx = 0
     cdef Py_ssize_t coll_size = 0
-    cdef Py_ssize_t first_geom_idx = 0
-    cdef Py_ssize_t this_geom_idx = 0
-    cdef Py_ssize_t n_missing = 0
+    cdef Py_ssize_t coll_geom_idx = 0
     cdef GEOSGeometry *geom = NULL
     cdef GEOSGeometry *coll = NULL
     cdef int expected_type = -1
@@ -82,7 +80,7 @@ def collections_1d(
     cdef int[:] indices_view = indices
 
     # get the geometry count per collection
-    cdef long[:] collection_size = np.bincount(indices)
+    cdef int[:] collection_size = np.bincount(indices).astype(np.int32)
 
     # A temporary array for the geometries that will be given to CreateCollection.
     # Its size equals max(collection_size) to accomodate the largest collection.
@@ -96,15 +94,14 @@ def collections_1d(
 
     with get_geos_handle() as geos_handle:
         for coll_idx in range(n_colls):
-            coll_size = collection_size[coll_idx]
+            coll_size = 0
 
             # fill the temporary array with geometries belonging to this collection
-            for this_geom_idx in range(coll_size):
-                geom_idx = first_geom_idx + this_geom_idx
-                if PyGEOS_GetGEOSGeometry(<PyObject *>geometries_view[geom_idx], &geom) == 0:
+            for coll_geom_idx in range(collection_size[coll_idx]):
+                if PyGEOS_GetGEOSGeometry(<PyObject *>geometries_view[geom_idx_1 + coll_geom_idx], &geom) == 0:
                     # deallocate previous temp geometries (preventing memory leaks)
-                    for geom_idx in range(this_geom_idx):
-                        GEOSGeom_destroy_r(geos_handle, <GEOSGeometry *>temp_geoms_view[geom_idx])
+                    for coll_geom_idx in range(coll_size):
+                        GEOSGeom_destroy_r(geos_handle, <GEOSGeometry *>temp_geoms_view[coll_geom_idx])
                     raise TypeError(
                         "One of the arguments is of incorrect type. Please provide only Geometry objects."
                     )
@@ -114,31 +111,28 @@ def collections_1d(
                     curr_type = GEOSGeomTypeId_r(geos_handle, geom)
                     if curr_type != expected_type and curr_type != expected_type_alt:
                         # deallocate previous temp geometries (preventing memory leaks)
-                        for geom_idx in range(this_geom_idx):
-                            GEOSGeom_destroy_r(geos_handle, <GEOSGeometry *>temp_geoms_view[geom_idx])
+                        for coll_geom_idx in range(coll_size):
+                            GEOSGeom_destroy_r(geos_handle, <GEOSGeometry *>temp_geoms_view[coll_geom_idx])
                         raise TypeError(
                             f"One of the arguments has unexpected geometry type {curr_type}."
                         )
 
                 # ignore missing values
-                if geom == NULL:
-                    n_missing += 1
-                else:
-                    # assign to the temporary geometry array
-                    temp_geoms_view[this_geom_idx] = <np.intp_t>GEOSGeom_clone_r(geos_handle, geom)
+                if geom != NULL:
+                    # assign to the temporary geometry array                   
+                    temp_geoms_view[coll_size] = <np.intp_t>GEOSGeom_clone_r(geos_handle, geom)
+                    coll_size += 1
 
             # create the collection
             coll = GEOSGeom_createCollection_r(
                 geos_handle,
                 geometry_type, 
                 <GEOSGeometry**> &temp_geoms_view[0],
-                <unsigned int>(coll_size - n_missing)
+                <unsigned int>coll_size
             )
 
-            result_view[coll_idx] = PyGEOS_CreateGeometry(
-                coll, geos_handle
-            )
-            first_geom_idx += coll_size
-            n_missing = 0
+            result_view[coll_idx] = PyGEOS_CreateGeometry(coll, geos_handle)
+
+            geom_idx_1 += collection_size[coll_idx]
 
     return result

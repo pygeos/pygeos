@@ -46,6 +46,7 @@ def test_collections_1d_invalid_indices(indices):
         ),
         ([point, None], [0, 0], [geom_coll([point])]),
         ([point, None], [0, 1], [geom_coll([point]), geom_coll([])]),
+        ([point, None, line_string], [0, 0, 0], [geom_coll([point, line_string])])
     ],
 )
 def test_collections_1d(geometries, indices, expected):
