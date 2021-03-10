@@ -2,6 +2,7 @@ import numpy as np
 from . import lib
 from . import Geometry, GeometryType
 from .decorators import multithreading_enabled
+from ._geometry import collections_1d
 
 __all__ = [
     "points",
@@ -76,6 +77,7 @@ def linearrings(coords, y=None, z=None):
     """
     return _wrap_construct_ufunc(lib.linearrings, coords, y, z)
 
+
 @multithreading_enabled
 def polygons(shells, holes=None):
     """Create an array of polygons.
@@ -118,63 +120,96 @@ def box(x1, y1, x2, y2):
     return polygons(rings)
 
 
-def multipoints(geometries):
+def multipoints(geometries, indices=None):
     """Create multipoints from arrays of points
 
     Parameters
     ----------
     geometries : array_like
         An array of points or coordinates (see points).
+    indices : array_like or None
+       Indices into the target array where input geometries belong. If
+        provided, both geometries and indices should be 1D and have matching
+        sizes.
     """
+    typ = GeometryType.MULTIPOINT
     geometries = np.asarray(geometries)
     if not isinstance(geometries, Geometry) and np.issubdtype(
         geometries.dtype, np.number
     ):
         geometries = points(geometries)
-    return lib.create_collection(geometries, GeometryType.MULTIPOINT)
+    if indices is None:
+        return lib.create_collection(geometries, typ)
+    else:
+        return collections_1d(geometries, indices, typ)
 
 
-def multilinestrings(geometries):
+def multilinestrings(geometries, indices=None):
     """Create multilinestrings from arrays of linestrings
 
     Parameters
     ----------
     geometries : array_like
         An array of linestrings or coordinates (see linestrings).
+    indices : array_like or None
+        Indices into the target array where input geometries belong. If
+        provided, both geometries and indices should be 1D and have matching
+        sizes.
     """
+    typ = GeometryType.MULTILINESTRING
     geometries = np.asarray(geometries)
     if not isinstance(geometries, Geometry) and np.issubdtype(
         geometries.dtype, np.number
     ):
         geometries = linestrings(geometries)
-    return lib.create_collection(geometries, GeometryType.MULTILINESTRING)
+
+    if indices is None:
+        return lib.create_collection(geometries, typ)
+    else:
+        return collections_1d(geometries, indices, typ)
 
 
-def multipolygons(geometries):
+def multipolygons(geometries, indices=None):
     """Create multipolygons from arrays of polygons
 
     Parameters
     ----------
     geometries : array_like
         An array of polygons or coordinates (see polygons).
+    indices : array_like or None
+        Indices into the target array where input geometries belong. If
+        provided, both geometries and indices should be 1D and have matching
+        sizes.
     """
+    typ = GeometryType.MULTIPOLYGON
     geometries = np.asarray(geometries)
     if not isinstance(geometries, Geometry) and np.issubdtype(
         geometries.dtype, np.number
     ):
         geometries = polygons(geometries)
-    return lib.create_collection(geometries, GeometryType.MULTIPOLYGON)
+    if indices is None:
+        return lib.create_collection(geometries, typ)
+    else:
+        return collections_1d(geometries, indices, typ)
 
 
-def geometrycollections(geometries):
+def geometrycollections(geometries, indices=None):
     """Create geometrycollections from arrays of geometries
 
     Parameters
     ----------
     geometries : array_like
         An array of geometries
+    indices : array_like or None
+        Indices into the target array where input geometries belong. If
+        provided, both geometries and indices should be 1D and have matching
+        sizes.
     """
-    return lib.create_collection(geometries, GeometryType.GEOMETRYCOLLECTION)
+    typ = GeometryType.GEOMETRYCOLLECTION
+    if indices is None:
+        return lib.create_collection(geometries, typ)
+    else:
+        return collections_1d(geometries, indices, typ)
 
 
 def prepare(geometry, **kwargs):
@@ -188,8 +223,8 @@ def prepare(geometry, **kwargs):
     Note that if a prepared geometry is modified, the newly created Geometry object is
     not prepared. In that case, ``prepare`` should be called again.
 
-    This function does not recompute previously prepared geometries; 
-    it is efficient to call this function on an array that partially contains prepared geometries. 
+    This function does not recompute previously prepared geometries;
+    it is efficient to call this function on an array that partially contains prepared geometries.
 
     Parameters
     ----------
