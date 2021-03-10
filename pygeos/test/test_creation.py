@@ -133,6 +133,12 @@ def test_linearrings_invalid_shape(shape):
         pygeos.linearrings(coords)
 
 
+def test_linearrings_all_nan():
+    coords = np.full((4, 2), np.nan)
+    with pytest.raises(pygeos.GEOSException):
+        pygeos.linearrings(coords)
+    
+
 def test_polygon_from_linearring():
     actual = pygeos.polygons(pygeos.linearrings(box_tpl(0, 0, 1, 1)))
     assert str(actual) == "POLYGON ((1 0, 1 1, 0 1, 0 0, 1 0))"

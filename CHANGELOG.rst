@@ -9,7 +9,7 @@ Version 0.10 (unreleased)
 * Addition of ``nearest`` and ``nearest_all`` functions to ``STRtree`` for
   GEOS >= 3.6 to find the nearest neighbors (#272).
 * Released GIL for ``points``, ``linestrings``, ``linearrings``, and 
-  (partially) ``polygons`` (#310).
+  ``polygons`` (without holes) (#310).
 
 **API Changes**
 
