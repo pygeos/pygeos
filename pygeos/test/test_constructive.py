@@ -428,9 +428,7 @@ def test_polygonize_array():
         pygeos.Geometry("LINESTRING (0 0, 0 1)"),
         pygeos.Geometry("LINESTRING (0 1, 1 1)"),
     ]
-    expected = pygeos.Geometry(
-        "GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))"
-    )
+    expected = pygeos.Geometry("GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))")
     result = pygeos.polygonize(np.array(lines))
     assert isinstance(result, pygeos.Geometry)
     assert result == expected
@@ -589,3 +587,14 @@ def test_segmentize_none():
 def test_segmentize(geometry, tolerance, expected):
     actual = pygeos.segmentize(geometry, tolerance)
     assert pygeos.equals(actual, geometry).all()
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8")
+@pytest.mark.parametrize("geometry", all_types)
+def test_mminimum_bounding_circle(geometry):
+    actual = pygeos.minimum_bounding_circle([geometry, geometry])
+    assert actual.shape == (2,)
+    assert actual[0] is None or isinstance(actual[0], Geometry)
+
+    actual = pygeos.minimum_bounding_circle(None)
+    assert actual is None

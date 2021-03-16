@@ -414,6 +414,7 @@ static void* polygons_without_holes_data[1] = {GEOSLinearRingToPolygon};
 static void* build_area_data[1] = {GEOSBuildArea_r};
 static void* make_valid_data[1] = {GEOSMakeValid_r};
 static void* coverage_union_data[1] = {GEOSCoverageUnion_r};
+static void* minimum_bounding_circle_data[1] = {GEOSMinimumBoundingCircle_r};
 #endif
 #if GEOS_SINCE_3_7_0
 static void* reverse_data[1] = {GEOSReverse_r};
@@ -2789,6 +2790,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Y_Y(make_valid);
   DEFINE_Y_Y(build_area);
   DEFINE_Y_Y(coverage_union);
+  DEFINE_Y_Y(minimum_bounding_circle);
 #endif
 
 #if GEOS_SINCE_3_9_0
