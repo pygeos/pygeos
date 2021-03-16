@@ -722,12 +722,12 @@ def minimum_rotated_rectangle(geometry, **kwargs):
     --------
     >>> minimum_rotated_rectangle(Geometry("MULTIPOINT (0 0, 10 0, 10 10)"))
     <pygeos.Geometry POLYGON ((0 0, 5 -5, 15 5, 10 10, 0 0))>
-    >>> minimum_rotated_rectangle(Geometry("LINESTRING (0 0, 5 0, 10 10)"))
-    <pygeos.Geometry POLYGON ((0 0, 2.5 -2.5, 12.5 7.5, 10 10, 0 0))>
-    >>> minimum_rotated_rectangle(Geometry("POLYGON ((0 0, 15 0, 5 10, 0 0))"))
-    <pygeos.Geometry POLYGON ((15 0, 15 10, 0 10, 0 0, 15 0))>
-    >>> minimum_rotated_rectangle(Geometry("LINESTRING (0 0, 10 0)"))
-    <pygeos.Geometry LINESTRING (0 0, 10 0)>
+    >>> minimum_rotated_rectangle(Geometry("LINESTRING (1 1, 5 1, 10 10)"))
+    <pygeos.Geometry POLYGON ((1 1, 3 -1, 12 8, 10 10, 1 1))>
+    >>> minimum_rotated_rectangle(Geometry("POLYGON ((1 1, 15 1, 5 10, 1 1))"))
+    <pygeos.Geometry POLYGON ((15 1, 15 10, 1 10, 1 1, 15 1))>
+    >>> minimum_rotated_rectangle(Geometry("LINESTRING (1 1, 10 1)"))
+    <pygeos.Geometry LINESTRING (1 1, 10 1)>
     >>> minimum_rotated_rectangle(Geometry("POINT (2 2)"))
     <pygeos.Geometry POINT (2 2)>
     >>> minimum_rotated_rectangle(Geometry("GEOMETRYCOLLECTION EMPTY"))
