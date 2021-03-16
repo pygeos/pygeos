@@ -414,7 +414,17 @@ static void* polygons_without_holes_data[1] = {GEOSLinearRingToPolygon};
 static void* build_area_data[1] = {GEOSBuildArea_r};
 static void* make_valid_data[1] = {GEOSMakeValid_r};
 static void* coverage_union_data[1] = {GEOSCoverageUnion_r};
-static void* minimum_bounding_circle_data[1] = {GEOSMinimumBoundingCircle_r};
+static void* GEOSMinimumBoundingCircleWithReturn(void* context, void* geom) {
+  GEOSGeometry* center = NULL;
+  double radius;
+  void* ret = GEOSMinimumBoundingCircle_r(context, geom, &radius, &center);
+  if (ret == NULL) {
+    return NULL;
+  }
+  GEOSGeom_destroy_r(context, center);
+  return ret;
+}
+static void* minimum_bounding_circle_data[1] = {GEOSMinimumBoundingCircleWithReturn};
 #endif
 #if GEOS_SINCE_3_7_0
 static void* reverse_data[1] = {GEOSReverse_r};
