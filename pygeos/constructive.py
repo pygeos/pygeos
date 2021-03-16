@@ -27,6 +27,7 @@ __all__ = [
     "simplify",
     "snap",
     "voronoi_polygons",
+    "minimum_rotated_rectangle",
 ]
 
 
@@ -703,3 +704,33 @@ def voronoi_polygons(
     <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>
     """
     return lib.voronoi_polygons(geometry, tolerance, extend_to, only_edges, **kwargs)
+
+
+@requires_geos("3.6.0")
+@multithreading_enabled
+def minimum_rotated_rectangle(geometry, **kwargs):
+    """Computes the minimum rotated rectangle that encloses an input geometry.
+
+    Unlike envelope this rectangle is not constrained to be parallel to the coordinate axes.
+    If the convex hull of the object is a degenerate (line or point) this degenerate is returned.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+
+    Examples
+    --------
+    >>> minimum_rotated_rectangle(Geometry("MULTIPOINT (0 0, 10 0, 10 10)"))
+    <pygeos.Geometry POLYGON ((0 0, 5 -5, 15 5, 10 10, 0 0))>
+    >>> minimum_rotated_rectangle(Geometry("LINESTRING (0 0, 5 0, 10 10)"))
+    <pygeos.Geometry POLYGON ((0 0, 2.5 -2.5, 12.5 7.5, 10 10, 0 0))>
+    >>> minimum_rotated_rectangle(Geometry("POLYGON ((0 0, 15 0, 5 10, 0 0))"))
+    <pygeos.Geometry POLYGON ((15 0, 15 10, 0 10, 0 0, 15 0))>
+    >>> minimum_rotated_rectangle(Geometry("LINESTRING (0 0, 10 0)"))
+    <pygeos.Geometry LINESTRING (0 0, 10 0)>
+    >>> minimum_rotated_rectangle(Geometry("POINT (2 2)"))
+    <pygeos.Geometry POINT (2 2)>
+    >>> minimum_rotated_rectangle(Geometry("GEOMETRYCOLLECTION EMPTY"))
+    <pygeos.Geometry POLYGON EMPTY>
+    """
+    return lib.minimum_rotated_rectangle(geometry, **kwargs)

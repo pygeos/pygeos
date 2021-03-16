@@ -589,3 +589,14 @@ def test_segmentize_none():
 def test_segmentize(geometry, tolerance, expected):
     actual = pygeos.segmentize(geometry, tolerance)
     assert pygeos.equals(actual, geometry).all()
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
+@pytest.mark.parametrize("geometry", all_types)
+def test_minimum_rotated_rectangle(geometry):
+    actual = pygeos.minimum_rotated_rectangle([geometry, geometry])
+    assert actual.shape == (2,)
+    assert actual[0] is None or isinstance(actual[0], Geometry)
+
+    actual = pygeos.minimum_rotated_rectangle(None)
+    assert actual is None
