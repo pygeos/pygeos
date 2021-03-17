@@ -14,7 +14,6 @@
 #include "geos.h"
 #include "pygeom.h"
 
-
 /* These function prototypes enables that these functions can call themselves */
 static char get_coordinates(GEOSContextHandle_t, GEOSGeometry*, PyArrayObject*, npy_intp*,
                             int);
@@ -360,7 +359,7 @@ finish:
   return result;
 }
 
-PyObject* GetCoords(PyArrayObject* arr, int include_z) {
+PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
   npy_intp coord_dim;
   NpyIter* iter;
   NpyIter_IterNextFunc* iternext;
@@ -368,6 +367,7 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z) {
   npy_intp cursor;
   GeometryObject* obj;
   GEOSGeometry* geom;
+  PyArrayObject* index = NULL;
 
   /* create a coordinate array with the appropriate dimensions */
   npy_intp size = CountCoords(arr);
@@ -384,10 +384,25 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z) {
   if (result == NULL) {
     return NULL;
   }
+  if (return_index) {
+    npy_intp dims_ind[1] = {size};
+    index = (PyArrayObject*)PyArray_SimpleNew(2, dims_ind, NPY_INT64);
+    if (index == NULL) {
+      Py_DECREF(result);
+      return NULL;
+    }
+  }
 
   /* Handle zero-sized arrays specially */
   if (PyArray_SIZE(arr) == 0) {
-    return (PyObject*)result;
+    if (return_index) {
+      PyObject* result_tpl = PyTuple_New(2);
+      PyTuple_SET_ITEM(result_tpl, 0, (PyObject*)result);
+      PyTuple_SET_ITEM(result_tpl, 1, (PyObject*)index);
+      return result_tpl;
+    } else {
+      return (PyObject*)result;
+    }
   }
 
   /* We use the Numpy iterator C-API here.
@@ -397,11 +412,14 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z) {
                      NPY_NO_CASTING, NULL);
   if (iter == NULL) {
     Py_DECREF(result);
+    Py_DECREF(index);
     return NULL;
   }
   iternext = NpyIter_GetIterNext(iter, NULL);
   if (iternext == NULL) {
     NpyIter_Deallocate(iter);
+    Py_DECREF(result);
+    Py_DECREF(index);
     return NULL;
   }
   dataptr = NpyIter_GetDataPtrArray(iter);
@@ -435,7 +453,13 @@ finish:
 
   if (errstate != PGERR_SUCCESS) {
     Py_DECREF(result);
+    Py_DECREF(index);
     return NULL;
+  } else if (return_index) {
+    PyObject* result_tpl = PyTuple_New(2);
+    PyTuple_SET_ITEM(result_tpl, 0, (PyObject*)result);
+    PyTuple_SET_ITEM(result_tpl, 1, (PyObject*)index);
+    return result_tpl;
   } else {
     return (PyObject*)result;
   }
@@ -542,8 +566,9 @@ PyObject* PyCountCoords(PyObject* self, PyObject* args) {
 PyObject* PyGetCoords(PyObject* self, PyObject* args) {
   PyObject* arr;
   int include_z;
+  int return_index;
 
-  if (!PyArg_ParseTuple(args, "Op", &arr, &include_z)) {
+  if (!PyArg_ParseTuple(args, "Opp", &arr, &include_z, &return_index)) {
     return NULL;
   }
   if (!PyArray_Check(arr)) {
@@ -554,7 +579,7 @@ PyObject* PyGetCoords(PyObject* self, PyObject* args) {
     PyErr_SetString(PyExc_TypeError, "Array should be of object dtype");
     return NULL;
   }
-  return GetCoords((PyArrayObject*)arr, include_z);
+  return GetCoords((PyArrayObject*)arr, include_z, return_index);
 }
 
 PyObject* PySetCoords(PyObject* self, PyObject* args) {
