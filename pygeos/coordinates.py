@@ -103,7 +103,8 @@ def get_coordinates(geometry, include_z=False, return_index=False):
         geometry has no third dimension, the z-coordinates will be NaN.
     return_index : bool, default False
         Whether to return the index of each returned geometry as a separate
-        ndarray of integers.
+        ndarray of integers. For multidimensional arrays, this indexes into the
+        flattened array (in C contiguous order).
 
     Examples
     --------
@@ -120,8 +121,16 @@ def get_coordinates(geometry, include_z=False, return_index=False):
     [[0.0, 0.0]]
     >>> get_coordinates(Geometry("POINT Z (0 0 0)"), include_z=True).tolist()
     [[0.0, 0.0, 0.0]]
+
+    When return_index=True, indexes are returned also:
+    >>> geometries = [Geometry("LINESTRING (2 2, 4 4)"), Geometry("POINT (0 0)")]
+    >>> coordinates, index = get_coordinates(geometries, return_index=True)
+    >>> coordinates.tolist(), index.tolist()
+    ([[2.0, 2.0], [4.0, 4.0], [0.0, 0.0]], [0, 0, 1])
     """
-    return lib.get_coordinates(np.asarray(geometry, dtype=np.object_), include_z, return_index)
+    return lib.get_coordinates(
+        np.asarray(geometry, dtype=np.object_), include_z, return_index
+    )
 
 
 def set_coordinates(geometry, coordinates):
@@ -162,9 +171,8 @@ def set_coordinates(geometry, coordinates):
             "The coordinate array should have dimension of 2 "
             "(has {})".format(coordinates.ndim)
         )
-    if (
-        (coordinates.shape[0] != lib.count_coordinates(geometry_arr))
-        or (coordinates.shape[1] not in {2, 3})
+    if (coordinates.shape[0] != lib.count_coordinates(geometry_arr)) or (
+        coordinates.shape[1] not in {2, 3}
     ):
         raise ValueError(
             "The coordinate array has an invalid shape {}".format(coordinates.shape)

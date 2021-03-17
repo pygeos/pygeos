@@ -364,7 +364,7 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
   NpyIter* iter;
   NpyIter_IterNextFunc* iternext;
   char** dataptr;
-  npy_intp cursor;
+  npy_intp cursor, i, geom_i;
   GeometryObject* obj;
   GEOSGeometry* geom;
   PyArrayObject* index = NULL;
@@ -386,7 +386,7 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
   }
   if (return_index) {
     npy_intp dims_ind[1] = {size};
-    index = (PyArrayObject*)PyArray_SimpleNew(2, dims_ind, NPY_INT64);
+    index = (PyArrayObject*)PyArray_SimpleNew(1, dims_ind, NPY_INTP);
     if (index == NULL) {
       Py_DECREF(result);
       return NULL;
@@ -408,7 +408,7 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
   /* We use the Numpy iterator C-API here.
   The iterator exposes an "iternext" function which updates a "dataptr"
   see also: https://docs.scipy.org/doc/numpy/reference/c-api.iterator.html */
-  iter = NpyIter_New(arr, NPY_ITER_READONLY | NPY_ITER_REFS_OK, NPY_KEEPORDER,
+  iter = NpyIter_New(arr, NPY_ITER_READONLY | NPY_ITER_REFS_OK, NPY_CORDER,
                      NPY_NO_CASTING, NULL);
   if (iter == NULL) {
     Py_DECREF(result);
@@ -429,9 +429,11 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
   /* We work with a "cursor" that tells the get_coordinates function where
   to write the coordinate data into the output array "result" */
   cursor = 0;
+  geom_i = -1;
   do {
     /* get the geometry */
     obj = *(GeometryObject**)dataptr[0];
+    geom_i += 1;
     if (!get_geom(obj, &geom)) {
       errstate = PGERR_NOT_A_GEOMETRY;
       goto finish;
@@ -441,9 +443,15 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
       continue;
     }
     /* get the coordinates */
+    i = cursor;  // initialize the index to use in the return_index loop later
     if (!get_coordinates(ctx, geom, result, &cursor, include_z)) {
       errstate = PGERR_GEOS_EXCEPTION;
       goto finish;
+    }
+    if (return_index) {
+      for (; i <= cursor; i++) {
+        *(npy_intp*)PyArray_GETPTR1(index, i) = geom_i;
+      }
     }
   } while (iternext(iter));
 
@@ -489,7 +497,7 @@ PyObject* SetCoords(PyArrayObject* geoms, PyArrayObject* coords) {
   /* We use the Numpy iterator C-API here.
   The iterator exposes an "iternext" function which updates a "dataptr"
   see also: https://docs.scipy.org/doc/numpy/reference/c-api.iterator.html */
-  iter = NpyIter_New(geoms, NPY_ITER_READWRITE | NPY_ITER_REFS_OK, NPY_KEEPORDER,
+  iter = NpyIter_New(geoms, NPY_ITER_READWRITE | NPY_ITER_REFS_OK, NPY_CORDER,
                      NPY_NO_CASTING, NULL);
   if (iter == NULL) {
     return NULL;
