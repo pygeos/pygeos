@@ -14,7 +14,6 @@ matrix:
 branches:
   only:
   - master
-  - allow_s390x_ci_fail2
 
 before_install:
   - sudo apt-get --yes install libgeos-dev
