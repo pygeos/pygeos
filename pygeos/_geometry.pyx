@@ -83,15 +83,10 @@ def get_parts(object[:] array):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def collections_1d(
-    object geometries,
-    object indices,
-    int geometry_type = 7,
-    int ndim = 2
-):
+def collections_1d(object geometries, object indices, int geometry_type = 7):
     cdef Py_ssize_t geom_idx_1 = 0
     cdef Py_ssize_t coll_idx = 0
-    cdef Py_ssize_t coll_size = 0
+    cdef unsigned int coll_size = 0
     cdef Py_ssize_t coll_geom_idx = 0
     cdef GEOSGeometry *geom = NULL
     cdef GEOSGeometry *coll = NULL
@@ -127,7 +122,7 @@ def collections_1d(
         # return immediately if there are no geometries to return
         return np.empty(shape=(0, ), dtype=np.object_)
 
-    if np.any(indices[1:] < indices[:-1]):
+    if np.any(indices[1:] < indices[:indices.shape[0] - 1]):
         raise ValueError("The indices should be sorted.")  
 
     cdef object[:] geometries_view = geometries
@@ -160,6 +155,10 @@ def collections_1d(
                         "One of the arguments is of incorrect type. Please provide only Geometry objects."
                     )
 
+                # ignore missing values
+                if geom == NULL:
+                    continue
+
                 # Check geometry subtype for non-geometrycollections
                 if geometry_type != 7:
                     curr_type = GEOSGeomTypeId_r(geos_handle, geom)
@@ -171,18 +170,16 @@ def collections_1d(
                             f"One of the arguments has unexpected geometry type {curr_type}."
                         )
 
-                # ignore missing values
-                if geom != NULL:
-                    # assign to the temporary geometry array                   
-                    temp_geoms_view[coll_size] = <np.intp_t>GEOSGeom_clone_r(geos_handle, geom)
-                    coll_size += 1
+                # assign to the temporary geometry array                   
+                temp_geoms_view[coll_size] = <np.intp_t>GEOSGeom_clone_r(geos_handle, geom)
+                coll_size += 1
 
             # create the collection
             coll = GEOSGeom_createCollection_r(
                 geos_handle,
                 geometry_type, 
                 <GEOSGeometry**> &temp_geoms_view[0],
-                <unsigned int>coll_size
+                coll_size
             )
 
             result_view[coll_idx] = PyGEOS_CreateGeometry(coll, geos_handle)
