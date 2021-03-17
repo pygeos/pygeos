@@ -10,12 +10,17 @@ import pygeos
 
 from pygeos._geos cimport (
     GEOSGeometry,
+    GEOSCoordSequence,
     GEOSGeom_clone_r,
     GEOSGetGeometryN_r,
     get_geos_handle,
     GEOSGeom_destroy_r,
     GEOSGeom_createCollection_r,
     GEOSGeomTypeId_r,
+    GEOSGeom_getCoordSeq_r,
+    GEOSCoordSeq_getX_r,
+    GEOSCoordSeq_getY_r,
+    GEOSCoordSeq_getZ_r,
 )
 from pygeos._pygeos_api cimport (
     import_pygeos_c_api,
@@ -25,6 +30,63 @@ from pygeos._pygeos_api cimport (
 
 # initialize PyGEOS C API
 import_pygeos_c_api()
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_coords_inds(object[:] array, char include_z):
+    cdef Py_ssize_t geom_idx = 0
+    cdef Py_ssize_t coord_idx = 0
+    cdef Py_ssize_t idx = 0
+    cdef GEOSGeometry *geom = NULL
+    cdef const GEOSCoordSequence *seq = NULL
+    cdef int curr_type = -1
+
+    counts = pygeos.get_num_coordinates(array)
+    cdef Py_ssize_t count = counts.sum()
+
+    coords = np.empty(shape=(count, 3 if include_z else 2), dtype=np.float64)
+    index = np.empty(shape=(count, ), dtype=np.intp)
+
+    if count == 0:
+        # return immediately if there are no coordinates to return
+        return coords, index
+
+    cdef int[:] counts_view = counts
+    cdef double[:, :] coords_view = coords
+    cdef np.intp_t[:] index_view = index
+
+    with get_geos_handle() as geos_handle:
+        for geom_idx in range(array.size):
+            if counts_view[geom_idx] <= 0:
+                # No coordinates to return, skip this item
+                continue
+
+            if PyGEOS_GetGEOSGeometry(<PyObject *>array[geom_idx], &geom) == 0:
+                raise TypeError("One of the arguments is of incorrect type. "
+                                "Please provide only Geometry objects.")
+
+            if geom == NULL:
+                continue
+
+            curr_type = GEOSGeomTypeId_r(geos_handle, geom)
+            if curr_type >= 3:  # POINT, LINESTRING, LINEARRING are allowed
+                raise TypeError(
+                    f"One of the arguments has unexpected geometry type {curr_type}."
+                )
+
+            seq = GEOSGeom_getCoordSeq_r(geos_handle, geom)
+            for coord_idx in range(counts_view[geom_idx]):
+                index_view[idx] = geom_idx
+
+                GEOSCoordSeq_getX_r(geos_handle, seq, coord_idx, &coords_view[idx, 0])
+                GEOSCoordSeq_getY_r(geos_handle, seq, coord_idx, &coords_view[idx, 1])
+                if include_z:
+                    GEOSCoordSeq_getZ_r(geos_handle, seq, coord_idx, &coords_view[idx, 2])
+
+                idx += 1
+
+    return coords, index
 
 
 @cython.boundscheck(False)
