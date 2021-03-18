@@ -412,14 +412,14 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
                      NPY_NO_CASTING, NULL);
   if (iter == NULL) {
     Py_DECREF(result);
-    Py_DECREF(index);
+    Py_XDECREF(index);
     return NULL;
   }
   iternext = NpyIter_GetIterNext(iter, NULL);
   if (iternext == NULL) {
     NpyIter_Deallocate(iter);
     Py_DECREF(result);
-    Py_DECREF(index);
+    Py_XDECREF(index);
     return NULL;
   }
   dataptr = NpyIter_GetDataPtrArray(iter);
@@ -433,7 +433,7 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
   do {
     /* get the geometry */
     obj = *(GeometryObject**)dataptr[0];
-    geom_i += 1;
+    geom_i++;
     if (!get_geom(obj, &geom)) {
       errstate = PGERR_NOT_A_GEOMETRY;
       goto finish;
@@ -442,13 +442,16 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
     if (geom == NULL) {
       continue;
     }
-    /* get the coordinates */
-    i = cursor;  // initialize the index to use in the return_index loop later
+    /* keep track of the current cursor in "i" to be able to loop from the
+    first to the last coordinate belonging to this geometry later */
+    i = cursor;
+    /* get the coordinates (updates "cursor") */
     if (!get_coordinates(ctx, geom, result, &cursor, include_z)) {
       errstate = PGERR_GEOS_EXCEPTION;
       goto finish;
     }
     if (return_index) {
+      /* loop from "i" to "cursor" */
       for (; i <= cursor; i++) {
         *(npy_intp*)PyArray_GETPTR1(index, i) = geom_i;
       }
@@ -461,7 +464,7 @@ finish:
 
   if (errstate != PGERR_SUCCESS) {
     Py_DECREF(result);
-    Py_DECREF(index);
+    Py_XDECREF(index);
     return NULL;
   } else if (return_index) {
     PyObject* result_tpl = PyTuple_New(2);
