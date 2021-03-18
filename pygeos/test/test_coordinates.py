@@ -92,6 +92,8 @@ def test_get_coords(geoms, x, y, include_z):
         ([point, None], [0]),
         ([None, point, None], [1]),
         ([point, point], [0, 1]),
+        ([point, line_string], [0, 1, 1, 1]),
+        ([line_string, point], [0, 0, 0, 1]),
         ([line_string, linear_ring], [0, 0, 0, 1, 1, 1, 1, 1]),
     ],
 )  # fmt: on

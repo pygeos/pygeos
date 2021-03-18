@@ -452,7 +452,7 @@ PyObject* GetCoords(PyArrayObject* arr, int include_z, int return_index) {
     }
     if (return_index) {
       /* loop from "i" to "cursor" */
-      for (; i <= cursor; i++) {
+      for (; i < cursor; i++) {
         *(npy_intp*)PyArray_GETPTR1(index, i) = geom_i;
       }
     }
