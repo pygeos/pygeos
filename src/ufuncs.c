@@ -2362,8 +2362,8 @@ static void from_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps,
         ret_ptr = GEOSWKBReader_read_r(ctx, reader, wkb, size);
       }
       if (ret_ptr == NULL) {
-        errstate = PGERR_GEOS_EXCEPTION;
-        goto finish;
+        // the output geometry will be set to None
+        errstate = PGWARN_GEOS_EXCEPTION;
       }
     }
     OUTPUT_Y;

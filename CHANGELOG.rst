@@ -8,7 +8,7 @@ Version 0.10 (unreleased)
 
 * Addition of ``nearest`` and ``nearest_all`` functions to ``STRtree`` for
   GEOS >= 3.6 to find the nearest neighbors (#272).
-* Released GIL for ``points``, ``linestrings``, ``linearrings``, and 
+* Released GIL for ``points``, ``linestrings``, ``linearrings``, and
   ``polygons`` (without holes) (#310).
 * Updated ``box`` ufunc to use internal C function for creating polygon
   (about 2x faster) and added ``ccw`` parameter to create polygon in
@@ -24,6 +24,8 @@ Version 0.10 (unreleased)
   This will be removed in a future release.
 * ``points``, ``linestrings``, ``linearrings``, and ``polygons`` now return a ``GEOSException``
   instead of a ``ValueError`` for invalid input (#310).
+* ``from_wkb`` will return invalid WKB geometries as ``None`` and raise a warning
+  instead of raising an exception.
 
 **Added GEOS functions**
 
@@ -34,7 +36,7 @@ Version 0.10 (unreleased)
 **Bug fixes**
 
 * Fixed portability issue for ARM architecture (#293)
-* Fixed segfault in ``linearrings`` and ``box`` when constructing a geometry with nan 
+* Fixed segfault in ``linearrings`` and ``box`` when constructing a geometry with nan
   coordinates (#310).
 
 **Acknowledgments**

@@ -188,6 +188,9 @@ def from_wkb(geometry, **kwargs):
     The Well-Known Binary format is defined in the `OGC Simple Features
     Specification for SQL <https://www.opengeospatial.org/standards/sfs>`__.
 
+    Invalid geometries will be returned as None and will raise a warning.
+    These can be filtered out using pygeos.is_geometry.
+
     Parameters
     ----------
     geometry : str or array_like

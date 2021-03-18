@@ -51,7 +51,8 @@ enum {
   PGERR_NO_MALLOC,
   PGERR_GEOMETRY_TYPE,
   PGERR_MULTIPOINT_WITH_POINT_EMPTY,
-  PGERR_EMPTY_GEOMETRY
+  PGERR_EMPTY_GEOMETRY,
+  PGWARN_GEOS_EXCEPTION  // raise the GEOS error as a warning instead of exception
 };
 
 // Define how the states are handled by CPython
@@ -84,6 +85,9 @@ enum {
       break;                                                                             \
     case PGERR_EMPTY_GEOMETRY:                                                           \
       PyErr_SetString(PyExc_ValueError, "One of the Geometry inputs is empty.");         \
+      break;                                                                             \
+    case PGWARN_GEOS_EXCEPTION:                                                          \
+      PyErr_WarnEx(PyExc_Warning, last_error, 0);                                        \
       break;                                                                             \
     default:                                                                             \
       PyErr_Format(PyExc_RuntimeError,                                                   \
