@@ -20,8 +20,8 @@ def apply(geometry, transformation, include_z=False):
         A function that transforms a (N, 2) or (N, 3) ndarray of float64 to
         another (N, 2) or (N, 3) ndarray of float64.
     include_z : bool, default False
-        Whether to include the third dimension in the coordinates array
-        that is passed to the `transformation` function. If True, and a
+        If True, include the third dimension in the coordinates array
+        that is passed to the `transformation` function. If a
         geometry has no third dimension, the z-coordinates passed to the
         function will be NaN.
 
@@ -99,10 +99,10 @@ def get_coordinates(geometry, include_z=False, return_index=False):
     ----------
     geometry : Geometry or array_like
     include_z : bool, default False
-        Whether to include the third dimension in the output. If True, and a
-        geometry has no third dimension, the z-coordinates will be NaN.
+        If, True include the third dimension in the output. If a geometry
+        has no third dimension, the z-coordinates will be NaN.
     return_index : bool, default False
-        Whether to return the index of each returned geometry as a separate
+        If True, also return the index of each returned geometry as a separate
         ndarray of integers. For multidimensional arrays, this indexes into the
         flattened array (in C contiguous order).
 
