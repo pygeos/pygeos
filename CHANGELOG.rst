@@ -8,6 +8,9 @@ Version 0.10 (unreleased)
 
 * Addition of ``nearest`` and ``nearest_all`` functions to ``STRtree`` for
   GEOS >= 3.6 to find the nearest neighbors (#272).
+* Enable bulk construction of collections with different number of geometries
+  by optionally taking an index arrays in the constructors ``multipoints``,
+  ``multilinestrings``, ``multipolygons``, and ``geometrycollections`` (#290).
 
 **API Changes**
 
