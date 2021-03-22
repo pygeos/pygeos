@@ -22,9 +22,7 @@ from pygeos._geos cimport (
     GEOSCoordSeq_setY_r,
     GEOSCoordSeq_setZ_r,
     GEOSGeom_createPoint_r,
-    GEOSGeom_createEmptyPoint_r,
     GEOSGeom_createLineString_r,
-    GEOSGeom_createEmptyLineString_r,
     GEOSGeom_createLinearRing_r
 )
 from pygeos._pygeos_api cimport (
@@ -90,31 +88,26 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
         for geom_idx in range(n_geoms):
             geom_size = coord_counts[geom_idx]
 
-            if geom_size == 0:
-                if geometry_type == 0:
-                    geom = GEOSGeom_createEmptyPoint_r(geos_handle)
-                elif geometry_type == 1:
-                    geom = GEOSGeom_createEmptyLineString_r(geos_handle)
-                elif geometry_type == 2:
-                    raise ValueError("Cannot create empty linearrings")
-            else:
-                seq = GEOSCoordSeq_create_r(geos_handle, geom_size, dims)
-                for coord_idx in range(geom_size):
-                    GEOSCoordSeq_setX_r(geos_handle, seq, coord_idx, coord_view[idx, 0])
-                    GEOSCoordSeq_setY_r(geos_handle, seq, coord_idx, coord_view[idx, 1])
-                    if dims == 3:
-                        GEOSCoordSeq_setZ_r(geos_handle, seq, coord_idx, coord_view[idx, 2])
-                    idx += 1
-                
-                if geometry_type == 0:
-                    geom = GEOSGeom_createPoint_r(geos_handle, seq)
-                elif geometry_type == 1:
-                    geom = GEOSGeom_createLineString_r(geos_handle, seq)
-                elif geometry_type == 2:
-                    geom = GEOSGeom_createLinearRing_r(geos_handle, seq)
+            seq = GEOSCoordSeq_create_r(geos_handle, geom_size, dims)
+            for coord_idx in range(geom_size):
+                if GEOSCoordSeq_setX_r(geos_handle, seq, coord_idx, coord_view[idx, 0]) == 0:
+                    return
+                if GEOSCoordSeq_setY_r(geos_handle, seq, coord_idx, coord_view[idx, 1]) == 0:
+                    return
+                if dims == 3:
+                    if GEOSCoordSeq_setZ_r(geos_handle, seq, coord_idx, coord_view[idx, 2]) == 0:
+                        return
+                idx += 1
+
+            if geometry_type == 0:
+                geom = GEOSGeom_createPoint_r(geos_handle, seq)
+            elif geometry_type == 1:
+                geom = GEOSGeom_createLineString_r(geos_handle, seq)
+            elif geometry_type == 2:
+                geom = GEOSGeom_createLinearRing_r(geos_handle, seq)
 
             if geom == NULL:
-                raise ValueError("GEOS Exception")
+                return
 
             result_view[geom_idx] = PyGEOS_CreateGeometry(geom, geos_handle)
 
@@ -163,9 +156,13 @@ def get_parts(object[:] array):
             for part_idx in range(counts_view[geom_idx]):
                 index_view[idx] = geom_idx
                 part = GEOSGetGeometryN_r(geos_handle, geom, part_idx)
+                if part == NULL:
+                    return
 
                 # clone the geometry to keep it separate from the inputs
                 part = GEOSGeom_clone_r(geos_handle, part)
+                if part == NULL:
+                    return
                 # cast part back to <GEOSGeometry> to discard const qualifier
                 # pending issue #227
                 parts_view[idx] = PyGEOS_CreateGeometry(<GEOSGeometry *>part, geos_handle)
@@ -173,6 +170,14 @@ def get_parts(object[:] array):
                 idx += 1
 
     return parts, index
+
+
+cdef _deallocate_arr(void* handle, np.intp_t[:] arr, Py_ssize_t last_geom_i):
+    """Deallocate a temporary geometry array to prevent memory leaks"""
+    cdef Py_ssize_t i = 0
+
+    for i in range(last_geom_i):
+        GEOSGeom_destroy_r(handle, <GEOSGeometry *>arr[i])
 
 
 @cython.boundscheck(False)
@@ -242,9 +247,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
             # fill the temporary array with geometries belonging to this collection
             for coll_geom_idx in range(collection_size[coll_idx]):
                 if PyGEOS_GetGEOSGeometry(<PyObject *>geometries_view[geom_idx_1 + coll_geom_idx], &geom) == 0:
-                    # deallocate previous temp geometries (preventing memory leaks)
-                    for coll_geom_idx in range(coll_size):
-                        GEOSGeom_destroy_r(geos_handle, <GEOSGeometry *>temp_geoms_view[coll_geom_idx])
+                    _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
                     raise TypeError(
                         "One of the arguments is of incorrect type. Please provide only Geometry objects."
                     )
@@ -256,16 +259,21 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                 # Check geometry subtype for non-geometrycollections
                 if geometry_type != 7:
                     curr_type = GEOSGeomTypeId_r(geos_handle, geom)
+                    if curr_type == -1:
+                        _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
+                        return
                     if curr_type != expected_type and curr_type != expected_type_alt:
-                        # deallocate previous temp geometries (preventing memory leaks)
-                        for coll_geom_idx in range(coll_size):
-                            GEOSGeom_destroy_r(geos_handle, <GEOSGeometry *>temp_geoms_view[coll_geom_idx])
+                        _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
                         raise TypeError(
                             f"One of the arguments has unexpected geometry type {curr_type}."
                         )
 
-                # assign to the temporary geometry array                   
-                temp_geoms_view[coll_size] = <np.intp_t>GEOSGeom_clone_r(geos_handle, geom)
+                # assign to the temporary geometry array  
+                geom = GEOSGeom_clone_r(geos_handle, geom)
+                if geom == NULL:
+                    _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
+                    return                 
+                temp_geoms_view[coll_size] = <np.intp_t>geom
                 coll_size += 1
 
             # create the collection
@@ -275,6 +283,8 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                 <GEOSGeometry**> &temp_geoms_view[0],
                 coll_size
             )
+            if coll == NULL:
+                return
 
             result_view[coll_idx] = PyGEOS_CreateGeometry(coll, geos_handle)
 
