@@ -1,36 +1,118 @@
 import pygeos
 import pytest
 import numpy as np
-from .common import point, line_string, linear_ring, polygon, empty
+from .common import point, line_string, linear_ring, polygon, empty, empty_point
 
+pnts = pygeos.points
+lstrs = pygeos.linestrings
 geom_coll = pygeos.geometrycollections
+lstr_empty = pygeos.Geometry("LINESTRING EMPTY")
 
 
 @pytest.mark.parametrize(
-    "geometries",
+    "func", [pygeos.points, pygeos.linestrings, pygeos.linearrings]
+)
+@pytest.mark.parametrize(
+    "coordinates",
     [
-        np.array([1, 2], dtype=np.int32),
+        np.empty((2,)),  # not enough dimensions
+        np.empty((2, 4, 1)),  # too many dimensions
+        np.empty((2, 4)),  # wrong inner dimension size
         None,
-        np.array([[point]]),
-        "hello",
+        np.full((2, 2), "foo"),  # wrong type
     ],
 )
-def test_invalid_geometries(geometries):
-    with pytest.raises(TypeError):
-        pygeos.geometrycollections(geometries, indices=[0, 1])
+def test_invalid_coordinates(func, coordinates):
+    with pytest.raises((TypeError, ValueError)):
+        func(coordinates, indices=[0, 1])
 
 
 @pytest.mark.parametrize(
-    "indices",
+    "func",
     [
-        np.array([point]),
-        " hello",
-        [0, 1],  # wrong length
+        pygeos.multipoints,
+        pygeos.multilinestrings,
+        pygeos.multipolygons,
+        pygeos.geometrycollections,
     ],
 )
-def test_invalid_indices(indices):
+@pytest.mark.parametrize(
+    "geometries", [np.array([1, 2], dtype=np.int32), None, np.array([[point]]), "hello"]
+)
+def test_invalid_geometries(func, geometries):
     with pytest.raises((TypeError, ValueError)):
-        pygeos.geometrycollections([point], indices=indices)
+        func(geometries, indices=[0, 1])
+
+
+@pytest.mark.parametrize(
+    "func", [pygeos.points, pygeos.linestrings, pygeos.linearrings]
+)
+@pytest.mark.parametrize(
+    "indices", [np.array([point]), " hello", [0, 1]]  # wrong length
+)
+def test_invalid_indices_simple(func, indices):
+    with pytest.raises((TypeError, ValueError)):
+        func([[0.2, 0.3]], indices=indices)
+
+
+def test_points_invalid():
+    with pytest.raises(pygeos.GEOSException):
+        pygeos.points([[1, 1], [2, 2]], indices=[0, 0])
+
+
+def test_points():
+    actual = pygeos.points([[2, 3], [2, 3]], indices=[0, 2])
+    assert pygeos.equals(actual, [point, empty_point, point]).all()
+
+
+@pytest.mark.parametrize(
+    "coordinates,indices,expected",
+    [
+        ([[1, 1], [2, 2]], [0, 0], [lstrs([[1, 1], [2, 2]])]),
+        ([[1, 1], [2, 2]], [1, 1], [lstr_empty, lstrs([[1, 1], [2, 2]])]),
+        (
+            [[1, 1], [2, 2], [2, 2], [3, 3]],
+            [0, 0, 1, 1],
+            [lstrs([[1, 1], [2, 2]]), lstrs([[2, 2], [3, 3]])],
+        ),
+    ],
+)
+def test_linestrings(coordinates, indices, expected):
+    actual = pygeos.linestrings(coordinates, indices=indices)
+    assert pygeos.equals(actual, expected).all()
+
+
+def test_linestrings_invalid():
+    with pytest.raises(pygeos.GEOSException):
+        pygeos.linestrings([[1, 1], [2, 2]], indices=[0, 1])
+
+
+def test_linearrings():
+    coords = [[1, 1], [2, 1], [2, 2], [1, 1]]
+    actual = pygeos.linearrings(coords, indices=[0, 0, 0, 0])
+    assert pygeos.equals(actual, pygeos.linearrings(coords)).all()
+
+
+def test_linearrings_invalid():
+    with pytest.raises(pygeos.GEOSException):
+        pygeos.linearrings([[1, 1], [2, 1], [2, 2], [1, 2]], indices=[0, 0, 0, 0])
+
+
+@pytest.mark.parametrize(
+    "func",
+    [
+        pygeos.multipoints,
+        pygeos.multilinestrings,
+        pygeos.multipolygons,
+        pygeos.geometrycollections,
+    ],
+)
+@pytest.mark.parametrize(
+    "indices", [np.array([point]), " hello", [0, 1]]  # wrong length
+)
+def test_invalid_indices_collections(func, indices):
+    with pytest.raises((TypeError, ValueError)):
+        func([point], indices=indices)
 
 
 @pytest.mark.parametrize(
@@ -54,10 +136,7 @@ def test_geometrycollections(geometries, indices, expected):
 
 
 def test_multipoints():
-    actual = pygeos.multipoints(
-        [point],
-        indices=[0],
-    )
+    actual = pygeos.multipoints([point], indices=[0])
     assert pygeos.equals(actual, pygeos.multipoints([point])).all()
 
 
@@ -67,18 +146,12 @@ def test_multilinestrings():
 
 
 def test_multilinearrings():
-    actual = pygeos.multilinestrings(
-        [linear_ring],
-        indices=[0],
-    )
+    actual = pygeos.multilinestrings([linear_ring], indices=[0])
     assert pygeos.equals(actual, pygeos.multilinestrings([linear_ring])).all()
 
 
 def test_multipolygons():
-    actual = pygeos.multipolygons(
-        [polygon],
-        indices=[0],
-    )
+    actual = pygeos.multipolygons([polygon], indices=[0])
     assert pygeos.equals(actual, pygeos.multipolygons([polygon])).all()
 
 

@@ -81,7 +81,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
 
     # The final target array
     cdef Py_ssize_t n_geoms = coord_counts.shape[0]
-    result = np.empty(shape=(n_geoms, ), dtype=np.object_)
+    result = np.empty(shape=(n_geoms, ), dtype=object)
     cdef object[:] result_view = result
 
     with get_geos_handle() as geos_handle:
@@ -129,11 +129,11 @@ def get_parts(object[:] array):
     if count == 0:
         # return immediately if there are no geometries to return
         return (
-            np.empty(shape=(0, ), dtype=np.object_),
+            np.empty(shape=(0, ), dtype=object),
             np.empty(shape=(0, ), dtype=np.intp)
         )
 
-    parts = np.empty(shape=(count, ), dtype=np.object_)
+    parts = np.empty(shape=(count, ), dtype=object)
     index = np.empty(shape=(count, ), dtype=np.intp)
 
     cdef int[:] counts_view = counts
@@ -206,7 +206,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
         raise ValueError(f"Invalid geometry_type: {geometry_type}.")
 
     # Cast input arrays and define memoryviews for later usage
-    geometries = np.asarray(geometries, dtype=np.object)
+    geometries = np.asarray(geometries, dtype=object)
     if geometries.ndim != 1:
         raise TypeError("geometries is not a one-dimensional array.")
 
@@ -219,7 +219,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
 
     if geometries.shape[0] == 0:
         # return immediately if there are no geometries to return
-        return np.empty(shape=(0, ), dtype=np.object_)
+        return np.empty(shape=(0, ), dtype=object)
 
     if np.any(indices[1:] < indices[:indices.shape[0] - 1]):
         raise ValueError("The indices should be sorted.")  
@@ -237,7 +237,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
 
     # The final target array
     cdef Py_ssize_t n_colls = collection_size.shape[0]
-    result = np.empty(shape=(n_colls, ), dtype=np.object_)
+    result = np.empty(shape=(n_colls, ), dtype=object)
     cdef object[:] result_view = result
 
     with get_geos_handle() as geos_handle:
