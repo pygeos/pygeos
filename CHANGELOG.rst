@@ -8,6 +8,15 @@ Version 0.10 (unreleased)
 
 * Addition of ``nearest`` and ``nearest_all`` functions to ``STRtree`` for
   GEOS >= 3.6 to find the nearest neighbors (#272).
+* Enable bulk construction of collections with different number of geometries
+  by optionally taking an index arrays in the constructors ``multipoints``,
+  ``multilinestrings``, ``multipolygons``, and ``geometrycollections`` (#290).
+* Released GIL for ``points``, ``linestrings``, ``linearrings``, and 
+  ``polygons`` (without holes) (#310).
+* Added the option to return the geometry index in ``get_coordinates`` (#318).
+* Updated ``box`` ufunc to use internal C function for creating polygon
+  (about 2x faster) and added ``ccw`` parameter to create polygon in
+  counterclockwise (default) or clockwise direction (#308).
 
 **API Changes**
 
@@ -16,6 +25,8 @@ Version 0.10 (unreleased)
 * Deprecated ``VALID_PREDICATES`` set from ``pygeos.strtree`` package; these can be constructed
   in downstream libraries using the ``pygeos.strtree.BinaryPredicate`` enum.
   This will be removed in a future release.
+* ``points``, ``linestrings``, ``linearrings``, and ``polygons`` now return a ``GEOSException``
+  instead of a ``ValueError`` for invalid input (#310).
 
 **Added GEOS functions**
 
@@ -26,6 +37,8 @@ Version 0.10 (unreleased)
 **Bug fixes**
 
 * Fixed portability issue for ARM architecture (#293)
+* Fixed segfault in ``linearrings`` and ``box`` when constructing a geometry with nan 
+  coordinates (#310).
 
 **Acknowledgments**
 

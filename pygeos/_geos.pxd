@@ -46,6 +46,13 @@ cdef extern from "geos_c.h":
     int GEOSCoordSeq_setY_r(GEOSContextHandle_t handle, GEOSCoordSequence* s, unsigned int idx, double val) nogil except 0
     int GEOSCoordSeq_setZ_r(GEOSContextHandle_t handle, GEOSCoordSequence* s, unsigned int idx, double val) nogil except 0
 
+    GEOSGeometry* GEOSGeom_createCollection_r(
+        GEOSContextHandle_t handle,
+        int type,
+        GEOSGeometry** geoms,
+        unsigned int ngeoms
+    ) nogil except NULL
+
 
 cdef class get_geos_handle:
     cdef GEOSContextHandle_t handle

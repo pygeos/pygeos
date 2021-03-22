@@ -17,10 +17,6 @@ from pygeos._geos cimport (
     GEOSGeom_destroy_r,
     GEOSGeom_createCollection_r,
     GEOSGeomTypeId_r,
-    GEOSGeom_getCoordSeq_r,
-    GEOSCoordSeq_getX_r,
-    GEOSCoordSeq_getY_r,
-    GEOSCoordSeq_getZ_r,
 )
 from pygeos._pygeos_api cimport (
     import_pygeos_c_api,
