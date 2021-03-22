@@ -17,6 +17,15 @@ from pygeos._geos cimport (
     GEOSGeom_destroy_r,
     GEOSGeom_createCollection_r,
     GEOSGeomTypeId_r,
+    GEOSCoordSeq_create_r,
+    GEOSCoordSeq_setX_r,
+    GEOSCoordSeq_setY_r,
+    GEOSCoordSeq_setZ_r,
+    GEOSGeom_createPoint_r,
+    GEOSGeom_createEmptyPoint_r,
+    GEOSGeom_createLineString_r,
+    GEOSGeom_createEmptyLineString_r,
+    GEOSGeom_createLinearRing_r
 )
 from pygeos._pygeos_api cimport (
     import_pygeos_c_api,
@@ -30,59 +39,86 @@ import_pygeos_c_api()
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-def get_coords_inds(object[:] array, char include_z):
-    cdef Py_ssize_t geom_idx = 0
-    cdef Py_ssize_t coord_idx = 0
+def simple_geometries_1d(object coordinates, object indices, int geometry_type):
     cdef Py_ssize_t idx = 0
+    cdef unsigned int coord_idx = 0
+    cdef Py_ssize_t geom_idx = 0
+    cdef unsigned int geom_size = 0
+    cdef Py_ssize_t coll_geom_idx = 0
+    cdef char include_z
     cdef GEOSGeometry *geom = NULL
-    cdef const GEOSCoordSequence *seq = NULL
-    cdef int curr_type = -1
+    cdef GEOSCoordSequence *seq = NULL
 
-    counts = pygeos.get_num_coordinates(array)
-    cdef Py_ssize_t count = counts.sum()
+    # Cast input arrays and define memoryviews for later usage
+    coordinates = np.asarray(coordinates, dtype=np.float64)
+    if coordinates.ndim != 2:
+        raise TypeError("coordinates is not a two-dimensional array.")
 
-    coords = np.empty(shape=(count, 3 if include_z else 2), dtype=np.float64)
-    index = np.empty(shape=(count, ), dtype=np.intp)
+    indices = np.asarray(indices, dtype=np.intp)
+    if indices.ndim != 1:
+        raise TypeError("indices is not a one-dimensional array.")
 
-    if count == 0:
-        # return immediately if there are no coordinates to return
-        return coords, index
+    if coordinates.shape[0] != indices.shape[0]:
+        raise ValueError("geometries and indices do not have equal size.")
 
-    cdef int[:] counts_view = counts
-    cdef double[:, :] coords_view = coords
-    cdef np.intp_t[:] index_view = index
+    cdef unsigned int dims = coordinates.shape[1]
+    if dims not in {2, 3}:
+        raise ValueError("coordinates should N by 2 or N by 3.")
+
+    if geometry_type not in {0, 1, 2}:
+        raise ValueError(f"Invalid geometry_type: {geometry_type}.")
+
+    if coordinates.shape[0] == 0:
+        # return immediately if there are no geometries to return
+        return np.empty(shape=(0, ), dtype=np.object_)
+
+    if np.any(indices[1:] < indices[:indices.shape[0] - 1]):
+        raise ValueError("The indices should be sorted.")  
+
+    cdef double[:, :] coord_view = coordinates
+    cdef np.intp_t[:] index_view = indices
+
+    # get the geometry count per collection
+    cdef unsigned int[:] coord_counts = np.bincount(indices).astype(np.uint32)
+
+    # The final target array
+    cdef Py_ssize_t n_geoms = coord_counts.shape[0]
+    result = np.empty(shape=(n_geoms, ), dtype=np.object_)
+    cdef object[:] result_view = result
 
     with get_geos_handle() as geos_handle:
-        for geom_idx in range(array.size):
-            if counts_view[geom_idx] <= 0:
-                # No coordinates to return, skip this item
-                continue
+        for geom_idx in range(n_geoms):
+            geom_size = coord_counts[geom_idx]
 
-            if PyGEOS_GetGEOSGeometry(<PyObject *>array[geom_idx], &geom) == 0:
-                raise TypeError("One of the arguments is of incorrect type. "
-                                "Please provide only Geometry objects.")
+            if geom_size == 0:
+                if geometry_type == 0:
+                    geom = GEOSGeom_createEmptyPoint_r(geos_handle)
+                elif geometry_type == 1:
+                    geom = GEOSGeom_createEmptyLineString_r(geos_handle)
+                elif geometry_type == 2:
+                    raise ValueError("Cannot create empty linearrings")
+            else:
+                seq = GEOSCoordSeq_create_r(geos_handle, geom_size, dims)
+                for coord_idx in range(geom_size):
+                    GEOSCoordSeq_setX_r(geos_handle, seq, coord_idx, coord_view[idx, 0])
+                    GEOSCoordSeq_setY_r(geos_handle, seq, coord_idx, coord_view[idx, 1])
+                    if dims == 3:
+                        GEOSCoordSeq_setZ_r(geos_handle, seq, coord_idx, coord_view[idx, 2])
+                    idx += 1
+                
+                if geometry_type == 0:
+                    geom = GEOSGeom_createPoint_r(geos_handle, seq)
+                elif geometry_type == 1:
+                    geom = GEOSGeom_createLineString_r(geos_handle, seq)
+                elif geometry_type == 2:
+                    geom = GEOSGeom_createLinearRing_r(geos_handle, seq)
 
             if geom == NULL:
-                continue
+                raise ValueError("GEOS Exception")
 
-            curr_type = GEOSGeomTypeId_r(geos_handle, geom)
-            if curr_type >= 3:  # POINT, LINESTRING, LINEARRING are allowed
-                raise TypeError(
-                    f"One of the arguments has unexpected geometry type {curr_type}."
-                )
+            result_view[geom_idx] = PyGEOS_CreateGeometry(geom, geos_handle)
 
-            seq = GEOSGeom_getCoordSeq_r(geos_handle, geom)
-            for coord_idx in range(counts_view[geom_idx]):
-                index_view[idx] = geom_idx
-
-                GEOSCoordSeq_getX_r(geos_handle, seq, coord_idx, &coords_view[idx, 0])
-                GEOSCoordSeq_getY_r(geos_handle, seq, coord_idx, &coords_view[idx, 1])
-                if include_z:
-                    GEOSCoordSeq_getZ_r(geos_handle, seq, coord_idx, &coords_view[idx, 2])
-
-                idx += 1
-
-    return coords, index
+    return result
 
 
 @cython.boundscheck(False)
