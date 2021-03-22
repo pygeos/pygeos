@@ -42,6 +42,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
     cdef unsigned int coord_idx = 0
     cdef Py_ssize_t geom_idx = 0
     cdef unsigned int geom_size = 0
+    cdef unsigned int ring_closure = 0
     cdef Py_ssize_t coll_geom_idx = 0
     cdef char include_z
     cdef GEOSGeometry *geom = NULL
@@ -88,7 +89,15 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
         for geom_idx in range(n_geoms):
             geom_size = coord_counts[geom_idx]
 
-            seq = GEOSCoordSeq_create_r(geos_handle, geom_size, dims)
+            # check if we need to close a linearring
+            if geometry_type == 2:
+                ring_closure = 0
+                for coord_idx in range(dims):
+                    if coord_view[idx, coord_idx] != coord_view[idx + geom_size - 1, coord_idx]:
+                        ring_closure = 1
+                        break
+
+            seq = GEOSCoordSeq_create_r(geos_handle, geom_size + ring_closure, dims)
             for coord_idx in range(geom_size):
                 if GEOSCoordSeq_setX_r(geos_handle, seq, coord_idx, coord_view[idx, 0]) == 0:
                     return
@@ -104,6 +113,14 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
             elif geometry_type == 1:
                 geom = GEOSGeom_createLineString_r(geos_handle, seq)
             elif geometry_type == 2:
+                if ring_closure == 1:
+                    if GEOSCoordSeq_setX_r(geos_handle, seq, geom_size, coord_view[idx - geom_size, 0]) == 0:
+                        return
+                    if GEOSCoordSeq_setY_r(geos_handle, seq, geom_size, coord_view[idx - geom_size, 1]) == 0:
+                        return
+                    if dims == 3:
+                        if GEOSCoordSeq_setZ_r(geos_handle, seq, geom_size, coord_view[idx - geom_size, 2]) == 0:
+                            return
                 geom = GEOSGeom_createLinearRing_r(geos_handle, seq)
 
             if geom == NULL:

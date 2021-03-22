@@ -69,6 +69,7 @@ def test_points():
     "coordinates,indices,expected",
     [
         ([[1, 1], [2, 2]], [0, 0], [lstrs([[1, 1], [2, 2]])]),
+        ([[1, 1, 1], [2, 2, 2]], [0, 0], [lstrs([[1, 1, 1], [2, 2, 2]])]),
         ([[1, 1], [2, 2]], [1, 1], [lstr_empty, lstrs([[1, 1], [2, 2]])]),
         (
             [[1, 1], [2, 2], [2, 2], [3, 3]],
@@ -87,15 +88,17 @@ def test_linestrings_invalid():
         pygeos.linestrings([[1, 1], [2, 2]], indices=[0, 1])
 
 
-def test_linearrings():
-    coords = [[1, 1], [2, 1], [2, 2], [1, 1]]
-    actual = pygeos.linearrings(coords, indices=[0, 0, 0, 0])
-    assert pygeos.equals(actual, pygeos.linearrings(coords)).all()
+@pytest.mark.parametrize(
+    "coordinates", [([[1, 1], [2, 1], [2, 2], [1, 1]]), ([[1, 1], [2, 1], [2, 2]])]
+)
+def test_linearrings(coordinates):
+    actual = pygeos.linearrings(coordinates, indices=len(coordinates) * [0])
+    assert pygeos.equals(actual, pygeos.linearrings(coordinates)).all()
 
 
 def test_linearrings_invalid():
     with pytest.raises(pygeos.GEOSException):
-        pygeos.linearrings([[1, 1], [2, 1], [2, 2], [1, 2]], indices=[0, 0, 0, 0])
+        pygeos.linearrings([[1, 1], [2, 1], [1, 1]], indices=[0, 0, 0])
 
 
 @pytest.mark.parametrize(
