@@ -2301,16 +2301,24 @@ static PyUFuncGenericFunction bounds_funcs[1] = {&bounds_func};
 
 /* Define the object -> geom functions (O_Y) */
 
-static char from_wkb_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
+static char from_wkb_dtypes[3] = {NPY_OBJECT, NPY_BOOL, NPY_OBJECT};
 static void from_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps,
                           void* data) {
-  GEOSGeometry* ret_ptr;
+  char *ip1 = args[0], *ip2 = args[1], *op1 = args[2];
+  npy_intp is1 = steps[0], is2 = steps[1], os1 = steps[2];
   PyObject* in1;
-
+  npy_intp n = dimensions[0];
+  npy_intp i;
   GEOSWKBReader* reader;
   unsigned char* wkb;
+  GEOSGeometry* ret_ptr;
   Py_ssize_t size;
   char is_hex;
+
+  if ((is2 != 0)) {
+    PyErr_Format(PyExc_ValueError, "from_wkb function called with non-scalar parameters");
+    return;
+  }
 
   GEOS_INIT;
 
@@ -2321,9 +2329,12 @@ static void from_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps,
     goto finish;
   }
 
-  UNARY_LOOP {
+  for (i = 0; i < n; i++, ip1 += is1, op1 += os1) {
     /* ip1 is pointer to array element PyObject* */
     in1 = *(PyObject**)ip1;
+
+    /* ip2 is a pointer to a scalar bool */
+    char ignore_invalid = *(npy_bool*)ip2;
 
     if (in1 == Py_None) {
       /* None in the input propagates to the output */
@@ -2362,8 +2373,14 @@ static void from_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps,
         ret_ptr = GEOSWKBReader_read_r(ctx, reader, wkb, size);
       }
       if (ret_ptr == NULL) {
-        // the output geometry will be set to None
-        errstate = PGWARN_GEOS_EXCEPTION;
+        if (ignore_invalid) {
+            // the output geometry will be set to None
+            errstate = PGWARN_INVALID_WKB;
+        }
+        else {
+            errstate = PGERR_GEOS_EXCEPTION;
+            goto finish;
+        }
       }
     }
     OUTPUT_Y;
@@ -2862,7 +2879,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_GENERALIZED(polygons_with_holes, 2, "(),(i)->()");
   DEFINE_GENERALIZED(create_collection, 2, "(i),()->()");
 
-  DEFINE_CUSTOM(from_wkb, 1);
+  DEFINE_CUSTOM(from_wkb, 2);
   DEFINE_CUSTOM(from_wkt, 1);
   DEFINE_CUSTOM(to_wkb, 5);
   DEFINE_CUSTOM(to_wkt, 5);

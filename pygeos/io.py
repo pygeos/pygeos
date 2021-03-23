@@ -181,31 +181,36 @@ def from_wkt(geometry, **kwargs):
     return lib.from_wkt(geometry, **kwargs)
 
 
-def from_wkb(geometry, **kwargs):
+def from_wkb(geometry, ignore_invalid=False, **kwargs):
     r"""
     Creates geometries from the Well-Known Binary (WKB) representation.
 
     The Well-Known Binary format is defined in the `OGC Simple Features
     Specification for SQL <https://www.opengeospatial.org/standards/sfs>`__.
 
-    Invalid geometries will be returned as None and will raise a warning.
-    These can be filtered out using pygeos.is_geometry.
 
     Parameters
     ----------
     geometry : str or array_like
         The WKB byte object(s) to convert.
+    ignore_invalid : bool (default: False)
+        If True, each invalid WKB geometry will be returned as None and a
+        warning will be raised.
 
     Examples
     --------
     >>> from_wkb(b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf0?\x00\x00\x00\x00\x00\x00\xf0?')
     <pygeos.Geometry POINT (1 1)>
     """
+
+    if not np.isscalar(ignore_invalid):
+        raise TypeError("ignore_invalid only accepts scalar values")
+
     # ensure the input has object dtype, to avoid numpy inferring it as a
     # fixed-length string dtype (which removes trailing null bytes upon access
     # of array elements)
     geometry = np.asarray(geometry, dtype=object)
-    return lib.from_wkb(geometry, **kwargs)
+    return lib.from_wkb(geometry, ignore_invalid, **kwargs)
 
 
 def from_shapely(geometry, **kwargs):
