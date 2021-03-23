@@ -50,11 +50,21 @@ def test_from_wkt_exceptions():
     with pytest.raises(TypeError, match="Expected bytes, got int"):
         pygeos.from_wkt(1)
 
-    with pytest.raises(pygeos.GEOSException):
+    with pytest.raises(
+        pygeos.GEOSException, match="Expected word but encountered end of stream"
+    ):
         pygeos.from_wkt("")
 
-    with pytest.raises(pygeos.GEOSException):
+    with pytest.raises(pygeos.GEOSException, match="Unknown type: 'NOT'"):
         pygeos.from_wkt("NOT A WKT STRING")
+
+
+def test_from_wkt_ignore_invalid():
+    with pytest.warns(Warning, match="Invalid WKT"):
+        pygeos.from_wkt("", ignore_invalid=True)
+
+    with pytest.warns(Warning, match="Invalid WKT"):
+        pygeos.from_wkt("NOT A WKT STRING", ignore_invalid=True)
 
 
 @pytest.mark.parametrize("geom", all_types)
@@ -105,11 +115,15 @@ def test_from_wkb_exceptions():
         assert result is None
 
     # invalid ring in WKB
-    with pytest.raises(pygeos.GEOSException, match="Invalid number of points in LinearRing found 3 - must be 0 or >= 4"):
+    with pytest.raises(
+        pygeos.GEOSException,
+        match="Invalid number of points in LinearRing found 3 - must be 0 or >= 4",
+    ):
         result = pygeos.from_wkb(
             b"\x01\x03\x00\x00\x00\x01\x00\x00\x00\x03\x00\x00\x00P}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A0n\xa3!\xfc\xb05A\xa0\x11\xa5=\x90^=AP}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A"
         )
         assert result is None
+
 
 def test_from_wkb_ignore_invalid():
     # invalid WKB
@@ -121,9 +135,10 @@ def test_from_wkb_ignore_invalid():
     with pytest.warns(Warning, match="Invalid WKB"):
         result = pygeos.from_wkb(
             b"\x01\x03\x00\x00\x00\x01\x00\x00\x00\x03\x00\x00\x00P}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A0n\xa3!\xfc\xb05A\xa0\x11\xa5=\x90^=AP}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A",
-            ignore_invalid=True
+            ignore_invalid=True,
         )
         assert result is None
+
 
 @pytest.mark.parametrize("geom", all_types)
 @pytest.mark.parametrize("use_hex", [False, True])

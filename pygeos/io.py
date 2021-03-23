@@ -161,7 +161,7 @@ def to_wkb(
     )
 
 
-def from_wkt(geometry, **kwargs):
+def from_wkt(geometry, ignore_invalid=False, **kwargs):
     """
     Creates geometries from the Well-Known Text (WKT) representation.
 
@@ -172,13 +172,19 @@ def from_wkt(geometry, **kwargs):
     ----------
     geometry : str or array_like
         The WKT string(s) to convert.
+    ignore_invalid : bool (default: False)
+        If True, each invalid WKT geometry will be returned as None and a
+        warning will be raised.
 
     Examples
     --------
     >>> from_wkt('POINT (0 0)')
     <pygeos.Geometry POINT (0 0)>
     """
-    return lib.from_wkt(geometry, **kwargs)
+    if not np.isscalar(ignore_invalid):
+        raise TypeError("ignore_invalid only accepts scalar values")
+
+    return lib.from_wkt(geometry, ignore_invalid, **kwargs)
 
 
 def from_wkb(geometry, ignore_invalid=False, **kwargs):
