@@ -9,6 +9,7 @@ from . import geos_capi_version_string
 
 
 ShapelyGeometry = None
+ShapelyPreparedGeometry = None
 shapely_lgeos = None
 shapely_geom_factory = None
 shapely_wkb_loads = None
@@ -24,6 +25,8 @@ def check_shapely_version():
 
     - ShapelyGeometry: 
         shapely.geometry.base.BaseGeometry
+    - ShapelyPreparedGeometry: 
+        shapely.prepared.PreparedGeometry
     - shapely_lgeos: 
         shapely.geos.lgeos
     - shapely_geom_factory: 
@@ -38,6 +41,7 @@ def check_shapely_version():
         Mostly internal variable to mark that we already tried to import shapely
     """
     global ShapelyGeometry
+    global ShapelyPreparedGeometry
     global shapely_lgeos
     global shapely_geom_factory
     global shapely_wkb_loads
@@ -50,6 +54,7 @@ def check_shapely_version():
             from shapely.geos import lgeos as shapely_lgeos
             from shapely.geometry.base import BaseGeometry as ShapelyGeometry
             from shapely.geometry.base import geom_factory as shapely_geom_factory
+            from shapely.prepared import PreparedGeometry as ShapelyPreparedGeometry
             from shapely.wkb import loads as shapely_wkb_loads
 
             # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
@@ -328,7 +333,7 @@ def from_shapely(geometry, **kwargs):
         raise ImportError("This function requires shapely")
 
     if shapely_compatible:
-        if isinstance(geometry, ShapelyGeometry):
+        if isinstance(geometry, (ShapelyGeometry, ShapelyPreparedGeometry)):
             # this so that the __array_interface__ of the shapely geometry is not
             # used, converting the Geometry to its coordinates
             arr = np.empty(1, dtype=object)
@@ -344,18 +349,21 @@ def from_shapely(geometry, **kwargs):
 
         return lib.from_shapely(arr, **kwargs)
     else:
-        unpack = geometry is None or isinstance(geometry, ShapelyGeometry)
+        unpack = geometry is None or isinstance(geometry, (ShapelyGeometry, ShapelyPreparedGeometry))
         if unpack:
             geometry = (geometry,)
 
-        arr = [
-            None
-            if g is None
-            else b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf8\x7f\x00\x00\x00\x00\x00\x00\xf8\x7f'
-            if g.is_empty and g.geom_type == "Point"
-            else g.wkb
-            for g in geometry
-        ]
+        arr = []
+        for g in geometry:
+            if isinstance(g, ShapelyPreparedGeometry):
+                g = g.context
+
+            if g is None:
+                arr.append(None)
+            elif g.is_empty and g.geom_type == "Point":
+                arr.append(b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf8\x7f\x00\x00\x00\x00\x00\x00\xf8\x7f')
+            else:
+                arr.append(g.wkb)
 
         if unpack:
             arr = arr[0]
