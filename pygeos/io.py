@@ -9,18 +9,39 @@ from . import geos_capi_version_string
 
 
 ShapelyGeometry = None
-shapely_compatible = None
 shapely_lgeos = None
 shapely_geom_factory = None
 shapely_wkb_loads = None
+shapely_compatible = None
 _shapely_checked = False
 
 def check_shapely_version():
+    """
+    This function will try to import shapely and extracts some necessary classes and functions from the package.
+    It also looks if Shapely and PyGEOS use the same GEOS version, as this means the conversion can be faster.
+
+    This function sets a few global variables:
+
+    - ShapelyGeometry: 
+        shapely.geometry.base.BaseGeometry
+    - shapely_lgeos: 
+        shapely.geos.lgeos
+    - shapely_geom_factory: 
+        shapely.geometry.base.geom_factory
+    - shapely_wkb_loads: 
+        shapely.wkb.loads
+    - shapely_compatible: 
+        ``None`` if shapely is not installed, 
+        ``True`` if shapely and PyGEOS use the same GEOS version, 
+        ``False`` otherwise
+    - _shapely_checked: 
+        Mostly internal variable to mark that we already tried to import shapely
+    """
     global ShapelyGeometry
-    global shapely_compatible
     global shapely_lgeos
     global shapely_geom_factory
     global shapely_wkb_loads
+    global shapely_compatible
     global _shapely_checked
 
     if not _shapely_checked:
