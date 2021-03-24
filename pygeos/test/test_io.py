@@ -372,6 +372,18 @@ def test_from_shapely(geom):
     assert geom._ptr != actual._ptr
 
 
+@pytest.mark.parametrize("geom", all_types)
+@mock.patch("pygeos.io.ShapelyGeometry", ShapelyGeometryMock)
+@mock.patch("pygeos.io.ShapelyPreparedGeometry", ShapelyPreparedMock)
+@mock.patch("pygeos.io.shapely_compatible", True)
+@mock.patch("pygeos.io._shapely_checked", True)
+def test_from_shapely_prepared(geom):
+    actual = pygeos.from_shapely(ShapelyPreparedMock(geom))
+    assert isinstance(actual, pygeos.Geometry)
+    assert pygeos.equals(geom, actual)
+    assert geom._ptr != actual._ptr
+
+
 @mock.patch("pygeos.io.ShapelyGeometry", ShapelyGeometryMock)
 @mock.patch("pygeos.io.ShapelyPreparedGeometry", ShapelyPreparedMock)
 @mock.patch("pygeos.io.shapely_compatible", True)
