@@ -11,6 +11,7 @@ import pygeos
 from pygeos._geos cimport (
     GEOSGeometry,
     GEOSCoordSequence,
+    GEOSContextHandle_t,
     GEOSGeom_clone_r,
     GEOSGetGeometryN_r,
     get_geos_handle,
@@ -18,6 +19,7 @@ from pygeos._geos cimport (
     GEOSGeom_createCollection_r,
     GEOSGeomTypeId_r,
     GEOSCoordSeq_create_r,
+    GEOSCoordSeq_destroy_r,
     GEOSCoordSeq_setX_r,
     GEOSCoordSeq_setY_r,
     GEOSCoordSeq_setZ_r,
@@ -35,6 +37,18 @@ from pygeos._pygeos_api cimport (
 import_pygeos_c_api()
 
 
+cdef char _set_xyz(GEOSContextHandle_t geos_handle, GEOSCoordSequence *seq, unsigned int coord_idx,
+                   unsigned int dims, double[:, :] coord_view, Py_ssize_t idx):
+    if GEOSCoordSeq_setX_r(geos_handle, seq, coord_idx, coord_view[idx, 0]) == 0:
+        return 0
+    if GEOSCoordSeq_setY_r(geos_handle, seq, coord_idx, coord_view[idx, 1]) == 0:
+        return 0
+    if dims == 3:
+        if GEOSCoordSeq_setZ_r(geos_handle, seq, coord_idx, coord_view[idx, 2]) == 0:
+            return 0
+    return 1
+
+ 
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def simple_geometries_1d(object coordinates, object indices, int geometry_type):
@@ -44,7 +58,6 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
     cdef unsigned int geom_size = 0
     cdef unsigned int ring_closure = 0
     cdef Py_ssize_t coll_geom_idx = 0
-    cdef char include_z
     cdef GEOSGeometry *geom = NULL
     cdef GEOSCoordSequence *seq = NULL
 
@@ -72,7 +85,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
         return np.empty(shape=(0, ), dtype=np.object_)
 
     if np.any(indices[1:] < indices[:indices.shape[0] - 1]):
-        raise ValueError("The indices should be sorted.")  
+        raise ValueError("The indices must be sorted.")  
 
     cdef double[:, :] coord_view = coordinates
     cdef np.intp_t[:] index_view = indices
@@ -89,6 +102,11 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
         for geom_idx in range(n_geoms):
             geom_size = coord_counts[geom_idx]
 
+            # insert None if there are no coordinates
+            if geom_size == 0:
+                result_view[geom_idx] = PyGEOS_CreateGeometry(NULL, geos_handle)
+                continue
+
             # check if we need to close a linearring
             if geometry_type == 2:
                 ring_closure = 0
@@ -99,13 +117,9 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
 
             seq = GEOSCoordSeq_create_r(geos_handle, geom_size + ring_closure, dims)
             for coord_idx in range(geom_size):
-                if GEOSCoordSeq_setX_r(geos_handle, seq, coord_idx, coord_view[idx, 0]) == 0:
+                if _set_xyz(geos_handle, seq, coord_idx, dims, coord_view, idx) == 0:
+                    GEOSCoordSeq_destroy_r(geos_handle, seq)
                     return
-                if GEOSCoordSeq_setY_r(geos_handle, seq, coord_idx, coord_view[idx, 1]) == 0:
-                    return
-                if dims == 3:
-                    if GEOSCoordSeq_setZ_r(geos_handle, seq, coord_idx, coord_view[idx, 2]) == 0:
-                        return
                 idx += 1
 
             if geometry_type == 0:
@@ -114,13 +128,9 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
                 geom = GEOSGeom_createLineString_r(geos_handle, seq)
             elif geometry_type == 2:
                 if ring_closure == 1:
-                    if GEOSCoordSeq_setX_r(geos_handle, seq, geom_size, coord_view[idx - geom_size, 0]) == 0:
+                    if _set_xyz(geos_handle, seq, geom_size, dims, coord_view, idx - geom_size) == 0:
+                        GEOSCoordSeq_destroy_r(geos_handle, seq)
                         return
-                    if GEOSCoordSeq_setY_r(geos_handle, seq, geom_size, coord_view[idx - geom_size, 1]) == 0:
-                        return
-                    if dims == 3:
-                        if GEOSCoordSeq_setZ_r(geos_handle, seq, geom_size, coord_view[idx - geom_size, 2]) == 0:
-                            return
                 geom = GEOSGeom_createLinearRing_r(geos_handle, seq)
 
             if geom == NULL:

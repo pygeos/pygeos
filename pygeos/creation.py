@@ -46,7 +46,8 @@ def points(coords, y=None, z=None, indices=None, **kwargs):
     indices : array_like or None
        Indices into the target array where input coordinates belong. If
        provided, the coords should be 2D with shape (N, 2) or (N, 3) and
-       indices should be 1D with shape (N,)
+       indices should be 1D with shape (N,). Missing indices will give None
+       values in the output array.
     """
     coords = _xyz_to_coords(coords, y, z)
     if indices is None:
@@ -59,6 +60,9 @@ def points(coords, y=None, z=None, indices=None, **kwargs):
 def linestrings(coords, y=None, z=None, indices=None, **kwargs):
     """Create an array of linestrings.
 
+    This function will raise an exception if a linestring contains less than
+    two points.
+
     Parameters
     ----------
     coords : array_like
@@ -69,7 +73,8 @@ def linestrings(coords, y=None, z=None, indices=None, **kwargs):
     indices : array_like or None
        Indices into the target array where input coordinates belong. If
        provided, the coords should be 2D with shape (N, 2) or (N, 3) and
-       indices should be 1D with shape (N,)
+       indices should be 1D with shape (N,). Missing indices will give None
+       values in the output array.
     """
     coords = _xyz_to_coords(coords, y, z)
     if indices is None:
@@ -83,7 +88,9 @@ def linearrings(coords, y=None, z=None, indices=None, **kwargs):
     """Create an array of linearrings.
 
     If the provided coords do not constitute a closed linestring, the first
-    coordinate is duplicated at the end to close the ring.
+    coordinate is duplicated at the end to close the ring. This function will
+    raise an exception if a linearring contains less than three points or if
+    the terminal coordinates contain NaN (not-a-number).
 
     Parameters
     ----------
@@ -95,7 +102,8 @@ def linearrings(coords, y=None, z=None, indices=None, **kwargs):
     indices : array_like or None
        Indices into the target array where input coordinates belong. If
        provided, the coords should be 2D with shape (N, 2) or (N, 3) and
-       indices should be 1D with shape (N,)
+       indices should be 1D with shape (N,). Missing indices will give None
+       values in the output array.
     """
     coords = _xyz_to_coords(coords, y, z)
     if indices is None:

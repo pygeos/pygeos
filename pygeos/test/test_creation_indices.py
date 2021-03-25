@@ -1,12 +1,11 @@
 import pygeos
 import pytest
 import numpy as np
-from .common import point, line_string, linear_ring, polygon, empty, empty_point
+from .common import point, line_string, linear_ring, polygon, empty, assert_geometries_equal
 
 pnts = pygeos.points
 lstrs = pygeos.linestrings
 geom_coll = pygeos.geometrycollections
-lstr_empty = pygeos.Geometry("LINESTRING EMPTY")
 
 
 @pytest.mark.parametrize(
@@ -62,7 +61,7 @@ def test_points_invalid():
 
 def test_points():
     actual = pygeos.points([[2, 3], [2, 3]], indices=[0, 2])
-    assert pygeos.equals(actual, [point, empty_point, point]).all()
+    assert_geometries_equal(actual, [point, None, point])
 
 
 @pytest.mark.parametrize(
@@ -70,7 +69,7 @@ def test_points():
     [
         ([[1, 1], [2, 2]], [0, 0], [lstrs([[1, 1], [2, 2]])]),
         ([[1, 1, 1], [2, 2, 2]], [0, 0], [lstrs([[1, 1, 1], [2, 2, 2]])]),
-        ([[1, 1], [2, 2]], [1, 1], [lstr_empty, lstrs([[1, 1], [2, 2]])]),
+        ([[1, 1], [2, 2]], [1, 1], [None, lstrs([[1, 1], [2, 2]])]),
         (
             [[1, 1], [2, 2], [2, 2], [3, 3]],
             [0, 0, 1, 1],
@@ -80,7 +79,7 @@ def test_points():
 )
 def test_linestrings(coordinates, indices, expected):
     actual = pygeos.linestrings(coordinates, indices=indices)
-    assert pygeos.equals(actual, expected).all()
+    assert_geometries_equal(actual, expected)
 
 
 def test_linestrings_invalid():
@@ -93,7 +92,7 @@ def test_linestrings_invalid():
 )
 def test_linearrings(coordinates):
     actual = pygeos.linearrings(coordinates, indices=len(coordinates) * [0])
-    assert pygeos.equals(actual, pygeos.linearrings(coordinates)).all()
+    assert_geometries_equal(actual, pygeos.linearrings(coordinates))
 
 
 def test_linearrings_invalid():
@@ -135,27 +134,27 @@ def test_invalid_indices_collections(func, indices):
 )
 def test_geometrycollections(geometries, indices, expected):
     actual = pygeos.geometrycollections(geometries, indices=indices)
-    assert pygeos.equals(actual, expected).all()
+    assert_geometries_equal(actual, expected)
 
 
 def test_multipoints():
     actual = pygeos.multipoints([point], indices=[0])
-    assert pygeos.equals(actual, pygeos.multipoints([point])).all()
+    assert_geometries_equal(actual, pygeos.multipoints([point]))
 
 
 def test_multilinestrings():
     actual = pygeos.multilinestrings([line_string], indices=[0])
-    assert pygeos.equals(actual, pygeos.multilinestrings([line_string])).all()
+    assert_geometries_equal(actual, pygeos.multilinestrings([line_string]))
 
 
 def test_multilinearrings():
     actual = pygeos.multilinestrings([linear_ring], indices=[0])
-    assert pygeos.equals(actual, pygeos.multilinestrings([linear_ring])).all()
+    assert_geometries_equal(actual, pygeos.multilinestrings([linear_ring]))
 
 
 def test_multipolygons():
     actual = pygeos.multipolygons([polygon], indices=[0])
-    assert pygeos.equals(actual, pygeos.multipolygons([polygon])).all()
+    assert_geometries_equal(actual, pygeos.multipolygons([polygon]))
 
 
 @pytest.mark.parametrize(
