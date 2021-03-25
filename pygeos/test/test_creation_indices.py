@@ -18,7 +18,7 @@ geom_coll = pygeos.geometrycollections
         np.empty((2, 4, 1)),  # too many dimensions
         np.empty((2, 4)),  # wrong inner dimension size
         None,
-        np.full((2, 2), "foo"),  # wrong type
+        np.full((2, 2), "foo", dtype=object),  # wrong type
     ],
 )
 def test_invalid_coordinates(func, coordinates):
