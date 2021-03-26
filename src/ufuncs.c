@@ -1900,11 +1900,13 @@ static void polygonize_full_func(char** args, npy_intp* dimensions, npy_intp* st
     OUTPUT_Y_I(2, cuts);
     OUTPUT_Y_I(3, dangles);
     OUTPUT_Y_I(4, invalidRings);
+    GEOSGeom_destroy_r(ctx, collection);
+    collection = NULL;
   }
 
 finish:
   if (collection != NULL) {
-    free(collection);
+    GEOSGeom_destroy_r(ctx, collection);
   }
   if (geoms != NULL) {
     free(geoms);
