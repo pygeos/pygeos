@@ -124,18 +124,26 @@ enum {
 #define GEOS_SINCE_3_7_0 ((GEOS_VERSION_MAJOR >= 3) && (GEOS_VERSION_MINOR >= 7))
 #define GEOS_SINCE_3_8_0 ((GEOS_VERSION_MAJOR >= 3) && (GEOS_VERSION_MINOR >= 8))
 #define GEOS_SINCE_3_9_0 ((GEOS_VERSION_MAJOR >= 3) && (GEOS_VERSION_MINOR >= 9))
+#define GEOS_SINCE_3_10_0 ((GEOS_VERSION_MAJOR >= 3) && (GEOS_VERSION_MINOR >= 10))
 
 extern PyObject* geos_exception[1];
 
 extern void geos_error_handler(const char* message, void* userdata);
 extern void geos_notice_handler(const char* message, void* userdata);
 extern void destroy_geom_arr(void* context, GEOSGeometry** array, int length);
+#if !GEOS_SINCE_3_10_0
 extern char has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry* geom);
 extern GEOSGeometry* point_empty_to_nan_all_geoms(GEOSContextHandle_t ctx,
                                                   GEOSGeometry* geom);
+#endif  // !GEOS_SINCE_3_10_0
 extern char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry* geom);
 extern char geos_interpolate_checker(GEOSContextHandle_t ctx, GEOSGeometry* geom);
 
 extern int init_geos(PyObject* m);
 
-#endif
+int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double* ymin,
+               double* xmax, double* ymax);
+GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, double xmax,
+                         double ymax, char ccw);
+
+#endif  // _GEOS_H

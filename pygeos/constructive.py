@@ -1,8 +1,8 @@
-from enum import IntEnum
 import numpy as np
 from . import Geometry  # NOQA
 from . import lib
 from .decorators import requires_geos, multithreading_enabled
+from .enum import ParamEnum
 
 
 __all__ = [
@@ -15,6 +15,7 @@ __all__ = [
     "clip_by_rect",
     "convex_hull",
     "delaunay_triangles",
+    "segmentize",
     "envelope",
     "extract_unique_points",
     "build_area",
@@ -30,16 +31,16 @@ __all__ = [
 ]
 
 
-class BufferCapStyles(IntEnum):
-    ROUND = 1
-    FLAT = 2
-    SQUARE = 3
+class BufferCapStyles(ParamEnum):
+    round = 1
+    flat = 2
+    square = 3
 
 
-class BufferJoinStyles(IntEnum):
-    ROUND = 1
-    MITRE = 2
-    BEVEL = 3
+class BufferJoinStyles(ParamEnum):
+    round = 1
+    mitre = 2
+    bevel = 3
 
 
 @multithreading_enabled
@@ -105,7 +106,7 @@ def buffer(
         circular line endings (see ``quadsegs``). Both 'square' and 'flat'
         result in rectangular line endings, only 'flat' will end at the
         original vertex, while 'square' involves adding the buffer width.
-    join_style : {'round', 'bevel', 'sharp'}
+    join_style : {'round', 'bevel', 'mitre'}
         Specifies the shape of buffered line midpoints. 'round' results in
         rounded shapes. 'bevel' results in a beveled edge that touches the
         original vertex. 'mitre' results in a single vertex that is beveled
@@ -149,9 +150,9 @@ def buffer(
     True
     """
     if isinstance(cap_style, str):
-        cap_style = BufferCapStyles[cap_style.upper()].value
+        cap_style = BufferCapStyles.get_value(cap_style)
     if isinstance(join_style, str):
-        join_style = BufferJoinStyles[join_style.upper()].value
+        join_style = BufferJoinStyles.get_value(join_style)
     if not np.isscalar(quadsegs):
         raise TypeError("quadsegs only accepts scalar values")
     if not np.isscalar(cap_style):
@@ -196,7 +197,7 @@ def offset_curve(
     quadsegs : int
         Specifies the number of linear segments in a quarter circle in the
         approximation of circular arcs.
-    join_style : {'round', 'bevel', 'sharp'}
+    join_style : {'round', 'bevel', 'mitre'}
         Specifies the shape of outside corners. 'round' results in
         rounded shapes. 'bevel' results in a beveled edge that touches the
         original vertex. 'mitre' results in a single vertex that is beveled
@@ -214,7 +215,7 @@ def offset_curve(
     <pygeos.Geometry LINESTRING (2 2, 2 0)>
     """
     if isinstance(join_style, str):
-        join_style = BufferJoinStyles[join_style.upper()].value
+        join_style = BufferJoinStyles.get_value(join_style)
     if not np.isscalar(quadsegs):
         raise TypeError("quadsegs only accepts scalar values")
     if not np.isscalar(join_style):
@@ -622,6 +623,39 @@ def reverse(geometry, **kwargs):
     """
 
     return lib.reverse(geometry, **kwargs)
+
+
+@requires_geos("3.10.0")
+@multithreading_enabled
+def segmentize(geometry, tolerance, **kwargs):
+    """Adds vertices to line segments based on tolerance.
+
+    Additional vertices will be added to every line segment in an input geometry
+    so that segments are no greater than tolerance.  New vertices will evenly
+    subdivide each segment.
+
+    Only linear components of input geometries are densified; other geometries
+    are returned unmodified.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    tolerance : float or array_like
+        Additional vertices will be added so that all line segments are no
+        greater than this value.  Must be greater than 0.
+
+    Examples
+    --------
+    >>> line = Geometry("LINESTRING (0 0, 0 10)")
+    >>> segmentize(line, tolerance=5)
+    <pygeos.Geometry LINESTRING (0 0, 0 5, 0 10)>
+    >>> poly = Geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))")
+    >>> segmentize(poly, tolerance=5)
+    <pygeos.Geometry POLYGON ((0 0, 5 0, 10 0, 10 5, 10 10, 5 10, 0 10, 0 5, 0 0))>
+    >>> segmentize(None, tolerance=5) is None
+    True
+    """
+    return lib.segmentize(geometry, tolerance, **kwargs)
 
 
 @multithreading_enabled

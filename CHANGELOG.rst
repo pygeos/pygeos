@@ -4,29 +4,50 @@ Changelog
 Version 0.10 (unreleased)
 ------------------------
 
-**Highlights of this release**
+**Major enhancements**
 
-* ...
+* Addition of ``nearest`` and ``nearest_all`` functions to ``STRtree`` for
+  GEOS >= 3.6 to find the nearest neighbors (#272).
+* Enable bulk construction of collections with different number of geometries
+  by optionally taking an index arrays in the constructors ``multipoints``,
+  ``multilinestrings``, ``multipolygons``, and ``geometrycollections`` (#290).
+* Released GIL for ``points``, ``linestrings``, ``linearrings``, and 
+  ``polygons`` (without holes) (#310).
+* Added the option to return the geometry index in ``get_coordinates`` (#318).
+* Updated ``box`` ufunc to use internal C function for creating polygon
+  (about 2x faster) and added ``ccw`` parameter to create polygon in
+  counterclockwise (default) or clockwise direction (#308).
 
 **API Changes**
 
 * STRtree default leaf size is now 10 instead of 5, for somewhat better performance
-  under normal conditions.
+  under normal conditions (#286)
+* Deprecated ``VALID_PREDICATES`` set from ``pygeos.strtree`` package; these can be constructed
+  in downstream libraries using the ``pygeos.strtree.BinaryPredicate`` enum.
+  This will be removed in a future release.
+* ``points``, ``linestrings``, ``linearrings``, and ``polygons`` now return a ``GEOSException``
+  instead of a ``ValueError`` for invalid input (#310).
 
 **Added GEOS functions**
 
-* Addition of a ``contains_properly`` function (#267).
-* Addition of a ``polygonize`` function (#275).
+* Addition of a ``contains_properly`` function (#267)
+* Addition of a ``polygonize`` function (#275)
+* Addition of a ``segmentize`` function for GEOS >= 3.10 (#299)
 
 **Bug fixes**
+
 * Fixed portability issue for ARM architecture (#293)
+* Fixed segfault in ``linearrings`` and ``box`` when constructing a geometry with nan 
+  coordinates (#310).
 
 **Acknowledgments**
 
 Thanks to everyone who contributed to this release!
 People with a "+" by their names contributed a patch for the first time.
 
-* ...
+* Brendan Ward
+* Casper van der Wel
+* Joris Van den Bossche
 
 
 Version 0.9 (2021-01-23)

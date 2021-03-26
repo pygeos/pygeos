@@ -83,6 +83,16 @@ def test_float_arg_nan(geometry, func):
     assert actual is None
 
 
+def test_buffer_cap_style_invalid():
+    with pytest.raises(ValueError, match="'invalid' is not a valid option"):
+        pygeos.buffer(point, 1, cap_style="invalid")
+
+
+def test_buffer_join_style_invalid():
+    with pytest.raises(ValueError, match="'invalid' is not a valid option"):
+        pygeos.buffer(point, 1, join_style="invalid")
+
+
 def test_snap_none():
     actual = pygeos.snap(None, point, tolerance=1.0)
     assert actual is None
@@ -233,9 +243,9 @@ def test_offset_curve_non_scalar_kwargs():
         pygeos.offset_curve([line_string, line_string], 1, mitre_limit=[5.0, 6.0])
 
 
-def test_offset_curve_join_style():
-    with pytest.raises(KeyError):
-        pygeos.offset_curve(line_string, 1.0, join_style="nonsense")
+def test_offset_curve_join_style_invalid():
+    with pytest.raises(ValueError, match="'invalid' is not a valid option"):
+        pygeos.offset_curve(line_string, 1.0, join_style="invalid")
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
@@ -340,13 +350,13 @@ def test_clip_by_rect(geom, expected):
         (
             "POLYGON ((0 0, 0 30, 30 30, 30 0, 0 0), (10 10, 20 10, 20 20, 10 20, 10 10))",
             (10, 10, 20, 20),
-            "GEOMETRYCOLLECTION EMPTY"
+            "GEOMETRYCOLLECTION EMPTY",
         ),
         # Polygon hole (CW) fully on rectangle boundary"""
         (
             "POLYGON ((0 0, 0 30, 30 30, 30 0, 0 0), (10 10, 10 20, 20 20, 20 10, 10 10))",
             (10, 10, 20, 20),
-            "GEOMETRYCOLLECTION EMPTY"
+            "GEOMETRYCOLLECTION EMPTY",
         ),
         # Polygon fully within rectangle"""
         (
@@ -359,7 +369,7 @@ def test_clip_by_rect(geom, expected):
             "POLYGON ((0 0, 0 30, 30 30, 30 0, 0 0), (10 10, 20 10, 20 20, 10 20, 10 10))",
             (5, 5, 15, 15),
             "POLYGON ((5 5, 5 15, 10 15, 10 10, 15 10, 15 5, 5 5))",
-        )
+        ),
     ],
 )
 def test_clip_by_rect_polygon(geom, rect, expected):
@@ -561,3 +571,114 @@ def test_polygonize_full_missing():
     result = pygeos.polygonize_full([None, None])
     assert len(result) == 4
     assert all(geom == pygeos.Geometry("GEOMETRYCOLLECTION EMPTY") for geom in result)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize("geometry", all_types)
+@pytest.mark.parametrize("tolerance", [-1, 0])
+def test_segmentize_invalid_tolerance(geometry, tolerance):
+    with pytest.raises(GEOSException, match="IllegalArgumentException"):
+        pygeos.segmentize(geometry, tolerance=tolerance)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize("geometry", all_types)
+def test_segmentize_tolerance_nan(geometry):
+    actual = pygeos.segmentize(geometry, tolerance=np.nan)
+    assert actual == None
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry",
+    [
+        empty,
+        empty_point,
+        empty_line_string,
+        empty_polygon,
+    ],
+)
+def test_segmentize_empty(geometry):
+    actual = pygeos.segmentize(geometry, tolerance=5)
+    assert pygeos.equals(actual, geometry).all()
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize("geometry", [point, point_z, multi_point])
+def test_segmentize_no_change(geometry):
+    actual = pygeos.segmentize(geometry, tolerance=5)
+    assert pygeos.equals(actual, geometry).all()
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+def test_segmentize_none():
+    assert pygeos.segmentize(None, tolerance=5) is None
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,tolerance, expected",
+    [
+        # tolerance greater than max edge length, no change
+        (
+            pygeos.Geometry("LINESTRING (0 0, 0 10)"),
+            20,
+            pygeos.Geometry("LINESTRING (0 0, 0 10)"),
+        ),
+        (
+            pygeos.Geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))"),
+            20,
+            pygeos.Geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))"),
+        ),
+        # tolerance causes one vertex per segment
+        (
+            pygeos.Geometry("LINESTRING (0 0, 0 10)"),
+            5,
+            pygeos.Geometry("LINESTRING (0 0, 0 5, 0 10)"),
+        ),
+        (
+            Geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))"),
+            5,
+            pygeos.Geometry(
+                "POLYGON ((0 0, 5 0, 10 0, 10 5, 10 10, 5 10, 0 10, 0 5, 0 0))"
+            ),
+        ),
+        # ensure input arrays are broadcast correctly
+        (
+            [
+                pygeos.Geometry("LINESTRING (0 0, 0 10)"),
+                pygeos.Geometry("LINESTRING (0 0, 0 2)"),
+            ],
+            5,
+            [
+                pygeos.Geometry("LINESTRING (0 0, 0 5, 0 10)"),
+                pygeos.Geometry("LINESTRING (0 0, 0 2)"),
+            ],
+        ),
+        (
+            [
+                pygeos.Geometry("LINESTRING (0 0, 0 10)"),
+                pygeos.Geometry("LINESTRING (0 0, 0 2)"),
+            ],
+            [5],
+            [
+                pygeos.Geometry("LINESTRING (0 0, 0 5, 0 10)"),
+                pygeos.Geometry("LINESTRING (0 0, 0 2)"),
+            ],
+        ),
+        (
+            [
+                pygeos.Geometry("LINESTRING (0 0, 0 10)"),
+                pygeos.Geometry("LINESTRING (0 0, 0 2)"),
+            ],
+            [5, 1.5],
+            [
+                pygeos.Geometry("LINESTRING (0 0, 0 5, 0 10)"),
+                pygeos.Geometry("LINESTRING (0 0, 0 1, 0 2)"),
+            ],
+        ),
+    ],
+)
+def test_segmentize(geometry, tolerance, expected):
+    actual = pygeos.segmentize(geometry, tolerance)
+    assert pygeos.equals(actual, geometry).all()
