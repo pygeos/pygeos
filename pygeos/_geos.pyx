@@ -33,10 +33,12 @@ cdef class get_geos_handle:
         return self.handle
 
     def __exit__(self, type, value, traceback):
-        if self.last_error[0] != 0:
-            raise GEOSException(self.last_error)
-        if self.last_warning[0] != 0:
-            warnings.warn(self.last_warning)
-        GEOS_finish_r(self.handle)
-        free(self.last_error)
-        free(self.last_warning)
+        try:
+            if self.last_error[0] != 0:
+                raise GEOSException(self.last_error)
+            if self.last_warning[0] != 0:
+                warnings.warn(self.last_warning)
+        finally:
+            GEOS_finish_r(self.handle)
+            free(self.last_error)
+            free(self.last_warning)
