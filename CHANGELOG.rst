@@ -27,9 +27,8 @@ Version 0.10 (unreleased)
   This will be removed in a future release.
 * ``points``, ``linestrings``, ``linearrings``, and ``polygons`` now return a ``GEOSException``
   instead of a ``ValueError`` for invalid input (#310).
-* Addition of ``ignore_invalid`` parameter to ``from_wkb`` and ``from_wkt`` to
-  return invalid WKB geometries as ``None`` and raise a warning instead of an
-  exception.
+* Addition of ``on_invalid`` parameter to ``from_wkb`` and ``from_wkt`` to
+  optionally return invalid WKB geometries as ``None``.
 
 **Added GEOS functions**
 

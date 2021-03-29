@@ -2301,13 +2301,13 @@ static PyUFuncGenericFunction bounds_funcs[1] = {&bounds_func};
 
 /* Define the object -> geom functions (O_Y) */
 
-static char from_wkb_dtypes[3] = {NPY_OBJECT, NPY_BOOL, NPY_OBJECT};
+static char from_wkb_dtypes[3] = {NPY_OBJECT, NPY_UINT8, NPY_OBJECT};
 static void from_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps,
                           void* data) {
   char *ip1 = args[0], *ip2 = args[1], *op1 = args[2];
   npy_intp is1 = steps[0], is2 = steps[1], os1 = steps[2];
   PyObject* in1;
-  char ignore_invalid = *(npy_bool*)ip2;
+  npy_uint8 on_invalid = *(npy_uint8*)ip2;
   npy_intp n = dimensions[0];
   npy_intp i;
   GEOSWKBReader* reader;
@@ -2371,13 +2371,15 @@ static void from_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps,
         ret_ptr = GEOSWKBReader_read_r(ctx, reader, wkb, size);
       }
       if (ret_ptr == NULL) {
-        if (ignore_invalid) {
-          // the output geometry will be set to None
-          errstate = PGWARN_INVALID_WKB;
-        } else {
+        if (on_invalid == 2) {
+          // raise exception
           errstate = PGERR_GEOS_EXCEPTION;
           goto finish;
+        } else if (on_invalid == 1) {
+          // raise warning, return None
+          errstate = PGWARN_INVALID_WKB;
         }
+        // else: return None, no warning
       }
     }
     OUTPUT_Y;
@@ -2389,13 +2391,13 @@ finish:
 }
 static PyUFuncGenericFunction from_wkb_funcs[1] = {&from_wkb_func};
 
-static char from_wkt_dtypes[3] = {NPY_OBJECT, NPY_BOOL, NPY_OBJECT};
+static char from_wkt_dtypes[3] = {NPY_OBJECT, NPY_UINT8, NPY_OBJECT};
 static void from_wkt_func(char** args, npy_intp* dimensions, npy_intp* steps,
                           void* data) {
   char *ip1 = args[0], *ip2 = args[1], *op1 = args[2];
   npy_intp is1 = steps[0], is2 = steps[1], os1 = steps[2];
   PyObject* in1;
-  char ignore_invalid = *(npy_bool*)ip2;
+  npy_uint8 on_invalid = *(npy_uint8*)ip2;
   npy_intp n = dimensions[0];
   npy_intp i;
   GEOSGeometry* ret_ptr;
@@ -2445,13 +2447,15 @@ static void from_wkt_func(char** args, npy_intp* dimensions, npy_intp* steps,
       /* Read the WKT */
       ret_ptr = GEOSWKTReader_read_r(ctx, reader, wkt);
       if (ret_ptr == NULL) {
-        if (ignore_invalid) {
-          // the output geometry will be set to None
-          errstate = PGWARN_INVALID_WKT;
-        } else {
+        if (on_invalid == 2) {
+          // raise exception
           errstate = PGERR_GEOS_EXCEPTION;
           goto finish;
+        } else if (on_invalid == 1) {
+          // raise warning, return None
+          errstate = PGWARN_INVALID_WKT;
         }
+        // else: return None, no warning
       }
     }
     OUTPUT_Y;

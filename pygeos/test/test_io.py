@@ -59,12 +59,25 @@ def test_from_wkt_exceptions():
         pygeos.from_wkt("NOT A WKT STRING")
 
 
-def test_from_wkt_ignore_invalid():
+def test_from_wkt_warn_on_invalid():
     with pytest.warns(Warning, match="Invalid WKT"):
-        pygeos.from_wkt("", ignore_invalid=True)
+        pygeos.from_wkt("", on_invalid="warn")
 
     with pytest.warns(Warning, match="Invalid WKT"):
-        pygeos.from_wkt("NOT A WKT STRING", ignore_invalid=True)
+        pygeos.from_wkt("NOT A WKT STRING", on_invalid="warn")
+
+
+def test_from_wkb_ignore_on_invalid():
+    with pytest.warns(None):
+        pygeos.from_wkt("", on_invalid="ignore")
+
+    with pytest.warns(None):
+        pygeos.from_wkt("NOT A WKT STRING", on_invalid="ignore")
+
+
+def test_from_wkt_on_invalid_unsupported_option():
+    with pytest.raises(ValueError, match="not a valid option"):
+        pygeos.from_wkt(b"\x01\x01\x00\x00\x00\x00", on_invalid="unsupported_option")
 
 
 @pytest.mark.parametrize("geom", all_types)
@@ -125,19 +138,41 @@ def test_from_wkb_exceptions():
         assert result is None
 
 
-def test_from_wkb_ignore_invalid():
+def test_from_wkb_warn_on_invalid():
     # invalid WKB
     with pytest.warns(Warning, match="Invalid WKB"):
-        result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", ignore_invalid=True)
+        result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", on_invalid="warn")
         assert result is None
 
     # invalid ring in WKB
     with pytest.warns(Warning, match="Invalid WKB"):
         result = pygeos.from_wkb(
             b"\x01\x03\x00\x00\x00\x01\x00\x00\x00\x03\x00\x00\x00P}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A0n\xa3!\xfc\xb05A\xa0\x11\xa5=\x90^=AP}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A",
-            ignore_invalid=True,
+            on_invalid="warn"
         )
         assert result is None
+
+
+def test_from_wkb_ignore_on_invalid():
+    # invalid WKB
+    with pytest.warns(None) as w:
+        result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", on_invalid="ignore")
+        assert result is None
+        assert len(w) == 0  # no warning
+
+    # invalid ring in WKB
+    with pytest.warns(None) as w:
+        result = pygeos.from_wkb(
+            b"\x01\x03\x00\x00\x00\x01\x00\x00\x00\x03\x00\x00\x00P}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A0n\xa3!\xfc\xb05A\xa0\x11\xa5=\x90^=AP}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A",
+            on_invalid="ignore",
+        )
+        assert result is None
+        assert len(w) == 0  # no warning
+
+
+def test_from_wkb_on_invalid_unsupported_option():
+    with pytest.raises(ValueError, match="not a valid option"):
+        pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", on_invalid="unsupported_option")
 
 
 @pytest.mark.parametrize("geom", all_types)
