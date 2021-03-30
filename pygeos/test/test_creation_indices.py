@@ -12,7 +12,6 @@ from .common import (
 
 pnts = pygeos.points
 lstrs = pygeos.linestrings
-poly = pygeos.polygons
 geom_coll = pygeos.geometrycollections
 
 

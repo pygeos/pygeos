@@ -395,11 +395,6 @@ def polygons_1d(object shells, object holes, object indices):
                 result_view[poly_idx] = PyGEOS_CreateGeometry(NULL, geos_handle)
                 continue
 
-            # clone the shell as the polygon will take ownership
-            shell = GEOSGeom_clone_r(geos_handle, shell)
-            if shell == NULL:
-                return  # GEOSException is raised by get_geos_handle
-
             # fill the temporary array with holes belonging to this polygon
             for poly_hole_idx in range(hole_count[poly_idx]):
                 if PyGEOS_GetGEOSGeometry(<PyObject *>holes_view[hole_idx_1 + poly_hole_idx], &hole) == 0:
@@ -420,6 +415,12 @@ def polygons_1d(object shells, object holes, object indices):
                 temp_holes_view[n_holes] = <np.intp_t>hole
                 n_holes += 1
 
+            # clone the shell as the polygon will take ownership
+            shell = GEOSGeom_clone_r(geos_handle, shell)
+            if shell == NULL:
+                _deallocate_arr(geos_handle, temp_holes_view, n_holes)
+                return  # GEOSException is raised by get_geos_handle
+
             # create the polygon
             poly = GEOSGeom_createPolygon_r(
                 geos_handle,
@@ -428,6 +429,10 @@ def polygons_1d(object shells, object holes, object indices):
                 n_holes
             )
             if poly == NULL:
+                # GEOSGeom_createPolygon_r does not take ownership in case of
+                # an exception: so clean up the provided arguments.
+                GEOSGeom_destroy_r(geos_handle, shell)
+                _deallocate_arr(geos_handle, temp_holes_view, n_holes)
                 return  # GEOSException is raised by get_geos_handle
 
             result_view[poly_idx] = PyGEOS_CreateGeometry(poly, geos_handle)
