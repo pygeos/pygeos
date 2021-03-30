@@ -119,7 +119,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
             for coord_idx in range(geom_size):
                 if _set_xyz(geos_handle, seq, coord_idx, dims, coord_view, idx) == 0:
                     GEOSCoordSeq_destroy_r(geos_handle, seq)
-                    return
+                    return  # GEOSException is raised by get_geos_handle
                 idx += 1
 
             if geometry_type == 0:
@@ -130,11 +130,11 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
                 if ring_closure == 1:
                     if _set_xyz(geos_handle, seq, geom_size, dims, coord_view, idx - geom_size) == 0:
                         GEOSCoordSeq_destroy_r(geos_handle, seq)
-                        return
+                        return  # GEOSException is raised by get_geos_handle
                 geom = GEOSGeom_createLinearRing_r(geos_handle, seq)
 
             if geom == NULL:
-                return
+                return  # GEOSException is raised by get_geos_handle
 
             result_view[geom_idx] = PyGEOS_CreateGeometry(geom, geos_handle)
 
@@ -184,12 +184,12 @@ def get_parts(object[:] array):
                 index_view[idx] = geom_idx
                 part = GEOSGetGeometryN_r(geos_handle, geom, part_idx)
                 if part == NULL:
-                    return
+                    return  # GEOSException is raised by get_geos_handle
 
                 # clone the geometry to keep it separate from the inputs
                 part = GEOSGeom_clone_r(geos_handle, part)
                 if part == NULL:
-                    return
+                    return  # GEOSException is raised by get_geos_handle
                 # cast part back to <GEOSGeometry> to discard const qualifier
                 # pending issue #227
                 parts_view[idx] = PyGEOS_CreateGeometry(<GEOSGeometry *>part, geos_handle)
@@ -202,9 +202,12 @@ def get_parts(object[:] array):
 cdef _deallocate_arr(void* handle, np.intp_t[:] arr, Py_ssize_t last_geom_i):
     """Deallocate a temporary geometry array to prevent memory leaks"""
     cdef Py_ssize_t i = 0
+    cdef GEOSGeometry *g
 
     for i in range(last_geom_i):
-        GEOSGeom_destroy_r(handle, <GEOSGeometry *>arr[i])
+        g = <GEOSGeometry *>arr[i]
+        if g != NULL:
+            GEOSGeom_destroy_r(handle, <GEOSGeometry *>arr[i])
 
 
 @cython.boundscheck(False)
@@ -288,7 +291,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                     curr_type = GEOSGeomTypeId_r(geos_handle, geom)
                     if curr_type == -1:
                         _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
-                        return
+                        return  # GEOSException is raised by get_geos_handle
                     if curr_type != expected_type and curr_type != expected_type_alt:
                         _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
                         raise TypeError(
@@ -299,7 +302,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                 geom = GEOSGeom_clone_r(geos_handle, geom)
                 if geom == NULL:
                     _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
-                    return                 
+                    return  # GEOSException is raised by get_geos_handle           
                 temp_geoms_view[coll_size] = <np.intp_t>geom
                 coll_size += 1
 
@@ -311,7 +314,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                 coll_size
             )
             if coll == NULL:
-                return
+                return  # GEOSException is raised by get_geos_handle
 
             result_view[coll_idx] = PyGEOS_CreateGeometry(coll, geos_handle)
 
