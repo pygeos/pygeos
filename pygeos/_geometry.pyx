@@ -26,7 +26,7 @@ from pygeos._geos cimport (
     GEOSGeom_createPoint_r,
     GEOSGeom_createLineString_r,
     GEOSGeom_createLinearRing_r,
-    GEOSGeom_createPolygon_r
+    GEOSGeom_createPolygon_r,
 )
 from pygeos._pygeos_api cimport (
     import_pygeos_c_api,
@@ -85,16 +85,13 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
         # return immediately if there are no geometries to return
         return np.empty(shape=(0, ), dtype=np.object_)
 
-    if (indices < 0).any():
-        raise ValueError("Negative indices are not allowed.")  
-
     if np.any(indices[1:] < indices[:indices.shape[0] - 1]):
         raise ValueError("The indices must be sorted.")  
 
     cdef double[:, :] coord_view = coordinates
     cdef np.intp_t[:] index_view = indices
 
-    # get the geometry count per collection
+    # get the geometry count per collection (this raises on negative indices)
     cdef unsigned int[:] coord_counts = np.bincount(indices).astype(np.uint32)
 
     # The final target array
@@ -123,7 +120,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
             for coord_idx in range(geom_size):
                 if _set_xyz(geos_handle, seq, coord_idx, dims, coord_view, idx) == 0:
                     GEOSCoordSeq_destroy_r(geos_handle, seq)
-                    return
+                    return  # GEOSException is raised by get_geos_handle
                 idx += 1
 
             if geometry_type == 0:
@@ -134,11 +131,11 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
                 if ring_closure == 1:
                     if _set_xyz(geos_handle, seq, geom_size, dims, coord_view, idx - geom_size) == 0:
                         GEOSCoordSeq_destroy_r(geos_handle, seq)
-                        return
+                        return  # GEOSException is raised by get_geos_handle
                 geom = GEOSGeom_createLinearRing_r(geos_handle, seq)
 
             if geom == NULL:
-                return
+                return  # GEOSException is raised by get_geos_handle
 
             result_view[geom_idx] = PyGEOS_CreateGeometry(geom, geos_handle)
 
@@ -188,12 +185,13 @@ def get_parts(object[:] array):
                 index_view[idx] = geom_idx
                 part = GEOSGetGeometryN_r(geos_handle, geom, part_idx)
                 if part == NULL:
-                    return
+                    return  # GEOSException is raised by get_geos_handle
 
                 # clone the geometry to keep it separate from the inputs
                 part = GEOSGeom_clone_r(geos_handle, part)
                 if part == NULL:
-                    return
+                    return  # GEOSException is raised by get_geos_handle
+
                 # cast part back to <GEOSGeometry> to discard const qualifier
                 # pending issue #227
                 parts_view[idx] = PyGEOS_CreateGeometry(<GEOSGeometry *>part, geos_handle)
@@ -206,9 +204,12 @@ def get_parts(object[:] array):
 cdef _deallocate_arr(void* handle, np.intp_t[:] arr, Py_ssize_t last_geom_i):
     """Deallocate a temporary geometry array to prevent memory leaks"""
     cdef Py_ssize_t i = 0
+    cdef GEOSGeometry *g
 
     for i in range(last_geom_i):
-        GEOSGeom_destroy_r(handle, <GEOSGeometry *>arr[i])
+        g = <GEOSGeometry *>arr[i]
+        if g != NULL:
+            GEOSGeom_destroy_r(handle, <GEOSGeometry *>arr[i])
 
 
 @cython.boundscheck(False)
@@ -252,16 +253,13 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
         # return immediately if there are no geometries to return
         return np.empty(shape=(0, ), dtype=object)
 
-    if (indices < 0).any():
-        raise ValueError("Negative indices are not allowed.")  
-
     if np.any(indices[1:] < indices[:indices.shape[0] - 1]):
         raise ValueError("The indices should be sorted.")  
 
     cdef object[:] geometries_view = geometries
     cdef int[:] indices_view = indices
 
-    # get the geometry count per collection
+    # get the geometry count per collection (this raises on negative indices)
     cdef int[:] collection_size = np.bincount(indices).astype(np.int32)
 
     # A temporary array for the geometries that will be given to CreateCollection.
@@ -295,7 +293,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                     curr_type = GEOSGeomTypeId_r(geos_handle, geom)
                     if curr_type == -1:
                         _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
-                        return
+                        return  # GEOSException is raised by get_geos_handle
                     if curr_type != expected_type and curr_type != expected_type_alt:
                         _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
                         raise TypeError(
@@ -306,7 +304,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                 geom = GEOSGeom_clone_r(geos_handle, geom)
                 if geom == NULL:
                     _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
-                    return                 
+                    return  # GEOSException is raised by get_geos_handle           
                 temp_geoms_view[coll_size] = <np.intp_t>geom
                 coll_size += 1
 
@@ -318,7 +316,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                 coll_size
             )
             if coll == NULL:
-                return
+                return  # GEOSException is raised by get_geos_handle
 
             result_view[coll_idx] = PyGEOS_CreateGeometry(coll, geos_handle)
 
@@ -359,9 +357,6 @@ def polygons_1d(object shells, object holes, object indices):
         # return immediately if there are no geometries to return
         return np.empty(shape=(0, ), dtype=object)
 
-    if (indices < 0).any():
-        raise ValueError("Negative indices are not allowed.")  
-
     if (indices >= shells.shape[0]).any():
         raise ValueError("Some indices are of bounds of the shells array.")  
 
@@ -373,7 +368,7 @@ def polygons_1d(object shells, object holes, object indices):
     cdef object[:] holes_view = holes
     cdef int[:] indices_view = indices
 
-    # get the holes count per polygon
+    # get the holes count per polygon (this raises on negative indices)
     cdef int[:] hole_count = np.bincount(indices, minlength=n_poly).astype(np.int32)
 
     # A temporary array for the holes that will be given to CreatePolygon
@@ -403,7 +398,7 @@ def polygons_1d(object shells, object holes, object indices):
             # clone the shell as the polygon will take ownership
             shell = GEOSGeom_clone_r(geos_handle, shell)
             if shell == NULL:
-                return   
+                return  # GEOSException is raised by get_geos_handle
 
             # fill the temporary array with holes belonging to this polygon
             for poly_hole_idx in range(hole_count[poly_idx]):
@@ -421,7 +416,7 @@ def polygons_1d(object shells, object holes, object indices):
                 hole = GEOSGeom_clone_r(geos_handle, hole)
                 if hole == NULL:
                     _deallocate_arr(geos_handle, temp_holes_view, n_holes)
-                    return                 
+                    return  # GEOSException is raised by get_geos_handle                 
                 temp_holes_view[n_holes] = <np.intp_t>hole
                 n_holes += 1
 
@@ -433,7 +428,7 @@ def polygons_1d(object shells, object holes, object indices):
                 n_holes
             )
             if poly == NULL:
-                return
+                return  # GEOSException is raised by get_geos_handle
 
             result_view[poly_idx] = PyGEOS_CreateGeometry(poly, geos_handle)
 

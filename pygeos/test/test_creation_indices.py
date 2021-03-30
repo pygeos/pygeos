@@ -1,7 +1,14 @@
 import pygeos
 import pytest
 import numpy as np
-from .common import point, line_string, linear_ring, polygon, empty, assert_geometries_equal
+from .common import (
+    point,
+    line_string,
+    linear_ring,
+    polygon,
+    empty,
+    assert_geometries_equal,
+)
 
 pnts = pygeos.points
 lstrs = pygeos.linestrings
@@ -55,6 +62,7 @@ def test_invalid_indices_simple(func, indices):
 
 
 def test_points_invalid():
+    # attempt to construct a point with 2 coordinates
     with pytest.raises(pygeos.GEOSException):
         pygeos.points([[1, 1], [2, 2]], indices=[0, 0])
 
@@ -83,6 +91,7 @@ def test_linestrings(coordinates, indices, expected):
 
 
 def test_linestrings_invalid():
+    # attempt to construct linestrings with 1 coordinate
     with pytest.raises(pygeos.GEOSException):
         pygeos.linestrings([[1, 1], [2, 2]], indices=[0, 1])
 
@@ -95,9 +104,17 @@ def test_linearrings(coordinates):
     assert_geometries_equal(actual, pygeos.linearrings(coordinates))
 
 
-def test_linearrings_invalid():
+@pytest.mark.parametrize(
+    "coordinates",
+    [
+        ([[1, 1], [2, 1], [1, 1]]),  # too few coordinates
+        ([[1, np.nan], [2, 1], [2, 2], [1, 1]]),  # starting with nan
+    ],
+)
+def test_linearrings_invalid(coordinates):
+    # attempt to construct linestrings with 1 coordinate
     with pytest.raises(pygeos.GEOSException):
-        pygeos.linearrings([[1, 1], [2, 1], [1, 1]], indices=[0, 0, 0])
+        pygeos.linearrings(coordinates, indices=np.zeros(len(coordinates)))
 
 
 @pytest.mark.parametrize(
