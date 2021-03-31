@@ -482,10 +482,12 @@ def test_polygonize_missing():
 
 def test_polygonize_full():
     lines = [
+        None,
         pygeos.Geometry("LINESTRING (0 0, 1 1)"),
         pygeos.Geometry("LINESTRING (0 0, 0 1)"),
         pygeos.Geometry("LINESTRING (0 1, 1 1)"),
         pygeos.Geometry("LINESTRING (1 1, 1 0)"),
+        None,
         pygeos.Geometry("LINESTRING (1 0, 0 0)"),
         pygeos.Geometry("LINESTRING (5 5, 6 6)"),
         pygeos.Geometry("LINESTRING (1 1, 100 100)"),
