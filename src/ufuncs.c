@@ -1855,6 +1855,7 @@ static char polygonize_full_dtypes[5] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT, NPY
 static void polygonize_full_func(char** args, npy_intp* dimensions, npy_intp* steps,
                                  void* data) {
   GEOSGeometry* geom = NULL;
+  GEOSGeometry* geom_copy = NULL;
   unsigned int n_geoms;
 
   GEOSGeometry* collection = NULL;
@@ -1880,7 +1881,13 @@ static void polygonize_full_func(char** args, npy_intp* dimensions, npy_intp* st
       if (geom == NULL) {
         continue;
       }
-      geoms[n_geoms] = geom;
+      // need to copy the input geometries, because the Collection takes ownership
+      geom_copy = GEOSGeom_clone_r(ctx, geom);
+      if (geom_copy == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        goto finish;
+      }
+      geoms[n_geoms] = geom_copy;
       n_geoms++;
     }
     collection =
@@ -1900,7 +1907,7 @@ static void polygonize_full_func(char** args, npy_intp* dimensions, npy_intp* st
     OUTPUT_Y_I(2, cuts);
     OUTPUT_Y_I(3, dangles);
     OUTPUT_Y_I(4, invalidRings);
-    // GEOSGeom_destroy_r(ctx, collection);
+    GEOSGeom_destroy_r(ctx, collection);
     collection = NULL;
   }
 

@@ -521,12 +521,18 @@ def test_polygonize_full_array():
     assert len(result) == 4
     assert all(isinstance(geom, pygeos.Geometry) for geom in result)
     assert result[0] == expected
+    assert all(
+        geom == pygeos.Geometry("GEOMETRYCOLLECTION EMPTY") for geom in result[1:]
+    )
 
     result = pygeos.polygonize_full(np.array([lines]))
     assert len(result) == 4
     assert all(isinstance(geom, np.ndarray) for geom in result)
     assert all(geom.shape == (1,) for geom in result)
     assert result[0][0] == expected
+    assert all(
+        geom[0] == pygeos.Geometry("GEOMETRYCOLLECTION EMPTY") for geom in result[1:]
+    )
 
     arr = np.array([lines, lines])
     assert arr.shape == (2, 3)
@@ -536,6 +542,10 @@ def test_polygonize_full_array():
     assert all(arr.shape == (2,) for arr in result)
     assert result[0][0] == expected
     assert result[0][1] == expected
+    assert all(
+        g == pygeos.Geometry("GEOMETRYCOLLECTION EMPTY")
+        for geom in result[1:] for g in geom
+    )
 
     arr = np.array([[lines, lines], [lines, lines], [lines, lines]])
     assert arr.shape == (3, 2, 3)
@@ -545,6 +555,9 @@ def test_polygonize_full_array():
     assert all(arr.shape == (3, 2) for arr in result)
     for res in result[0].flatten():
         assert res == expected
+    for arr in result[1:]:
+        for res in arr.flatten():
+            assert res == pygeos.Geometry("GEOMETRYCOLLECTION EMPTY")
 
 
 @pytest.mark.skipif(
