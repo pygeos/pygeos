@@ -1,4 +1,6 @@
 from . import GeometryType
+from . import Geometry  # NOQA
+from . import box  # NOQA
 from . import lib
 from .decorators import multithreading_enabled
 from .decorators import requires_geos

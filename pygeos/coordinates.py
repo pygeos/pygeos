@@ -1,5 +1,5 @@
 from . import lib
-
+from . import Geometry  # NOQA
 import numpy as np
 
 
