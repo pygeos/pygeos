@@ -50,6 +50,9 @@ def boundary(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
         This function will return None for geometrycollections.
+    **kwargs : dict
+        For other keyword-only arguments, see the
+        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
