@@ -84,7 +84,7 @@ def line_locate_point(line, other, normalized=False, **kwargs):
 
 
 @multithreading_enabled
-def line_merge(line):
+def line_merge(line, **kwargs):
     """Returns (multi)linestrings formed by combining the lines in a
     multilinestrings.
 
@@ -101,7 +101,7 @@ def line_merge(line):
     >>> line_merge(Geometry("LINESTRING EMPTY"))
     <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>
     """
-    return lib.line_merge(line)
+    return lib.line_merge(line, **kwargs)
 
 
 def shared_paths(a, b, **kwargs):

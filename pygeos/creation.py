@@ -163,7 +163,7 @@ def box(xmin, ymin, xmax, ymax, ccw=True, **kwargs):
     return lib.box(xmin, ymin, xmax, ymax, ccw, **kwargs)
 
 
-def multipoints(geometries, indices=None):
+def multipoints(geometries, indices=None, **kwargs):
     """Create multipoints from arrays of points
 
     Parameters
@@ -182,12 +182,12 @@ def multipoints(geometries, indices=None):
     ):
         geometries = points(geometries)
     if indices is None:
-        return lib.create_collection(geometries, typ)
+        return lib.create_collection(geometries, typ, **kwargs)
     else:
         return collections_1d(geometries, indices, typ)
 
 
-def multilinestrings(geometries, indices=None):
+def multilinestrings(geometries, indices=None, **kwargs):
     """Create multilinestrings from arrays of linestrings
 
     Parameters
@@ -207,12 +207,12 @@ def multilinestrings(geometries, indices=None):
         geometries = linestrings(geometries)
 
     if indices is None:
-        return lib.create_collection(geometries, typ)
+        return lib.create_collection(geometries, typ, **kwargs)
     else:
         return collections_1d(geometries, indices, typ)
 
 
-def multipolygons(geometries, indices=None):
+def multipolygons(geometries, indices=None, **kwargs):
     """Create multipolygons from arrays of polygons
 
     Parameters
@@ -231,12 +231,12 @@ def multipolygons(geometries, indices=None):
     ):
         geometries = polygons(geometries)
     if indices is None:
-        return lib.create_collection(geometries, typ)
+        return lib.create_collection(geometries, typ, **kwargs)
     else:
         return collections_1d(geometries, indices, typ)
 
 
-def geometrycollections(geometries, indices=None):
+def geometrycollections(geometries, indices=None, **kwargs):
     """Create geometrycollections from arrays of geometries
 
     Parameters
@@ -250,7 +250,7 @@ def geometrycollections(geometries, indices=None):
     """
     typ = GeometryType.GEOMETRYCOLLECTION
     if indices is None:
-        return lib.create_collection(geometries, typ)
+        return lib.create_collection(geometries, typ, **kwargs)
     else:
         return collections_1d(geometries, indices, typ)
 
