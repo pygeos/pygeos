@@ -1,7 +1,11 @@
-import numpy as np
-from . import lib, Geometry, GeometryType, box
-from .decorators import requires_geos, UnsupportedGEOSOperation
+from . import GeometryType
+from . import lib
 from .decorators import multithreading_enabled
+from .decorators import requires_geos
+from .decorators import UnsupportedGEOSOperation
+
+import numpy as np
+
 
 __all__ = [
     "difference",

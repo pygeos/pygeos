@@ -1,19 +1,20 @@
-import pygeos
-import pytest
-import numpy as np
-from numpy.testing import assert_array_equal, assert_allclose
-
-from .common import point_polygon_testdata
-from .common import point
+from .common import empty
+from .common import geometry_collection
 from .common import line_string
 from .common import linear_ring
+from .common import multi_line_string
+from .common import multi_point
+from .common import multi_polygon
+from .common import point
+from .common import point_polygon_testdata
 from .common import polygon
 from .common import polygon_with_hole
-from .common import multi_point
-from .common import multi_line_string
-from .common import multi_polygon
-from .common import geometry_collection
-from .common import empty
+from numpy.testing import assert_allclose
+from numpy.testing import assert_array_equal
+
+import numpy as np
+import pygeos
+import pytest
 
 
 @pytest.mark.parametrize(
@@ -191,7 +192,7 @@ def test_hausdorff_distance_densify_empty():
         (
             pygeos.linestrings([[0, 0], [50, 200], [100, 0], [150, 200], [200, 0]]),
             pygeos.linestrings([[0, 200], [200, 150], [0, 100], [200, 50], [0, 0]]),
-            200
+            200,
         ),
         # same geometries but different curve direction results in maximum
         # distance between vertices on the lines.
@@ -204,13 +205,13 @@ def test_hausdorff_distance_densify_empty():
         (
             pygeos.linestrings([[0, 0], [50, 200], [100, 0], [150, 200], [200, 0]]),
             pygeos.linestrings([[0, 0], [200, 50], [0, 100], [200, 150], [0, 200]]),
-            282.842712474619
+            282.842712474619,
         ),
         # example from GEOS tests
         (
             pygeos.linestrings([[0, 0], [100, 0]]),
             pygeos.linestrings([[0, 0], [50, 50], [100, 0]]),
-            70.7106781186548
+            70.7106781186548,
         ),
     ],
 )
@@ -228,8 +229,8 @@ def test_frechet_distance(geom1, geom2, expected):
             pygeos.linestrings([[0, 0], [100, 0]]),
             pygeos.linestrings([[0, 0], [50, 50], [100, 0]]),
             0.001,
-            50
-        ),
+            50,
+        )
     ],
 )
 def test_frechet_distance_densify(geom1, geom2, densify, expected):
@@ -259,7 +260,7 @@ def test_frechet_densify_ndarray():
     actual = pygeos.frechet_distance(
         pygeos.linestrings([[0, 0], [100, 0]]),
         pygeos.linestrings([[0, 0], [50, 50], [100, 0]]),
-        densify=[0.1, 0.2, 1]
+        densify=[0.1, 0.2, 1],
     )
     expected = np.array([50, 50.99019514, 70.7106781186548])
     np.testing.assert_array_almost_equal(actual, expected)
@@ -272,17 +273,10 @@ def test_frechet_densify_nan():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
-@pytest.mark.parametrize(
-    "densify",
-    [
-        0,
-        -1,
-        2,
-    ]
-)
+@pytest.mark.parametrize("densify", [0, -1, 2])
 def test_frechet_densify_invalid_values(densify):
     with pytest.raises(pygeos.GEOSException, match="Fraction is not in range"):
-        actual = pygeos.frechet_distance(line_string, line_string, densify=densify)
+        pygeos.frechet_distance(line_string, line_string, densify=densify)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")

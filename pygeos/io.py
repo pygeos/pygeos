@@ -1,15 +1,16 @@
+from . import geos_capi_version_string
+from . import lib
 from collections.abc import Sized
 
 import numpy as np
 
-from . import Geometry  # noqa
-from . import lib
-from . import geos_capi_version_string
 
+from . import Geometry  # noqa
 
 shapely_geos_version = None
 ShapelyGeometry = None
 _shapely_checked = False
+
 
 def check_shapely_version():
     global shapely_geos_version
@@ -18,8 +19,8 @@ def check_shapely_version():
 
     if not _shapely_checked:
         try:
-            from shapely.geos import geos_version_string as shapely_geos_version
             from shapely.geometry.base import BaseGeometry as ShapelyGeometry
+            from shapely.geos import geos_version_string as shapely_geos_version
         except ImportError:
             pass
 
@@ -35,7 +36,7 @@ def to_wkt(
     trim=True,
     output_dimension=3,
     old_3d=False,
-    **kwargs
+    **kwargs,
 ):
     """
     Converts to the Well-Known Text (WKT) representation of a Geometry.

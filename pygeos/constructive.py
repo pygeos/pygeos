@@ -1,9 +1,12 @@
-import numpy as np
-from . import Geometry  # NOQA
 from . import lib
-from .decorators import requires_geos, multithreading_enabled
+from .decorators import multithreading_enabled
+from .decorators import requires_geos
 from .enum import ParamEnum
 
+import numpy as np
+
+
+from . import Geometry  # NOQA
 
 __all__ = [
     "BufferCapStyles",

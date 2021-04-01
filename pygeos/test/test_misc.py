@@ -1,13 +1,13 @@
-from string import ascii_lowercase
-
-import pygeos
-from pygeos.decorators import requires_geos, multithreading_enabled
-from unittest import mock
-import pytest
 from itertools import chain
-import sys
+from pygeos.decorators import multithreading_enabled
+from pygeos.decorators import requires_geos
+from string import ascii_lowercase
+from unittest import mock
 
 import numpy as np
+import pygeos
+import pytest
+import sys
 
 
 @pytest.fixture

@@ -1,7 +1,7 @@
-from contextlib import contextmanager
-from functools import wraps
-import numpy as np
 from . import lib
+from functools import wraps
+
+import numpy as np
 
 
 class UnsupportedGEOSOperation(ImportError):

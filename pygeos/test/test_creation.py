@@ -1,17 +1,15 @@
+from .common import geometry_collection
+from .common import line_string
+from .common import linear_ring
+from .common import multi_line_string
+from .common import multi_point
+from .common import multi_polygon
+from .common import point
+from .common import polygon
+
+import numpy as np
 import pygeos
 import pytest
-import numpy as np
-
-from .common import (
-    point,
-    line_string,
-    linear_ring,
-    polygon,
-    multi_point,
-    multi_line_string,
-    multi_polygon,
-    geometry_collection,
-)
 
 
 def box_tpl(x1, y1, x2, y2):
@@ -137,7 +135,7 @@ def test_linearrings_all_nan():
     coords = np.full((4, 2), np.nan)
     with pytest.raises(pygeos.GEOSException):
         pygeos.linearrings(coords)
-    
+
 
 def test_polygon_from_linearring():
     actual = pygeos.polygons(pygeos.linearrings(box_tpl(0, 0, 1, 1)))
@@ -395,9 +393,9 @@ def with_point_in_registry():
 
 
 def test_subclasses(with_point_in_registry):
-    for point in [Point("POINT (1 1)"), pygeos.points(1, 1)]:
-        assert isinstance(point, Point)
-        assert pygeos.get_type_id(point) == pygeos.GeometryType.POINT
+    for _point in [Point("POINT (1 1)"), pygeos.points(1, 1)]:
+        assert isinstance(_point, Point)
+        assert pygeos.get_type_id(_point) == pygeos.GeometryType.POINT
         assert point.x == 1
 
 

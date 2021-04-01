@@ -1,24 +1,29 @@
-import pytest
-import pygeos
-from pygeos import apply, count_coordinates, get_coordinates, set_coordinates
-import numpy as np
-from numpy.testing import assert_equal, assert_allclose
-
 from .common import empty
-from .common import point
 from .common import empty_point
-from .common import point_z
+from .common import geometry_collection
+from .common import geometry_collection_z
 from .common import line_string
 from .common import line_string_z
 from .common import linear_ring
-from .common import polygon
-from .common import polygon_z
-from .common import polygon_with_hole
-from .common import multi_point
 from .common import multi_line_string
+from .common import multi_point
 from .common import multi_polygon
-from .common import geometry_collection
-from .common import geometry_collection_z
+from .common import point
+from .common import point_z
+from .common import polygon
+from .common import polygon_with_hole
+from .common import polygon_z
+from numpy.testing import assert_allclose
+from numpy.testing import assert_equal
+from pygeos import apply
+from pygeos import count_coordinates
+from pygeos import get_coordinates
+from pygeos import set_coordinates
+
+import numpy as np
+import pygeos
+import pytest
+
 
 nested_2 = pygeos.geometrycollections([geometry_collection, point])
 nested_3 = pygeos.geometrycollections([nested_2, point])
@@ -77,7 +82,7 @@ def test_get_coords(geoms, x, y, include_z):
     if not include_z:
         expected = np.array([x, y], np.float64).T
     else:
-        expected = np.array([x, y, [np.nan]*len(x)], np.float64).T
+        expected = np.array([x, y, [np.nan] * len(x)], np.float64).T
     assert_equal(actual, expected)
 
 

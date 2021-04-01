@@ -1,8 +1,11 @@
+from . import lib
+from .decorators import multithreading_enabled
+from .decorators import requires_geos
+
 import warnings
 
-from . import lib
+
 from . import Geometry  # NOQA
-from .decorators import multithreading_enabled, requires_geos
 
 __all__ = [
     "has_z",
@@ -136,6 +139,7 @@ def is_empty(geometry, **kwargs):
     """
     return lib.is_empty(geometry, **kwargs)
 
+
 @multithreading_enabled
 def is_geometry(geometry, **kwargs):
     """Returns True if the object is a geometry
@@ -161,6 +165,7 @@ def is_geometry(geometry, **kwargs):
     False
     """
     return lib.is_geometry(geometry, **kwargs)
+
 
 @multithreading_enabled
 def is_missing(geometry, **kwargs):

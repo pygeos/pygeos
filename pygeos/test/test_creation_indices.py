@@ -1,14 +1,13 @@
+from .common import assert_geometries_equal
+from .common import line_string
+from .common import linear_ring
+from .common import point
+from .common import polygon
+
+import numpy as np
 import pygeos
 import pytest
-import numpy as np
-from .common import (
-    point,
-    line_string,
-    linear_ring,
-    polygon,
-    empty,
-    assert_geometries_equal,
-)
+
 
 pnts = pygeos.points
 lstrs = pygeos.linestrings
