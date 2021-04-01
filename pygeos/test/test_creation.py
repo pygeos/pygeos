@@ -396,7 +396,7 @@ def test_subclasses(with_point_in_registry):
     for _point in [Point("POINT (1 1)"), pygeos.points(1, 1)]:
         assert isinstance(_point, Point)
         assert pygeos.get_type_id(_point) == pygeos.GeometryType.POINT
-        assert point.x == 1
+        assert _point.x == 1
 
 
 def test_prepare():
