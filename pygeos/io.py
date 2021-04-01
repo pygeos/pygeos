@@ -181,7 +181,7 @@ def from_wkt(geometry, on_invalid="raise", **kwargs):
     ----------
     geometry : str or array_like
         The WKT string(s) to convert.
-    on_invalid : {"raise", "warn", "ignore"} (default: "raise")
+    on_invalid : {"raise", "warn", "ignore"}
         - raise: an exception will be raised if WKT input geometries are invalid.
         - warn: a warning will be raised and invalid WKT geometries will be
           returned as `None`.
@@ -212,7 +212,7 @@ def from_wkb(geometry, on_invalid="raise", **kwargs):
     ----------
     geometry : str or array_like
         The WKB byte object(s) to convert.
-    on_invalid : {"raise", "warn", "ignore"} (default: "raise")
+    on_invalid : {"raise", "warn", "ignore"}
         - raise: an exception will be raised if WKB input geometries are invalid.
         - warn: a warning will be raised and invalid WKB geometries will be
           returned as `None`.
