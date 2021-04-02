@@ -1,11 +1,8 @@
-from . import lib
-from .decorators import multithreading_enabled
-from .decorators import requires_geos
-
 import numpy as np
 
-
 from . import Geometry  # NOQA
+from . import lib
+from .decorators import multithreading_enabled, requires_geos
 
 __all__ = [
     "area",

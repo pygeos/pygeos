@@ -1,15 +1,18 @@
-from .common import geometry_collection
-from .common import line_string
-from .common import linear_ring
-from .common import multi_line_string
-from .common import multi_point
-from .common import multi_polygon
-from .common import point
-from .common import polygon
-
 import numpy as np
-import pygeos
 import pytest
+
+import pygeos
+
+from .common import (
+    geometry_collection,
+    line_string,
+    linear_ring,
+    multi_line_string,
+    multi_point,
+    multi_polygon,
+    point,
+    polygon,
+)
 
 
 def box_tpl(x1, y1, x2, y2):

@@ -20,5 +20,5 @@ jobs:
         run: flake8 pygeos
         
       - name: Run isort
-        run: isort pygeos --check-only
+        run: isort pygeos --check-only --extend-skip __init__.py
   

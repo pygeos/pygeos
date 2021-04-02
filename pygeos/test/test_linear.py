@@ -1,16 +1,19 @@
-from .common import empty_line_string
-from .common import empty_point
-from .common import line_string
-from .common import linear_ring
-from .common import multi_line_string
-from .common import multi_point
-from .common import multi_polygon
-from .common import point
-from .common import polygon
-
 import numpy as np
-import pygeos
 import pytest
+
+import pygeos
+
+from .common import (
+    empty_line_string,
+    empty_point,
+    line_string,
+    linear_ring,
+    multi_line_string,
+    multi_point,
+    multi_polygon,
+    point,
+    polygon,
+)
 
 
 def test_line_interpolate_point_geom_array():

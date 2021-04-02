@@ -1,7 +1,8 @@
-from . import lib
 from functools import wraps
 
 import numpy as np
+
+from . import lib
 
 
 class UnsupportedGEOSOperation(ImportError):

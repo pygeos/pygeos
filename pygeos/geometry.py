@@ -1,13 +1,10 @@
-from . import _geometry
-from . import lib
-from .decorators import multithreading_enabled
-from .decorators import requires_geos
 from enum import IntEnum
 
 import numpy as np
 
-
 from . import Geometry  # NOQA
+from . import _geometry, lib
+from .decorators import multithreading_enabled, requires_geos
 
 __all__ = [
     "GeometryType",

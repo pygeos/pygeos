@@ -1,13 +1,9 @@
-from . import GeometryType
-from . import Geometry  # NOQA
-from . import box  # NOQA
-from . import lib
-from .decorators import multithreading_enabled
-from .decorators import requires_geos
-from .decorators import UnsupportedGEOSOperation
-
 import numpy as np
 
+from . import box  # NOQA
+from . import Geometry  # NOQA
+from . import GeometryType, lib
+from .decorators import multithreading_enabled, requires_geos, UnsupportedGEOSOperation
 
 __all__ = [
     "difference",

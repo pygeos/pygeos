@@ -1,11 +1,9 @@
-from . import geos_capi_version_string
-from . import lib
 from collections.abc import Sized
 
 import numpy as np
 
-
 from . import Geometry  # noqa
+from . import geos_capi_version_string, lib
 
 shapely_geos_version = None
 ShapelyGeometry = None

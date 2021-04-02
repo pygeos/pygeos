@@ -1,14 +1,11 @@
-from .common import all_types
-from .common import multi_polygon
-from .common import point
-from .common import polygon
+import numpy as np
+import pytest
+
+import pygeos
 from pygeos import Geometry
 from pygeos.decorators import UnsupportedGEOSOperation
 
-import numpy as np
-import pygeos
-import pytest
-
+from .common import all_types, multi_polygon, point, polygon
 
 # fixed-precision operations raise GEOS exceptions on mixed dimension geometry collections
 all_single_types = [g for g in all_types if not pygeos.get_type_id(g) == 7]

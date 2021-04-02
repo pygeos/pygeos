@@ -1,19 +1,20 @@
-from .common import all_types
-from .common import empty
-from .common import empty_line_string
-from .common import empty_point
-from .common import empty_polygon
-from .common import line_string
-from .common import multi_point
-from .common import point
-from .common import point_z
-from pygeos import Geometry
-from pygeos import GEOSException
-
 import numpy as np
-import pygeos
 import pytest
 
+import pygeos
+from pygeos import Geometry, GEOSException
+
+from .common import (
+    all_types,
+    empty,
+    empty_line_string,
+    empty_point,
+    empty_polygon,
+    line_string,
+    multi_point,
+    point,
+    point_z,
+)
 
 CONSTRUCTIVE_NO_ARGS = (
     pygeos.boundary,

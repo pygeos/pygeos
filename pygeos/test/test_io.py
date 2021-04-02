@@ -1,14 +1,13 @@
-from .common import all_types
-from .common import empty_point
-from .common import point
-from .common import point_z
+import pickle
+import struct
 from unittest import mock
 
 import numpy as np
-import pickle
-import pygeos
 import pytest
-import struct
+
+import pygeos
+
+from .common import all_types, empty_point, point, point_z
 
 # fmt: off
 POINT11_WKB = b"\x01\x01\x00\x00\x00" + struct.pack("<2d", 1.0, 1.0)

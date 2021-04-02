@@ -1,7 +1,7 @@
-from . import lib
-from . import Geometry  # NOQA
 import numpy as np
 
+from . import Geometry  # NOQA
+from . import lib
 
 __all__ = ["apply", "count_coordinates", "get_coordinates", "set_coordinates"]
 

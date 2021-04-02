@@ -1,17 +1,20 @@
-from .common import assert_decreases_refcount
-from .common import assert_increases_refcount
-from .common import empty
-from .common import empty_line_string
-from .common import empty_point
-from .common import point
+import math
+
+import numpy as np
+import pytest
 from numpy.testing import assert_array_equal
+
+import pygeos
 from pygeos import box
 
-import math
-import numpy as np
-import pygeos
-import pytest
-
+from .common import (
+    assert_decreases_refcount,
+    assert_increases_refcount,
+    empty,
+    empty_line_string,
+    empty_point,
+    point,
+)
 
 # the distance between 2 points spaced at whole numbers along a diagonal
 HALF_UNIT_DIAG = math.sqrt(2) / 2

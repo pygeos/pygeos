@@ -1,20 +1,22 @@
-from .common import empty
-from .common import geometry_collection
-from .common import line_string
-from .common import linear_ring
-from .common import multi_line_string
-from .common import multi_point
-from .common import multi_polygon
-from .common import point
-from .common import point_polygon_testdata
-from .common import polygon
-from .common import polygon_with_hole
-from numpy.testing import assert_allclose
-from numpy.testing import assert_array_equal
-
 import numpy as np
-import pygeos
 import pytest
+from numpy.testing import assert_allclose, assert_array_equal
+
+import pygeos
+
+from .common import (
+    empty,
+    geometry_collection,
+    line_string,
+    linear_ring,
+    multi_line_string,
+    multi_point,
+    multi_polygon,
+    point,
+    point_polygon_testdata,
+    polygon,
+    polygon_with_hole,
+)
 
 
 @pytest.mark.parametrize(
