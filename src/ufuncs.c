@@ -2176,14 +2176,17 @@ static void create_collection_func(char** args, npy_intp* dimensions, npy_intp* 
                                    void* data) {
   GEOSGeometry *g, *g_copy;
   int n_geoms, type, actual_type, expected_type, alt_expected_type;
+  GEOSGeometry **temp_geoms, **geom_arr;
 
-  GEOS_INIT;
+  // allocate a temporary array to store output GEOSGeometry objects
+  geom_arr = malloc(sizeof(void*) * dimensions[0]);
+  CHECK_ALLOC(geom_arr)
 
-  GEOSGeometry** geoms = malloc(sizeof(void*) * dimensions[1]);
-  if (geoms == NULL) {
-    errstate = PGERR_NO_MALLOC;
-    goto finish;
-  }
+  // allocate a temporary array to store geometries to put in a collection
+  temp_geoms = malloc(sizeof(void*) * dimensions[1]);
+  CHECK_ALLOC(temp_geoms)
+
+  GEOS_INIT_THREADS;
 
   BINARY_SINGLE_COREDIM_LOOP_OUTER {
     type = *(int*)ip2;
@@ -2206,6 +2209,7 @@ static void create_collection_func(char** args, npy_intp* dimensions, npy_intp* 
         break;
       default:
         errstate = PGERR_GEOMETRY_TYPE;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
         goto finish;
     }
     n_geoms = 0;
@@ -2213,6 +2217,8 @@ static void create_collection_func(char** args, npy_intp* dimensions, npy_intp* 
     BINARY_SINGLE_COREDIM_LOOP_INNER {
       if (!get_geom(*(GeometryObject**)cp1, &g)) {
         errstate = PGERR_NOT_A_GEOMETRY;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        destroy_geom_arr(ctx, temp_geoms, n_geoms - 1);
         goto finish;
       }
       if (g == NULL) {
@@ -2222,30 +2228,49 @@ static void create_collection_func(char** args, npy_intp* dimensions, npy_intp* 
         actual_type = GEOSGeomTypeId_r(ctx, g);
         if (actual_type == -1) {
           errstate = PGERR_GEOS_EXCEPTION;
+          destroy_geom_arr(ctx, geom_arr, i - 1);
+          destroy_geom_arr(ctx, temp_geoms, n_geoms - 1);
           goto finish;
         }
         if ((actual_type != expected_type) & (actual_type != alt_expected_type)) {
           errstate = PGERR_GEOMETRY_TYPE;
+          destroy_geom_arr(ctx, geom_arr, i - 1);
+          destroy_geom_arr(ctx, temp_geoms, n_geoms - 1);
           goto finish;
         }
       }
       g_copy = GEOSGeom_clone_r(ctx, g);
       if (g_copy == NULL) {
         errstate = PGERR_GEOS_EXCEPTION;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        destroy_geom_arr(ctx, temp_geoms, n_geoms - 1);
         goto finish;
       }
-      geoms[n_geoms] = g_copy;
+      temp_geoms[n_geoms] = g_copy;
       n_geoms++;
     }
-    GEOSGeometry* ret_ptr = GEOSGeom_createCollection_r(ctx, type, geoms, n_geoms);
-    OUTPUT_Y;
+    geom_arr[i] = GEOSGeom_createCollection_r(ctx, type, temp_geoms, n_geoms);
+    if (geom_arr[i] == NULL) {
+      // We will have a memory leak now (https://trac.osgeo.org/geos/ticket/1111)
+      // but we have covered all known cases that GEOS would error by pre-emptively
+      // checking if all inputs are the correct geometry types.
+      errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
+    };
   }
 
 finish:
-  if (geoms != NULL) {
-    free(geoms);
+  GEOS_FINISH_THREADS;
+
+  // fill the numpy array with PyObjects while holding the GIL
+  if (errstate == PGERR_SUCCESS) {
+    geom_arr_to_npy(geom_arr, args[2], steps[2], dimensions[0]);
   }
-  GEOS_FINISH;
+  free(geom_arr);
+  if (temp_geoms != NULL) {
+    free(temp_geoms);
+  }
 }
 static PyUFuncGenericFunction create_collection_funcs[1] = {&create_collection_func};
 

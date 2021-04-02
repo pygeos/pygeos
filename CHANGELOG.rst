@@ -9,9 +9,8 @@ Version 0.10 (unreleased)
 * Addition of ``nearest`` and ``nearest_all`` functions to ``STRtree`` for
   GEOS >= 3.6 to find the nearest neighbors (#272).
 * Enable bulk construction of geometries with different number of coordinates
-  by optionally taking index arrays in all constructors (#230, #322, #326).
-* Released GIL for ``points``, ``linestrings``, ``linearrings``, and
-  ``polygons`` (#310, #326).
+  by optionally taking index arrays in all creation functions (#230, #322, #326).
+* Released the GIL in all geometry creation functions (#310, #326).
 * Added the option to return the geometry index in ``get_coordinates`` (#318).
 * Updated ``box`` ufunc to use internal C function for creating polygon
   (about 2x faster) and added ``ccw`` parameter to create polygon in

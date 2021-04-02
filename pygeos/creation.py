@@ -136,7 +136,7 @@ def polygons(shells, holes=None, indices=None, **kwargs):
         raise TypeError("Indices provided without a holes array.")
     elif holes is None:
         # no holes provided: initialize an empty holes array matching shells
-        shape = shells.shape + (0, ) if isinstance(shells, np.ndarray) else (0, )
+        shape = shells.shape + (0,) if isinstance(shells, np.ndarray) else (0,)
         holes = np.empty(shape, dtype=object)
     else:
         holes = np.asarray(holes)
@@ -150,6 +150,7 @@ def polygons(shells, holes=None, indices=None, **kwargs):
         return polygons_1d(shells, holes, indices)
 
 
+@multithreading_enabled
 def box(xmin, ymin, xmax, ymax, ccw=True, **kwargs):
     """Create box polygons.
 
@@ -176,6 +177,7 @@ def box(xmin, ymin, xmax, ymax, ccw=True, **kwargs):
     return lib.box(xmin, ymin, xmax, ymax, ccw, **kwargs)
 
 
+@multithreading_enabled
 def multipoints(geometries, indices=None):
     """Create multipoints from arrays of points
 
@@ -200,6 +202,7 @@ def multipoints(geometries, indices=None):
         return collections_1d(geometries, indices, typ)
 
 
+@multithreading_enabled
 def multilinestrings(geometries, indices=None):
     """Create multilinestrings from arrays of linestrings
 
@@ -225,6 +228,7 @@ def multilinestrings(geometries, indices=None):
         return collections_1d(geometries, indices, typ)
 
 
+@multithreading_enabled
 def multipolygons(geometries, indices=None):
     """Create multipolygons from arrays of polygons
 
@@ -249,6 +253,7 @@ def multipolygons(geometries, indices=None):
         return collections_1d(geometries, indices, typ)
 
 
+@multithreading_enabled
 def geometrycollections(geometries, indices=None):
     """Create geometrycollections from arrays of geometries
 
