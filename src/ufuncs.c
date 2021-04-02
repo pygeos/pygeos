@@ -380,15 +380,6 @@ static void* GEOSNormalize_r_with_clone(void* context, void* geom) {
   return new_geom;
 }
 static void* normalize_data[1] = {GEOSNormalize_r_with_clone};
-/* a linear-ring to polygon conversion function */
-static void* GEOSLinearRingToPolygon(void* context, void* geom) {
-  void* shell = GEOSGeom_clone_r(context, geom);
-  if (shell == NULL) {
-    return NULL;
-  }
-  return GEOSGeom_createPolygon_r(context, shell, NULL, 0);
-}
-static void* polygons_without_holes_data[1] = {GEOSLinearRingToPolygon};
 #if GEOS_SINCE_3_8_0
 static void* build_area_data[1] = {GEOSBuildArea_r};
 static void* make_valid_data[1] = {GEOSMakeValid_r};
@@ -1229,7 +1220,7 @@ static PyUFuncGenericFunction YYd_Y_funcs[1] = {&YYd_Y_func};
 
 /* Define functions with unique call signatures */
 static char box_dtypes[6] = {NPY_DOUBLE, NPY_DOUBLE, NPY_DOUBLE,
-                             NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
+                             NPY_DOUBLE, NPY_BOOL,   NPY_OBJECT};
 static void box_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
   char *ip1 = args[0], *ip2 = args[1], *ip3 = args[2], *ip4 = args[3], *ip5 = args[4];
   npy_intp is1 = steps[0], is2 = steps[1], is3 = steps[2], is4 = steps[3], is5 = steps[4];
@@ -2073,59 +2064,112 @@ finish:
 }
 static PyUFuncGenericFunction linearrings_funcs[1] = {&linearrings_func};
 
-static char polygons_with_holes_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT};
-static void polygons_with_holes_func(char** args, npy_intp* dimensions, npy_intp* steps,
-                                     void* data) {
+static char polygons_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT};
+static void polygons_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                          void* data) {
   GEOSGeometry *hole, *shell, *hole_copy, *shell_copy;
+  GEOSGeometry **holes, **geom_arr;
+  int geom_type;
   int n_holes;
 
-  GEOS_INIT;
+  // allocate a temporary array to store output GEOSGeometry objects
+  geom_arr = malloc(sizeof(void*) * dimensions[0]);
+  CHECK_ALLOC(geom_arr)
 
-  GEOSGeometry** holes = malloc(sizeof(void*) * dimensions[1]);
-  if (holes == NULL) {
-    errstate = PGERR_NO_MALLOC;
-    goto finish;
-  }
+  // allocate a temporary array to store holes
+  holes = malloc(sizeof(void*) * dimensions[1]);
+  CHECK_ALLOC(holes)
+
+  GEOS_INIT_THREADS;
 
   BINARY_SINGLE_COREDIM_LOOP_OUTER {
     if (!get_geom(*(GeometryObject**)ip1, &shell)) {
       errstate = PGERR_NOT_A_GEOMETRY;
-      goto finish;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
     }
-    shell_copy = GEOSGeom_clone_r(ctx, shell);
-    if (shell_copy == NULL) {
+    if (shell == NULL) {
+      // set None if shell is None (ignoring holes)
+      geom_arr[i] = NULL;
+      continue;
+    }
+    geom_type = GEOSGeomTypeId_r(ctx, shell);
+    // Pre-emptively check the geometry type (https://trac.osgeo.org/geos/ticket/1111)
+    if (geom_type == -1) {
       errstate = PGERR_GEOS_EXCEPTION;
-      goto finish;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
+    } else if (geom_type != 2) {
+      errstate = PGERR_GEOMETRY_TYPE;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
     }
     n_holes = 0;
     cp1 = ip2;
     BINARY_SINGLE_COREDIM_LOOP_INNER {
       if (!get_geom(*(GeometryObject**)cp1, &hole)) {
         errstate = PGERR_NOT_A_GEOMETRY;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        destroy_geom_arr(ctx, holes, n_holes - 1);
         goto finish;
       }
       if (hole == NULL) {
         continue;
       }
+      // Pre-emptively check the geometry type (https://trac.osgeo.org/geos/ticket/1111)
+      geom_type = GEOSGeomTypeId_r(ctx, hole);
+      if (geom_type == -1) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        destroy_geom_arr(ctx, holes, n_holes - 1);
+        goto finish;
+      } else if (geom_type != 2) {
+        errstate = PGERR_GEOMETRY_TYPE;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        destroy_geom_arr(ctx, holes, n_holes - 1);
+        goto finish;
+      }
       hole_copy = GEOSGeom_clone_r(ctx, hole);
       if (hole_copy == NULL) {
         errstate = PGERR_GEOS_EXCEPTION;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        destroy_geom_arr(ctx, holes, n_holes - 1);
         goto finish;
       }
       holes[n_holes] = hole_copy;
       n_holes++;
     }
-    GEOSGeometry* ret_ptr = GEOSGeom_createPolygon_r(ctx, shell_copy, holes, n_holes);
-    OUTPUT_Y;
+    shell_copy = GEOSGeom_clone_r(ctx, shell);
+    if (shell_copy == NULL) {
+      errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      destroy_geom_arr(ctx, holes, n_holes - 1);
+      break;
+    }
+    geom_arr[i] = GEOSGeom_createPolygon_r(ctx, shell_copy, holes, n_holes);
+    if (geom_arr[i] == NULL) {
+      // We will have a memory leak now (https://trac.osgeo.org/geos/ticket/1111)
+      // but we have covered all known cases that GEOS would error by pre-emptively
+      // checking if all inputs are linearrings.
+      errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
+    };
   }
 
 finish:
+  GEOS_FINISH_THREADS;
+
+  // fill the numpy array with PyObjects while holding the GIL
+  if (errstate == PGERR_SUCCESS) {
+    geom_arr_to_npy(geom_arr, args[2], steps[2], dimensions[0]);
+  }
+  free(geom_arr);
   if (holes != NULL) {
     free(holes);
   }
-  GEOS_FINISH;
 }
-static PyUFuncGenericFunction polygons_with_holes_funcs[1] = {&polygons_with_holes_func};
+static PyUFuncGenericFunction polygons_funcs[1] = {&polygons_func};
 
 static char create_collection_dtypes[3] = {NPY_OBJECT, NPY_INT, NPY_OBJECT};
 static void create_collection_func(char** args, npy_intp* dimensions, npy_intp* steps,
@@ -2890,8 +2934,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_GENERALIZED(linestrings, 1, "(i, d)->()");
   DEFINE_GENERALIZED(linearrings, 1, "(i, d)->()");
   DEFINE_GENERALIZED(bounds, 1, "()->(n)");
-  DEFINE_Y_Y(polygons_without_holes);
-  DEFINE_GENERALIZED(polygons_with_holes, 2, "(),(i)->()");
+  DEFINE_GENERALIZED(polygons, 2, "(),(i)->()");
   DEFINE_GENERALIZED(create_collection, 2, "(i),()->()");
 
   DEFINE_CUSTOM(from_wkb, 2);

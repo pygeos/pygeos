@@ -333,6 +333,7 @@ def polygons_1d(object shells, object holes, object indices):
     cdef Py_ssize_t hole_idx_1 = 0
     cdef Py_ssize_t poly_idx = 0
     cdef unsigned int n_holes = 0
+    cdef int geom_type = 0
     cdef Py_ssize_t poly_hole_idx = 0
     cdef GEOSGeometry *shell = NULL
     cdef GEOSGeometry *hole = NULL
@@ -397,6 +398,14 @@ def polygons_1d(object shells, object holes, object indices):
                 result_view[poly_idx] = PyGEOS_CreateGeometry(NULL, geos_handle)
                 continue
 
+            geom_type = GEOSGeomTypeId_r(geos_handle, shell)
+            if geom_type == -1:
+                return  # GEOSException is raised by get_geos_handle
+            elif geom_type != 2:
+                raise TypeError(
+                    f"One of the shells has unexpected geometry type {geom_type}."
+                )
+
             # fill the temporary array with holes belonging to this polygon
             for poly_hole_idx in range(hole_count[poly_idx]):
                 if PyGEOS_GetGEOSGeometry(<PyObject *>holes_view[hole_idx_1 + poly_hole_idx], &hole) == 0:
@@ -408,6 +417,17 @@ def polygons_1d(object shells, object holes, object indices):
                 # ignore missing holes
                 if hole == NULL:
                     continue
+
+                # check the type
+                geom_type = GEOSGeomTypeId_r(geos_handle, hole)
+                if geom_type == -1:
+                    _deallocate_arr(geos_handle, temp_holes_view, n_holes)
+                    return  # GEOSException is raised by get_geos_handle
+                elif geom_type != 2:
+                    _deallocate_arr(geos_handle, temp_holes_view, n_holes)
+                    raise TypeError(
+                        f"One of the holes has unexpected geometry type {geom_type}."
+                    )
 
                 # assign to the temporary geometry array  
                 hole = GEOSGeom_clone_r(geos_handle, hole)
@@ -431,10 +451,11 @@ def polygons_1d(object shells, object holes, object indices):
                 n_holes
             )
             if poly == NULL:
-                # GEOSGeom_createPolygon_r does not take ownership in case of
-                # an exception: so clean up the provided arguments.
-                GEOSGeom_destroy_r(geos_handle, shell)
-                _deallocate_arr(geos_handle, temp_holes_view, n_holes)
+                # GEOSGeom_createPolygon_r should take ownership of the input geometries,
+                # but it doesn't in case of an exception. We prefer a memory leak here over
+                # a possible segfault in the future. The pre-emptive type check already covers
+                # all known cases that GEOSGeom_createPolygon_r errors, so this should never
+                # happen anyway. https://trac.osgeo.org/geos/ticket/1111.
                 return  # GEOSException is raised by get_geos_handle
 
             result_view[poly_idx] = PyGEOS_CreateGeometry(poly, geos_handle)

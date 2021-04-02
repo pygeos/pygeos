@@ -132,17 +132,20 @@ def polygons(shells, holes=None, indices=None, **kwargs):
     if not isinstance(shells, Geometry) and np.issubdtype(shells.dtype, np.number):
         shells = linearrings(shells)
 
-    if holes is None and indices is None:
-        return lib.polygons_without_holes(shells)
-    elif holes is None and indices is not None:
+    if holes is None and indices is not None:
         raise TypeError("Indices provided without a holes array.")
-
-    holes = np.asarray(holes)
-    if not isinstance(holes, Geometry) and np.issubdtype(holes.dtype, np.number):
-        holes = linearrings(holes)
+    elif holes is None:
+        # no holes provided: initialize an empty holes array matching shells
+        shape = shells.shape + (0, ) if isinstance(shells, np.ndarray) else (0, )
+        holes = np.empty(shape, dtype=object)
+    else:
+        holes = np.asarray(holes)
+        # convert holes coordinates into linearrings
+        if np.issubdtype(holes.dtype, np.number):
+            holes = linearrings(holes)
 
     if indices is None:
-        return lib.polygons_with_holes(shells, holes, **kwargs)
+        return lib.polygons(shells, holes, **kwargs)
     else:
         return polygons_1d(shells, holes, indices)
 
