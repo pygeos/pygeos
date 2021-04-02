@@ -141,7 +141,7 @@ def test_from_wkb_exceptions():
         assert result is None
 
 
-def test_from_wkb_warn_on_invalid():
+def test_from_wkb_warn_on_invalid_warn():
     # invalid WKB
     with pytest.warns(Warning, match="Invalid WKB"):
         result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", on_invalid="warn")
@@ -156,7 +156,7 @@ def test_from_wkb_warn_on_invalid():
         assert result is None
 
 
-def test_from_wkb_ignore_on_invalid():
+def test_from_wkb_ignore_on_invalid_ignore():
     # invalid WKB
     with pytest.warns(None) as w:
         result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", on_invalid="ignore")
