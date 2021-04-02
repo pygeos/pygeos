@@ -1,24 +1,27 @@
+import numpy as np
 import pytest
+from numpy.testing import assert_allclose, assert_equal
+
 import pygeos
 from pygeos import apply, count_coordinates, get_coordinates, set_coordinates
-import numpy as np
-from numpy.testing import assert_equal, assert_allclose
 
-from .common import empty
-from .common import point
-from .common import empty_point
-from .common import point_z
-from .common import line_string
-from .common import line_string_z
-from .common import linear_ring
-from .common import polygon
-from .common import polygon_z
-from .common import polygon_with_hole
-from .common import multi_point
-from .common import multi_line_string
-from .common import multi_polygon
-from .common import geometry_collection
-from .common import geometry_collection_z
+from .common import (
+    empty,
+    empty_point,
+    geometry_collection,
+    geometry_collection_z,
+    line_string,
+    line_string_z,
+    linear_ring,
+    multi_line_string,
+    multi_point,
+    multi_polygon,
+    point,
+    point_z,
+    polygon,
+    polygon_with_hole,
+    polygon_z,
+)
 
 nested_2 = pygeos.geometrycollections([geometry_collection, point])
 nested_3 = pygeos.geometrycollections([nested_2, point])
@@ -77,7 +80,37 @@ def test_get_coords(geoms, x, y, include_z):
     if not include_z:
         expected = np.array([x, y], np.float64).T
     else:
-        expected = np.array([x, y, [np.nan]*len(x)], np.float64).T
+        expected = np.array([x, y, [np.nan] * len(x)], np.float64).T
+    assert_equal(actual, expected)
+
+
+# fmt: off
+@pytest.mark.parametrize(
+    "geoms,index",
+    [
+        ([], []),
+        ([empty], []),
+        ([point, empty], [0]),
+        ([empty, point, empty], [1]),
+        ([point, None], [0]),
+        ([None, point, None], [1]),
+        ([point, point], [0, 1]),
+        ([point, line_string], [0, 1, 1, 1]),
+        ([line_string, point], [0, 0, 0, 1]),
+        ([line_string, linear_ring], [0, 0, 0, 1, 1, 1, 1, 1]),
+    ],
+)  # fmt: on
+def test_get_coords_index(geoms, index):
+    _, actual = get_coordinates(np.array(geoms, np.object_), return_index=True)
+    expected = np.array(index, dtype=np.intp)
+    assert_equal(actual, expected)
+
+
+@pytest.mark.parametrize("order", ["C", "F"])
+def test_get_coords_index_multidim(order):
+    geometry = np.array([[point, line_string], [empty, empty]], order=order)
+    expected = [0, 1, 1, 1]  # would be [0, 2, 2, 2] with fortran order
+    _, actual = get_coordinates(geometry, return_index=True)
     assert_equal(actual, expected)
 
 

@@ -1,9 +1,9 @@
 import numpy as np
+
 from . import Geometry  # NOQA
 from . import lib
-from .decorators import requires_geos, multithreading_enabled
+from .decorators import multithreading_enabled, requires_geos
 from .enum import ParamEnum
-
 
 __all__ = [
     "BufferCapStyles",
@@ -23,6 +23,7 @@ __all__ = [
     "normalize",
     "point_on_surface",
     "polygonize",
+    "polygonize_full",
     "reverse",
     "simplify",
     "snap",
@@ -51,6 +52,9 @@ def boundary(geometry, **kwargs):
     ----------
     geometry : Geometry or array_like
         This function will return None for geometrycollections.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -116,6 +120,9 @@ def buffer(
         buffered vertex by more than this limit.
     single_sided : bool
         Only buffer at one side of the geometry.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -205,6 +212,9 @@ def offset_curve(
     mitre_limit : float
         Crops of 'mitre'-style joins if the point is displaced from the
         buffered vertex by more than this limit.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -244,6 +254,9 @@ def centroid(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -283,6 +296,9 @@ def clip_by_rect(geometry, xmin, ymin, xmax, ymax, **kwargs):
         Maximum x value of the rectangle
     ymax : float
         Maximum y value of the rectangle
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -309,6 +325,9 @@ def convex_hull(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -337,6 +356,9 @@ def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     only_edges : bool or array_like
         If set to True, the triangulation will return a collection of
         linestrings instead of polygons.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -364,6 +386,9 @@ def envelope(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -389,6 +414,9 @@ def extract_unique_points(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -418,6 +446,9 @@ def build_area(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -437,6 +468,9 @@ def make_valid(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -457,6 +491,9 @@ def normalize(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -474,6 +511,9 @@ def point_on_surface(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -515,6 +555,9 @@ def polygonize(geometries, **kwargs):
         Axis along which the geometries are polygonized.
         The default is to perform a reduction over the last dimension
         of the input array. A 1D array results in a scalar geometry.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Returns
     -------
@@ -523,6 +566,7 @@ def polygonize(geometries, **kwargs):
     See Also
     --------
     get_parts, get_geometry
+    polygonize_full
 
     Examples
     --------
@@ -535,6 +579,65 @@ def polygonize(geometries, **kwargs):
     <pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))>
     """
     return lib.polygonize(geometries, **kwargs)
+
+
+def polygonize_full(geometries, **kwargs):
+    """Creates polygons formed from the linework of a set of Geometries and
+    return all extra outputs as well.
+
+    Polygonizes an array of Geometries that contain linework which
+    represents the edges of a planar graph. Any type of Geometry may be
+    provided as input; only the constituent lines and rings will be used to
+    create the output polygons.
+
+    This function performs the same polygonization as `polygonize` but does
+    not only return the polygonal result but all extra outputs as well. The
+    return value consists of 4 elements:
+
+    * The polygonal valid output
+    * **Cut edges**: edges connected on both ends but not part of polygonal output
+    * **dangles**: edges connected on one end but not part of polygonal output
+    * **invalid rings**: polygons formed but which are not valid
+
+    This function returns the geometries within GeometryCollections.
+    Individual geometries can be obtained using `get_geometry` to get
+    a single geometry or `get_parts` to get an array of geometries.
+
+    Parameters
+    ----------
+    geometries : array_like
+        An array of geometries.
+    axis : int
+        Axis along which the geometries are polygonized.
+        The default is to perform a reduction over the last dimension
+        of the input array. A 1D array results in a scalar geometry.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+
+    Returns
+    -------
+    (polgyons, cuts, dangles, invalid)
+        tuple of 4 GeometryCollections or arrays of GeometryCollections
+
+    See Also
+    --------
+    polygonize
+
+    Examples
+    --------
+    >>> lines = [
+    ...     Geometry("LINESTRING (0 0, 1 1)"),
+    ...     Geometry("LINESTRING (0 0, 0 1, 1 1)"),
+    ...     Geometry("LINESTRING (0 1, 1 1)"),
+    ... ]
+    >>> polygonize_full(lines)  # doctest: +NORMALIZE_WHITESPACE
+    (<pygeos.Geometry GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))>,
+     <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>,
+     <pygeos.Geometry GEOMETRYCOLLECTION (LINESTRING (0 1, 1 1))>,
+     <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>)
+    """
+    return lib.polygonize_full(geometries, **kwargs)
 
 
 @requires_geos("3.7.0")
@@ -550,6 +653,9 @@ def reverse(geometry, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -586,6 +692,9 @@ def segmentize(geometry, tolerance, **kwargs):
     tolerance : float or array_like
         Additional vertices will be added so that all line segments are no
         greater than this value.  Must be greater than 0.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -614,6 +723,9 @@ def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
         smaller the number of vertices in the resulting geometry.
     preserve_topology : bool
         If set to True, the operation will avoid creating invalid geometries.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -647,6 +759,9 @@ def snap(geometry, reference, tolerance, **kwargs):
     geometry : Geometry or array_like
     reference : Geometry or array_like
     tolerance : float or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -685,6 +800,9 @@ def voronoi_polygons(
     only_edges : bool or array_like
         If set to True, the triangulation will return a collection of
         linestrings instead of polygons.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
