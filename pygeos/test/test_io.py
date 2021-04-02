@@ -1,15 +1,16 @@
-import numpy as np
-import pygeos
-import pytest
 import pickle
 import struct
 from unittest import mock
 
-from .common import all_types, point, empty_point, point_z
+import numpy as np
+import pytest
 
+import pygeos
 
-POINT11_WKB = b'\x01\x01\x00\x00\x00' + struct.pack("<2d", 1., 1.)
+from .common import all_types, empty_point, point, point_z
 
+# fmt: off
+POINT11_WKB = b"\x01\x01\x00\x00\x00" + struct.pack("<2d", 1.0, 1.0)
 NAN = struct.pack("<d", float("nan"))
 POINT_NAN_WKB = b'\x01\x01\x00\x00\x00' + (NAN * 2)
 POINTZ_NAN_WKB = b'\x01\x01\x00\x00\x80' + (NAN * 3)
@@ -19,6 +20,8 @@ GEOMETRYCOLLECTION_NAN_WKB = b'\x01\x07\x00\x00\x00\x01\x00\x00\x00\x01\x01\x00\
 GEOMETRYCOLLECTIONZ_NAN_WKB = b'\x01\x07\x00\x00\x80\x01\x00\x00\x00\x01\x01\x00\x00\x80' + (NAN * 3)
 NESTED_COLLECTION_NAN_WKB = b'\x01\x07\x00\x00\x00\x01\x00\x00\x00\x01\x04\x00\x00\x00\x01\x00\x00\x00\x01\x01\x00\x00\x00' + (NAN * 2)
 NESTED_COLLECTIONZ_NAN_WKB = b'\x01\x07\x00\x00\x80\x01\x00\x00\x00\x01\x04\x00\x00\x80\x01\x00\x00\x00\x01\x01\x00\x00\x80' + (NAN * 3)
+# fmt: on
+
 
 class ShapelyGeometryMock:
     def __init__(self, g):
@@ -29,7 +32,7 @@ class ShapelyGeometryMock:
     def __array_interface__(self):
         # this should not be called
         # (starting with numpy 1.20 it is called, but not used)
-        return np.array([1., 2.]).__array_interface__
+        return np.array([1.0, 2.0]).__array_interface__
 
 
 def test_from_wkt():
@@ -50,11 +53,34 @@ def test_from_wkt_exceptions():
     with pytest.raises(TypeError, match="Expected bytes, got int"):
         pygeos.from_wkt(1)
 
-    with pytest.raises(pygeos.GEOSException):
+    with pytest.raises(
+        pygeos.GEOSException, match="Expected word but encountered end of stream"
+    ):
         pygeos.from_wkt("")
 
-    with pytest.raises(pygeos.GEOSException):
+    with pytest.raises(pygeos.GEOSException, match="Unknown type: 'NOT'"):
         pygeos.from_wkt("NOT A WKT STRING")
+
+
+def test_from_wkt_warn_on_invalid():
+    with pytest.warns(Warning, match="Invalid WKT"):
+        pygeos.from_wkt("", on_invalid="warn")
+
+    with pytest.warns(Warning, match="Invalid WKT"):
+        pygeos.from_wkt("NOT A WKT STRING", on_invalid="warn")
+
+
+def test_from_wkb_ignore_on_invalid():
+    with pytest.warns(None):
+        pygeos.from_wkt("", on_invalid="ignore")
+
+    with pytest.warns(None):
+        pygeos.from_wkt("NOT A WKT STRING", on_invalid="ignore")
+
+
+def test_from_wkt_on_invalid_unsupported_option():
+    with pytest.raises(ValueError, match="not a valid option"):
+        pygeos.from_wkt(b"\x01\x01\x00\x00\x00\x00", on_invalid="unsupported_option")
 
 
 @pytest.mark.parametrize("geom", all_types)
@@ -99,8 +125,57 @@ def test_from_wkb_exceptions():
     with pytest.raises(TypeError, match="Expected bytes, got int"):
         pygeos.from_wkb(1)
 
-    with pytest.raises(pygeos.GEOSException):
-        pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00")
+    # invalid WKB
+    with pytest.raises(pygeos.GEOSException, match="Unexpected EOF parsing WKB"):
+        result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00")
+        assert result is None
+
+    # invalid ring in WKB
+    with pytest.raises(
+        pygeos.GEOSException,
+        match="Invalid number of points in LinearRing found 3 - must be 0 or >= 4",
+    ):
+        result = pygeos.from_wkb(
+            b"\x01\x03\x00\x00\x00\x01\x00\x00\x00\x03\x00\x00\x00P}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A0n\xa3!\xfc\xb05A\xa0\x11\xa5=\x90^=AP}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A"
+        )
+        assert result is None
+
+
+def test_from_wkb_warn_on_invalid_warn():
+    # invalid WKB
+    with pytest.warns(Warning, match="Invalid WKB"):
+        result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", on_invalid="warn")
+        assert result is None
+
+    # invalid ring in WKB
+    with pytest.warns(Warning, match="Invalid WKB"):
+        result = pygeos.from_wkb(
+            b"\x01\x03\x00\x00\x00\x01\x00\x00\x00\x03\x00\x00\x00P}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A0n\xa3!\xfc\xb05A\xa0\x11\xa5=\x90^=AP}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A",
+            on_invalid="warn",
+        )
+        assert result is None
+
+
+def test_from_wkb_ignore_on_invalid_ignore():
+    # invalid WKB
+    with pytest.warns(None) as w:
+        result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", on_invalid="ignore")
+        assert result is None
+        assert len(w) == 0  # no warning
+
+    # invalid ring in WKB
+    with pytest.warns(None) as w:
+        result = pygeos.from_wkb(
+            b"\x01\x03\x00\x00\x00\x01\x00\x00\x00\x03\x00\x00\x00P}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A0n\xa3!\xfc\xb05A\xa0\x11\xa5=\x90^=AP}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A",
+            on_invalid="ignore",
+        )
+        assert result is None
+        assert len(w) == 0  # no warning
+
+
+def test_from_wkb_on_invalid_unsupported_option():
+    with pytest.raises(ValueError, match="not a valid option"):
+        pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", on_invalid="unsupported_option")
 
 
 @pytest.mark.parametrize("geom", all_types)
@@ -113,7 +188,8 @@ def test_from_wkb_all_types(geom, use_hex, byte_order):
 
 
 @pytest.mark.parametrize(
-    "wkt", ("POINT EMPTY", "LINESTRING EMPTY", "POLYGON EMPTY", "GEOMETRYCOLLECTION EMPTY")
+    "wkt",
+    ("POINT EMPTY", "LINESTRING EMPTY", "POLYGON EMPTY", "GEOMETRYCOLLECTION EMPTY"),
 )
 def test_from_wkb_empty(wkt):
     wkb = pygeos.to_wkb(pygeos.Geometry(wkt))
@@ -265,54 +341,83 @@ def test_to_wkb_srid():
     assert np.frombuffer(result[5:9], "<u4").item() == 4326
 
 
-@pytest.mark.skipif(pygeos.geos_version >= (3, 8, 0), reason="Pre GEOS 3.8.0 has 3D empty points")
-@pytest.mark.parametrize("geom,dims,expected", [
-    (empty_point, 2, POINT_NAN_WKB),
-    (empty_point, 3, POINTZ_NAN_WKB),
-    (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB),
-    (pygeos.multipoints([empty_point]), 3, MULTIPOINTZ_NAN_WKB),
-    (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB),
-    (pygeos.geometrycollections([empty_point]), 3, GEOMETRYCOLLECTIONZ_NAN_WKB),
-    (pygeos.geometrycollections([pygeos.multipoints([empty_point])]), 2, NESTED_COLLECTION_NAN_WKB),
-    (pygeos.geometrycollections([pygeos.multipoints([empty_point])]), 3, NESTED_COLLECTIONZ_NAN_WKB),
-])
-def test_to_wkb_point_empty_pre_geos38(geom,dims,expected):
+@pytest.mark.skipif(
+    pygeos.geos_version >= (3, 8, 0), reason="Pre GEOS 3.8.0 has 3D empty points"
+)
+@pytest.mark.parametrize(
+    "geom,dims,expected",
+    [
+        (empty_point, 2, POINT_NAN_WKB),
+        (empty_point, 3, POINTZ_NAN_WKB),
+        (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB),
+        (pygeos.multipoints([empty_point]), 3, MULTIPOINTZ_NAN_WKB),
+        (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB),
+        (pygeos.geometrycollections([empty_point]), 3, GEOMETRYCOLLECTIONZ_NAN_WKB),
+        (
+            pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
+            2,
+            NESTED_COLLECTION_NAN_WKB,
+        ),
+        (
+            pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
+            3,
+            NESTED_COLLECTIONZ_NAN_WKB,
+        ),
+    ],
+)
+def test_to_wkb_point_empty_pre_geos38(geom, dims, expected):
     actual = pygeos.to_wkb(geom, output_dimension=dims, byte_order=1)
     # Use numpy.isnan; there are many byte representations for NaN
-    assert actual[:-dims * 8] == expected[:-dims * 8]
-    assert np.isnan(struct.unpack("<{}d".format(dims), actual[-dims * 8:])).all()
+    assert actual[: -dims * 8] == expected[: -dims * 8]
+    assert np.isnan(struct.unpack("<{}d".format(dims), actual[-dims * 8 :])).all()
 
 
-@pytest.mark.skipif(pygeos.geos_version < (3, 8, 0), reason="Post GEOS 3.8.0 has 2D empty points")
-@pytest.mark.parametrize("geom,dims,expected", [
-    (empty_point, 2, POINT_NAN_WKB),
-    (empty_point, 3, POINT_NAN_WKB),
-    (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB),
-    (pygeos.multipoints([empty_point]), 3, MULTIPOINT_NAN_WKB),
-    (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB),
-    (pygeos.geometrycollections([empty_point]), 3, GEOMETRYCOLLECTION_NAN_WKB),
-    (pygeos.geometrycollections([pygeos.multipoints([empty_point])]), 2, NESTED_COLLECTION_NAN_WKB),
-    (pygeos.geometrycollections([pygeos.multipoints([empty_point])]), 3, NESTED_COLLECTION_NAN_WKB),
-])
-def test_to_wkb_point_empty_post_geos38(geom,dims,expected):
+@pytest.mark.skipif(
+    pygeos.geos_version < (3, 8, 0), reason="Post GEOS 3.8.0 has 2D empty points"
+)
+@pytest.mark.parametrize(
+    "geom,dims,expected",
+    [
+        (empty_point, 2, POINT_NAN_WKB),
+        (empty_point, 3, POINT_NAN_WKB),
+        (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB),
+        (pygeos.multipoints([empty_point]), 3, MULTIPOINT_NAN_WKB),
+        (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB),
+        (pygeos.geometrycollections([empty_point]), 3, GEOMETRYCOLLECTION_NAN_WKB),
+        (
+            pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
+            2,
+            NESTED_COLLECTION_NAN_WKB,
+        ),
+        (
+            pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
+            3,
+            NESTED_COLLECTION_NAN_WKB,
+        ),
+    ],
+)
+def test_to_wkb_point_empty_post_geos38(geom, dims, expected):
     # Post GEOS 3.8: empty point is 2D
     actual = pygeos.to_wkb(geom, output_dimension=dims, byte_order=1)
     # Use numpy.isnan; there are many byte representations for NaN
-    assert actual[:-2 * 8] == expected[:-2 * 8]
-    assert np.isnan(struct.unpack("<2d", actual[-2 * 8:])).all()
+    assert actual[: -2 * 8] == expected[: -2 * 8]
+    assert np.isnan(struct.unpack("<2d", actual[-2 * 8 :])).all()
 
 
-@pytest.mark.parametrize("wkb,expected_type", [
-    (POINT_NAN_WKB, 0),
-    (POINTZ_NAN_WKB, 0),
-    (MULTIPOINT_NAN_WKB, 4),
-    (MULTIPOINTZ_NAN_WKB, 4),
-    (GEOMETRYCOLLECTION_NAN_WKB, 7),
-    (GEOMETRYCOLLECTIONZ_NAN_WKB, 7),
-    (NESTED_COLLECTION_NAN_WKB, 7),
-    (NESTED_COLLECTIONZ_NAN_WKB, 7),
-])
-def test_from_wkb_point_empty(wkb,expected_type):
+@pytest.mark.parametrize(
+    "wkb,expected_type",
+    [
+        (POINT_NAN_WKB, 0),
+        (POINTZ_NAN_WKB, 0),
+        (MULTIPOINT_NAN_WKB, 4),
+        (MULTIPOINTZ_NAN_WKB, 4),
+        (GEOMETRYCOLLECTION_NAN_WKB, 7),
+        (GEOMETRYCOLLECTIONZ_NAN_WKB, 7),
+        (NESTED_COLLECTION_NAN_WKB, 7),
+        (NESTED_COLLECTIONZ_NAN_WKB, 7),
+    ],
+)
+def test_from_wkb_point_empty(wkb, expected_type):
     geom = pygeos.from_wkb(wkb)
     # POINT (nan nan) transforms to an empty point
     # Note that the dimensionality (2D/3D) is GEOS-version dependent
@@ -325,7 +430,7 @@ def test_to_wkb_point_empty_srid():
     wkb = pygeos.to_wkb(expected, include_srid=True)
     actual = pygeos.from_wkb(wkb)
     assert pygeos.get_srid(actual) == 4236
-    
+
 
 @pytest.mark.parametrize("geom", all_types)
 @mock.patch("pygeos.io.ShapelyGeometry", ShapelyGeometryMock)
