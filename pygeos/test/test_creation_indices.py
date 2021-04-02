@@ -154,6 +154,11 @@ def test_polygons(holes, indices, expected):
     assert_geometries_equal(actual, expected)
 
 
+def test_polygons_missing_shell():
+    actual = pygeos.polygons([None, linear_ring], [hole_1, hole_2], indices=[0, 1])
+    assert_geometries_equal(actual, [None, poly_hole_2])
+
+
 @pytest.mark.parametrize(
     "func",
     [

@@ -396,6 +396,7 @@ def polygons_1d(object shells, object holes, object indices):
             # return None for missing shells (ignore possibly present holes)
             if shell == NULL:
                 result_view[poly_idx] = PyGEOS_CreateGeometry(NULL, geos_handle)
+                hole_idx_1 += hole_count[poly_idx]
                 continue
 
             geom_type = GEOSGeomTypeId_r(geos_handle, shell)
