@@ -30,21 +30,21 @@ def check_shapely_version():
 
     This function sets a few global variables:
 
-    - ShapelyGeometry: 
+    - ShapelyGeometry:
         shapely.geometry.base.BaseGeometry
-    - ShapelyPreparedGeometry: 
+    - ShapelyPreparedGeometry:
         shapely.prepared.PreparedGeometry
-    - shapely_lgeos: 
+    - shapely_lgeos:
         shapely.geos.lgeos
-    - shapely_geom_factory: 
+    - shapely_geom_factory:
         shapely.geometry.base.geom_factory
-    - shapely_wkb_loads: 
+    - shapely_wkb_loads:
         shapely.wkb.loads
-    - shapely_compatible: 
-        ``None`` if shapely is not installed, 
-        ``True`` if shapely and PyGEOS use the same GEOS version, 
+    - shapely_compatible:
+        ``None`` if shapely is not installed,
+        ``True`` if shapely and PyGEOS use the same GEOS version,
         ``False`` otherwise
-    - _shapely_checked: 
+    - _shapely_checked:
         Mostly internal variable to mark that we already tried to import shapely
     """
     global ShapelyGeometry
@@ -159,12 +159,7 @@ def to_wkt(
 
 
 def to_wkb(
-    geometry,
-    hex=False,
-    output_dimension=3,
-    byte_order=-1,
-    include_srid=False,
-    **kwargs
+    geometry, hex=False, output_dimension=3, byte_order=-1, include_srid=False, **kwargs
 ):
     r"""
     Converts to the Well-Known Binary (WKB) representation of a Geometry.
@@ -225,7 +220,7 @@ def to_wkb(
 def to_shapely(geometry):
     """
     Converts PyGEOS geometries to Shapely.
-    
+
     Parameters
     ----------
     geometry : shapely Geometry object or array_like
@@ -257,12 +252,7 @@ def to_shapely(geometry):
         ]
     else:
         geometry = to_wkb(geometry)
-        geometry = [
-            None
-            if g is None
-            else shapely_wkb_loads(g)
-            for g in geometry
-        ]
+        geometry = [None if g is None else shapely_wkb_loads(g) for g in geometry]
 
     if unpack:
         return geometry[0]
@@ -378,7 +368,9 @@ def from_shapely(geometry, **kwargs):
 
         return lib.from_shapely(arr, **kwargs)
     else:
-        unpack = geometry is None or isinstance(geometry, (ShapelyGeometry, ShapelyPreparedGeometry))
+        unpack = geometry is None or isinstance(
+            geometry, (ShapelyGeometry, ShapelyPreparedGeometry)
+        )
         if unpack:
             geometry = (geometry,)
 
@@ -390,7 +382,9 @@ def from_shapely(geometry, **kwargs):
             if g is None:
                 arr.append(None)
             elif g.is_empty and g.geom_type == "Point":
-                arr.append(b'\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf8\x7f\x00\x00\x00\x00\x00\x00\xf8\x7f')
+                arr.append(
+                    b"\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf8\x7f\x00\x00\x00\x00\x00\x00\xf8\x7f"
+                )
             else:
                 arr.append(g.wkb)
 

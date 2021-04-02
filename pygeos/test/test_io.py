@@ -42,15 +42,15 @@ class ShapelyGeometryMock:
     def geom_type(self):
         idx = pygeos.get_type_id(self.g)
         return [
-            'None',
-            'Point',
-            'LineString',
-            'LinearRing',
-            'Polygon',
-            'MultiPoint',
-            'MultiLineString',
-            'MultiPolygon',
-            'GeometryCollection',
+            "None",
+            "Point",
+            "LineString",
+            "LinearRing",
+            "Polygon",
+            "MultiPoint",
+            "MultiLineString",
+            "MultiPolygon",
+            "GeometryCollection",
         ][idx]
 
     @property
