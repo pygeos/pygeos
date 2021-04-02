@@ -13,12 +13,15 @@ jobs:
         with:
           python-version: 3.8
 
-      - name: Install flake8 and isort
-        run: pip install flake8 isort
+      - name: Install flake8, isort and black
+        run: pip install flake8 isort black
 
       - name: Run flake8
         run: flake8 pygeos
-        
+
+      - name: Run black
+        run: black pygeos --check
+
       - name: Run isort
         run: isort pygeos --check-only --extend-skip __init__.py
   

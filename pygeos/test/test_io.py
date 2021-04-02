@@ -151,7 +151,7 @@ def test_from_wkb_warn_on_invalid_warn():
     with pytest.warns(Warning, match="Invalid WKB"):
         result = pygeos.from_wkb(
             b"\x01\x03\x00\x00\x00\x01\x00\x00\x00\x03\x00\x00\x00P}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A0n\xa3!\xfc\xb05A\xa0\x11\xa5=\x90^=AP}\xae\xc6\x00\xb15A\x00\xde\x02I\x8e^=A",
-            on_invalid="warn"
+            on_invalid="warn",
         )
         assert result is None
 
