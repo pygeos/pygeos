@@ -568,6 +568,9 @@ def polygonize_full(geometries, **kwargs):
         Axis along which the geometries are polygonized.
         The default is to perform a reduction over the last dimension
         of the input array. A 1D array results in a scalar geometry.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Returns
     -------
