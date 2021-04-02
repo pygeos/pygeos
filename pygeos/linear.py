@@ -23,6 +23,9 @@ def line_interpolate_point(line, distance, normalized=False, **kwargs):
     normalized : bool
         If True, the distance is a fraction of the total
         line length instead of the absolute distance.
+    **kwargs
+        For other keyword-only arguments, see the
+        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -61,6 +64,9 @@ def line_locate_point(line, other, normalized=False, **kwargs):
     normalized : bool
         If True, the distance is a fraction of the total
         line length instead of the absolute distance.
+    **kwargs
+        For other keyword-only arguments, see the
+        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -91,6 +97,9 @@ def line_merge(line, **kwargs):
     Parameters
     ----------
     line : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -118,6 +127,9 @@ def shared_paths(a, b, **kwargs):
     ----------
     a : Geometry or array_like
     b : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
