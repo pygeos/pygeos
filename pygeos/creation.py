@@ -2,6 +2,7 @@ import numpy as np
 from . import lib
 from . import Geometry, GeometryType
 from .decorators import multithreading_enabled
+from ._geometry import collections_1d, simple_geometries_1d
 
 __all__ = [
     "points",
@@ -18,18 +19,18 @@ __all__ = [
 ]
 
 
-def _wrap_construct_ufunc(func, coords, y=None, z=None):
+def _xyz_to_coords(x, y, z):
     if y is None:
-        return func(coords)
-    x = coords
+        return x
     if z is None:
         coords = np.broadcast_arrays(x, y)
     else:
         coords = np.broadcast_arrays(x, y, z)
-    return func(np.stack(coords, axis=-1))
+    return np.stack(coords, axis=-1)
 
 
-def points(coords, y=None, z=None):
+@multithreading_enabled
+def points(coords, y=None, z=None, indices=None, **kwargs):
     """Create an array of points.
 
     Note that GEOS >=3.10 automatically converts POINT (nan nan) to
@@ -42,12 +43,25 @@ def points(coords, y=None, z=None):
         provided, an array of x coordinates.
     y : array_like
     z : array_like
+    indices : array_like or None
+       Indices into the target array where input coordinates belong. If
+       provided, the coords should be 2D with shape (N, 2) or (N, 3) and
+       indices should be 1D with shape (N,). Missing indices will give None
+       values in the output array.
     """
-    return _wrap_construct_ufunc(lib.points, coords, y, z)
+    coords = _xyz_to_coords(coords, y, z)
+    if indices is None:
+        return lib.points(coords, **kwargs)
+    else:
+        return simple_geometries_1d(coords, indices, GeometryType.POINT)
 
 
-def linestrings(coords, y=None, z=None):
+@multithreading_enabled
+def linestrings(coords, y=None, z=None, indices=None, **kwargs):
     """Create an array of linestrings.
+
+    This function will raise an exception if a linestring contains less than
+    two points.
 
     Parameters
     ----------
@@ -56,15 +70,27 @@ def linestrings(coords, y=None, z=None):
         is provided, an array of lists of x coordinates
     y : array_like
     z : array_like
+    indices : array_like or None
+       Indices into the target array where input coordinates belong. If
+       provided, the coords should be 2D with shape (N, 2) or (N, 3) and
+       indices should be 1D with shape (N,). Missing indices will give None
+       values in the output array.
     """
-    return _wrap_construct_ufunc(lib.linestrings, coords, y, z)
+    coords = _xyz_to_coords(coords, y, z)
+    if indices is None:
+        return lib.linestrings(coords, **kwargs)
+    else:
+        return simple_geometries_1d(coords, indices, GeometryType.LINESTRING)
 
 
-def linearrings(coords, y=None, z=None):
+@multithreading_enabled
+def linearrings(coords, y=None, z=None, indices=None, **kwargs):
     """Create an array of linearrings.
 
     If the provided coords do not constitute a closed linestring, the first
-    coordinate is duplicated at the end to close the ring.
+    coordinate is duplicated at the end to close the ring. This function will
+    raise an exception if a linearring contains less than three points or if
+    the terminal coordinates contain NaN (not-a-number).
 
     Parameters
     ----------
@@ -73,8 +99,18 @@ def linearrings(coords, y=None, z=None):
         is provided, an array of lists of x coordinates
     y : array_like
     z : array_like
+    indices : array_like or None
+       Indices into the target array where input coordinates belong. If
+       provided, the coords should be 2D with shape (N, 2) or (N, 3) and
+       indices should be 1D with shape (N,). Missing indices will give None
+       values in the output array.
     """
-    return _wrap_construct_ufunc(lib.linearrings, coords, y, z)
+    coords = _xyz_to_coords(coords, y, z)
+    if indices is None:
+        return lib.linearrings(coords, **kwargs)
+    else:
+        return simple_geometries_1d(coords, indices, GeometryType.LINEARRING)
+
 
 @multithreading_enabled
 def polygons(shells, holes=None):
@@ -101,80 +137,122 @@ def polygons(shells, holes=None):
     return lib.polygons_with_holes(shells, holes)
 
 
-def box(x1, y1, x2, y2):
+def box(xmin, ymin, xmax, ymax, ccw=True, **kwargs):
     """Create box polygons.
 
     Parameters
     ----------
-    x1 : array_like
-    y1 : array_like
-    x2 : array_like
-    y2 : array_like
+    xmin : array_like
+    ymin : array_like
+    xmax : array_like
+    ymax : array_like
+    ccw : bool (default: True)
+        If True, box will be created in counterclockwise direction starting
+        from bottom right coordinate (xmax, ymin).
+        If False, box will be created in clockwise direction starting from
+        bottom left coordinate (xmin, ymin).
+
+    Examples
+    --------
+    >>> box(0, 0, 1, 1)
+    <pygeos.Geometry POLYGON ((1 0, 1 1, 0 1, 0 0, 1 0))>
+    >>> box(0, 0, 1, 1, ccw=False)
+    <pygeos.Geometry POLYGON ((0 0, 0 1, 1 1, 1 0, 0 0))>
+
     """
-    x1, y1, x2, y2 = np.broadcast_arrays(x1, y1, x2, y2)
-    rings = np.array(((x2, y1), (x2, y2), (x1, y2), (x1, y1)))
-    # bring first two axes to the last two positions
-    rings = rings.transpose(list(range(2, rings.ndim)) + [0, 1])
-    return polygons(rings)
+    return lib.box(xmin, ymin, xmax, ymax, ccw, **kwargs)
 
 
-def multipoints(geometries):
+def multipoints(geometries, indices=None):
     """Create multipoints from arrays of points
 
     Parameters
     ----------
     geometries : array_like
         An array of points or coordinates (see points).
+    indices : array_like or None
+       Indices into the target array where input geometries belong. If
+        provided, both geometries and indices should be 1D and have matching
+        sizes.
     """
+    typ = GeometryType.MULTIPOINT
     geometries = np.asarray(geometries)
     if not isinstance(geometries, Geometry) and np.issubdtype(
         geometries.dtype, np.number
     ):
         geometries = points(geometries)
-    return lib.create_collection(geometries, GeometryType.MULTIPOINT)
+    if indices is None:
+        return lib.create_collection(geometries, typ)
+    else:
+        return collections_1d(geometries, indices, typ)
 
 
-def multilinestrings(geometries):
+def multilinestrings(geometries, indices=None):
     """Create multilinestrings from arrays of linestrings
 
     Parameters
     ----------
     geometries : array_like
         An array of linestrings or coordinates (see linestrings).
+    indices : array_like or None
+        Indices into the target array where input geometries belong. If
+        provided, both geometries and indices should be 1D and have matching
+        sizes.
     """
+    typ = GeometryType.MULTILINESTRING
     geometries = np.asarray(geometries)
     if not isinstance(geometries, Geometry) and np.issubdtype(
         geometries.dtype, np.number
     ):
         geometries = linestrings(geometries)
-    return lib.create_collection(geometries, GeometryType.MULTILINESTRING)
+
+    if indices is None:
+        return lib.create_collection(geometries, typ)
+    else:
+        return collections_1d(geometries, indices, typ)
 
 
-def multipolygons(geometries):
+def multipolygons(geometries, indices=None):
     """Create multipolygons from arrays of polygons
 
     Parameters
     ----------
     geometries : array_like
         An array of polygons or coordinates (see polygons).
+    indices : array_like or None
+        Indices into the target array where input geometries belong. If
+        provided, both geometries and indices should be 1D and have matching
+        sizes.
     """
+    typ = GeometryType.MULTIPOLYGON
     geometries = np.asarray(geometries)
     if not isinstance(geometries, Geometry) and np.issubdtype(
         geometries.dtype, np.number
     ):
         geometries = polygons(geometries)
-    return lib.create_collection(geometries, GeometryType.MULTIPOLYGON)
+    if indices is None:
+        return lib.create_collection(geometries, typ)
+    else:
+        return collections_1d(geometries, indices, typ)
 
 
-def geometrycollections(geometries):
+def geometrycollections(geometries, indices=None):
     """Create geometrycollections from arrays of geometries
 
     Parameters
     ----------
     geometries : array_like
         An array of geometries
+    indices : array_like or None
+        Indices into the target array where input geometries belong. If
+        provided, both geometries and indices should be 1D and have matching
+        sizes.
     """
-    return lib.create_collection(geometries, GeometryType.GEOMETRYCOLLECTION)
+    typ = GeometryType.GEOMETRYCOLLECTION
+    if indices is None:
+        return lib.create_collection(geometries, typ)
+    else:
+        return collections_1d(geometries, indices, typ)
 
 
 def prepare(geometry, **kwargs):
@@ -188,8 +266,8 @@ def prepare(geometry, **kwargs):
     Note that if a prepared geometry is modified, the newly created Geometry object is
     not prepared. In that case, ``prepare`` should be called again.
 
-    This function does not recompute previously prepared geometries; 
-    it is efficient to call this function on an array that partially contains prepared geometries. 
+    This function does not recompute previously prepared geometries;
+    it is efficient to call this function on an array that partially contains prepared geometries.
 
     Parameters
     ----------
