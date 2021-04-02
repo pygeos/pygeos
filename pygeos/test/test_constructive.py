@@ -513,9 +513,7 @@ def test_polygonize_full_array():
         pygeos.Geometry("LINESTRING (0 0, 0 1)"),
         pygeos.Geometry("LINESTRING (0 1, 1 1)"),
     ]
-    expected = pygeos.Geometry(
-        "GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))"
-    )
+    expected = pygeos.Geometry("GEOMETRYCOLLECTION (POLYGON ((1 1, 0 0, 0 1, 1 1)))")
     result = pygeos.polygonize_full(np.array(lines))
     assert len(result) == 4
     assert all(isinstance(geom, pygeos.Geometry) for geom in result)
@@ -543,7 +541,8 @@ def test_polygonize_full_array():
     assert result[0][1] == expected
     assert all(
         g == pygeos.Geometry("GEOMETRYCOLLECTION EMPTY")
-        for geom in result[1:] for g in geom
+        for geom in result[1:]
+        for g in geom
     )
 
     arr = np.array([[lines, lines], [lines, lines], [lines, lines]])
