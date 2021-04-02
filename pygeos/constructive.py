@@ -27,7 +27,7 @@ __all__ = [
     "simplify",
     "snap",
     "voronoi_polygons",
-    "minimum_rotated_rectangle",
+    "oriented_envelope",
 ]
 
 
@@ -708,11 +708,14 @@ def voronoi_polygons(
 
 @requires_geos("3.6.0")
 @multithreading_enabled
-def minimum_rotated_rectangle(geometry, **kwargs):
-    """Computes the minimum rotated rectangle that encloses an input geometry.
+def oriented_envelope(geometry, **kwargs):
+    """
+    Computes the oriented envelope (minimum rotated rectangle)
+    that encloses an input geometry.
 
-    Unlike envelope this rectangle is not constrained to be parallel to the coordinate axes.
-    If the convex hull of the object is a degenerate (line or point) this degenerate is returned.
+    Unlike envelope this rectangle is not constrained to be parallel to the
+    coordinate axes. If the convex hull of the object is a degenerate (line
+    or point) this degenerate is returned.
 
     Parameters
     ----------
@@ -720,17 +723,17 @@ def minimum_rotated_rectangle(geometry, **kwargs):
 
     Examples
     --------
-    >>> minimum_rotated_rectangle(Geometry("MULTIPOINT (0 0, 10 0, 10 10)"))
+    >>> oriented_envelope(Geometry("MULTIPOINT (0 0, 10 0, 10 10)"))
     <pygeos.Geometry POLYGON ((0 0, 5 -5, 15 5, 10 10, 0 0))>
-    >>> minimum_rotated_rectangle(Geometry("LINESTRING (1 1, 5 1, 10 10)"))
+    >>> oriented_envelope(Geometry("LINESTRING (1 1, 5 1, 10 10)"))
     <pygeos.Geometry POLYGON ((1 1, 3 -1, 12 8, 10 10, 1 1))>
-    >>> minimum_rotated_rectangle(Geometry("POLYGON ((1 1, 15 1, 5 10, 1 1))"))
+    >>> oriented_envelope(Geometry("POLYGON ((1 1, 15 1, 5 10, 1 1))"))
     <pygeos.Geometry POLYGON ((15 1, 15 10, 1 10, 1 1, 15 1))>
-    >>> minimum_rotated_rectangle(Geometry("LINESTRING (1 1, 10 1)"))
+    >>> oriented_envelope(Geometry("LINESTRING (1 1, 10 1)"))
     <pygeos.Geometry LINESTRING (1 1, 10 1)>
-    >>> minimum_rotated_rectangle(Geometry("POINT (2 2)"))
+    >>> oriented_envelope(Geometry("POINT (2 2)"))
     <pygeos.Geometry POINT (2 2)>
-    >>> minimum_rotated_rectangle(Geometry("GEOMETRYCOLLECTION EMPTY"))
+    >>> oriented_envelope(Geometry("GEOMETRYCOLLECTION EMPTY"))
     <pygeos.Geometry POLYGON EMPTY>
     """
-    return lib.minimum_rotated_rectangle(geometry, **kwargs)
+    return lib.oriented_envelope(geometry, **kwargs)

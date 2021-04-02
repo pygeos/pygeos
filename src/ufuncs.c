@@ -419,7 +419,7 @@ static void* coverage_union_data[1] = {GEOSCoverageUnion_r};
 static void* reverse_data[1] = {GEOSReverse_r};
 #endif
 #if GEOS_SINCE_3_6_0
-static void* minimum_rotated_rectangle_data[1] = {GEOSMinimumRotatedRectangle_r};
+static void* oriented_envelope_data[1] = {GEOSMinimumRotatedRectangle_r};
 #endif
 typedef void* FuncGEOS_Y_Y(void* context, void* a);
 static char Y_Y_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
@@ -2777,7 +2777,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 #if GEOS_SINCE_3_6_0
   DEFINE_Y_d(minimum_clearance);
   DEFINE_Y_d(get_precision);
-  DEFINE_Y_Y(minimum_rotated_rectangle);
+  DEFINE_Y_Y(oriented_envelope);
   DEFINE_CUSTOM(set_precision, 3);
 #endif
 
