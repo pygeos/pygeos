@@ -51,7 +51,9 @@ enum {
   PGERR_NO_MALLOC,
   PGERR_GEOMETRY_TYPE,
   PGERR_MULTIPOINT_WITH_POINT_EMPTY,
-  PGERR_EMPTY_GEOMETRY
+  PGERR_EMPTY_GEOMETRY,
+  PGWARN_INVALID_WKB,  // raise the GEOS WKB error as a warning instead of exception
+  PGWARN_INVALID_WKT   // raise the GEOS WKB error as a warning instead of exception
 };
 
 // Define how the states are handled by CPython
@@ -84,6 +86,14 @@ enum {
       break;                                                                             \
     case PGERR_EMPTY_GEOMETRY:                                                           \
       PyErr_SetString(PyExc_ValueError, "One of the Geometry inputs is empty.");         \
+      break;                                                                             \
+    case PGWARN_INVALID_WKB:                                                             \
+      PyErr_WarnFormat(PyExc_Warning, 0,                                                 \
+                       "Invalid WKB: geometry is returned as None. %s", last_error);     \
+      break;                                                                             \
+    case PGWARN_INVALID_WKT:                                                             \
+      PyErr_WarnFormat(PyExc_Warning, 0,                                                 \
+                       "Invalid WKT: geometry is returned as None. %s", last_error);     \
       break;                                                                             \
     default:                                                                             \
       PyErr_Format(PyExc_RuntimeError,                                                   \
@@ -141,10 +151,9 @@ extern char geos_interpolate_checker(GEOSContextHandle_t ctx, GEOSGeometry* geom
 
 extern int init_geos(PyObject* m);
 
-
 int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double* ymin,
                double* xmax, double* ymax);
 GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, double xmax,
-                         double ymax);
+                         double ymax, char ccw);
 
-#endif // _GEOS_H
+#endif  // _GEOS_H

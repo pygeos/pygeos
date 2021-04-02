@@ -1,4 +1,5 @@
 import numpy as np
+
 from . import lib
 from .decorators import requires_geos
 from .enum import ParamEnum
@@ -288,8 +289,12 @@ class STRtree:
         if geometry.ndim == 0:
             geometry = np.expand_dims(geometry, 0)
 
-        if max_distance is not None and max_distance <= 0:
-            raise ValueError("max_distance must be greater than 0")
+        if max_distance is not None:
+            if not np.isscalar(max_distance):
+                raise ValueError("max_distance parameter only accepts scalar values")
+
+            if max_distance <= 0:
+                raise ValueError("max_distance must be greater than 0")
 
         # a distance of 0 means no max_distance is used
         max_distance = max_distance or 0

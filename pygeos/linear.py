@@ -1,7 +1,7 @@
 from warnings import warn
 
-from . import lib
 from . import Geometry  # NOQA
+from . import lib
 from .decorators import multithreading_enabled
 
 __all__ = ["line_interpolate_point", "line_locate_point", "line_merge", "shared_paths"]
@@ -21,8 +21,11 @@ def line_interpolate_point(line, distance, normalized=False, **kwargs):
         Negative values measure distance from the end of the line. Out-of-range
         values will be clipped to the line endings.
     normalized : bool
-        If normalized is set to True, the distance is a fraction of the total
+        If True, the distance is a fraction of the total
         line length instead of the absolute distance.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -59,8 +62,11 @@ def line_locate_point(line, other, normalized=False, **kwargs):
     line : Geometry or array_like
     point : Geometry or array_like
     normalized : bool
-        If normalized is set to True, the distance is a fraction of the total
+        If True, the distance is a fraction of the total
         line length instead of the absolute distance.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -84,13 +90,16 @@ def line_locate_point(line, other, normalized=False, **kwargs):
 
 
 @multithreading_enabled
-def line_merge(line):
+def line_merge(line, **kwargs):
     """Returns (multi)linestrings formed by combining the lines in a
     multilinestrings.
 
     Parameters
     ----------
     line : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -101,7 +110,7 @@ def line_merge(line):
     >>> line_merge(Geometry("LINESTRING EMPTY"))
     <pygeos.Geometry GEOMETRYCOLLECTION EMPTY>
     """
-    return lib.line_merge(line)
+    return lib.line_merge(line, **kwargs)
 
 
 def shared_paths(a, b, **kwargs):
@@ -118,6 +127,9 @@ def shared_paths(a, b, **kwargs):
     ----------
     a : Geometry or array_like
     b : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
