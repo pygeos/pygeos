@@ -836,7 +836,7 @@ def minimum_bounding_circle(geometry, **kwargs):
     Examples
     --------
     >>> minimum_bounding_circle(Geometry("POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0))"))
-    <pygeos.Geometry POLYGON ((12.1 5, 11.9 3.62, 11.5 2.29, 10.9 1.07, 10 3.55e...>
+    <pygeos.Geometry POLYGON ((12.1 5, 11.9 3.62, 11.5 2.29, 10.9 1.07, 10 4.44e...>
     >>> minimum_bounding_circle(Geometry("LINESTRING (1 1, 10 10)"))
     <pygeos.Geometry POLYGON ((11.9 5.5, 11.7 4.26, 11.4 3.06, 10.8 1.96, 10 1, ...>
     >>> minimum_bounding_circle(Geometry("MULTIPOINT (2 2, 4 2)"))
