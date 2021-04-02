@@ -845,5 +845,9 @@ def minimum_bounding_circle(geometry, **kwargs):
     <pygeos.Geometry POINT (0 1)>
     >>> minimum_bounding_circle(Geometry("GEOMETRYCOLLECTION EMPTY"))
     <pygeos.Geometry POLYGON EMPTY>
+
+    See also
+    --------
+    minimum_bounding_radius
     """
     return lib.minimum_bounding_circle(geometry, **kwargs)
