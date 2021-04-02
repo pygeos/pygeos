@@ -410,18 +410,6 @@ static void* GEOSMinimumBoundingCircleWithReturn(void* context, void* geom) {
   return ret;
 }
 static void* minimum_bounding_circle_data[1] = {GEOSMinimumBoundingCircleWithReturn};
-static int GEOSMinimumBoundingRadius(void* context, GEOSGeometry* geom, double* radius) {
-  GEOSGeometry* center = NULL;
-  GEOSGeometry* ret = GEOSMinimumBoundingCircle_r(context, geom, radius, &center);
-  if (ret == NULL) {
-    return 0;  // exception code
-  }
-  GEOSGeom_destroy_r(context, center);
-  GEOSGeom_destroy_r(context, ret);
-  return 1;  // success code
-}
-static void* minimum_bounding_radius_data[1] = {GEOSMinimumBoundingRadius};
-
 #endif
 #if GEOS_SINCE_3_7_0
 static void* reverse_data[1] = {GEOSReverse_r};
@@ -952,6 +940,19 @@ static int MinimumClearance(void* context, void* a, double* b) {
   }
 }
 static void* minimum_clearance_data[1] = {MinimumClearance};
+#endif
+#if GEOS_SINCE_3_8_0
+static int GEOSMinimumBoundingRadius(void* context, GEOSGeometry* geom, double* radius) {
+  GEOSGeometry* center = NULL;
+  GEOSGeometry* ret = GEOSMinimumBoundingCircle_r(context, geom, radius, &center);
+  if (ret == NULL) {
+    return 0;  // exception code
+  }
+  GEOSGeom_destroy_r(context, center);
+  GEOSGeom_destroy_r(context, ret);
+  return 1;  // success code
+}
+static void* minimum_bounding_radius_data[1] = {GEOSMinimumBoundingRadius};
 #endif
 typedef int FuncGEOS_Y_d(void* context, void* a, double* b);
 static char Y_d_dtypes[2] = {NPY_OBJECT, NPY_DOUBLE};

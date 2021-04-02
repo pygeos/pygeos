@@ -283,11 +283,15 @@ def minimum_clearance(geometry, **kwargs):
 @requires_geos("3.8.0")
 @multithreading_enabled
 def minimum_bounding_radius(geometry, **kwargs):
-    """Computes the radius of tje minimum bounding circle that encloses an input geometry.
+    """Computes the radius of the minimum bounding circle that encloses an input geometry.
 
     Parameters
     ----------
     geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+
 
     Examples
     --------
