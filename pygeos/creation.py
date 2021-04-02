@@ -50,7 +50,7 @@ def points(coords, y=None, z=None, indices=None, **kwargs):
        values in the output array.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
         Ignored if ``indices`` is provided.
     """
     coords = _xyz_to_coords(coords, y, z)
@@ -81,7 +81,7 @@ def linestrings(coords, y=None, z=None, indices=None, **kwargs):
        values in the output array.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
         Ignored if ``indices`` is provided.
     """
     coords = _xyz_to_coords(coords, y, z)
@@ -114,7 +114,7 @@ def linearrings(coords, y=None, z=None, indices=None, **kwargs):
        values in the output array.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
         Ignored if ``indices`` is provided.
     """
     coords = _xyz_to_coords(coords, y, z)
@@ -165,7 +165,7 @@ def box(xmin, ymin, xmax, ymax, ccw=True, **kwargs):
         bottom left coordinate (xmin, ymin).
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -191,7 +191,7 @@ def multipoints(geometries, indices=None, **kwargs):
         sizes.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
         Ignored if ``indices`` is provided.
     """
     typ = GeometryType.MULTIPOINT
@@ -219,7 +219,7 @@ def multilinestrings(geometries, indices=None, **kwargs):
         sizes.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
         Ignored if ``indices`` is provided.
     """
     typ = GeometryType.MULTILINESTRING
@@ -248,7 +248,7 @@ def multipolygons(geometries, indices=None, **kwargs):
         sizes.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
         Ignored if ``indices`` is provided.
     """
     typ = GeometryType.MULTIPOLYGON
@@ -276,7 +276,7 @@ def geometrycollections(geometries, indices=None, **kwargs):
         sizes.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
         Ignored if ``indices`` is provided.
     """
     typ = GeometryType.GEOMETRYCOLLECTION
@@ -306,7 +306,7 @@ def prepare(geometry, **kwargs):
         Geometries are changed inplace
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -329,7 +329,7 @@ def destroy_prepared(geometry, **kwargs):
         Geometries are changed inplace
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------

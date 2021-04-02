@@ -36,7 +36,7 @@ def difference(a, b, grid_size=None, **kwargs):
         precision of the inputs by default.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -93,7 +93,7 @@ def intersection(a, b, grid_size=None, **kwargs):
         precision of the inputs by default.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -144,7 +144,7 @@ def intersection_all(geometries, axis=None, **kwargs):
         first axis.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc.reduce docs <https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduce.html#numpy.ufunc.reduce>`_.
+        `NumPy ufunc.reduce docs <https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduce.html#numpy.ufunc.reduce>`_.
 
     See also
     --------
@@ -183,7 +183,7 @@ def symmetric_difference(a, b, grid_size=None, **kwargs):
         precision of the inputs by default.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -234,7 +234,7 @@ def symmetric_difference_all(geometries, axis=None, **kwargs):
         first axis.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc.reduce docs <https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduce.html#numpy.ufunc.reduce>`_.
+        `NumPy ufunc.reduce docs <https://numpy.org/doc/stable/reference/generated/numpy.ufunc.reduce.html#numpy.ufunc.reduce>`_.
 
     See also
     --------
@@ -272,7 +272,7 @@ def union(a, b, grid_size=None, **kwargs):
         precision of the inputs by default.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -335,7 +335,7 @@ def union_all(geometries, grid_size=None, axis=None, **kwargs):
         first axis.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -408,7 +408,7 @@ def coverage_union(a, b, **kwargs):
     b : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -447,7 +447,7 @@ def coverage_union_all(geometries, axis=None, **kwargs):
         first axis.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------

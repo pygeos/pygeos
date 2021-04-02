@@ -25,7 +25,7 @@ def line_interpolate_point(line, distance, normalized=False, **kwargs):
         line length instead of the absolute distance.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -66,7 +66,7 @@ def line_locate_point(line, other, normalized=False, **kwargs):
         line length instead of the absolute distance.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -99,7 +99,7 @@ def line_merge(line, **kwargs):
     line : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -129,7 +129,7 @@ def shared_paths(a, b, **kwargs):
     b : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------

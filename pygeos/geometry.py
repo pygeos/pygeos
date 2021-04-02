@@ -67,7 +67,7 @@ def get_type_id(geometry, **kwargs):
     geometry : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -96,7 +96,7 @@ def get_dimensions(geometry, **kwargs):
     geometry : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -125,7 +125,7 @@ def get_coordinate_dimension(geometry, **kwargs):
     geometry : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -150,7 +150,7 @@ def get_num_coordinates(geometry, **kwargs):
     geometry : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Examples
     --------
@@ -177,7 +177,7 @@ def get_srid(geometry, **kwargs):
     geometry : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -205,7 +205,7 @@ def set_srid(geometry, srid, **kwargs):
     srid : int
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -236,7 +236,7 @@ def get_x(point, **kwargs):
         Non-point geometries will result in NaN being returned.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -262,7 +262,7 @@ def get_y(point, **kwargs):
         Non-point geometries will result in NaN being returned.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -292,7 +292,7 @@ def get_z(point, **kwargs):
         in NaN being returned.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -324,7 +324,7 @@ def get_point(geometry, index, **kwargs):
         Negative values count from the end of the linestring backwards.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -362,7 +362,7 @@ def get_num_points(geometry, **kwargs):
         equals zero.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -394,7 +394,7 @@ def get_exterior_ring(geometry, **kwargs):
     geometry : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -421,7 +421,7 @@ def get_interior_ring(geometry, index, **kwargs):
         Negative values count from the end of the interior rings backwards.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -451,7 +451,7 @@ def get_num_interior_rings(geometry, **kwargs):
         The number of interior rings in non-polygons equals zero.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -488,7 +488,7 @@ def get_geometry(geometry, index, **kwargs):
         Negative values count from the end of the collection backwards.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     Notes
     -----
@@ -570,7 +570,7 @@ def get_num_geometries(geometry, **kwargs):
         polygons equals one.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -605,7 +605,7 @@ def get_precision(geometry, **kwargs):
     geometry : Geometry or array_like
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
@@ -659,7 +659,7 @@ def set_precision(geometry, grid_size, preserve_topology=False, **kwargs):
         rounding coordinates.
     **kwargs
         For other keyword-only arguments, see the
-        `Numpy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
 
     See also
     --------
