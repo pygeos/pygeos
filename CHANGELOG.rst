@@ -27,8 +27,8 @@ Version 0.10 (unreleased)
   instead of a ``ValueError`` or ``TypeError`` for invalid input (#310, #326).
 * Addition of ``on_invalid`` parameter to ``from_wkb`` and ``from_wkt`` to
   optionally return invalid WKB geometries as ``None``.
-* Removed ``lib.polygons_without_holes`` and renamed ``lib.polygons_with_holes`` to
-  ``lib.polygons`` (#326).
+* Removed the (internal) function ``lib.polygons_without_holes`` and renamed
+  ``lib.polygons_with_holes`` to ``lib.polygons`` (#326).
 
 **Added GEOS functions**
 

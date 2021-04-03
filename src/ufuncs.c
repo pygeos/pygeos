@@ -2334,7 +2334,7 @@ static void create_collection_func(char** args, npy_intp* dimensions, npy_intp* 
     }
     geom_arr[i] = GEOSGeom_createCollection_r(ctx, type, temp_geoms, n_geoms);
     if (geom_arr[i] == NULL) {
-      // We will have a memory leak now (https://trac.osgeo.org/geos/ticket/1111)
+      // We may have a memory leak now (https://trac.osgeo.org/geos/ticket/1111)
       // but we have covered all known cases that GEOS would error by pre-emptively
       // checking if all inputs are the correct geometry types.
       errstate = PGERR_GEOS_EXCEPTION;
