@@ -1947,6 +1947,7 @@ static void nearest_points_func(char** args, npy_intp* dimensions, npy_intp* ste
                                 void* data) {
   GEOSGeometry* in1 = NULL;
   GEOSGeometry* in2 = NULL;
+  GEOSPreparedGeometry* in1_prepared = NULL;
   GEOSGeometry** geom_arr;
   GEOSCoordSequence* coord_seq = NULL;
 
@@ -1960,7 +1961,7 @@ static void nearest_points_func(char** args, npy_intp* dimensions, npy_intp* ste
 
   BINARY_LOOP {
     /* get the geometries: return on error */
-    if (!get_geom(*(GeometryObject**)ip1, &in1)) {
+    if (!get_geom_with_prepared(*(GeometryObject**)ip1, &in1, &in1_prepared)) {
       errstate = PGERR_NOT_A_GEOMETRY;
       destroy_geom_arr(ctx, geom_arr, i - 1);
       break;
@@ -1979,15 +1980,23 @@ static void nearest_points_func(char** args, npy_intp* dimensions, npy_intp* ste
       // from an actual error
       geom_arr[i] = NULL;
     } else {
+#if GEOS_SINCE_3_9_0
+      if (in1_prepared != NULL) {
+        coord_seq = GEOSPreparedNearestPoints_r(ctx, in1_prepared, in2);
+      } else {
+        coord_seq = GEOSNearestPoints_r(ctx, in1, in2);
+      }
+#else
       coord_seq = GEOSNearestPoints_r(ctx, in1, in2);
+#endif
       if (coord_seq == NULL) {
         errstate = PGERR_GEOS_EXCEPTION;
         destroy_geom_arr(ctx, geom_arr, i - 1);
         break;
       }
       geom_arr[i] = GEOSGeom_createLineString_r(ctx, coord_seq);
-      // Note: coordinate sequence is owned by linestring; if linestring fails to construct,
-      // it will automatically clean up the coordinate sequence
+      // Note: coordinate sequence is owned by linestring; if linestring fails to
+      // construct, it will automatically clean up the coordinate sequence
       if (geom_arr[i] == NULL) {
         errstate = PGERR_GEOS_EXCEPTION;
         destroy_geom_arr(ctx, geom_arr, i - 1);
