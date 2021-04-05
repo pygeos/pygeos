@@ -145,7 +145,7 @@ def set_coordinates(geometry, coordinates):
 
     .. warning::
 
-        The geometries are modified in place! If you don't want to
+        The geometry array is modified in place! If you don't want to
         modify the original array, you can do
         ``set_coordinates(arr.copy(), newcoords)``.
 
