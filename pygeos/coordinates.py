@@ -136,7 +136,7 @@ def get_coordinates(geometry, include_z=False, return_index=False):
 
 
 def set_coordinates(geometry, coordinates):
-    """Sets the coordinates of a geometry array with different coordinates.
+    """Adapts the coordinates of a geometry array in-place.
 
     If the coordinates array has shape (N, 2), all returned geometries
     will be two-dimensional, and the third dimension will be discarded,
