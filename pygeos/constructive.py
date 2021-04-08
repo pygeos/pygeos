@@ -895,6 +895,7 @@ def minimum_rotated_rectangle(geometry, **kwargs):
     >>> minimum_rotated_rectangle(Geometry("POINT (2 2)"))
     <pygeos.Geometry POINT (2 2)>
     >>> minimum_rotated_rectangle(Geometry("GEOMETRYCOLLECTION EMPTY"))
+    <pygeos.Geometry POLYGON EMPTY>
 
     See also
     --------
