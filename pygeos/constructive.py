@@ -30,6 +30,7 @@ __all__ = [
     "voronoi_polygons",
     "oriented_envelope",
     "minimum_rotated_rectangle",
+    "minimum_bounding_circle",
 ]
 
 
@@ -894,10 +895,41 @@ def minimum_rotated_rectangle(geometry, **kwargs):
     >>> minimum_rotated_rectangle(Geometry("POINT (2 2)"))
     <pygeos.Geometry POINT (2 2)>
     >>> minimum_rotated_rectangle(Geometry("GEOMETRYCOLLECTION EMPTY"))
-    <pygeos.Geometry POLYGON EMPTY>
 
     See also
     --------
     oriented_envelope
     """
     return lib.oriented_envelope(geometry, **kwargs)
+
+
+@requires_geos("3.8.0")
+@multithreading_enabled
+def minimum_bounding_circle(geometry, **kwargs):
+    """Computes the minimum bounding circle that encloses an input geometry.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+
+    Examples
+    --------
+    >>> minimum_bounding_circle(Geometry("POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0))"))
+    <pygeos.Geometry POLYGON ((12.1 5, 11.9 3.62, 11.5 2.29, 10.9 1.07, 10 4.44e...>
+    >>> minimum_bounding_circle(Geometry("LINESTRING (1 1, 10 10)"))
+    <pygeos.Geometry POLYGON ((11.9 5.5, 11.7 4.26, 11.4 3.06, 10.8 1.96, 10 1, ...>
+    >>> minimum_bounding_circle(Geometry("MULTIPOINT (2 2, 4 2)"))
+    <pygeos.Geometry POLYGON ((4 2, 3.98 1.8, 3.92 1.62, 3.83 1.44, 3.71 1.29, 3...>
+    >>> minimum_bounding_circle(Geometry("POINT (0 1)"))
+    <pygeos.Geometry POINT (0 1)>
+    >>> minimum_bounding_circle(Geometry("GEOMETRYCOLLECTION EMPTY"))
+    <pygeos.Geometry POLYGON EMPTY>
+
+    See also
+    --------
+    minimum_bounding_radius
+    """
+    return lib.minimum_bounding_circle(geometry, **kwargs)
