@@ -2,7 +2,7 @@ Changelog
 =========
 
 Version 0.10 (unreleased)
-------------------------
+-------------------------
 
 **Major enhancements**
 

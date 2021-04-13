@@ -71,8 +71,9 @@ def test_requires_geos_not_ok(version, mocked_geos_version):
         foo()
 
 
-def test_requires_geos_adapts_docstring(mocked_geos_version):
-    @requires_geos("3.8.0")
+@pytest.mark.parametrize("version", ["3.6.0", "3.8.0"])
+def test_requires_geos_adapts_docstring(version, mocked_geos_version):
+    @requires_geos(version)
     def foo():
         """Docstring that will be mocked.
 
@@ -83,9 +84,9 @@ def test_requires_geos_adapts_docstring(mocked_geos_version):
     # line with 4 spaces, which is correct for functions that are declared on
     # module level.
     expected = \
-        """Docstring that will be mocked.
+        f"""Docstring that will be mocked.
 
-    .. note:: This function requires at least GEOS 3.8.0.
+    .. note:: This function requires at least GEOS {version}.
 
         Some description.
         """
