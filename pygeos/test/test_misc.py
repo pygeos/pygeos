@@ -71,6 +71,28 @@ def test_requires_geos_not_ok(version, mocked_geos_version):
         foo()
 
 
+def test_requires_geos_adapts_docstring(mocked_geos_version):
+    @requires_geos("3.8.0")
+    def foo():
+        """Docstring that will be mocked.
+
+        Some description.
+        """
+
+    # note about indentation: the requires_geos decorator indents the added
+    # line with 4 spaces, which is correct for functions that are declared on
+    # module level.
+    expected = \
+        """Docstring that will be mocked.
+
+    .. note:: This function requires at least GEOS 3.8.0.
+
+        Some description.
+        """
+
+    assert foo.__doc__ == expected
+
+
 @multithreading_enabled
 def set_first_element(value, *args, **kwargs):
     for arg in chain(args, kwargs.values()):

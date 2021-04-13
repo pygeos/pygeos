@@ -51,6 +51,8 @@ class GeometryType(IntEnum):
 def get_type_id(geometry, **kwargs):
     """Returns the type ID of a geometry.
 
+    .. note:: 'foo' requires at least GEOS 3.6.0.
+
     - None (missing) is -1
     - POINT is 0
     - LINESTRING is 1
