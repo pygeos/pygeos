@@ -1,3 +1,4 @@
+import os
 from functools import wraps
 
 import numpy as np
@@ -16,22 +17,27 @@ class requires_geos:
         self.version = tuple(int(x) for x in version.split("."))
 
     def __call__(self, func):
-        msg = "This function requires at least GEOS {}.{}.{}.".format(*self.version)
-        if lib.geos_version < self.version:
+        msg = "'{}' requires at least GEOS {}.{}.{}.".format(
+            func.__name__, *self.version
+        )
+        if os.environ.get("SPHINX_DOC_BUILD") == "1":  # set in docs/conf.py
+            # Doc build: just add a note about the version constraint after
+            # the first line of the docstring.
+            if func.__doc__:
+                func.__doc__ = func.__doc__.replace(
+                    "\n\n", "\n\n    .. note:: {}\n\n".format(msg), 1
+                )
+            return func
+        elif lib.geos_version < self.version:
 
             @wraps(func)
             def wrapped(*args, **kwargs):
                 raise UnsupportedGEOSOperation(msg)
 
-        else:
-            wrapped = func
+            wrapped.__doc__ = msg
+        else:  # return directly, do not change the docstring
+            return func
 
-        # Add a note about the version constraint after the first line of
-        # the docstring.
-        if wrapped.__doc__:
-            wrapped.__doc__ = wrapped.__doc__.replace(
-                "\n\n", "\n\n    .. note:: {}\n\n".format(msg), 1
-            )
         return wrapped
 
 

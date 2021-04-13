@@ -1,3 +1,4 @@
+import os
 import sys
 from itertools import chain
 from string import ascii_lowercase
@@ -14,6 +15,13 @@ from pygeos.decorators import multithreading_enabled, requires_geos
 def mocked_geos_version():
     with mock.patch.object(pygeos.lib, "geos_version", new=(3, 7, 1)):
         yield "3.7.1"
+
+
+@pytest.fixture
+def sphinx_doc_build():
+    os.environ["SPHINX_DOC_BUILD"] = "1"
+    yield
+    del os.environ["SPHINX_DOC_BUILD"]
 
 
 def test_version():
@@ -52,49 +60,54 @@ def test_geos_capi_version():
     )
 
 
-@pytest.mark.parametrize("version", ["3.7.0", "3.7.1", "3.6.2"])
-def test_requires_geos_ok(version, mocked_geos_version):
-    @requires_geos(version)
-    def foo():
-        return "bar"
-
-    assert foo() == "bar"
-
-
-@pytest.mark.parametrize("version", ["3.7.2", "3.8.0", "3.8.1"])
-def test_requires_geos_not_ok(version, mocked_geos_version):
-    @requires_geos(version)
-    def foo():
-        return "bar"
-
-    with pytest.raises(pygeos.UnsupportedGEOSOperation):
-        foo()
-
-
-@pytest.mark.parametrize("version", ["3.6.0", "3.8.0"])
-def test_requires_geos_adapts_docstring(version, mocked_geos_version):
-    """The requires_geos decorator adapts the docstring."""
-
-    @requires_geos(version)
-    def foo():
+@pytest.fixture
+def test_func():
+    def test_func():
         """Docstring that will be mocked.
         A multiline.
 
         Some description.
         """
+        return "bar"
 
-    # note about indentation: the requires_geos decorator indents the added
-    # line with 4 spaces, which is correct for functions that are declared on
-    # module level.
-    expected = f"""Docstring that will be mocked.
-        A multiline.
+    return test_func
 
-    .. note:: This function requires at least GEOS {version}.
 
-        Some description.
-        """
+@pytest.mark.parametrize("version", ["3.7.0", "3.7.1", "3.6.2"])
+def test_requires_geos_ok(version, mocked_geos_version, test_func):
+    original_doc = test_func.__doc__
+    func = requires_geos(version)(test_func)
+    assert func() == "bar"
+    assert func.__doc__ == original_doc
 
-    assert foo.__doc__ == expected
+
+@pytest.mark.parametrize("version", ["3.7.2", "3.8.0", "3.8.1"])
+def test_requires_geos_not_ok(version, mocked_geos_version, test_func):
+    func = requires_geos(version)(test_func)
+    with pytest.raises(pygeos.UnsupportedGEOSOperation):
+        func()
+
+    assert func.__doc__ == "'test_func' requires at least GEOS {}.".format(version)
+
+
+@pytest.mark.parametrize("version", ["3.6.0", "3.8.0"])
+def test_requires_geos_doc_build(
+    version, mocked_geos_version, sphinx_doc_build, test_func
+):
+    """The requires_geos decorator adapts the docstring."""
+    func = requires_geos(version)(test_func)
+
+    expected = """Docstring that will be mocked.
+    A multiline.
+
+    .. note:: 'test_func' requires at least GEOS {}.
+
+    Some description.
+    """.format(
+        version
+    )
+
+    assert func.__doc__ == expected
 
 
 @multithreading_enabled
