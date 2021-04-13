@@ -73,9 +73,12 @@ def test_requires_geos_not_ok(version, mocked_geos_version):
 
 @pytest.mark.parametrize("version", ["3.6.0", "3.8.0"])
 def test_requires_geos_adapts_docstring(version, mocked_geos_version):
+    """The requires_geos decorator adapts the docstring."""
+
     @requires_geos(version)
     def foo():
         """Docstring that will be mocked.
+        A multiline.
 
         Some description.
         """
@@ -83,8 +86,8 @@ def test_requires_geos_adapts_docstring(version, mocked_geos_version):
     # note about indentation: the requires_geos decorator indents the added
     # line with 4 spaces, which is correct for functions that are declared on
     # module level.
-    expected = \
-        f"""Docstring that will be mocked.
+    expected = f"""Docstring that will be mocked.
+        A multiline.
 
     .. note:: This function requires at least GEOS {version}.
 

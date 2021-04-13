@@ -443,8 +443,6 @@ def build_area(geometry, **kwargs):
 
     Equivalent of the PostGIS ST_BuildArea() function.
 
-    Requires at least GEOS 3.8.0.
-
     Parameters
     ----------
     geometry : Geometry or array_like
@@ -464,8 +462,6 @@ def build_area(geometry, **kwargs):
 @multithreading_enabled
 def make_valid(geometry, **kwargs):
     """Repairs invalid geometries.
-
-    Requires at least GEOS 3.8.0.
 
     Parameters
     ----------

@@ -16,10 +16,9 @@ class requires_geos:
         self.version = tuple(int(x) for x in version.split("."))
 
     def __call__(self, func):
-        msg = "This function requires at least GEOS {}.{}.{}.".format(
-            *self.version
-        )
+        msg = "This function requires at least GEOS {}.{}.{}.".format(*self.version)
         if lib.geos_version < self.version:
+
             @wraps(func)
             def wrapped(*args, **kwargs):
                 raise UnsupportedGEOSOperation(msg)
@@ -29,9 +28,10 @@ class requires_geos:
 
         # Add a note about the version constraint after the first line of
         # the docstring.
-        wrapped.__doc__ = wrapped.__doc__.replace(
-            "\n", f"\n\n    .. note:: {msg}\n", 1
-        )
+        if wrapped.__doc__:
+            wrapped.__doc__ = wrapped.__doc__.replace(
+                "\n\n", f"\n\n    .. note:: {msg}\n\n", 1
+            )
         return wrapped
 
 
