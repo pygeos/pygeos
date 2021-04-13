@@ -23,11 +23,15 @@ class requires_geos:
         if os.environ.get("SPHINX_DOC_BUILD") == "1":  # set in docs/conf.py
             # Doc build: just add a note about the version constraint after
             # the first line of the docstring.
-            if func.__doc__:
-                func.__doc__ = func.__doc__.replace(
+            @wraps(func)
+            def wrapped(*args, **kwargs):
+                return func(*args, **kwargs)
+
+            if wrapped.__doc__:
+                wrapped.__doc__ = wrapped.__doc__.replace(
                     "\n\n", "\n\n    .. note:: {}\n\n".format(msg), 1
                 )
-            return func
+            return wrapped
         elif lib.geos_version < self.version:
 
             @wraps(func)

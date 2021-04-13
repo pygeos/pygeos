@@ -60,54 +60,42 @@ def test_geos_capi_version():
     )
 
 
-@pytest.fixture
-def test_func():
-    def test_func():
-        """Docstring that will be mocked.
-        A multiline.
+def func():
+    """Docstring that will be mocked.
+    A multiline.
 
-        Some description.
-        """
-        return "bar"
-
-    return test_func
+    Some description.
+    """
 
 
 @pytest.mark.parametrize("version", ["3.7.0", "3.7.1", "3.6.2"])
-def test_requires_geos_ok(version, mocked_geos_version, test_func):
-    original_doc = test_func.__doc__
-    func = requires_geos(version)(test_func)
-    assert func() == "bar"
-    assert func.__doc__ == original_doc
+def test_requires_geos_ok(version, mocked_geos_version):
+    wrapped = requires_geos(version)(func)
+    assert wrapped is func
 
 
 @pytest.mark.parametrize("version", ["3.7.2", "3.8.0", "3.8.1"])
-def test_requires_geos_not_ok(version, mocked_geos_version, test_func):
-    func = requires_geos(version)(test_func)
+def test_requires_geos_not_ok(version, mocked_geos_version):
+    wrapped = requires_geos(version)(func)
     with pytest.raises(pygeos.UnsupportedGEOSOperation):
-        func()
+        wrapped()
 
-    assert func.__doc__ == "'test_func' requires at least GEOS {}.".format(version)
+    assert wrapped.__doc__ == f"'func' requires at least GEOS {version}."
 
 
 @pytest.mark.parametrize("version", ["3.6.0", "3.8.0"])
-def test_requires_geos_doc_build(
-    version, mocked_geos_version, sphinx_doc_build, test_func
-):
+def test_requires_geos_doc_build(version, mocked_geos_version, sphinx_doc_build):
     """The requires_geos decorator adapts the docstring."""
-    func = requires_geos(version)(test_func)
+    wrapped = requires_geos(version)(func)
 
-    expected = """Docstring that will be mocked.
+    expected = f"""Docstring that will be mocked.
     A multiline.
 
-    .. note:: 'test_func' requires at least GEOS {}.
+    .. note:: 'func' requires at least GEOS {version}.
 
     Some description.
-    """.format(
-        version
-    )
-
-    assert func.__doc__ == expected
+    """
+    assert wrapped.__doc__ == expected
 
 
 @multithreading_enabled
