@@ -30,7 +30,7 @@ class requires_geos:
         # the docstring.
         if wrapped.__doc__:
             wrapped.__doc__ = wrapped.__doc__.replace(
-                "\n\n", f"\n\n    .. note:: {msg}\n\n", 1
+                "\n\n", "\n\n    .. note:: {}\n\n".format(msg), 1
             )
         return wrapped
 
