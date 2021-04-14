@@ -28,6 +28,8 @@ from pygeos._geos cimport (
     GEOSGeometry,
     GEOSGeomTypeId_r,
     GEOSGetGeometryN_r,
+    GEOSGetExteriorRing_r,
+    GEOSGetInteriorRingN_r,
     get_geos_handle,
 )
 from pygeos._pygeos_api cimport (
@@ -186,6 +188,85 @@ def get_parts(object[:] array):
             for part_idx in range(counts_view[geom_idx]):
                 index_view[idx] = geom_idx
                 part = GEOSGetGeometryN_r(geos_handle, geom, part_idx)
+                if part == NULL:
+                    return  # GEOSException is raised by get_geos_handle
+
+                # clone the geometry to keep it separate from the inputs
+                part = GEOSGeom_clone_r(geos_handle, part)
+                if part == NULL:
+                    return  # GEOSException is raised by get_geos_handle
+
+                # cast part back to <GEOSGeometry> to discard const qualifier
+                # pending issue #227
+                parts_view[idx] = PyGEOS_CreateGeometry(<GEOSGeometry *>part, geos_handle)
+
+                idx += 1
+
+    return parts, index
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+def get_rings(object[:] array):
+    cdef Py_ssize_t geom_idx = 0
+    cdef Py_ssize_t part_idx = 0
+    cdef Py_ssize_t idx = 0
+    cdef GEOSGeometry *geom = NULL
+    cdef const GEOSGeometry *part = NULL
+
+    counts = pygeos.get_num_interior_rings(array)
+    is_polygon = (pygeos.get_type_id(array) == 3) & (~pygeos.is_empty(array))
+    counts += is_polygon
+    cdef Py_ssize_t count = counts.sum()
+
+    if count == 0:
+        # return immediately if there are no geometries to return
+        return (
+            np.empty(shape=(0, ), dtype=object),
+            np.empty(shape=(0, ), dtype=np.intp)
+        )
+
+    parts = np.empty(shape=(count, ), dtype=object)
+    index = np.empty(shape=(count, ), dtype=np.intp)
+
+    cdef int[:] counts_view = counts
+    cdef object[:] parts_view = parts
+    cdef np.intp_t[:] index_view = index
+
+    with get_geos_handle() as geos_handle:
+        for geom_idx in range(array.size):
+            if counts_view[geom_idx] <= 0:
+                # No parts to return, skip this item
+                continue
+
+            if PyGEOS_GetGEOSGeometry(<PyObject *>array[geom_idx], &geom) == 0:
+                raise TypeError("One of the arguments is of incorrect type. "
+                                "Please provide only Geometry objects.")
+
+            if geom == NULL:
+                continue
+
+            index_view[idx] = geom_idx
+
+            # Extract exterior ring
+
+            part = GEOSGetExteriorRing_r(geos_handle, geom)
+            if part == NULL:
+                return  # GEOSException is raised by get_geos_handle
+
+            # clone the geometry to keep it separate from the inputs
+            part = GEOSGeom_clone_r(geos_handle, part)
+            if part == NULL:
+                return  # GEOSException is raised by get_geos_handle
+            parts_view[idx] = PyGEOS_CreateGeometry(<GEOSGeometry *>part, geos_handle)
+
+            idx += 1
+
+            # Extract interior rings
+
+            for part_idx in range(counts_view[geom_idx] - 1):
+                index_view[idx] = geom_idx
+                part = GEOSGetInteriorRingN_r(geos_handle, geom, part_idx)
                 if part == NULL:
                     return  # GEOSException is raised by get_geos_handle
 

@@ -556,6 +556,21 @@ def get_parts(geometry, return_index=False):
     return _geometry.get_parts(geometry)[0]
 
 
+def get_rings(geometry, return_index=False):
+    """Gets rings of Polygons
+    """
+    geometry = np.asarray(geometry, dtype=np.object_)
+    geometry = np.atleast_1d(geometry)
+
+    if geometry.ndim != 1:
+        raise ValueError("Array should be one dimensional")
+
+    if return_index:
+        return _geometry.get_rings(geometry)
+
+    return _geometry.get_rings(geometry)[0]
+
+
 @multithreading_enabled
 def get_num_geometries(geometry, **kwargs):
     """Returns number of geometries in a collection.
