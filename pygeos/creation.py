@@ -1,7 +1,7 @@
 import numpy as np
 
 from . import Geometry, GeometryType, lib
-from ._geometry import collections_1d, polygons_1d, simple_geometries_1d
+from ._geometry import collections_1d, simple_geometries_1d
 from .decorators import multithreading_enabled
 
 __all__ = [
@@ -125,34 +125,40 @@ def linearrings(coords, y=None, z=None, indices=None, **kwargs):
 
 
 @multithreading_enabled
-def polygons(shells, holes=None, indices=None, **kwargs):
+def polygons(geometries, holes=None, indices=None, **kwargs):
     """Create an array of polygons.
 
     Parameters
     ----------
-    shell : array_like
-        An array of linearrings that constitute the out shell of the polygons.
-        Coordinates can also be passed, see linearrings.
+    geometries : array_like
+        An array of linearrings or coordinates (see linearrings).
+        If ``indices`` are given, the geometries include both the outer shell
+        and the holes. If not, the geometries only include the shells and the
+        ``holes`` argument should be used to create polygons with holes.
     holes : array_like or None
         An array of lists of linearrings that constitute holes for each shell.
+        Not to be used in combination with ``indices``.
     indices : array_like or None
-        Indices into the shells array where input holes belong. If
-        provided, shells, holes, and indices should all be 1D and the size
-        of holes must equal the size of indices.
+        Indices into the target array where input geometries belong. If
+        provided, the holes are expected to be present inside ``geometries``.
+        Both geometries and indices should be 1D and have matching  sizes.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
         Ignored if ``indices`` is provided.
     """
-    shells = np.asarray(shells)
-    if not isinstance(shells, Geometry) and np.issubdtype(shells.dtype, np.number):
-        shells = linearrings(shells)
+    geometries = np.asarray(geometries)
+    if not isinstance(geometries, Geometry) and np.issubdtype(geometries.dtype, np.number):
+        geometries = linearrings(geometries)
 
-    if holes is None and indices is not None:
-        raise TypeError("Indices provided without a holes array.")
-    elif holes is None:
+    if indices is not None:
+        if holes is not None:
+            raise TypeError("Indices provided with a holes array.")
+        return collections_1d(geometries, indices, GeometryType.POLYGON)
+
+    if holes is None:
         # no holes provided: initialize an empty holes array matching shells
-        shape = shells.shape + (0,) if isinstance(shells, np.ndarray) else (0,)
+        shape = geometries.shape + (0,) if isinstance(geometries, np.ndarray) else (0,)
         holes = np.empty(shape, dtype=object)
     else:
         holes = np.asarray(holes)
@@ -160,10 +166,7 @@ def polygons(shells, holes=None, indices=None, **kwargs):
         if np.issubdtype(holes.dtype, np.number):
             holes = linearrings(holes)
 
-    if indices is None:
-        return lib.polygons(shells, holes, **kwargs)
-    else:
-        return polygons_1d(shells, holes, indices)
+    return lib.polygons(geometries, holes, **kwargs)
 
 
 @multithreading_enabled

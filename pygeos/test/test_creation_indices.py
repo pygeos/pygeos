@@ -110,24 +110,6 @@ def test_linearrings_invalid(coordinates):
         pygeos.linearrings(coordinates, indices=np.zeros(len(coordinates)))
 
 
-@pytest.mark.parametrize("shells", [[point], [line_string], "hello", [2]])
-def test_polygons_invalid_shells(shells):
-    with pytest.raises((TypeError, ValueError, pygeos.GEOSException)):
-        pygeos.polygons(shells, [linear_ring], indices=[0])
-
-
-@pytest.mark.parametrize("holes", [[1, 2], None, [linear_ring, point], "hello"])
-def test_polygons_invalid_holes(holes):
-    with pytest.raises((TypeError, ValueError, pygeos.GEOSException)):
-        pygeos.polygons([linear_ring, linear_ring], holes, indices=[0, 1])
-
-
-@pytest.mark.parametrize("indices", [[1, 2], [point], "hello", [1], [-1]])
-def test_polygons_invalid_indices(indices):
-    with pytest.raises((TypeError, ValueError)):
-        pygeos.polygons([linear_ring], [linear_ring], indices=indices)
-
-
 hole_1 = pygeos.linearrings([(0.2, 0.2), (0.2, 0.4), (0.4, 0.4)])
 hole_2 = pygeos.linearrings([(0.6, 0.6), (0.6, 0.8), (0.8, 0.8)])
 poly = pygeos.polygons(linear_ring)
@@ -137,31 +119,57 @@ poly_hole_1_2 = pygeos.polygons(linear_ring, holes=[hole_1, hole_2])
 
 
 @pytest.mark.parametrize(
-    "holes,indices,expected",
+    "rings,indices,expected",
     [
-        ([None], [1], [poly, poly]),
-        ([hole_1], [0], [poly_hole_1, poly]),
-        ([hole_1], [1], [poly, poly_hole_1]),
-        ([hole_1, hole_2], [0, 0], [poly_hole_1_2, poly]),
-        ([hole_1, hole_2], [0, 1], [poly_hole_1, poly_hole_2]),
-        ([hole_1, None, hole_2], [0, 0, 0], [poly_hole_1_2, poly]),
-        ([hole_1, None, hole_2], [0, 0, 1], [poly_hole_1, poly_hole_2]),
-        ([hole_1, None, hole_2], [0, 1, 1], [poly_hole_1, poly_hole_2]),
+        ([linear_ring, linear_ring], [0, 1], [poly, poly]),
+        ([linear_ring, hole_1, linear_ring], [0, 0, 1], [poly_hole_1, poly]),
+        ([linear_ring, linear_ring, hole_1], [0, 1, 1], [poly, poly_hole_1]),
+        ([None, linear_ring, linear_ring, hole_1], [0, 0, 1, 1], [poly, poly_hole_1]),
+        ([linear_ring, None, linear_ring, hole_1], [0, 0, 1, 1], [poly, poly_hole_1]),
+        ([linear_ring, None, linear_ring, hole_1], [0, 1, 1, 1], [poly, poly_hole_1]),
+        ([linear_ring, linear_ring, None, hole_1], [0, 1, 1, 1], [poly, poly_hole_1]),
+        ([linear_ring, linear_ring, hole_1, None], [0, 1, 1, 1], [poly, poly_hole_1]),
+        (
+            [linear_ring, hole_1, hole_2, linear_ring],
+            [0, 0, 0, 1],
+            [poly_hole_1_2, poly],
+        ),
+        (
+            [linear_ring, hole_1, linear_ring, hole_2],
+            [0, 0, 1, 1],
+            [poly_hole_1, poly_hole_2],
+        ),
+        (
+            [linear_ring, linear_ring, hole_1, hole_2],
+            [0, 1, 1, 1],
+            [poly, poly_hole_1_2],
+        ),
+        (
+            [linear_ring, hole_1, None, hole_2, linear_ring],
+            [0, 0, 0, 0, 1],
+            [poly_hole_1_2, poly],
+        ),
+        (
+            [linear_ring, hole_1, None, linear_ring, hole_2],
+            [0, 0, 0, 1, 1],
+            [poly_hole_1, poly_hole_2],
+        ),
+        (
+            [linear_ring, hole_1, linear_ring, None, hole_2],
+            [0, 0, 1, 1, 1],
+            [poly_hole_1, poly_hole_2],
+        ),
     ],
 )
-def test_polygons(holes, indices, expected):
-    actual = pygeos.polygons([linear_ring, linear_ring], holes, indices=indices)
+def test_polygons(rings, indices, expected):
+    actual = pygeos.polygons(rings, indices=indices)
     assert_geometries_equal(actual, expected)
-
-
-def test_polygons_missing_shell():
-    actual = pygeos.polygons([None, linear_ring], [hole_1, hole_2], indices=[0, 1])
-    assert_geometries_equal(actual, [None, poly_hole_2])
 
 
 @pytest.mark.parametrize(
     "func",
     [
+        pygeos.polygons,
         pygeos.multipoints,
         pygeos.multilinestrings,
         pygeos.multipolygons,
@@ -179,13 +187,7 @@ def test_invalid_indices_collections(func, indices):
     [
         ([point, line_string], [0, 0], [geom_coll([point, line_string])]),
         ([point, line_string], [0, 1], [geom_coll([point]), geom_coll([line_string])]),
-        (
-            [point, line_string],
-            [1, 1],
-            [geom_coll([]), geom_coll([point, line_string])],
-        ),
         ([point, None], [0, 0], [geom_coll([point])]),
-        ([point, None], [0, 1], [geom_coll([point]), geom_coll([])]),
         ([point, None, line_string], [0, 0, 0], [geom_coll([point, line_string])]),
     ],
 )
@@ -217,6 +219,9 @@ def test_multipolygons():
 @pytest.mark.parametrize(
     "geometries,func",
     [
+        ([point], pygeos.polygons),
+        ([line_string], pygeos.polygons),
+        ([polygon], pygeos.polygons),
         ([line_string], pygeos.multipoints),
         ([polygon], pygeos.multipoints),
         ([point], pygeos.multilinestrings),
