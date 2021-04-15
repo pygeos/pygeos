@@ -31,6 +31,7 @@ class requires_geos:
                 wrapped.__doc__ = wrapped.__doc__.replace(
                     "\n\n", "\n\n    .. note:: {}\n\n".format(msg), 1
                 )
+
             return wrapped
         elif lib.geos_version < self.version:
 
@@ -39,10 +40,10 @@ class requires_geos:
                 raise UnsupportedGEOSOperation(msg)
 
             wrapped.__doc__ = msg
-        else:  # return directly, do not change the docstring
-            return func
 
-        return wrapped
+            return wrapped
+
+        return func  # return directly, do not change the docstring
 
 
 def multithreading_enabled(func):
