@@ -148,7 +148,9 @@ def polygons(geometries, holes=None, indices=None, **kwargs):
         Ignored if ``indices`` is provided.
     """
     geometries = np.asarray(geometries)
-    if not isinstance(geometries, Geometry) and np.issubdtype(geometries.dtype, np.number):
+    if not isinstance(geometries, Geometry) and np.issubdtype(
+        geometries.dtype, np.number
+    ):
         geometries = linearrings(geometries)
 
     if indices is not None:
