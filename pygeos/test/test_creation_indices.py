@@ -69,7 +69,7 @@ def test_points():
 
 
 def test_points_no_index_raises():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         pygeos.points(
             np.array([[2, 3], [2, 3]], dtype=float),
             indices=np.array([0, 2], dtype=np.intp),
@@ -216,14 +216,14 @@ def test_geometrycollections(geometries, indices, expected):
 
 
 def test_geometrycollections_no_index_raises():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         pygeos.geometrycollections(
             np.array([point, line_string], dtype=object), indices=[0, 2]
         )
 
 
 def test_geometrycollections_missing_input_raises():
-    with pytest.raises(TypeError):
+    with pytest.raises(ValueError):
         pygeos.geometrycollections(
             np.array([point, None, line_string], dtype=object), indices=[0, 1, 2]
         )

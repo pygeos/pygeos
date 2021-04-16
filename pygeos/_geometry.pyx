@@ -106,7 +106,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
 
             # for now, raise if there are no coordinates (decision on this in GH345)
             if geom_size == 0:
-                raise TypeError(
+                raise ValueError(
                     f"One of the geometries has no valid input coordinates."
                 )
 
@@ -320,7 +320,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
 
             # for now, raise if there are no geometries (decision on this in GH345)
             if coll_size == 0:
-                raise TypeError(
+                raise ValueError(
                     f"One of the geometries has no valid input geometries."
                 )
 

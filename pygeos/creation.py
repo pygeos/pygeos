@@ -46,8 +46,8 @@ def points(coords, y=None, z=None, indices=None, **kwargs):
     indices : array_like or None
         Indices into the target array where input coordinates belong. If
         provided, the coords should be 2D with shape (N, 2) or (N, 3) and
-        indices should be 1D with shape (N,). Missing indices will give None
-        values in the output array.
+        indices should be 1D with shape (N,). Missing indices will result
+        in a ValueError.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -77,8 +77,8 @@ def linestrings(coords, y=None, z=None, indices=None, **kwargs):
     indices : array_like or None
         Indices into the target array where input coordinates belong. If
         provided, the coords should be 2D with shape (N, 2) or (N, 3) and
-        indices should be 1D with shape (N,). Missing indices will give None
-        values in the output array.
+        indices should be 1D with shape (N,). Missing indices will result
+        in a ValueError.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -110,8 +110,8 @@ def linearrings(coords, y=None, z=None, indices=None, **kwargs):
     indices : array_like or None
         Indices into the target array where input coordinates belong. If
         provided, the coords should be 2D with shape (N, 2) or (N, 3) and
-        indices should be 1D with shape (N,). Missing indices will give None
-        values in the output array.
+        indices should be 1D with shape (N,). Missing indices will result
+        in a ValueError.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -141,7 +141,9 @@ def polygons(geometries, holes=None, indices=None, **kwargs):
     indices : array_like or None
         Indices into the target array where input geometries belong. If
         provided, the holes are expected to be present inside ``geometries``.
-        Both geometries and indices should be 1D and have matching  sizes.
+        Both geometries and indices should be 1D and have matching sizes.
+        Output geometries with no input geometries specified (no index or only
+        None inputs) will result in a ValueError.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -213,6 +215,8 @@ def multipoints(geometries, indices=None, **kwargs):
         Indices into the target array where input geometries belong. If
         provided, both geometries and indices should be 1D and have matching
         sizes.
+        Output geometries with no input geometries specified (no index or only
+        None inputs) will result in a ValueError.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -242,6 +246,8 @@ def multilinestrings(geometries, indices=None, **kwargs):
         Indices into the target array where input geometries belong. If
         provided, both geometries and indices should be 1D and have matching
         sizes.
+        Output geometries with no input geometries specified (no index or only
+        None inputs) will result in a ValueError.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -272,6 +278,8 @@ def multipolygons(geometries, indices=None, **kwargs):
         Indices into the target array where input geometries belong. If
         provided, both geometries and indices should be 1D and have matching
         sizes.
+        Output geometries with no input geometries specified (no index or only
+        None inputs) will result in a ValueError.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -301,6 +309,8 @@ def geometrycollections(geometries, indices=None, **kwargs):
         Indices into the target array where input geometries belong. If
         provided, both geometries and indices should be 1D and have matching
         sizes.
+        Output geometries with no input geometries specified (no index or only
+        None inputs) will result in a ValueError.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
