@@ -69,7 +69,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
     if coordinates.ndim != 2:
         raise TypeError("coordinates is not a two-dimensional array.")
 
-    indices = np.asarray(indices, dtype=np.intp)
+    indices = np.asarray(indices, dtype=np.intp)  # intp is what bincount takes
     if indices.ndim != 1:
         raise TypeError("indices is not a one-dimensional array.")
 
@@ -91,7 +91,6 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
         raise ValueError("The indices must be sorted.")  
 
     cdef double[:, :] coord_view = coordinates
-    cdef np.intp_t[:] index_view = indices
 
     # get the geometry count per collection (this raises on negative indices)
     cdef unsigned int[:] coord_counts = np.bincount(indices).astype(np.uint32)
@@ -255,7 +254,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
     if geometries.ndim != 1:
         raise TypeError("geometries is not a one-dimensional array.")
 
-    indices = np.asarray(indices, dtype=np.int32)
+    indices = np.asarray(indices, dtype=np.intp)  # intp is what bincount takes
     if indices.ndim != 1:
         raise TypeError("indices is not a one-dimensional array.")
 
@@ -268,9 +267,6 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
 
     if np.any(indices[1:] < indices[:indices.shape[0] - 1]):
         raise ValueError("The indices should be sorted.")  
-
-    cdef object[:] geometries_view = geometries
-    cdef int[:] indices_view = indices
 
     # get the geometry count per collection (this raises on negative indices)
     cdef int[:] collection_size = np.bincount(indices).astype(np.int32)
@@ -291,7 +287,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
 
             # fill the temporary array with geometries belonging to this collection
             for coll_geom_idx in range(collection_size[coll_idx]):
-                if PyGEOS_GetGEOSGeometry(<PyObject *>geometries_view[geom_idx_1 + coll_geom_idx], &geom) == 0:
+                if PyGEOS_GetGEOSGeometry(<PyObject *>geometries[geom_idx_1 + coll_geom_idx], &geom) == 0:
                     _deallocate_arr(geos_handle, temp_geoms_view, coll_size)
                     raise TypeError(
                         "One of the arguments is of incorrect type. Please provide only Geometry objects."
