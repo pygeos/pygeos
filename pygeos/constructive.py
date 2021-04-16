@@ -697,8 +697,8 @@ def segmentize(geometry, tolerance, **kwargs):
     Examples
     --------
     >>> line = Geometry("LINESTRING (0 0, 0 10)")
-    >>> segmentize(line, tolerance=5)
-    <pygeos.Geometry LINESTRING (0 0, 0 5, 0 10)>  # doctest: +SKIP
+    >>> segmentize(line, tolerance=5)  # doctest: +SKIP
+    <pygeos.Geometry LINESTRING (0 0, 0 5, 0 10)>
     >>> poly = Geometry("POLYGON ((0 0, 10 0, 10 10, 0 10, 0 0))")
     >>> segmentize(poly, tolerance=5)  # doctest: +SKIP
     <pygeos.Geometry POLYGON ((0 0, 5 0, 10 0, 10 5, 10 10, 5 10, 0 10, 0 5, 0 0))>
