@@ -155,7 +155,7 @@ def polygons(geometries, holes=None, indices=None, **kwargs):
 
     if indices is not None:
         if holes is not None:
-            raise TypeError("Indices provided with a holes array.")
+            raise TypeError("Cannot specify separate holes array when using indices.")
         return collections_1d(geometries, indices, GeometryType.POLYGON)
 
     if holes is None:
