@@ -331,7 +331,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                 coll = GEOSGeom_createPolygon_r(
                     geos_handle,
                     <GEOSGeometry*> temp_geoms_view[0],
-                    <GEOSGeometry**> &temp_geoms_view[1 if coll_size > 1 else 0],
+                    NULL if coll_size <= 1 else <GEOSGeometry**> &temp_geoms_view[1],
                     coll_size - 1
                 )
             else:
