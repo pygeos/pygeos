@@ -104,10 +104,11 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
         for geom_idx in range(n_geoms):
             geom_size = coord_counts[geom_idx]
 
-            # insert None if there are no coordinates
+            # for now, raise if there are no coordinates (decision on this in GH345)
             if geom_size == 0:
-                result_view[geom_idx] = PyGEOS_CreateGeometry(NULL, geos_handle)
-                continue
+                raise TypeError(
+                    f"One of the geometries has no valid input coordinates."
+                )
 
             # check if we need to close a linearring
             if geometry_type == 2:
@@ -317,6 +318,7 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                 temp_geoms_view[coll_size] = <np.intp_t>geom
                 coll_size += 1
 
+            # for now, raise if there are no geometries (decision on this in GH345)
             if coll_size == 0:
                 raise TypeError(
                     f"One of the geometries has no valid input geometries."

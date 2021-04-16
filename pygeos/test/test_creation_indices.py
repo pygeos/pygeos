@@ -63,9 +63,17 @@ def test_points_invalid():
 def test_points():
     actual = pygeos.points(
         np.array([[2, 3], [2, 3]], dtype=float),
-        indices=np.array([0, 2], dtype=np.intp),
+        indices=np.array([0, 1], dtype=np.intp),
     )
-    assert_geometries_equal(actual, [point, None, point])
+    assert_geometries_equal(actual, [point, point])
+
+
+def test_points_no_index_raises():
+    with pytest.raises(TypeError):
+        pygeos.points(
+            np.array([[2, 3], [2, 3]], dtype=float),
+            indices=np.array([0, 2], dtype=np.intp),
+        )
 
 
 @pytest.mark.parametrize(
@@ -73,7 +81,6 @@ def test_points():
     [
         ([[1, 1], [2, 2]], [0, 0], [lstrs([[1, 1], [2, 2]])]),
         ([[1, 1, 1], [2, 2, 2]], [0, 0], [lstrs([[1, 1, 1], [2, 2, 2]])]),
-        ([[1, 1], [2, 2]], [1, 1], [None, lstrs([[1, 1], [2, 2]])]),
         (
             [[1, 1], [2, 2], [2, 2], [3, 3]],
             [0, 0, 1, 1],
@@ -206,6 +213,20 @@ def test_geometrycollections(geometries, indices, expected):
         np.array(geometries, dtype=object), indices=indices
     )
     assert_geometries_equal(actual, expected)
+
+
+def test_geometrycollections_no_index_raises():
+    with pytest.raises(TypeError):
+        pygeos.geometrycollections(
+            np.array([point, line_string], dtype=object), indices=[0, 2]
+        )
+
+
+def test_geometrycollections_missing_input_raises():
+    with pytest.raises(TypeError):
+        pygeos.geometrycollections(
+            np.array([point, None, line_string], dtype=object), indices=[0, 1, 2]
+        )
 
 
 def test_multipoints():
