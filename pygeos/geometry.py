@@ -25,6 +25,7 @@ __all__ = [
     "get_interior_ring",
     "get_geometry",
     "get_parts",
+    "get_rings",
     "get_precision",
     "set_precision",
 ]
@@ -564,9 +565,9 @@ def get_rings(geometry, return_index=False):
         raise ValueError("Array should be one dimensional")
 
     if return_index:
-        return _geometry.get_rings(geometry)
+        return _geometry.get_parts(geometry, extract_rings=True)
 
-    return _geometry.get_rings(geometry)[0]
+    return _geometry.get_parts(geometry, extract_rings=True)[0]
 
 
 @multithreading_enabled
