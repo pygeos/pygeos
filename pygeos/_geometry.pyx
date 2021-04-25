@@ -20,6 +20,7 @@ from pygeos._geos cimport (
     GEOSCoordSequence,
     GEOSGeom_clone_r,
     GEOSGeom_createCollection_r,
+    GEOSGeom_createEmptyPolygon_r,
     GEOSGeom_createLinearRing_r,
     GEOSGeom_createLineString_r,
     GEOSGeom_createPoint_r,
@@ -104,10 +105,10 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type):
         for geom_idx in range(n_geoms):
             geom_size = coord_counts[geom_idx]
 
-            # for now, raise if there are no coordinates (decision on this in GH345)
+            # for now, raise if there are indices missing (decision on this in GH345)
             if geom_size == 0:
                 raise ValueError(
-                    f"One of the geometries has no valid input coordinates."
+                    f"Index {geom_idx} is missing from the input indices."
                 )
 
             # check if we need to close a linearring
@@ -284,6 +285,10 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
 
     with get_geos_handle() as geos_handle:
         for coll_idx in range(n_colls):
+            if collection_size[coll_idx] == 0:
+                raise ValueError(
+                    f"Index {coll_idx} is missing from the input indices."
+                )
             coll_size = 0
 
             # fill the temporary array with geometries belonging to this collection
@@ -318,27 +323,26 @@ def collections_1d(object geometries, object indices, int geometry_type = 7):
                 temp_geoms_view[coll_size] = <np.intp_t>geom
                 coll_size += 1
 
-            # for now, raise if there are no geometries (decision on this in GH345)
-            if coll_size == 0:
-                raise ValueError(
-                    f"One of the geometries has no valid input geometries."
-                )
-
             # create the collection
-            if geometry_type == 3:  # POLYGON
-                coll = GEOSGeom_createPolygon_r(
-                    geos_handle,
-                    <GEOSGeometry*> temp_geoms_view[0],
-                    NULL if coll_size <= 1 else <GEOSGeometry**> &temp_geoms_view[1],
-                    coll_size - 1
-                )
-            else:
+            if geometry_type != 3:  # Collection
                 coll = GEOSGeom_createCollection_r(
                     geos_handle,
                     geometry_type, 
                     <GEOSGeometry**> &temp_geoms_view[0],
                     coll_size
                 )
+            elif coll_size != 0:  # Polygon, non-empty
+                coll = GEOSGeom_createPolygon_r(
+                    geos_handle,
+                    <GEOSGeometry*> temp_geoms_view[0],
+                    NULL if coll_size <= 1 else <GEOSGeometry**> &temp_geoms_view[1],
+                    coll_size - 1
+                )
+            else:  # Polygon, empty
+                coll = GEOSGeom_createEmptyPolygon_r(
+                    geos_handle
+                )
+
             if coll == NULL:
                 return  # GEOSException is raised by get_geos_handle
 

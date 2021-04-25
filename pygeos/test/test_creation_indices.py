@@ -128,6 +128,7 @@ def test_linearrings_invalid(coordinates):
 hole_1 = pygeos.linearrings([(0.2, 0.2), (0.2, 0.4), (0.4, 0.4)])
 hole_2 = pygeos.linearrings([(0.6, 0.6), (0.6, 0.8), (0.8, 0.8)])
 poly = pygeos.polygons(linear_ring)
+poly_empty = pygeos.Geometry("POLYGON EMPTY")
 poly_hole_1 = pygeos.polygons(linear_ring, holes=[hole_1])
 poly_hole_2 = pygeos.polygons(linear_ring, holes=[hole_2])
 poly_hole_1_2 = pygeos.polygons(linear_ring, holes=[hole_1, hole_2])
@@ -137,6 +138,8 @@ poly_hole_1_2 = pygeos.polygons(linear_ring, holes=[hole_1, hole_2])
     "rings,indices,expected",
     [
         ([linear_ring, linear_ring], [0, 1], [poly, poly]),
+        ([None, linear_ring], [0, 1], [poly_empty, poly]),
+        ([None, linear_ring, None, None], [0, 0, 1, 1], [poly, poly_empty]),
         ([linear_ring, hole_1, linear_ring], [0, 0, 1], [poly_hole_1, poly]),
         ([linear_ring, linear_ring, hole_1], [0, 1, 1], [poly, poly_hole_1]),
         ([None, linear_ring, linear_ring, hole_1], [0, 0, 1, 1], [poly, poly_hole_1]),
@@ -205,6 +208,8 @@ def test_invalid_indices_collections(func, indices):
         ([point, line_string], [0, 0], [geom_coll([point, line_string])]),
         ([point, line_string], [0, 1], [geom_coll([point]), geom_coll([line_string])]),
         ([point, None], [0, 0], [geom_coll([point])]),
+        ([point, None], [0, 1], [geom_coll([point]), geom_coll([])]),
+        ([None, point, None, None], [0, 0, 1, 1], [geom_coll([point]), geom_coll([])]),
         ([point, None, line_string], [0, 0, 0], [geom_coll([point, line_string])]),
     ],
 )
@@ -219,13 +224,6 @@ def test_geometrycollections_no_index_raises():
     with pytest.raises(ValueError):
         pygeos.geometrycollections(
             np.array([point, line_string], dtype=object), indices=[0, 2]
-        )
-
-
-def test_geometrycollections_missing_input_raises():
-    with pytest.raises(ValueError):
-        pygeos.geometrycollections(
-            np.array([point, None, line_string], dtype=object), indices=[0, 1, 2]
         )
 
 
