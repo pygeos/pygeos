@@ -376,7 +376,9 @@ def test_get_parts_invalid_geometry(geom):
     ],
 )
 def test_get_rings(geom):
-    if (pygeos.get_type_id(geom) != pygeos.GeometryType.POLYGON) or pygeos.is_empty(geom):
+    if (pygeos.get_type_id(geom) != pygeos.GeometryType.POLYGON) or pygeos.is_empty(
+        geom
+    ):
         rings = pygeos.get_rings(geom)
         assert len(rings) == 0
     else:
@@ -411,10 +413,7 @@ def test_get_rings_return_index():
     assert np.array_equal(index, expected_index)
 
 
-@pytest.mark.parametrize(
-    "geom",
-    [[[None]], [[polygon]]]
-)
+@pytest.mark.parametrize("geom", [[[None]], [[polygon]]])
 def test_get_rings_invalid_dimensions(geom):
     """Only 1D inputs are supported"""
     with pytest.raises(ValueError, match="Array should be one dimensional"):

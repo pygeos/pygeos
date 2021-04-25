@@ -27,8 +27,8 @@ from pygeos._geos cimport (
     GEOSGeom_destroy_r,
     GEOSGeometry,
     GEOSGeomTypeId_r,
-    GEOSGetGeometryN_r,
     GEOSGetExteriorRing_r,
+    GEOSGetGeometryN_r,
     GEOSGetInteriorRingN_r,
     get_geos_handle,
 )
