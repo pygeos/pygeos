@@ -2,7 +2,7 @@ Changelog
 =========
 
 Version 0.10 (unreleased)
-------------------------
+-------------------------
 
 **Major enhancements**
 
@@ -32,6 +32,7 @@ Version 0.10 (unreleased)
 * Removed the (internal) function ``lib.polygons_without_holes`` and renamed
   ``lib.polygons_with_holes`` to ``lib.polygons`` (#326).
 * ``polygons`` will now return an empty polygon for `None` inputs (#346).
+* Removed compatibility with Python 3.5 (#341).
 
 
 **Added GEOS functions**
