@@ -31,6 +31,8 @@ Version 0.10 (unreleased)
   optionally return invalid WKB geometries as ``None``.
 * Removed the (internal) function ``lib.polygons_without_holes`` and renamed
   ``lib.polygons_with_holes`` to ``lib.polygons`` (#326).
+* ``polygons`` will now return an empty polygon for `None` inputs (#346).
+
 
 **Added GEOS functions**
 
