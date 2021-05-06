@@ -405,6 +405,9 @@ static void* minimum_bounding_circle_data[1] = {GEOSMinimumBoundingCircleWithRet
 #if GEOS_SINCE_3_7_0
 static void* reverse_data[1] = {GEOSReverse_r};
 #endif
+#if GEOS_SINCE_3_6_0
+static void* oriented_envelope_data[1] = {GEOSMinimumRotatedRectangle_r};
+#endif
 typedef void* FuncGEOS_Y_Y(void* context, void* a);
 static char Y_Y_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
 static void Y_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -2269,8 +2272,13 @@ static void polygons_func(char** args, npy_intp* dimensions, npy_intp* steps,
       break;
     }
     if (shell == NULL) {
-      // set None if shell is None (ignoring holes)
-      geom_arr[i] = NULL;
+      // output empty polygon if shell is None (ignoring holes)
+      geom_arr[i] = GEOSGeom_createEmptyPolygon_r(ctx);
+      if (geom_arr[i] == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        destroy_geom_arr(ctx, geom_arr, i - 1);
+        break;
+      };
       continue;
     }
     geom_type = GEOSGeomTypeId_r(ctx, shell);
@@ -3163,6 +3171,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 #if GEOS_SINCE_3_6_0
   DEFINE_Y_d(minimum_clearance);
   DEFINE_Y_d(get_precision);
+  DEFINE_Y_Y(oriented_envelope);
   DEFINE_CUSTOM(set_precision, 3);
 #endif
 

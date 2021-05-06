@@ -2,14 +2,14 @@ Changelog
 =========
 
 Version 0.10 (unreleased)
-------------------------
+-------------------------
 
 **Major enhancements**
 
 * Addition of ``nearest`` and ``nearest_all`` functions to ``STRtree`` for
   GEOS >= 3.6 to find the nearest neighbors (#272).
 * Enable bulk construction of geometries with different number of coordinates
-  by optionally taking index arrays in all creation functions (#230, #322, #326).
+  by optionally taking index arrays in all creation functions (#230, #322, #326, #346).
 * Released the GIL in all geometry creation functions (#310, #326).
 * Added the option to return the geometry index in ``get_coordinates`` (#318).
 * Updated ``box`` ufunc to use internal C function for creating polygon
@@ -31,6 +31,9 @@ Version 0.10 (unreleased)
   optionally return invalid WKB geometries as ``None``.
 * Removed the (internal) function ``lib.polygons_without_holes`` and renamed
   ``lib.polygons_with_holes`` to ``lib.polygons`` (#326).
+* ``polygons`` will now return an empty polygon for `None` inputs (#346).
+* Removed compatibility with Python 3.5 (#341).
+
 
 **Added GEOS functions**
 
@@ -38,6 +41,7 @@ Version 0.10 (unreleased)
 * Addition of a ``polygonize`` function (#275)
 * Addition of a ``polygonize_full`` function (#298)
 * Addition of a ``segmentize`` function for GEOS >= 3.10 (#299)
+* Addition of ``oriented_envelope`` and ``minimum_rotated_rectangle`` functions (#314)
 * Addition of ``minimum_bounding_circle`` and ``minimum_bounding_radius`` functions for GEOS >= 3.8 (#315)
 
 **Bug fixes**

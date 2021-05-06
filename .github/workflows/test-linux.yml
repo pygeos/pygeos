@@ -5,16 +5,11 @@ on: [push, pull_request]
 jobs:
   TestLinux:
     name: Python ${{ matrix.python }} (GEOS ${{ matrix.geos }}, numpy ${{ matrix.numpy || 'latest' }})
-    # runs-on: ubuntu-latest
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
-          # 2015
-          - python: 3.5
-            geos: 3.5.2
-            numpy: 1.10.4
           # 2017
           - python: 3.6
             geos: 3.6.4
@@ -89,4 +84,4 @@ jobs:
         shell: bash
         continue-on-error: ${{ matrix.geos == 'master' }}
         run: |
-          pytest
+          pytest pygeos
