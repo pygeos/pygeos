@@ -154,3 +154,23 @@ def test_shared_paths_non_linestring():
     g2 = pygeos.points(0, 1)
     with pytest.raises(pygeos.GEOSException):
         pygeos.shared_paths(g1, g2)
+
+
+def test_shortest_line():
+    g1 = pygeos.linestrings([(0, 0), (1, 0), (1, 1)])
+    g2 = pygeos.linestrings([(0, 3), (3, 0)])
+    actual = pygeos.shortest_line(g1, g2)
+    expected = pygeos.linestrings([(1, 1), (1.5, 1.5)])
+    assert pygeos.equals(actual, expected)
+
+
+def test_shortest_line_none():
+    # assert pygeos.shortest_line(line_string, None) is None
+    assert pygeos.shortest_line(None, line_string) is None
+    # assert pygeos.shortest_line(None, None) is None
+
+
+def test_shortest_line_empty():
+    assert pygeos.shortest_line(line_string, empty_line_string) is None
+    assert pygeos.shortest_line(empty_line_string, line_string) is None
+    assert pygeos.shortest_line(empty_line_string, empty_line_string) is None
