@@ -1975,7 +1975,7 @@ static void nearest_points_func(char** args, npy_intp* dimensions, npy_intp* ste
       break;
     }
 
-    if ((in1 == NULL) | (in2 == NULL) | GEOSisEmpty_r(ctx, in1) |
+    if ((in1 == NULL) || (in2 == NULL) || GEOSisEmpty_r(ctx, in1) ||
         GEOSisEmpty_r(ctx, in2)) {
       // in case of a missing value or empty geometry: return NULL (None)
       // GEOSNearestPoints_r returns NULL for empty geometries

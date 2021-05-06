@@ -165,9 +165,9 @@ def test_shortest_line():
 
 
 def test_shortest_line_none():
-    # assert pygeos.shortest_line(line_string, None) is None
+    assert pygeos.shortest_line(line_string, None) is None
     assert pygeos.shortest_line(None, line_string) is None
-    # assert pygeos.shortest_line(None, None) is None
+    assert pygeos.shortest_line(None, None) is None
 
 
 def test_shortest_line_empty():
