@@ -1975,36 +1975,35 @@ static void nearest_points_func(char** args, npy_intp* dimensions, npy_intp* ste
       break;
     }
 
-    if ((in1 == NULL) | (in2 == NULL)) {
-      // in case of a missing value: return NULL (None)
+    if ((in1 == NULL) | (in2 == NULL) | GEOSisEmpty_r(ctx, in1) |
+        GEOSisEmpty_r(ctx, in2)) {
+      // in case of a missing value or empty geometry: return NULL (None)
+      // GEOSNearestPoints_r returns NULL for empty geometries
+      // but this is not distinguishable from an actual error, so we handle this ourselves
       geom_arr[i] = NULL;
-    } else if (GEOSisEmpty_r(ctx, in1) | GEOSisEmpty_r(ctx, in2)) {
-      // GEOSNearestPoints_r would otherwise return a NULL not distinguishable
-      // from an actual error
-      geom_arr[i] = NULL;
-    } else {
+      continue;
+    }
 #if GEOS_SINCE_3_9_0
-      if (in1_prepared != NULL) {
-        coord_seq = GEOSPreparedNearestPoints_r(ctx, in1_prepared, in2);
-      } else {
-        coord_seq = GEOSNearestPoints_r(ctx, in1, in2);
-      }
-#else
+    if (in1_prepared != NULL) {
+      coord_seq = GEOSPreparedNearestPoints_r(ctx, in1_prepared, in2);
+    } else {
       coord_seq = GEOSNearestPoints_r(ctx, in1, in2);
+    }
+#else
+    coord_seq = GEOSNearestPoints_r(ctx, in1, in2);
 #endif
-      if (coord_seq == NULL) {
-        errstate = PGERR_GEOS_EXCEPTION;
-        destroy_geom_arr(ctx, geom_arr, i - 1);
-        break;
-      }
-      geom_arr[i] = GEOSGeom_createLineString_r(ctx, coord_seq);
-      // Note: coordinate sequence is owned by linestring; if linestring fails to
-      // construct, it will automatically clean up the coordinate sequence
-      if (geom_arr[i] == NULL) {
-        errstate = PGERR_GEOS_EXCEPTION;
-        destroy_geom_arr(ctx, geom_arr, i - 1);
-        break;
-      }
+    if (coord_seq == NULL) {
+      errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
+    }
+    geom_arr[i] = GEOSGeom_createLineString_r(ctx, coord_seq);
+    // Note: coordinate sequence is owned by linestring; if linestring fails to
+    // construct, it will automatically clean up the coordinate sequence
+    if (geom_arr[i] == NULL) {
+      errstate = PGERR_GEOS_EXCEPTION;
+      destroy_geom_arr(ctx, geom_arr, i - 1);
+      break;
     }
   }
 
