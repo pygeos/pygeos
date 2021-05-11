@@ -495,7 +495,7 @@ def get_geometry(geometry, index, **kwargs):
 
     See also
     --------
-    get_num_geometries
+    get_num_geometries, get_parts
 
     Examples
     --------
@@ -533,6 +533,10 @@ def get_parts(geometry, return_index=False):
     -------
     ndarray of parts or tuple of (parts, indexes)
 
+    See also
+    --------
+    get_geometry, get_rings
+
     Examples
     --------
     >>> get_parts(Geometry("MULTIPOINT (0 1, 2 3)")).tolist()
@@ -558,6 +562,9 @@ def get_parts(geometry, return_index=False):
 def get_rings(geometry, return_index=False):
     """Gets rings of Polygon geometry object.
 
+    For each Polygon, the first returned ring is always the exterior ring
+    and potential subsequent rings are interior rings.
+
     If the geometry is not a Polygon, nothing is returned (empty array for
     scalar geometry input or no element in output array for array input).
 
@@ -571,6 +578,10 @@ def get_rings(geometry, return_index=False):
     Returns
     -------
     ndarray of rings or tuple of (rings, indexes)
+
+    See also
+    --------
+    get_exterior_ring, get_interior_ring, get_parts
 
     Examples
     --------
