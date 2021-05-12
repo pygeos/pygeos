@@ -152,6 +152,12 @@ def shortest_line(a, b, **kwargs):
     """
     Returns the shortest line between geom1 and geom2.
 
+    The resulting line consists of two points, representing the nearest
+    points between the geometry pair. The line always starts in geom1 and
+    ends in geom2. The endpoints of the line will not necessarily be existing
+    vertices of geom1 and geom2, but can be any point along a line segment
+    (if the input geometries are lines or polygons).
+
     Parameters
     ----------
     a : Geometry or array_like
