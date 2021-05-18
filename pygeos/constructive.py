@@ -860,6 +860,7 @@ def oriented_envelope(geometry, **kwargs):
 
 minimum_rotated_rectangle = oriented_envelope
 
+
 @requires_geos("3.8.0")
 @multithreading_enabled
 def minimum_bounding_circle(geometry, **kwargs):
