@@ -249,10 +249,10 @@ class STRtree:
         ----------
         geometry : Geometry or array_like
             Input geometries to query the tree.
-        max_distance : float, optional (default: None)
+        max_distance : float, optional
             Maximum distance within which to query for nearest items in tree.
             Must be greater than 0.
-        return_distance : bool, optional (default: False)
+        return_distance : bool, optional
             If True, will return distances in addition to indexes.
 
         Returns
