@@ -282,8 +282,8 @@ def from_wkt(geometry, on_invalid="raise", **kwargs):
     on_invalid : {"raise", "warn", "ignore"}
         - raise: an exception will be raised if WKT input geometries are invalid.
         - warn: a warning will be raised and invalid WKT geometries will be
-          returned as `None`.
-        - ignore: invalid WKT geometries will be returned as `None` without a warning.
+          returned as ``None``.
+        - ignore: invalid WKT geometries will be returned as ``None`` without a warning.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -316,8 +316,8 @@ def from_wkb(geometry, on_invalid="raise", **kwargs):
     on_invalid : {"raise", "warn", "ignore"}
         - raise: an exception will be raised if WKB input geometries are invalid.
         - warn: a warning will be raised and invalid WKB geometries will be
-          returned as `None`.
-        - ignore: invalid WKB geometries will be returned as `None` without a warning.
+          returned as ``None``.
+        - ignore: invalid WKB geometries will be returned as ``None`` without a warning.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.

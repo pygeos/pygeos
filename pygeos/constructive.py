@@ -484,7 +484,7 @@ def normalize(geometry, **kwargs):
 
     This method orders the coordinates, rings of a polygon and parts of
     multi geometries consistently. Typically useful for testing purposes
-    (for example in combination with `equals_exact`).
+    (for example in combination with ``equals_exact``).
 
     Parameters
     ----------
@@ -540,8 +540,8 @@ def polygonize(geometries, **kwargs):
     ignored.
 
     This function returns the polygons within a GeometryCollection.
-    Individual Polygons can be obtained using `get_geometry` to get
-    a single polygon or `get_parts` to get an array of polygons.
+    Individual Polygons can be obtained using ``get_geometry`` to get
+    a single polygon or ``get_parts`` to get an array of polygons.
     MultiPolygons can be constructed from the output using
     ``pygeos.multipolygons(pygeos.get_parts(pygeos.polygonize(geometries)))``.
 
@@ -588,7 +588,7 @@ def polygonize_full(geometries, **kwargs):
     provided as input; only the constituent lines and rings will be used to
     create the output polygons.
 
-    This function performs the same polygonization as `polygonize` but does
+    This function performs the same polygonization as ``polygonize`` but does
     not only return the polygonal result but all extra outputs as well. The
     return value consists of 4 elements:
 
@@ -598,8 +598,8 @@ def polygonize_full(geometries, **kwargs):
     * **invalid rings**: polygons formed but which are not valid
 
     This function returns the geometries within GeometryCollections.
-    Individual geometries can be obtained using `get_geometry` to get
-    a single geometry or `get_parts` to get an array of geometries.
+    Individual geometries can be obtained using ``get_geometry`` to get
+    a single geometry or ``get_parts`` to get an array of geometries.
 
     Parameters
     ----------

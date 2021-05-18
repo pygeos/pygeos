@@ -39,7 +39,7 @@ def points(coords, y=None, z=None, indices=None, **kwargs):
     Parameters
     ----------
     coords : array_like
-        An array of coordinate tuples (2- or 3-dimensional) or, if `y` is
+        An array of coordinate tuples (2- or 3-dimensional) or, if ``y`` is
         provided, an array of x coordinates.
     y : array_like
     z : array_like
@@ -77,7 +77,7 @@ def linestrings(coords, y=None, z=None, indices=None, **kwargs):
     Parameters
     ----------
     coords : array_like
-        An array of lists of coordinate tuples (2- or 3-dimensional) or, if `y`
+        An array of lists of coordinate tuples (2- or 3-dimensional) or, if ``y``
         is provided, an array of lists of x coordinates
     y : array_like
     z : array_like
@@ -117,7 +117,7 @@ def linearrings(coords, y=None, z=None, indices=None, **kwargs):
     Parameters
     ----------
     coords : array_like
-        An array of lists of coordinate tuples (2- or 3-dimensional) or, if `y`
+        An array of lists of coordinate tuples (2- or 3-dimensional) or, if ``y``
         is provided, an array of lists of x coordinates
     y : array_like
     z : array_like
@@ -192,12 +192,12 @@ def polygons(geometries, holes=None, indices=None, **kwargs):
     >>> polygons([[0, 0], [0, 10], [10, 10], [10, 0]])
     <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0))>
 
-    Adding holes can be done using the `holes` keyword argument:
+    Adding holes can be done using the ``holes`` keyword argument:
 
     >>> polygons(ring_1, holes=[ring_2])
     <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0), (2 6, 2 7, 3 7, 3 6...>
 
-    Or using the `indices` argument:
+    Or using the ``indices`` argument:
 
     >>> polygons([ring_1, ring_2], indices=[0, 1])[0]
     <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0))>
@@ -206,7 +206,7 @@ def polygons(geometries, holes=None, indices=None, **kwargs):
     >>> polygons([ring_1, ring_2], indices=[0, 0])[0]
     <pygeos.Geometry POLYGON ((0 0, 0 10, 10 10, 10 0, 0 0), (2 6, 2 7, 3 7, 3 6...>
 
-    Missing input values (`None`) are ignored and may result in an
+    Missing input values (``None``) are ignored and may result in an
     empty polygon:
 
     >>> polygons(None)
@@ -305,12 +305,12 @@ def multipoints(geometries, indices=None, **kwargs):
     <pygeos.Geometry MULTIPOINT (0 0, 2 2, 3 3)>
 
     Multiple multipoints of different sizes can be constructed efficiently using the
-    `indices` keyword argument:
+    ``indices`` keyword argument:
 
     >>> multipoints([point_1, point_2, point_2], indices=[0, 0, 1]).tolist()
     [<pygeos.Geometry MULTIPOINT (1 1, 2 2)>, <pygeos.Geometry MULTIPOINT (2 2)>]
 
-    Missing input values (`None`) are ignored and may result in an
+    Missing input values (``None``) are ignored and may result in an
     empty multipoint:
 
     >>> multipoints([None])
