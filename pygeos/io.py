@@ -102,16 +102,16 @@ def to_wkt(
     Parameters
     ----------
     geometry : Geometry or array_like
-    rounding_precision : int
+    rounding_precision : int, default 6
         The rounding precision when writing the WKT string. Set to a value of
         -1 to indicate the full precision.
-    trim : bool
+    trim : bool, default True
         If True, trim unnecessary decimals (trailing zeros).
-    output_dimension : int
+    output_dimension : int, default 3
         The output dimension for the WKT string. Supported values are 2 and 3.
         Specifying 3 means that up to 3 dimensions will be written but 2D
         geometries will still be represented as 2D in the WKT string.
-    old_3d : bool
+    old_3d : bool, default False
         Enable old style 3D/4D WKT generation. By default, new style 3D/4D WKT
         (ie. "POINT Z (10 20 30)") is returned, but with ``old_3d=True``
         the WKT will be formatted in the style "POINT (10 20 30)".
@@ -180,17 +180,17 @@ def to_wkb(
     Parameters
     ----------
     geometry : Geometry or array_like
-    hex : bool
+    hex : bool, default False
         If true, export the WKB as a hexidecimal string. The default is to
         return a binary bytes object.
-    output_dimension : int
+    output_dimension : int, default 3
         The output dimension for the WKB. Supported values are 2 and 3.
         Specifying 3 means that up to 3 dimensions will be written but 2D
         geometries will still be represented as 2D in the WKB represenation.
-    byte_order : int
+    byte_order : int, default -1
         Defaults to native machine byte order (-1). Use 0 to force big endian
         and 1 for little endian.
-    include_srid : bool
+    include_srid : bool, default False
         If True, the SRID is be included in WKB (this is an extension
         to the OGC WKB specification).
     **kwargs
@@ -279,7 +279,7 @@ def from_wkt(geometry, on_invalid="raise", **kwargs):
     ----------
     geometry : str or array_like
         The WKT string(s) to convert.
-    on_invalid : {"raise", "warn", "ignore"}
+    on_invalid : {"raise", "warn", "ignore"}, default "raise"
         - raise: an exception will be raised if WKT input geometries are invalid.
         - warn: a warning will be raised and invalid WKT geometries will be
           returned as ``None``.
@@ -313,7 +313,7 @@ def from_wkb(geometry, on_invalid="raise", **kwargs):
     ----------
     geometry : str or array_like
         The WKB byte object(s) to convert.
-    on_invalid : {"raise", "warn", "ignore"}
+    on_invalid : {"raise", "warn", "ignore"}, default "raise"
         - raise: an exception will be raised if WKB input geometries are invalid.
         - warn: a warning will be raised and invalid WKB geometries will be
           returned as ``None``.

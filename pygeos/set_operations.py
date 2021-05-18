@@ -139,7 +139,7 @@ def intersection_all(geometries, axis=None, **kwargs):
     Parameters
     ----------
     geometries : array_like
-    axis : int
+    axis : int, optional
         Axis along which the operation is performed. The default (None)
         performs the operation over all axes, returning a scalar value.
         Axis may be negative, in which case it counts from the last to the
@@ -229,7 +229,7 @@ def symmetric_difference_all(geometries, axis=None, **kwargs):
     Parameters
     ----------
     geometries : array_like
-    axis : int
+    axis : int, optional
         Axis along which the operation is performed. The default (None)
         performs the operation over all axes, returning a scalar value.
         Axis may be negative, in which case it counts from the last to the
@@ -330,7 +330,7 @@ def union_all(geometries, grid_size=None, axis=None, **kwargs):
     grid_size : float, optional
         Precision grid size; requires GEOS >= 3.9.0.  Will use the highest
         precision of the inputs by default.
-    axis : int
+    axis : int, optional
         Axis along which the operation is performed. The default (None)
         performs the operation over all axes, returning a scalar value.
         Axis may be negative, in which case it counts from the last to the
@@ -438,7 +438,7 @@ def coverage_union_all(geometries, axis=None, **kwargs):
     Parameters
     ----------
     geometries : array_like
-    axis : int (default None)
+    axis : int, optional
         Axis along which the operation is performed. The default (None)
         performs the operation over all axes, returning a scalar value.
         Axis may be negative, in which case it counts from the last to the

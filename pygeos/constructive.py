@@ -104,23 +104,23 @@ def buffer(
     geometry : Geometry or array_like
     width : float or array_like
         Specifies the circle radius in the Minkowski sum (or difference).
-    quadsegs : int
+    quadsegs : int, default 8
         Specifies the number of linear segments in a quarter circle in the
         approximation of circular arcs.
-    cap_style : {'round', 'square', 'flat'}
+    cap_style : {'round', 'square', 'flat'}, default 'round'
         Specifies the shape of buffered line endings. 'round' results in
         circular line endings (see ``quadsegs``). Both 'square' and 'flat'
         result in rectangular line endings, only 'flat' will end at the
         original vertex, while 'square' involves adding the buffer width.
-    join_style : {'round', 'bevel', 'mitre'}
+    join_style : {'round', 'bevel', 'mitre'}, default 'round'
         Specifies the shape of buffered line midpoints. 'round' results in
         rounded shapes. 'bevel' results in a beveled edge that touches the
         original vertex. 'mitre' results in a single vertex that is beveled
         depending on the ``mitre_limit`` parameter.
-    mitre_limit : float
+    mitre_limit : float, default 5.0
         Crops of 'mitre'-style joins if the point is displaced from the
         buffered vertex by more than this limit.
-    single_sided : bool
+    single_sided : bool, default False
         Only buffer at one side of the geometry.
     **kwargs
         For other keyword-only arguments, see the
@@ -203,15 +203,15 @@ def offset_curve(
     distance : float or array_like
         Specifies the offset distance from the input geometry. Negative
         for right side offset, positive for left side offset.
-    quadsegs : int
+    quadsegs : int, default 8
         Specifies the number of linear segments in a quarter circle in the
         approximation of circular arcs.
-    join_style : {'round', 'bevel', 'mitre'}
+    join_style : {'round', 'bevel', 'mitre'}, default 'round'
         Specifies the shape of outside corners. 'round' results in
         rounded shapes. 'bevel' results in a beveled edge that touches the
         original vertex. 'mitre' results in a single vertex that is beveled
         depending on the ``mitre_limit`` parameter.
-    mitre_limit : float
+    mitre_limit : float, default 5.0
         Crops of 'mitre'-style joins if the point is displaced from the
         buffered vertex by more than this limit.
     **kwargs
@@ -353,9 +353,9 @@ def delaunay_triangles(geometry, tolerance=0.0, only_edges=False, **kwargs):
     Parameters
     ----------
     geometry : Geometry or array_like
-    tolerance : float or array_like
+    tolerance : float or array_like, default 0.0
         Snap input vertices together if their distance is less than this value.
-    only_edges : bool or array_like
+    only_edges : bool or array_like, default False
         If set to True, the triangulation will return a collection of
         linestrings instead of polygons.
     **kwargs
@@ -719,7 +719,7 @@ def simplify(geometry, tolerance, preserve_topology=False, **kwargs):
     tolerance : float or array_like
         The maximum allowed geometry displacement. The higher this value, the
         smaller the number of vertices in the resulting geometry.
-    preserve_topology : bool
+    preserve_topology : bool, default False
         If set to True, the operation will avoid creating invalid geometries.
     **kwargs
         For other keyword-only arguments, see the
@@ -790,12 +790,12 @@ def voronoi_polygons(
     Parameters
     ----------
     geometry : Geometry or array_like
-    tolerance : float or array_like
+    tolerance : float or array_like, default 0.0
         Snap input vertices together if their distance is less than this value.
-    extend_to : Geometry or array_like
+    extend_to : Geometry or array_like, optional
         If provided, the diagram will be extended to cover the envelope of this
         geometry (unless this envelope is smaller than the input geometry).
-    only_edges : bool or array_like
+    only_edges : bool or array_like, default False
         If set to True, the triangulation will return a collection of
         linestrings instead of polygons.
     **kwargs

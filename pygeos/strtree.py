@@ -35,7 +35,7 @@ class STRtree:
     Parameters
     ----------
     geometries : array_like
-    leafsize : int
+    leafsize : int, default 10
         the maximum number of child nodes that a node can have
 
     Examples
@@ -252,7 +252,7 @@ class STRtree:
         max_distance : float, optional
             Maximum distance within which to query for nearest items in tree.
             Must be greater than 0.
-        return_distance : bool, optional
+        return_distance : bool, default False
             If True, will return distances in addition to indexes.
 
         Returns
