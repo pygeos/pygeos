@@ -148,15 +148,16 @@ def shared_paths(a, b, **kwargs):
     return lib.shared_paths(a, b, **kwargs)
 
 
+@multithreading_enabled
 def shortest_line(a, b, **kwargs):
     """
-    Returns the shortest line between geom1 and geom2.
+    Returns the shortest line between two geometries.
 
     The resulting line consists of two points, representing the nearest
-    points between the geometry pair. The line always starts in geom1 and
-    ends in geom2. The endpoints of the line will not necessarily be existing
-    vertices of geom1 and geom2, but can be any point along a line segment
-    (if the input geometries are lines or polygons).
+    points between the geometry pair. The line always starts in the first
+    geometry `a` and ends in he second geometry `b`. The endpoints of the
+    line will not necessarily be existing vertices of the input geometries
+    `a` and `b`, but can also be a point along a line segment.
 
     Parameters
     ----------
@@ -165,6 +166,10 @@ def shortest_line(a, b, **kwargs):
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+
+    See also
+    --------
+    prepare : improve performance by preparing ``a`` (the first argument) (for GEOS>=3.9)
 
     Examples
     --------
