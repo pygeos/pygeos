@@ -1945,8 +1945,8 @@ finish:
 }
 static PyUFuncGenericFunction polygonize_full_funcs[1] = {&polygonize_full_func};
 
-static char nearest_points_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT};
-static void nearest_points_func(char** args, npy_intp* dimensions, npy_intp* steps,
+static char shortest_line_dtypes[3] = {NPY_OBJECT, NPY_OBJECT, NPY_OBJECT};
+static void shortest_line_func(char** args, npy_intp* dimensions, npy_intp* steps,
                                 void* data) {
   GEOSGeometry* in1 = NULL;
   GEOSGeometry* in2 = NULL;
@@ -2015,7 +2015,7 @@ static void nearest_points_func(char** args, npy_intp* dimensions, npy_intp* ste
   }
   free(geom_arr);
 }
-static PyUFuncGenericFunction nearest_points_funcs[1] = {&nearest_points_func};
+static PyUFuncGenericFunction shortest_line_funcs[1] = {&shortest_line_func};
 
 #if GEOS_SINCE_3_6_0
 static char set_precision_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
@@ -3152,7 +3152,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_CUSTOM(relate_pattern, 3);
   DEFINE_GENERALIZED(polygonize, 1, "(d)->()");
   DEFINE_GENERALIZED_NOUT4(polygonize_full, 1, "(d)->(),(),(),()");
-  DEFINE_CUSTOM(nearest_points, 2);
+  DEFINE_CUSTOM(shortest_line, 2);
 
   DEFINE_GENERALIZED(points, 1, "(d)->()");
   DEFINE_GENERALIZED(linestrings, 1, "(i, d)->()");

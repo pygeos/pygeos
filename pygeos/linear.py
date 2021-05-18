@@ -178,4 +178,4 @@ def shortest_line(a, b, **kwargs):
     >>> shortest_line(geom1, geom2)
     <pygeos.Geometry LINESTRING (1 1, 1.5 1.5)>
     """
-    return lib.nearest_points(a, b, **kwargs)
+    return lib.shortest_line(a, b, **kwargs)
