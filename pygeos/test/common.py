@@ -55,7 +55,7 @@ all_types = (
 def assert_increases_refcount(obj):
     try:
         before = sys.getrefcount(obj)
-    except AttributeError:
+    except AttributeError:  # happens on Pypy
         pytest.skip("sys.getrefcount is not available.")
     yield
     assert sys.getrefcount(obj) == before + 1
@@ -65,7 +65,7 @@ def assert_increases_refcount(obj):
 def assert_decreases_refcount(obj):
     try:
         before = sys.getrefcount(obj)
-    except AttributeError:
+    except AttributeError:  # happens on Pypy
         pytest.skip("sys.getrefcount is not available.")
     yield
     assert sys.getrefcount(obj) == before - 1
