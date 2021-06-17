@@ -13,6 +13,7 @@ from .common import (
     empty,
     empty_line_string,
     empty_point,
+    invoke_script,
     point,
 )
 
@@ -1483,3 +1484,7 @@ def test_nearest_all_return_distance(tree, geometry, expected):
     assert_array_equal(
         np.round(tree.nearest_all(geometry, return_distance=True)[1], 4), expected
     )
+
+
+def test_strtree_threaded_query():
+    invoke_script("strtree_threaded_query.py")

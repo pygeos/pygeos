@@ -1,3 +1,5 @@
+import os
+import subprocess
 import sys
 from contextlib import contextmanager
 
@@ -72,3 +74,13 @@ def assert_geometries_equal(actual, expected):
         assert pygeos.equals(actual[mask], expected[mask]).all()
     if np.any(~mask):
         assert pygeos.is_missing(actual[~mask])
+
+
+def invoke_script(script_name, *args):
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    python_file = os.path.join(dir_path, script_name)
+
+    cmd = [sys.executable, python_file]
+    cmd.extend(args)
+
+    subprocess.check_call(cmd)
