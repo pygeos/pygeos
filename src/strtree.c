@@ -228,7 +228,7 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
     return NULL;
   }
 
-  GEOSSTRtree_query_r(ctx, tree, dummy, query_callback, &query_geoms);
+  GEOSSTRtree_query_r(ctx, tree, dummy, dummy_query_callback, NULL);
   kv_destroy(query_geoms);
 
   STRtreeObject* self = (STRtreeObject*)type->tp_alloc(type, 0);
