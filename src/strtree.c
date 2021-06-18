@@ -121,7 +121,7 @@ static void STRtree_dealloc(STRtreeObject* self) {
   Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
-void query_callback(void*, void*);
+void dummy_query_callback(void* item, void* user_data) {}
 
 static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds) {
   int node_capacity;
