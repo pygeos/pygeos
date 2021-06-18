@@ -571,6 +571,9 @@ GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, doub
  * GEOSGeometry* on success (owned by caller) or NULL on failure
  */
 GEOSGeometry* create_point(GEOSContextHandle_t ctx, double x, double y) {
+#if GEOS_SINCE_3_8_0
+  return GEOSGeom_createPointFromXY_r(ctx, x, y);
+#else
   GEOSCoordSequence* coord_seq = NULL;
   GEOSGeometry* geom = NULL;
 
@@ -590,4 +593,5 @@ GEOSGeometry* create_point(GEOSContextHandle_t ctx, double x, double y) {
     return NULL;
   }
   return geom;
+#endif
 }
