@@ -200,36 +200,13 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
   }
 
   // A dummy query to trigger the build of the tree
-  tree_geom_vec_t query_geoms;
-  kv_init(query_geoms);
-
-  GEOSCoordSequence* coord_seq;
-  GEOSGeometry* dummy;
-
-  coord_seq = GEOSCoordSeq_create_r(ctx, 1, 2);
-  if (coord_seq == NULL) {
-    GEOSSTRtree_destroy_r(ctx, tree);
-    GEOS_FINISH;
-    return NULL;
-  }
-  for (int j = 0; j < 2; j++) {
-    if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, 0, j, 0.0)) {
-      GEOSCoordSeq_destroy_r(ctx, coord_seq);
-      GEOSSTRtree_destroy_r(ctx, tree);
-      GEOS_FINISH;
-      return NULL;
-    }
-  }
-  dummy = GEOSGeom_createPoint_r(ctx, coord_seq);
+  GEOSGeometry* dummy = create_point(ctx, 0.0, 0.0);
   if (dummy == NULL) {
-    GEOSCoordSeq_destroy_r(ctx, coord_seq);
     GEOSSTRtree_destroy_r(ctx, tree);
     GEOS_FINISH;
     return NULL;
   }
-
   GEOSSTRtree_query_r(ctx, tree, dummy, dummy_query_callback, NULL);
-  kv_destroy(query_geoms);
 
   STRtreeObject* self = (STRtreeObject*)type->tp_alloc(type, 0);
   if (self == NULL) {
