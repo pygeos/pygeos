@@ -199,14 +199,16 @@ static PyObject* STRtree_new(PyTypeObject* type, PyObject* args, PyObject* kwds)
     counter++;
   }
 
-  // A dummy query to trigger the build of the tree
-  GEOSGeometry* dummy = create_point(ctx, 0.0, 0.0);
-  if (dummy == NULL) {
-    GEOSSTRtree_destroy_r(ctx, tree);
-    GEOS_FINISH;
-    return NULL;
+  // A dummy query to trigger the build of the tree (only if the tree is not empty)
+  if (count_indexed > 0) {
+    GEOSGeometry* dummy = create_point(ctx, 0.0, 0.0);
+    if (dummy == NULL) {
+      GEOSSTRtree_destroy_r(ctx, tree);
+      GEOS_FINISH;
+      return NULL;
+    }
+    GEOSSTRtree_query_r(ctx, tree, dummy, dummy_query_callback, NULL);
   }
-  GEOSSTRtree_query_r(ctx, tree, dummy, dummy_query_callback, NULL);
 
   STRtreeObject* self = (STRtreeObject*)type->tp_alloc(type, 0);
   if (self == NULL) {
