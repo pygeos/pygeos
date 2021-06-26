@@ -1,0 +1,33 @@
+name: Build
+
+on: [push]
+
+jobs:
+  build_wheels:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]  #, windows-2019, macos-10.15]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v1.12.0
+        env:
+          CIBW_BUILD: cp38-*
+          CIBW_ENVIRONMENT: |
+            GEOS_INSTALL=./geos
+            GEOS_VERSION=3.9.1
+            GEOS_CONFIG=/root/geosbuild/geos-3.9.1/build/geos/bin/geos-config
+          CIBW_BEFORE_ALL: |
+            pip install cmake &&
+            ./ci/install_geos.sh
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_COMMAND: pytest pygeos
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: ./wheelhouse/*.whl
+          retention-days: 5

@@ -63,7 +63,7 @@ else
         echo "Using cached install $GEOS_INSTALL"
     else
         prepare_geos_build_dir
-        wget -q http://download.osgeo.org/geos/geos-$GEOS_VERSION.tar.bz2
+        curl -OL http://download.osgeo.org/geos/geos-$GEOS_VERSION.tar.bz2
         tar xfj geos-$GEOS_VERSION.tar.bz2
         cd geos-$GEOS_VERSION
         build_geos
