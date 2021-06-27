@@ -18,16 +18,9 @@ jobs:
         env:
           GEOS_VERSION: "3.9.1"
           CIBW_BUILD: cp38-*
-          CIBW_ENVIRONMENT_LINUX: |
-            GEOS_VERSION=$GEOS_VERSION \  
-            GEOS_INSTALL=/root/geos \
-            GEOS_CONFIG=/root/geosbuild/geos-$GEOS_VERSION/build/geos/bin/geos-config
+          CIBW_ENVIRONMENT_LINUX: GEOS_VERSION=$GEOS_VERSION GEOS_INSTALL=/root/geos GEOS_CONFIG=/root/geosbuild/geos-$GEOS_VERSION/build/geos/bin/geos-config
           CIBW_ENVIRONMENT_MACOS: $CIBW_ENVIRONMENT_LINUX
-          CIBW_ENVIRONMENT_WINDOWS: |
-            GEOS_VERSION=$GEOS_VERSION \  
-            GEOS_INSTALL=C:\projects\deps\geos \
-            GEOS_LIBRARY_PATH=C:\\projects\\deps\\geos\lib \
-            GEOS_INCLUDE_PATH=C:\\projects\\deps\\geos\\include
+          CIBW_ENVIRONMENT_WINDOWS: GEOS_VERSION=$GEOS_VERSION GEOS_INSTALL=C:\projects\deps\geos GEOS_LIBRARY_PATH=C:\\projects\\deps\\geos\lib GEOS_INCLUDE_PATH=C:\\projects\\deps\\geos\\include
           CIBW_BEFORE_ALL_LINUX: |
             pip install cmake &&
             ./ci/install_geos.sh
