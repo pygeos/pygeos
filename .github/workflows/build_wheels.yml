@@ -9,6 +9,7 @@ jobs:
     env:
       GEOS_VERSION: "3.9.1"
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-10.15]
 
@@ -33,6 +34,7 @@ jobs:
             ./ci/install_geos.cmd
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND: pytest pygeos
+          CIBW_BUILD_VERBOSITY: 2
 
       - uses: actions/upload-artifact@v2
         with:
