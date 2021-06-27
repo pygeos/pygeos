@@ -20,7 +20,9 @@ fi
 mkdir -p $GEOS_INSTALL
 
 # Download and build GEOS outside other source tree
-GEOS_BUILD=$HOME/geosbuild
+if [ -z "$GEOS_BUILD" ]; then
+    GEOS_BUILD=$HOME/geosbuild
+fi
 
 prepare_geos_build_dir(){
   rm -rf $GEOS_BUILD

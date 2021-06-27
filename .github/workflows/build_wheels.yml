@@ -20,9 +20,9 @@ jobs:
         uses: pypa/cibuildwheel@v1.12.0
         env:
           CIBW_BUILD: cp38-*
-          CIBW_ENVIRONMENT_LINUX: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=/root/geos GEOS_CONFIG=/root/geosbuild/geos-${{ env.GEOS_VERSION }}/build/geos/bin/geos-config
-          CIBW_ENVIRONMENT_MACOS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=/root/geos GEOS_CONFIG=/root/geosbuild/geos-${{ env.GEOS_VERSION }}/build/geos/bin/geos-config
-          CIBW_ENVIRONMENT_WINDOWS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=C:\projects\deps\geos-${{ env.GEOS_VERSION }} GEOS_LIBRARY_PATH=C:\\projects\\deps\\geos-${{ env.GEOS_VERSION }}\\lib GEOS_INCLUDE_PATH=C:\\projects\\deps\\geos-${{ env.GEOS_VERSION }}\\include
+          CIBW_ENVIRONMENT_LINUX: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ env.GITHUB_WORKSPACE }}/geos GEOS_BUILD=${{ env.GITHUB_WORKSPACE }}/geosbuild GEOS_CONFIG=${{ env.GITHUB_WORKSPACE }}/geosbuild/geos-${{ env.GEOS_VERSION }}/build/bin/geos-config
+          CIBW_ENVIRONMENT_MACOS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ env.GITHUB_WORKSPACE }}/geos GEOS_BUILD=${{ env.GITHUB_WORKSPACE }}/geosbuild GEOS_CONFIG=${{ env.GITHUB_WORKSPACE }}/geosbuild/geos-${{ env.GEOS_VERSION }}/build/bin/geos-config
+          CIBW_ENVIRONMENT_WINDOWS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ env.GITHUB_WORKSPACE }}\geos-${{ env.GEOS_VERSION }} GEOS_LIBRARY_PATH=${{ env.GITHUB_WORKSPACE }}\\geos-${{ env.GEOS_VERSION }}\\lib GEOS_INCLUDE_PATH=${{ env.GITHUB_WORKSPACE }}\\geos-${{ env.GEOS_VERSION }}\\include
           CIBW_BEFORE_ALL_LINUX: |
             pip install cmake &&
             ./ci/install_geos.sh
@@ -34,7 +34,7 @@ jobs:
             ./ci/install_geos.cmd
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND: pytest pygeos
-          CIBW_BUILD_VERBOSITY: 2
+          CIBW_BUILD_VERBOSITY: 1
 
       - uses: actions/upload-artifact@v2
         with:
