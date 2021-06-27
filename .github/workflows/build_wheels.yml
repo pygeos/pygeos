@@ -6,6 +6,8 @@ jobs:
   build_wheels:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    env:
+      GEOS_VERSION: "3.9.1"
     strategy:
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-10.15]
@@ -16,15 +18,16 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v1.12.0
         env:
-          GEOS_VERSION: "3.9.1"
           CIBW_BUILD: cp38-*
-          CIBW_ENVIRONMENT_LINUX: GEOS_VERSION=$GEOS_VERSION GEOS_INSTALL=/root/geos GEOS_CONFIG=/root/geosbuild/geos-$GEOS_VERSION/build/geos/bin/geos-config
-          CIBW_ENVIRONMENT_MACOS: $CIBW_ENVIRONMENT_LINUX
-          CIBW_ENVIRONMENT_WINDOWS: GEOS_VERSION=$GEOS_VERSION GEOS_INSTALL=C:\projects\deps\geos GEOS_LIBRARY_PATH=C:\\projects\\deps\\geos\lib GEOS_INCLUDE_PATH=C:\\projects\\deps\\geos\\include
+          CIBW_ENVIRONMENT_LINUX: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=/root/geos GEOS_CONFIG=/root/geosbuild/geos-${{ env.GEOS_VERSION }}/build/geos/bin/geos-config
+          CIBW_ENVIRONMENT_MACOS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=/root/geos GEOS_CONFIG=/root/geosbuild/geos-${{ env.GEOS_VERSION }}/build/geos/bin/geos-config
+          CIBW_ENVIRONMENT_WINDOWS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=C:\projects\deps\geos-${{ env.GEOS_VERSION }} GEOS_LIBRARY_PATH=C:\\projects\\deps\\geos-${{ env.GEOS_VERSION }}\\lib GEOS_INCLUDE_PATH=C:\\projects\\deps\\geos-${{ env.GEOS_VERSION }}\\include
           CIBW_BEFORE_ALL_LINUX: |
             pip install cmake &&
             ./ci/install_geos.sh
-          CIBW_BEFORE_ALL_MACOS: $CIBW_BEFORE_ALL_LINUX
+          CIBW_BEFORE_ALL_MACOS: |
+            pip install cmake &&
+            ./ci/install_geos.sh
           CIBW_BEFORE_ALL_WINDOWS: |
             pip install cmake &&
             ./ci/install_geos.cmd
