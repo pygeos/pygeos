@@ -22,7 +22,6 @@ jobs:
             GEOS_VERSION=$GEOS_VERSION \  
             GEOS_INSTALL=/root/geos \
             GEOS_CONFIG=/root/geosbuild/geos-$GEOS_VERSION/build/geos/bin/geos-config
-            GEOS_CONFIG=/root/geosbuild/geos-$GEOS_VERSION/build/geos/bin/geos-config
           CIBW_ENVIRONMENT_MACOS: $CIBW_ENVIRONMENT_LINUX
           CIBW_ENVIRONMENT_WINDOWS: |
             GEOS_VERSION=$GEOS_VERSION \  
