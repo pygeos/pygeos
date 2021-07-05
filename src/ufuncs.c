@@ -33,8 +33,8 @@
 #define CHECK_NO_INPLACE_OUTPUT(N)                                                \
   if ((steps[N] == 0) && (dimensions[0] > 1)) {                                   \
     PyErr_Format(PyExc_NotImplementedError,                                       \
-                 "Unknown ufunc mode with args[0]=%p, args[N]=%p, steps[0]=%ld, " \
-                 "steps[N]=%ld, dimensions[0]=%ld.",                              \
+                 "Zero-strided output detected. Ufunc mode with args[0]=%p, "     \
+                 "args[N]=%p, steps[0]=%ld, steps[N]=%ld, dimensions[0]=%ld.",    \
                  args[0], args[N], steps[0], steps[N], dimensions[0]);            \
     return;                                                                       \
   }
