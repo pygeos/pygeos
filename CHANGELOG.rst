@@ -22,7 +22,7 @@ People with a "+" by their names contributed a patch for the first time.
 * Joris Van den Bossche
 
 
-Version 0.10.1 (2021-07-??)
+Version 0.10.1 (2021-07-06)
 ---------------------------
 
 **Bug fixes**
