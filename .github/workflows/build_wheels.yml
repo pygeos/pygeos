@@ -21,7 +21,7 @@ jobs:
         uses: pypa/cibuildwheel@v1.12.0
         env:
           CIBW_BUILD: cp38-*
-          CIBW_ENVIRONMENT_LINUX: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ github.workspace }}/geos GEOS_BUILD=${{ github.workspace }}/geosbuild GEOS_CONFIG=${{ github.workspace }}/geos/bin/geos-config LD_LIBRARY_PATH=${{ github.workspace }}/geos/lib
+          CIBW_ENVIRONMENT_LINUX: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ github.workspace }}/geos GEOS_BUILD=${{ github.workspace }}/geosbuild GEOS_CONFIG=${{ github.workspace }}/geos/bin/geos-config LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/geos/lib
           CIBW_ENVIRONMENT_MACOS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ github.workspace }}/geos GEOS_BUILD=${{ github.workspace }}/geosbuild GEOS_CONFIG=${{ github.workspace }}/geosbuild/geos-${{ env.GEOS_VERSION }}/build/bin/geos-config
           CIBW_ENVIRONMENT_WINDOWS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ github.workspace }}\geos-${{ env.GEOS_VERSION }} GEOS_LIBRARY_PATH=${{ github.workspace }}\\geos-${{ env.GEOS_VERSION }}\\lib GEOS_INCLUDE_PATH=${{ github.workspace }}\\geos-${{ env.GEOS_VERSION }}\\include
           CIBW_BEFORE_ALL_LINUX: |
