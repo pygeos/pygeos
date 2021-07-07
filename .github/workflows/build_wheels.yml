@@ -34,7 +34,7 @@ jobs:
             pip install cmake
             ./ci/install_geos.cmd
           CIBW_TEST_REQUIRES: pytest
-          CIBW_TEST_COMMAND: pytest {project}/pygeos
+          CIBW_TEST_COMMAND: pytest --pyargs {project}/pygeos/test
           CIBW_BUILD_VERBOSITY: 1
 
       - uses: actions/upload-artifact@v2
