@@ -3,7 +3,7 @@ import pytest
 
 import pygeos
 
-from .common import assert_geometries_equal, line_string, linear_ring, point, polygon
+from common import assert_geometries_equal, line_string, linear_ring, point, polygon
 
 pnts = pygeos.points
 lstrs = pygeos.linestrings

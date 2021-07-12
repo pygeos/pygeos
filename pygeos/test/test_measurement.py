@@ -4,7 +4,7 @@ from numpy.testing import assert_allclose, assert_array_equal
 
 import pygeos
 
-from .common import (
+from common import (
     empty,
     geometry_collection,
     line_string,

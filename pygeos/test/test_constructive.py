@@ -4,7 +4,7 @@ import pytest
 import pygeos
 from pygeos import Geometry, GEOSException
 
-from .common import (
+from common import (
     all_types,
     empty,
     empty_line_string,

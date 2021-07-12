@@ -3,7 +3,7 @@ import pytest
 
 import pygeos
 
-from .common import (
+from common import (
     empty_polygon,
     geometry_collection,
     line_string,

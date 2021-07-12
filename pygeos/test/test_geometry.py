@@ -3,9 +3,9 @@ import pytest
 
 import pygeos
 
-from .common import all_types
-from .common import empty as empty_geometry_collection
-from .common import (
+from common import all_types
+from common import empty as empty_geometry_collection
+from common import (
     empty_line_string,
     empty_point,
     empty_polygon,

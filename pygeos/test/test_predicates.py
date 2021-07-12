@@ -4,7 +4,7 @@ import pytest
 import pygeos
 from pygeos import Geometry
 
-from .common import all_types, empty, geometry_collection, point, polygon
+from common import all_types, empty, geometry_collection, point, polygon
 
 UNARY_PREDICATES = (
     pygeos.is_empty,

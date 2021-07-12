@@ -3,7 +3,7 @@ import pytest
 
 import pygeos
 
-from .common import (
+from common import (
     empty_line_string,
     empty_point,
     line_string,

@@ -7,7 +7,7 @@ from numpy.testing import assert_array_equal
 import pygeos
 from pygeos import box
 
-from .common import (
+from common import (
     assert_decreases_refcount,
     assert_increases_refcount,
     empty,

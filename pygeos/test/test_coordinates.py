@@ -5,7 +5,7 @@ from numpy.testing import assert_allclose, assert_equal
 import pygeos
 from pygeos import apply, count_coordinates, get_coordinates, set_coordinates
 
-from .common import (
+from common import (
     empty,
     empty_point,
     geometry_collection,
