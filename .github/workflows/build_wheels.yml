@@ -34,7 +34,12 @@ jobs:
             pip install cmake
             ./ci/install_geos.cmd
           CIBW_TEST_REQUIRES: pytest
-          CIBW_TEST_COMMAND: pytest --pyargs {project}/pygeos/test
+          # The pytest command has the custom setting import-mode=importlib
+          # so that pytest does not mess up the PATH.
+          # If you do not do that, the (uncompiled) contents of
+          # {package}/pygeos will be tested against instead of the
+          # installed contents of the wheel that was built.
+          CIBW_TEST_COMMAND: pytest --import-mode=importlib {package}/pygeos/test
           CIBW_BUILD_VERBOSITY: 1
 
       - uses: actions/upload-artifact@v2
