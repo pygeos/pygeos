@@ -32,7 +32,7 @@ jobs:
             GEOS_INSTALL=${{ github.workspace }}/geos
             GEOS_BUILD=${{ github.workspace }}/geosbuild
             GEOS_CONFIG=${{ github.workspace }}/geos/bin/geos-config
-            DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:${{ github.workspace }}/geos/lib
+            DYLD_FALLBACK_LIBRARY_PATH=${{ github.workspace }}/geos/lib
           CIBW_ENVIRONMENT_WINDOWS:
             GEOS_VERSION=${{ env.GEOS_VERSION }}
             GEOS_INSTALL=${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}
@@ -45,9 +45,7 @@ jobs:
           CIBW_BEFORE_ALL_MACOS: |
             pip install cmake
             ./ci/install_geos.sh
-          CIBW_BEFORE_ALL_WINDOWS: |
-            pip install cmake &&
-            ./ci/install_geos.cmd
+          CIBW_BEFORE_ALL_WINDOWS: pip install cmake; ./ci/install_geos.cmd
           CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_TEST_REQUIRES: pytest
