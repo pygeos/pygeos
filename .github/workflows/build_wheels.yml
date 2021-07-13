@@ -11,8 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04]
-        # os: [ubuntu-20.04, windows-2019, macos-10.15]
+        os: [ubuntu-20.04, windows-2019, macos-10.15]
 
     steps:
       - uses: actions/checkout@v2
@@ -20,10 +19,25 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v1.12.0
         env:
-          CIBW_BUILD: cp38-manylinux_x86_64
-          CIBW_ENVIRONMENT_LINUX: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ github.workspace }}/geos GEOS_BUILD=${{ github.workspace }}/geosbuild GEOS_CONFIG=${{ github.workspace }}/geos/bin/geos-config LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/geos/lib
-          CIBW_ENVIRONMENT_MACOS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ github.workspace }}/geos GEOS_BUILD=${{ github.workspace }}/geosbuild GEOS_CONFIG=${{ github.workspace }}/geosbuild/geos-${{ env.GEOS_VERSION }}/build/bin/geos-config
-          CIBW_ENVIRONMENT_WINDOWS: GEOS_VERSION=${{ env.GEOS_VERSION }} GEOS_INSTALL=${{ github.workspace }}\geos-${{ env.GEOS_VERSION }} GEOS_LIBRARY_PATH=${{ github.workspace }}\\geos-${{ env.GEOS_VERSION }}\\lib GEOS_INCLUDE_PATH=${{ github.workspace }}\\geos-${{ env.GEOS_VERSION }}\\include
+          CIBW_BUILD: cp38-*
+          CIBW_ENVIRONMENT_LINUX:
+            GEOS_VERSION=${{ env.GEOS_VERSION }}
+            GEOS_INSTALL=${{ github.workspace }}/geos
+            GEOS_BUILD=${{ github.workspace }}/geosbuild
+            GEOS_CONFIG=${{ github.workspace }}/geos/bin/geos-config
+            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/geos/lib
+          CIBW_ENVIRONMENT_LINUX:
+            GEOS_VERSION=${{ env.GEOS_VERSION }}
+            GEOS_INSTALL=${{ github.workspace }}/geos
+            GEOS_BUILD=${{ github.workspace }}/geosbuild
+            GEOS_CONFIG=${{ github.workspace }}/geos/bin/geos-config
+            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/geos/lib
+          CIBW_ENVIRONMENT_WINDOWS:
+            GEOS_VERSION=${{ env.GEOS_VERSION }}
+            GEOS_INSTALL=${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}
+            GEOS_LIBRARY_PATH=${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\lib
+            GEOS_INCLUDE_PATH=${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\include
+            PATH=$PATH:${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\lib
           CIBW_BEFORE_ALL_LINUX: |
             pip install -U cmake
             ./ci/install_geos.sh
@@ -33,6 +47,8 @@ jobs:
           CIBW_BEFORE_ALL_WINDOWS: |
             pip install cmake
             ./ci/install_geos.cmd
+          CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_TEST_REQUIRES: pytest
           # The pytest command has the custom setting import-mode=importlib
           # so that pytest does not mess up the PATH.
