@@ -36,7 +36,7 @@ build_geos(){
     cd build
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
     make -j 2
-    ctest .
+    # ctest .
     make install
 }
 
