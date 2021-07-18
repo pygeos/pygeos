@@ -5,9 +5,9 @@
 ::  - set GEOS_VERSION=3.7.3 -- to download and compile
 
 if exist %GEOS_INSTALL% (
-  echo Using cached '%GEOS_INSTALL%'
+  echo Using cached %GEOS_INSTALL%
 ) else (
-  echo Building '%GEOS_INSTALL%'
+  echo Building %GEOS_INSTALL%
 
   curl -fsSO http://download.osgeo.org/geos/geos-%GEOS_VERSION%.tar.bz2
   7z x geos-%GEOS_VERSION%.tar.bz2
@@ -19,8 +19,7 @@ if exist %GEOS_INSTALL% (
 
   mkdir build
   cd build
-  set "GEOS_INSTALL_FWD=%GEOS_INSTALL:\=/%"
-  cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=%GEOS_INSTALL_FWD% .. || exit /B 2
+  cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=%GEOS_INSTALL% .. || exit /B 2
   cmake --build . || exit /B 3
   ctest . || exit /B 4
   cmake --install . || exit /B 5
