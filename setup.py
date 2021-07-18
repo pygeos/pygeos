@@ -64,6 +64,11 @@ def get_geos_paths():
     include_dir = os.environ.get("GEOS_INCLUDE_PATH")
     library_dir = os.environ.get("GEOS_LIBRARY_PATH")
     if include_dir and library_dir:
+        log.info(
+            "Adding include dirs %s and library dirs %s",
+            include_dir,
+            library_dir,
+        )
         return {
             "include_dirs": ["./src", include_dir],
             "library_dirs": [library_dir],
