@@ -16,8 +16,11 @@ elif [ -z "$GEOS_VERSION" ]; then
     exit 1
 fi
 
-# Create directories, if they don't exit
+# Create directories, if they don't exist
 mkdir -p $GEOS_INSTALL
+
+# Ensure cmake is present
+pip install cmake
 
 # Download and build GEOS outside other source tree
 if [ -z "$GEOS_BUILD" ]; then
