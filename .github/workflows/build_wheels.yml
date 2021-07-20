@@ -45,7 +45,7 @@ jobs:
           CIBW_BEFORE_ALL: ./ci/install_geos.sh
           CIBW_BEFORE_ALL_WINDOWS: ci\install_geos.cmd
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path '${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\lib' -w {dest_dir} {wheel}
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\lib -w {dest_dir} {wheel}
           CIBW_TEST_REQUIRES: pytest
           # The pytest command has the custom setting import-mode=importlib
           # so that pytest does not mess up the PATH.
