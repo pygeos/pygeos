@@ -25,7 +25,7 @@ jobs:
         uses: pypa/cibuildwheel@v1.12.0
         env:
           CIBW_BUILD: cp38-*
-          # CIBW_ARCHS: auto64  # GEOS 32-bit compilation has issues
+          CIBW_ARCHS: auto64  # TODO, 32-bit builds (especially on windows)
           CIBW_ENVIRONMENT_LINUX:
             GEOS_VERSION=${{ env.GEOS_VERSION }}
             GEOS_INSTALL=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}
@@ -53,7 +53,6 @@ jobs:
           # {package}/pygeos will be tested against instead of the
           # installed contents of the wheel that was built.
           CIBW_TEST_COMMAND: pytest --import-mode=importlib {package}/pygeos/test
-          CIBW_BUILD_VERBOSITY: 1
 
       - uses: actions/upload-artifact@v2
         with:
