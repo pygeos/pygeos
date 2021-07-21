@@ -3,7 +3,7 @@ name: Build
 on: [push, pull_request]
 
 jobs:
-  build_wheels:
+  build_wheels_64bit:
     name: Build wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
@@ -21,18 +21,89 @@ jobs:
         with:
           path: |
             geos-${{ env.GEOS_VERSION }}
-          key: ${{ runner.os }}
+          key: ${{ runner.os }}-64
+
+      - name: Patch LICENSE
+        run: |
+          cat .github/LICENSE_wheels >> LICENSE
+        shell: bash
 
       - uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x64  # TODO: 32-bit version (x86)
+          arch: x64
         if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v1.12.0
         env:
           CIBW_BUILD: cp38-*
-          CIBW_ARCHS: auto64  # TODO, 32-bit builds (especially on windows)
+          CIBW_ARCHS: auto64
+          CIBW_ENVIRONMENT_LINUX:
+            GEOS_VERSION=${{ env.GEOS_VERSION }}
+            GEOS_INSTALL=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}
+            GEOS_CONFIG=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/bin/geos-config
+            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/lib
+          CIBW_ENVIRONMENT_MACOS:
+            GEOS_INSTALL=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}
+            GEOS_CONFIG=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/bin/geos-config
+            DYLD_FALLBACK_LIBRARY_PATH=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/lib
+            LDFLAGS=-Wl,-rpath,${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/lib
+          CIBW_ENVIRONMENT_WINDOWS:
+            GEOS_INSTALL='${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}'
+            GEOS_LIBRARY_PATH='${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\lib'
+            GEOS_INCLUDE_PATH='${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\include'
+          CIBW_BEFORE_ALL: ./ci/install_geos.sh
+          CIBW_BEFORE_ALL_WINDOWS: ci\install_geos.cmd
+          CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\bin -w {dest_dir} {wheel}
+          CIBW_TEST_REQUIRES: pytest
+          # The pytest command has the custom setting import-mode=importlib
+          # so that pytest does not mess up the PATH.
+          # If you do not do that, the (uncompiled) contents of
+          # {package}/pygeos will be tested against instead of the
+          # installed contents of the wheel that was built.
+          CIBW_TEST_COMMAND: pytest --import-mode=importlib {package}/pygeos/test
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: ./wheelhouse/*.whl
+          retention-days: 5
+
+  build_wheels_32bit:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    env:
+      GEOS_VERSION: "3.9.1"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, windows-2019]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Cache GEOS build
+        uses: actions/cache@v2
+        with:
+          path: |
+            geos-${{ env.GEOS_VERSION }}
+          key: ${{ runner.os }}-32
+
+      - name: Patch LICENSE
+        run: |
+          cat .github/LICENSE_wheels >> LICENSE
+        shell: bash
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+        if: ${{ matrix.os == 'windows-2019' }}
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v1.12.0
+        env:
+          CIBW_BUILD: cp38-*
+          CIBW_ARCHS: auto32
           CIBW_ENVIRONMENT_LINUX:
             GEOS_VERSION=${{ env.GEOS_VERSION }}
             GEOS_INSTALL=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}
