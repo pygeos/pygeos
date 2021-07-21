@@ -2,6 +2,8 @@ name: Build
 
 on:
   pull_request:
+    branches:
+      - 'master'
     paths:
       - '.github/actions/build_wheels.yml'
   release:
