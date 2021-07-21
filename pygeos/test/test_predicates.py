@@ -1,10 +1,9 @@
 import numpy as np
 import pytest
+from common import all_types, empty, geometry_collection, point, polygon
 
 import pygeos
 from pygeos import Geometry
-
-from common import all_types, empty, geometry_collection, point, polygon
 
 UNARY_PREDICATES = (
     pygeos.is_empty,

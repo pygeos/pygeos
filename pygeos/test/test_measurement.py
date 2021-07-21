@@ -1,9 +1,5 @@
 import numpy as np
 import pytest
-from numpy.testing import assert_allclose, assert_array_equal
-
-import pygeos
-
 from common import (
     empty,
     geometry_collection,
@@ -17,6 +13,9 @@ from common import (
     polygon,
     polygon_with_hole,
 )
+from numpy.testing import assert_allclose, assert_array_equal
+
+import pygeos
 
 
 @pytest.mark.parametrize(

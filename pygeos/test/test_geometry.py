@@ -1,8 +1,5 @@
 import numpy as np
 import pytest
-
-import pygeos
-
 from common import all_types
 from common import empty as empty_geometry_collection
 from common import (
@@ -21,6 +18,8 @@ from common import (
     polygon,
     polygon_with_hole,
 )
+
+import pygeos
 
 
 def test_get_num_points():

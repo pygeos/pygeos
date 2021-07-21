@@ -1,9 +1,8 @@
 import numpy as np
 import pytest
+from common import assert_geometries_equal, line_string, linear_ring, point, polygon
 
 import pygeos
-
-from common import assert_geometries_equal, line_string, linear_ring, point, polygon
 
 pnts = pygeos.points
 lstrs = pygeos.linestrings

@@ -1,9 +1,5 @@
 import numpy as np
 import pytest
-
-import pygeos
-from pygeos import Geometry, GEOSException
-
 from common import (
     all_types,
     empty,
@@ -15,6 +11,9 @@ from common import (
     point,
     point_z,
 )
+
+import pygeos
+from pygeos import Geometry, GEOSException
 
 CONSTRUCTIVE_NO_ARGS = (
     pygeos.boundary,

@@ -1,5 +1,5 @@
-import sys
 import os
+import sys
 
 # Small hack to make "common.py" importable without using relative
 # imports. Pytest is tricky with relative imports.

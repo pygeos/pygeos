@@ -1,8 +1,5 @@
 import numpy as np
 import pytest
-
-import pygeos
-
 from common import (
     empty_line_string,
     empty_point,
@@ -14,6 +11,8 @@ from common import (
     point,
     polygon,
 )
+
+import pygeos
 
 
 def test_line_interpolate_point_geom_array():

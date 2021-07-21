@@ -4,10 +4,9 @@ from unittest import mock
 
 import numpy as np
 import pytest
+from common import all_types, empty_point, point, point_z
 
 import pygeos
-
-from common import all_types, empty_point, point, point_z
 
 # fmt: off
 POINT11_WKB = b"\x01\x01\x00\x00\x00" + struct.pack("<2d", 1.0, 1.0)
