@@ -200,7 +200,6 @@ setup(
     extras_require={"test": ["pytest"], "docs": ["sphinx", "numpydoc"],},
     python_requires=">=3.6",
     include_package_data=True,
-    data_files=[("geos_license", ["GEOS_LICENSE"])],
     ext_modules=ext_modules,
     classifiers=[
         "Programming Language :: Python :: 3",
