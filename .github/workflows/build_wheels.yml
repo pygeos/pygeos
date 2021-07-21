@@ -1,14 +1,6 @@
 name: Build
 
-on:
-  pull_request:
-    branches:
-      - 'master'
-    paths:
-      - '.github/actions/build_wheels.yml'
-  release:
-    types:
-      - published
+on: [push, pull_request]
 
 jobs:
   build_wheels:
