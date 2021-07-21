@@ -1,6 +1,6 @@
 name: Conda
 
-on: []
+on: [push, pull_request]
 
 jobs:
   TestConda:
