@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   build_wheels:
-    name: Build 64-bit wheels on ${{ matrix.os }}
+    name: Build ${{ matrix.archs }} wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
       GEOS_VERSION: "3.9.1"
