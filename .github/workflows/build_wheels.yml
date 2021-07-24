@@ -28,10 +28,16 @@ jobs:
             geos-${{ env.GEOS_VERSION }}
           key: ${{ matrix.os }}-${{ matrix.archs }}
 
-      - name: Patch LICENSE
+      - name: Add GEOS LICENSE
         run: |
-          cat .github/LICENSE_wheels >> LICENSE
+          cp ci/wheelbuilder/LICENSE_GEOS .
         shell: bash
+
+      - name: Add MSVC LICENSE
+        run: |
+          cp ci/wheelbuilder/LICENSE_win32 .
+        shell: bash
+        if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Activate MSVC 32-bit
         uses: ilammy/msvc-dev-cmd@v1
