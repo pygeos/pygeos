@@ -3,6 +3,7 @@ include pygeos/*.pyx pygeos/*.pxd
 include versioneer.py
 include pygeos/_version.py
 include LICENSE
+include LICENSE_binary
 include pyproject.toml
 exclude pygeos/*.c
 exclude MANIFEST.in
