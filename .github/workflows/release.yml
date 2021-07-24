@@ -59,6 +59,8 @@ jobs:
           path: |
             geos-${{ env.GEOS_VERSION }}
           key: ${{ matrix.os }}-${{ matrix.archs }}
+        # On Linux, GEOS is built in a docker, so caching does not work
+        if: ${{ matrix.os != 'ubuntu-20.04' }}
 
       - name: Add GEOS LICENSE
         run: |
