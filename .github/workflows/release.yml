@@ -1,4 +1,4 @@
-name: Release and publish pygeos to GitHub
+name: Build and publish
 
 on:
   push:
