@@ -58,7 +58,7 @@ jobs:
         with:
           path: |
             geos-${{ env.GEOS_VERSION }}
-          key: ${{ matrix.os }}-${{ matrix.archs }}
+          key: ${{ matrix.os }}-${{ matrix.archs }}-2
 
       - name: Add GEOS LICENSE
         run: |
