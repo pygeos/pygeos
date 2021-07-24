@@ -114,10 +114,11 @@ jobs:
           # installed contents of the wheel that was built.
           CIBW_TEST_COMMAND: pytest --import-mode=importlib {package}/pygeos/test
 
-      - uses: actions/upload-artifact@v2
-      with:
-        path: ./wheelhouse/*.whl
-        retention-days: 5
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          path: ./wheelhouse/*.whl
+          retention-days: 5
 
   release:
     name: Publish pygeos on GitHub and PyPI
