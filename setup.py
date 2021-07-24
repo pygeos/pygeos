@@ -131,6 +131,7 @@ class build_ext(_build_ext):
 
 
 ext_modules = []
+license_files = ["LICENSE"]
 
 if "clean" in sys.argv:
     # delete any previously Cythonized or compiled files in pygeos
@@ -175,6 +176,8 @@ elif "sdist" not in sys.argv:
         # define_macros=[("NPY_NO_DEPRECATED_API", "NPY_1_7_API_VERSION")],
     )
 
+    license_files = ["LICENSE*"]  # matches licenses LICENSE_GEOS, LICENSE_win32
+
 
 try:
     descr = open(os.path.join(os.path.dirname(__file__), "README.rst")).read()
@@ -195,6 +198,7 @@ setup(
     author="Casper van der Wel",
     author_email="caspervdw@gmail.com",
     license="BSD 3-Clause",
+    license_files=license_files,
     packages=["pygeos"],
     install_requires=["numpy>=1.13"],
     extras_require={"test": ["pytest"], "docs": ["sphinx", "numpydoc"],},
