@@ -59,8 +59,6 @@ jobs:
           path: |
             geos-${{ env.GEOS_VERSION }}
           key: ${{ matrix.os }}-${{ matrix.archs }}
-        # On Linux, GEOS is built in a docker, so caching does not work
-        if: ${{ matrix.os != 'ubuntu-20.04' }}
 
       - name: Add GEOS LICENSE
         run: |
@@ -92,9 +90,9 @@ jobs:
           CIBW_SKIP: pp*  # Disable building PyPy wheels on all platforms
           CIBW_ENVIRONMENT_LINUX:
             GEOS_VERSION=${{ env.GEOS_VERSION }}
-            GEOS_INSTALL=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}
-            GEOS_CONFIG=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/bin/geos-config
-            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/lib
+            GEOS_INSTALL=/host${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}
+            GEOS_CONFIG=/host${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/bin/geos-config
+            LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/host${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/lib
           CIBW_ENVIRONMENT_MACOS:
             GEOS_INSTALL=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}
             GEOS_CONFIG=${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}/bin/geos-config
