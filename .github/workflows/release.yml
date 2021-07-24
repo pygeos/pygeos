@@ -12,7 +12,7 @@ on:
 
 jobs:
   build_sdist:
-    name: Build and publish pygeos to GitHub
+    name: Build sdist
     runs-on: ubuntu-latest
 
     steps:
@@ -120,8 +120,8 @@ jobs:
           path: ./wheelhouse/*.whl
           retention-days: 5
 
-  release:
-    name: Publish pygeos on GitHub and PyPI
+  publish:
+    name: Publish on GitHub and PyPI
     needs: [build_wheels, build_sdist]
     runs-on: ubuntu-latest
     # release on every tag
