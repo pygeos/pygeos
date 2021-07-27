@@ -43,28 +43,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019]
+        os: [ubuntu-20.04, windows-2019, macos-10.15]
         archs: [auto32, auto64]
+        exclude:
+        # osx doesn't have 32-bit builds
+        - os: macos-10.15
+          archs: auto32
         include:
         - os: ubuntu-20.04
           archs: aarch64
         - os: ubuntu-20.04
           archs: ppc64le
         # - os: ubuntu-20.04
-        #   archs: s390x
-        # build a universal macOS wheel (combined arm64 and x86_64, requires pip>20.2)
+        #   archs: s390x  We know GEOS doesn't work on s390x
+        # build a arm64 macOS wheel
         - os: macos-10.15
-          archs: x86_64 universal2
+          archs: arm64
 
     steps:
       - uses: actions/checkout@v2
 
-      # - name: Cache GEOS build
-      #   uses: actions/cache@v2
-      #   with:
-      #     path: |
-      #       geos-${{ env.GEOS_VERSION }}
-      #     key: ${{ matrix.os }}-${{ matrix.archs }}-2
+      - name: Cache GEOS build
+        uses: actions/cache@v2
+        with:
+          path: |
+            geos-${{ env.GEOS_VERSION }}
+          key: ${{ matrix.os }}-${{ matrix.archs }}-2
 
       - name: Add GEOS LICENSE
         run: |
