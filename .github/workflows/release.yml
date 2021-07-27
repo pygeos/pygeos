@@ -54,11 +54,12 @@ jobs:
           archs: aarch64
         - os: ubuntu-20.04
           archs: ppc64le
+        # We know GEOS doesn't work on s390x:
         # - os: ubuntu-20.04
-        #   archs: s390x  We know GEOS doesn't work on s390x
-        # build a arm64 macOS wheel
-        - os: macos-10.15
-          archs: arm64
+        #   archs: s390x  
+        # The ARM64 macOS wheel require more work on the GEOS build script:
+        # - os: macos-10.15
+        #   archs: arm64
 
     steps:
       - uses: actions/checkout@v2
