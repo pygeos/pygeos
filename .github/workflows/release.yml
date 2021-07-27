@@ -52,14 +52,14 @@ jobs:
         include:
         - os: ubuntu-20.04
           archs: aarch64
-        - os: ubuntu-20.04
-          archs: ppc64le
-        # We know GEOS doesn't work on s390x:
+        # Numpy doesn't have ppc64le wheels:
+        # - os: ubuntu-20.04
+        #   archs: ppc64le
+        # We know that tests don't pass on s390x:
         # - os: ubuntu-20.04
         #   archs: s390x  
-        # The ARM64 macOS wheel require more work on the GEOS build script:
-        # - os: macos-10.15
-        #   archs: arm64
+        - os: macos-10.15
+          archs: arm64
 
     steps:
       - uses: actions/checkout@v2
@@ -70,6 +70,7 @@ jobs:
           path: |
             geos-${{ env.GEOS_VERSION }}
           key: ${{ matrix.os }}-${{ matrix.archs }}-2
+        if: ${{ matrix.archs != 'arm64' }}
 
       - name: Add GEOS LICENSE
         run: |
@@ -85,8 +86,8 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
         with:
-          platforms: all
-        if: ${{ matrix.os == 'ubuntu-20.04' && !startsWith( matrix.archs, 'auto' ) }}
+          platforms: arm64
+        if: ${{ matrix.os == 'ubuntu-20.04' && matrix.archs == 'aarch64' }}
 
       - name: Activate MSVC 32-bit
         uses: ilammy/msvc-dev-cmd@v1

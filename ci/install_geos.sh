@@ -19,9 +19,6 @@ fi
 # Create directories, if they don't exist
 mkdir -p $GEOS_INSTALL
 
-# Ensure cmake is present
-pip install cmake
-
 # Download and build GEOS outside other source tree
 if [ -z "$GEOS_BUILD" ]; then
     GEOS_BUILD=$HOME/geosbuild
@@ -34,6 +31,9 @@ prepare_geos_build_dir(){
 }
 
 build_geos(){
+    echo "Installing cmake"
+    pip install cmake
+
     echo "Building geos-$GEOS_VERSION"
     mkdir build
     cd build
