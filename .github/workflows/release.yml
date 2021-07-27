@@ -43,22 +43,28 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-20.04, windows-2019, macos-10.15]
+        os: [ubuntu-20.04, windows-2019]
         archs: [auto32, auto64]
-        exclude:
-        # there are no 32-bit builds on macOS
+        include:
+        - os: ubuntu-20.04
+          archs: aarch64
+        - os: ubuntu-20.04
+          archs: ppc64le
+        # - os: ubuntu-20.04
+        #   archs: s390x
+        # build a universal macOS wheel (combined arm64 and x86_64, requires pip>20.2)
         - os: macos-10.15
-          archs: auto32
+          archs: x86_64 universal2
 
     steps:
       - uses: actions/checkout@v2
 
-      - name: Cache GEOS build
-        uses: actions/cache@v2
-        with:
-          path: |
-            geos-${{ env.GEOS_VERSION }}
-          key: ${{ matrix.os }}-${{ matrix.archs }}-2
+      # - name: Cache GEOS build
+      #   uses: actions/cache@v2
+      #   with:
+      #     path: |
+      #       geos-${{ env.GEOS_VERSION }}
+      #     key: ${{ matrix.os }}-${{ matrix.archs }}-2
 
       - name: Add GEOS LICENSE
         run: |
@@ -70,6 +76,12 @@ jobs:
           cp ci/wheelbuilder/LICENSE_win32 .
         shell: bash
         if: ${{ matrix.os == 'windows-2019' }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: all
+        if: ${{ matrix.os == 'ubuntu-20.04' && !startsWith( matrix.archs, 'auto' ) }}
 
       - name: Activate MSVC 32-bit
         uses: ilammy/msvc-dev-cmd@v1
