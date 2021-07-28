@@ -71,7 +71,6 @@ jobs:
           path: |
             geos-${{ env.GEOS_VERSION }}
           key: ${{ matrix.os }}-${{ matrix.archs }}-2
-        if: ${{ matrix.archs != 'arm64' }}
 
       - name: Add GEOS LICENSE
         run: |
