@@ -50,6 +50,7 @@ jobs:
         - os: macos-10.15
           archs: auto32
         include:
+        # Only numpy >= 1.19 has aarch64 wheels
         - os: ubuntu-20.04
           archs: aarch64
         # Numpy doesn't have ppc64le wheels:
@@ -105,7 +106,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.0.0
         env:
           CIBW_ARCHS: ${{ matrix.archs }}
-          CIBW_SKIP: pp*  # Disable building PyPy wheels on all platforms
+          CIBW_SKIP: pp* cp36-manylinux_aarch64 cp37-manylinux_aarch64
           CIBW_ENVIRONMENT_LINUX:
             GEOS_VERSION=${{ env.GEOS_VERSION }}
             GEOS_INSTALL=/host${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}
