@@ -8,7 +8,7 @@ on:
       - "*"
   pull_request:  # temporary for GH Actions dev
     branches:
-      - master
+      - "**cibuildwheel*"
 
 jobs:
   build_sdist:
