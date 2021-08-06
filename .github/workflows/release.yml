@@ -6,9 +6,9 @@ on:
       - master  # just build the sdist & wheel, skip release
     tags:
       - "*"
-  pull_request:  # temporary for GH Actions dev
-    branches:
-      - "**cibuildwheel*"
+  pull_request:  # also build on PRs touching this file
+    paths:
+      - ".github/workflows/release.yml"
 
 jobs:
   build_sdist:
