@@ -1,8 +1,11 @@
 import numpy as np
 import pytest
-from common import all_types
-from common import empty as empty_geometry_collection
-from common import (
+
+import pygeos
+
+from .common import all_types
+from .common import empty as empty_geometry_collection
+from .common import (
     empty_line_string,
     empty_point,
     empty_polygon,
@@ -18,8 +21,6 @@ from common import (
     polygon,
     polygon_with_hole,
 )
-
-import pygeos
 
 
 def test_get_num_points():

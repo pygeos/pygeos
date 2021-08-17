@@ -1,6 +1,9 @@
 import numpy as np
 import pytest
-from common import (
+
+import pygeos
+
+from .common import (
     empty_polygon,
     geometry_collection,
     line_string,
@@ -11,8 +14,6 @@ from common import (
     point,
     polygon,
 )
-
-import pygeos
 
 
 def box_tpl(x1, y1, x2, y2):

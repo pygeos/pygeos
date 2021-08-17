@@ -6,7 +6,7 @@ import sys
 from distutils.version import LooseVersion
 from pathlib import Path
 
-from setuptools import Extension, setup
+from setuptools import Extension, setup, find_packages
 from setuptools.command.build_ext import build_ext as _build_ext
 
 import versioneer
@@ -210,6 +210,7 @@ version = versioneer.get_version()
 cmdclass = versioneer.get_cmdclass()
 cmdclass["build_ext"] = build_ext
 
+
 setup(
     name="pygeos",
     version=version,
@@ -219,7 +220,7 @@ setup(
     author="Casper van der Wel",
     author_email="caspervdw@gmail.com",
     license="BSD 3-Clause",
-    packages=["pygeos"],
+    packages=find_packages(include=["pygeos", "pygeos.*"]),
     install_requires=["numpy>=1.13"],
     extras_require={
         "test": ["pytest"],

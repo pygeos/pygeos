@@ -4,7 +4,12 @@ from concurrent.futures import ThreadPoolExecutor
 
 import numpy as np
 import pytest
-from common import (
+from numpy.testing import assert_array_equal
+
+import pygeos
+from pygeos import box
+
+from .common import (
     assert_decreases_refcount,
     assert_increases_refcount,
     empty,
@@ -12,10 +17,6 @@ from common import (
     empty_point,
     point,
 )
-from numpy.testing import assert_array_equal
-
-import pygeos
-from pygeos import box
 
 # the distance between 2 points spaced at whole numbers along a diagonal
 HALF_UNIT_DIAG = math.sqrt(2) / 2

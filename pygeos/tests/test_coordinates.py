@@ -1,6 +1,11 @@
 import numpy as np
 import pytest
-from common import (
+from numpy.testing import assert_allclose, assert_equal
+
+import pygeos
+from pygeos import apply, count_coordinates, get_coordinates, set_coordinates
+
+from .common import (
     empty,
     empty_point,
     geometry_collection,
@@ -17,10 +22,6 @@ from common import (
     polygon_with_hole,
     polygon_z,
 )
-from numpy.testing import assert_allclose, assert_equal
-
-import pygeos
-from pygeos import apply, count_coordinates, get_coordinates, set_coordinates
 
 nested_2 = pygeos.geometrycollections([geometry_collection, point])
 nested_3 = pygeos.geometrycollections([nested_2, point])

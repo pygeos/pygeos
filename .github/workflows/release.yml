@@ -130,7 +130,7 @@ jobs:
           # If you do not do that, the (uncompiled) contents of
           # {package}/pygeos will be tested against instead of the
           # installed contents of the wheel that was built.
-          CIBW_TEST_COMMAND: pytest --import-mode=importlib {package}/pygeos/test
+          CIBW_TEST_COMMAND: pytest --pyargs pygeos.tests
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
