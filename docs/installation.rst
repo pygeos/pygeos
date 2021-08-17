@@ -60,7 +60,7 @@ Install it in development mode using `pip`::
 
 Run the unittests::
 
-    $ pytest pygeos
+    $ pytest --pyargs pygeos.tests
 
 
 Notes on GEOS discovery

@@ -6,6 +6,9 @@ Version 0.11 (unreleased)
 
 **Distribution**
 
+Unittests are now included in the pygeos distribution. Run them by 1) installing
+``pytest`` (or ``pygeos[test]``) and invoking ``pytest --pyargs pygeos.tests``.
+
 We started using a new tool for building binary wheels: ``cibuildwheel``. This
 resulted into the following improvements in the distributed binary wheels:
 
