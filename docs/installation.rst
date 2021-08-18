@@ -5,7 +5,7 @@ Installation from PyPI
 ----------------------
 
 PyGEOS is available as a binary distribution (wheel) for Linux, OSX and Windows platforms.
-Install as follows::
+We strongly recommand installation as follows::
 
     $ pip install pygeos
 
@@ -24,14 +24,11 @@ Installation with custom GEOS libary
 On Linux::
 
     $ sudo apt install libgeos-dev
+    $ pip install pygeos --no-binary
 
 On OSX::
 
     $ brew install geos
-
-Make sure `geos-config` is available from you shell; append PATH if necessary::
-
-    $ export PATH=$PATH:/path/to/dir/having/geos-config
     $ pip install pygeos --no-binary
 
 We do not have a recipe for Windows platforms. The following steps should enable you
@@ -39,8 +36,9 @@ to build PyGEOS yourself:
 
 - Get a C compiler applicable to your Python version (https://wiki.python.org/moin/WindowsCompilers)
 - Download and install a GEOS binary (https://trac.osgeo.org/osgeo4w/)
-- Set GEOS_INCLUDE_PATH and GEOS_LIBRARY_PATH environment variables
+- Set GEOS_INCLUDE_PATH and GEOS_LIBRARY_PATH environment variables (see below for notes on GEOS discovery)
 - Run ``pip install pygeos --no-binary``
+- Make sure the GEOS dlls are available on the PATH
 
 Installation from source
 ------------------------
@@ -50,13 +48,9 @@ package from Github::
 
     $ git clone git@github.com:pygeos/pygeos.git
 
-Install Cython, which is required to build Cython extensions::
-
-    $ pip install cython
-
 Install it in development mode using `pip`::
 
-    $ pip install -e .[test] --no-build-isolation
+    $ pip install -e .[test]
 
 Run the unittests::
 
@@ -66,17 +60,37 @@ Run the unittests::
 Notes on GEOS discovery
 -----------------------
 
-If GEOS is installed, normally the ``geos-config`` command line utility
-will be available, and ``pip install`` will find GEOS automatically.
-But if needed, you can specify where PyGEOS should look for the GEOS library
-before installing it:
+If GEOS is installed on Linux or OSX, normally the ``geos-config`` command line utility
+will be available and ``pip install`` will find GEOS automatically.
+If the correct ``geos-config`` is not on the PATH, you can add it as follows:
 
-On Linux / OSX::
+    $ export PATH=/path/to/geos/bin:$PATH
+
+Alternatively, you can specify where PyGEOS should look for the GEOS library and header
+files before installation (Linux/OSX)::
 
     $ export GEOS_INCLUDE_PATH=$CONDA_PREFIX/Library/include
     $ export GEOS_LIBRARY_PATH=$CONDA_PREFIX/Library/lib
 
-On Windows (assuming you are in a Visual C++ shell)::
+On Windows, there is no ``geos-config`` and the include and lib folders need to be
+specified manually in any case::
 
     $ set GEOS_INCLUDE_PATH=%CONDA_PREFIX%\Library\include
     $ set GEOS_LIBRARY_PATH=%CONDA_PREFIX%\Library\lib
+
+For all platforms, the GEOS library version that was used to compile PyGEOS with will
+need to remain available on your system. Make sure your that the dynamic linker paths are
+set such that the libraries can be found. If you are doing this from the default Conda paths
+as in above example, this will already be the case and you don't need to do anything. For
+custom usage on Linux::
+
+    $ export LD_LIBRARY_PATH=/path/to/geos/lib:$LD_LIBRARY_PATH
+    $ sudo ldconfig  # refresh dynamic linker cache
+
+On OSX::
+
+    $ export DYLD_LIBRARY_PATH=/path/to/geos/lib:$DYLD_LIBRARY_PATH
+
+On Windows::
+
+    $ export PATH=%PATH%;C:\path\to\geos\bin
