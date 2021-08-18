@@ -5,7 +5,7 @@ Installation from PyPI
 ----------------------
 
 PyGEOS is available as a binary distribution (wheel) for Linux, OSX and Windows platforms.
-We strongly recommand installation as follows::
+We recommand installation as follows::
 
     $ pip install pygeos
 
@@ -13,7 +13,7 @@ We strongly recommand installation as follows::
 Installation using conda
 ------------------------
 
-PyGEOS is available on the conda-forage channel. Install as follows::
+PyGEOS is available on the conda-forge channel. Install as follows::
 
     $ conda install pygeos --channel conda-forge
 
