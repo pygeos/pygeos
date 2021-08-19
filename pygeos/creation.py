@@ -141,6 +141,12 @@ def linearrings(coords, y=None, z=None, indices=None, **kwargs):
     <pygeos.Geometry LINEARRING (0 0, 0 1, 1 1, 0 0)>
     >>> linearrings([[0, 0], [0, 1], [1, 1]])
     <pygeos.Geometry LINEARRING (0 0, 0 1, 1 1, 0 0)>
+
+    Notes
+    -----
+    With GEOS 3.9 and earlier an exception is raised when constructing a linearring
+    from three coordinates (e.g. ``[[1, 1], [1, 2], [1, 1]]``). With GEOS 3.10, this
+    is allowed.
     """
     coords = _xyz_to_coords(coords, y, z)
     if indices is None:

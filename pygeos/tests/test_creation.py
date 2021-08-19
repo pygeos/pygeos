@@ -119,9 +119,6 @@ def test_linearrings_invalid_shape_scalar():
         (2, 2, 2),  # 2 linearrings of 2 2D points
         (1, 2, 2),  # 1 linearring of 2 2D points
         (2, 2),  # 1 linearring of 2 2D points (scalar)
-        (2, 3, 2),  # 2 linearrings of 3 2D points
-        (1, 3, 2),  # 1 linearring of 3 2D points
-        (3, 2),  # 1 linearring of 3 2D points (scalar)
     ],
 )
 def test_linearrings_invalid_shape(shape):
@@ -237,9 +234,6 @@ def test_polygons_not_enough_points_in_shell_scalar():
         (2, 2, 2),  # 2 linearrings of 2 2D points
         (1, 2, 2),  # 1 linearring of 2 2D points
         (2, 2),  # 1 linearring of 2 2D points (scalar)
-        (2, 3, 2),  # 2 linearrings of 3 2D points
-        (1, 3, 2),  # 1 linearring of 3 2D points
-        (3, 2),  # 1 linearring of 3 2D points (scalar)
     ],
 )
 def test_polygons_not_enough_points_in_shell(shape):
@@ -267,9 +261,6 @@ def test_polygons_not_enough_points_in_holes_scalar():
         (2, 2, 2),  # 2 linearrings of 2 2D points
         (1, 2, 2),  # 1 linearring of 2 2D points
         (2, 2),  # 1 linearring of 2 2D points (scalar)
-        (2, 3, 2),  # 2 linearrings of 3 2D points
-        (1, 3, 2),  # 1 linearring of 3 2D points
-        (3, 2),  # 1 linearring of 3 2D points (scalar)
     ],
 )
 def test_polygons_not_enough_points_in_holes(shape):
