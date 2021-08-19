@@ -16,7 +16,6 @@ resulted into the following improvements in the distributed binary wheels:
   with other GEOS versions present on the system (a.k.a. 'DLL hell') (#365).
 * Windows binary wheels now contain the Microsoft Visual C++ Runtime Files
   (msvcp140.dll) for usage on systems without the C++ redistributable (#365).
-* MacOS arm64 wheels are now available for Python 3.8 and 3.9 (#365).
 * Linux x86_64 and i686 wheels are now built using the manylinux2010 image
   instead of manylinux1 (#365).
 * Linux aarch64 wheels are now available for Python 3.9 (manylinux2014, #365).
