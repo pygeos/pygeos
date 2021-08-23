@@ -76,6 +76,17 @@ def test_points_no_index_raises():
         )
 
 
+def test_points_out():
+    out = np.empty(2, dtype=object)
+    actual = pygeos.points(
+        [[2, 3], [2, 3]],
+        indices=[0, 1],
+        out=out,
+    )
+    assert_geometries_equal(out, [point, point])
+    assert actual is out
+
+
 @pytest.mark.parametrize(
     "coordinates,indices,expected",
     [
@@ -101,6 +112,17 @@ def test_linestrings_invalid():
         pygeos.linestrings([[1, 1], [2, 2]], indices=[0, 1])
 
 
+def test_linestrings_out():
+    out = np.empty(1, dtype=object)
+    actual = pygeos.linestrings(
+        [[1, 1], [2, 2]],
+        indices=[0, 0],
+        out=out,
+    )
+    assert_geometries_equal(out, lstrs([[1, 1], [2, 2]]))
+    assert actual is out
+
+
 @pytest.mark.parametrize(
     "coordinates", [([[1, 1], [2, 1], [2, 2], [1, 1]]), ([[1, 1], [2, 1], [2, 2]])]
 )
@@ -123,6 +145,18 @@ def test_linearrings_invalid(coordinates):
     # attempt to construct linestrings with 1 coordinate
     with pytest.raises(pygeos.GEOSException):
         pygeos.linearrings(coordinates, indices=np.zeros(len(coordinates)))
+
+
+def test_linearrings_out():
+    coordinates = [[1, 1], [2, 1], [2, 2], [1, 1]]
+    out = np.empty(1, dtype=object)
+    actual = pygeos.linearrings(
+        coordinates,
+        indices=[0, 0, 0, 0],
+        out=out,
+    )
+    assert_geometries_equal(out, pygeos.linearrings(coordinates))
+    assert actual is out
 
 
 hole_1 = pygeos.linearrings([(0.2, 0.2), (0.2, 0.4), (0.4, 0.4)])
@@ -186,6 +220,13 @@ def test_polygons(rings, indices, expected):
     assert_geometries_equal(actual, expected)
 
 
+def test_polygons_out():
+    out = np.empty(2, dtype=object)
+    actual = pygeos.polygons([linear_ring, linear_ring], indices=[0, 1], out=out)
+    assert_geometries_equal(out, [poly, poly])
+    assert actual is out
+
+
 @pytest.mark.parametrize(
     "func",
     [
@@ -225,6 +266,13 @@ def test_geometrycollections_no_index_raises():
         pygeos.geometrycollections(
             np.array([point, line_string], dtype=object), indices=[0, 2]
         )
+
+
+def test_geometrycollections_out():
+    out = np.empty(1, dtype=object)
+    actual = pygeos.geometrycollections([point, line_string], [0, 0], out=out)
+    assert_geometries_equal(out, geom_coll([point, line_string]))
+    assert actual is out
 
 
 def test_multipoints():

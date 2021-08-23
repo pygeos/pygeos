@@ -64,7 +64,9 @@ def points(coords, y=None, z=None, indices=None, **kwargs):
     if indices is None:
         return lib.points(coords, **kwargs)
     else:
-        return simple_geometries_1d(coords, indices, GeometryType.POINT)
+        return simple_geometries_1d(
+            coords, indices, GeometryType.POINT, out=kwargs.get("out")
+        )
 
 
 @multithreading_enabled
@@ -102,7 +104,9 @@ def linestrings(coords, y=None, z=None, indices=None, **kwargs):
     if indices is None:
         return lib.linestrings(coords, **kwargs)
     else:
-        return simple_geometries_1d(coords, indices, GeometryType.LINESTRING)
+        return simple_geometries_1d(
+            coords, indices, GeometryType.LINESTRING, out=kwargs.get("out")
+        )
 
 
 @multithreading_enabled
@@ -146,7 +150,9 @@ def linearrings(coords, y=None, z=None, indices=None, **kwargs):
     if indices is None:
         return lib.linearrings(coords, **kwargs)
     else:
-        return simple_geometries_1d(coords, indices, GeometryType.LINEARRING)
+        return simple_geometries_1d(
+            coords, indices, GeometryType.LINEARRING, out=kwargs.get("out")
+        )
 
 
 @multithreading_enabled
@@ -225,7 +231,9 @@ def polygons(geometries, holes=None, indices=None, **kwargs):
     if indices is not None:
         if holes is not None:
             raise TypeError("Cannot specify separate holes array when using indices.")
-        return collections_1d(geometries, indices, GeometryType.POLYGON)
+        return collections_1d(
+            geometries, indices, GeometryType.POLYGON, out=kwargs.get("out")
+        )
 
     if holes is None:
         # no holes provided: initialize an empty holes array matching shells
@@ -329,7 +337,7 @@ def multipoints(geometries, indices=None, **kwargs):
     if indices is None:
         return lib.create_collection(geometries, typ, **kwargs)
     else:
-        return collections_1d(geometries, indices, typ)
+        return collections_1d(geometries, indices, typ, out=kwargs.get("out"))
 
 
 @multithreading_enabled
@@ -364,7 +372,7 @@ def multilinestrings(geometries, indices=None, **kwargs):
     if indices is None:
         return lib.create_collection(geometries, typ, **kwargs)
     else:
-        return collections_1d(geometries, indices, typ)
+        return collections_1d(geometries, indices, typ, out=kwargs.get("out"))
 
 
 @multithreading_enabled
@@ -398,7 +406,7 @@ def multipolygons(geometries, indices=None, **kwargs):
     if indices is None:
         return lib.create_collection(geometries, typ, **kwargs)
     else:
-        return collections_1d(geometries, indices, typ)
+        return collections_1d(geometries, indices, typ, out=kwargs.get("out"))
 
 
 @multithreading_enabled
@@ -427,7 +435,7 @@ def geometrycollections(geometries, indices=None, **kwargs):
     if indices is None:
         return lib.create_collection(geometries, typ, **kwargs)
     else:
-        return collections_1d(geometries, indices, typ)
+        return collections_1d(geometries, indices, typ, out=kwargs.get("out"))
 
 
 def prepare(geometry, **kwargs):
