@@ -76,14 +76,22 @@ def test_points_no_index_raises():
         )
 
 
-def test_points_out():
-    out = np.empty(2, dtype=object)
+@pytest.mark.parametrize(
+    "indices,expected",
+    [
+        ([0, 1], [point, point, None, None]),
+        ([0, 3], [point, None, None, point]),
+        ([2, 3], [None, None, point, point]),
+    ],
+)
+def test_points_out(indices, expected):
+    out = np.empty(4, dtype=object)
     actual = pygeos.points(
         [[2, 3], [2, 3]],
-        indices=[0, 1],
+        indices=indices,
         out=out,
     )
-    assert_geometries_equal(out, [point, point])
+    assert_geometries_equal(out, expected)
     assert actual is out
 
 
@@ -112,14 +120,22 @@ def test_linestrings_invalid():
         pygeos.linestrings([[1, 1], [2, 2]], indices=[0, 1])
 
 
-def test_linestrings_out():
-    out = np.empty(1, dtype=object)
+@pytest.mark.parametrize(
+    "indices,expected",
+    [
+        ([0, 0, 0, 1, 1, 1], [line_string, line_string, None, None]),
+        ([0, 0, 0, 3, 3, 3], [line_string, None, None, line_string]),
+        ([2, 2, 2, 3, 3, 3], [None, None, line_string, line_string]),
+    ],
+)
+def test_linestrings_out(indices, expected):
+    out = np.empty(4, dtype=object)
     actual = pygeos.linestrings(
-        [[1, 1], [2, 2]],
-        indices=[0, 0],
+        [(0, 0), (1, 0), (1, 1), (0, 0), (1, 0), (1, 1)],
+        indices=indices,
         out=out,
     )
-    assert_geometries_equal(out, lstrs([[1, 1], [2, 2]]))
+    assert_geometries_equal(out, expected)
     assert actual is out
 
 
@@ -147,15 +163,22 @@ def test_linearrings_invalid(coordinates):
         pygeos.linearrings(coordinates, indices=np.zeros(len(coordinates)))
 
 
-def test_linearrings_out():
-    coordinates = [[1, 1], [2, 1], [2, 2], [1, 1]]
-    out = np.empty(1, dtype=object)
+@pytest.mark.parametrize(
+    "indices,expected",
+    [
+        ([0, 0, 0, 0, 0], [linear_ring, None, None, None]),
+        ([1, 1, 1, 1, 1], [None, linear_ring, None, None]),
+        ([3, 3, 3, 3, 3], [None, None, None, linear_ring]),
+    ],
+)
+def test_linearrings_out(indices, expected):
+    out = np.empty(4, dtype=object)
     actual = pygeos.linearrings(
-        coordinates,
-        indices=[0, 0, 0, 0],
+        [(0, 0), (1, 0), (1, 1), (0, 1), (0, 0)],
+        indices=indices,
         out=out,
     )
-    assert_geometries_equal(out, pygeos.linearrings(coordinates))
+    assert_geometries_equal(out, expected)
     assert actual is out
 
 
@@ -220,10 +243,18 @@ def test_polygons(rings, indices, expected):
     assert_geometries_equal(actual, expected)
 
 
-def test_polygons_out():
-    out = np.empty(2, dtype=object)
-    actual = pygeos.polygons([linear_ring, linear_ring], indices=[0, 1], out=out)
-    assert_geometries_equal(out, [poly, poly])
+@pytest.mark.parametrize(
+    "indices,expected",
+    [
+        ([0, 1], [poly, poly, None, None]),
+        ([0, 3], [poly, None, None, poly]),
+        ([2, 3], [None, None, poly, poly]),
+    ],
+)
+def test_polygons_out(indices, expected):
+    out = np.empty(4, dtype=object)
+    actual = pygeos.polygons([linear_ring, linear_ring], indices=indices, out=out)
+    assert_geometries_equal(out, expected)
     assert actual is out
 
 
@@ -268,10 +299,17 @@ def test_geometrycollections_no_index_raises():
         )
 
 
-def test_geometrycollections_out():
-    out = np.empty(1, dtype=object)
-    actual = pygeos.geometrycollections([point, line_string], [0, 0], out=out)
-    assert_geometries_equal(out, geom_coll([point, line_string]))
+@pytest.mark.parametrize(
+    "indices,expected",
+    [
+        ([0, 0], [geom_coll([point, line_string]), None, None, None]),
+        ([3, 3], [None, None, None, geom_coll([point, line_string])]),
+    ],
+)
+def test_geometrycollections_out(indices, expected):
+    out = np.empty(4, dtype=object)
+    actual = pygeos.geometrycollections([point, line_string], indices=indices, out=out)
+    assert_geometries_equal(out, expected)
     assert actual is out
 
 

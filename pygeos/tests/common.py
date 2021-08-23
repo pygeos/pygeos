@@ -78,4 +78,4 @@ def assert_geometries_equal(actual, expected):
     if np.any(mask):
         assert pygeos.equals(actual[mask], expected[mask]).all()
     if np.any(~mask):
-        assert pygeos.is_missing(actual[~mask])
+        assert pygeos.is_missing(actual[~mask]).all()

@@ -67,7 +67,7 @@ def _check_out_array(object out, Py_ssize_t size):
     if out.ndim != 1:
         raise TypeError("out is not a one-dimensional array.") 
     if out.shape[0] < size:
-        raise ValueError("out array is to small ({out.shape[0]} < {size})") 
+        raise ValueError(f"out array is to small ({out.shape[0]} < {size})") 
     return out
 
  
@@ -116,6 +116,9 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type, 
 
     # The final target array
     cdef Py_ssize_t n_geoms = coord_counts.shape[0]
+    # Allow missing indices only if 'out' was given explicitly (if 'out' is not
+    # supplied by the user, we would have to come up with an output value ourselves).
+    cdef char allow_missing = out is not None
     out = _check_out_array(out, n_geoms)
     cdef object[:] out_view = out
 
@@ -123,11 +126,13 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type, 
         for geom_idx in range(n_geoms):
             geom_size = coord_counts[geom_idx]
 
-            # for now, raise if there are indices missing (decision on this in GH345)
             if geom_size == 0:
-                raise ValueError(
-                    f"Index {geom_idx} is missing from the input indices."
-                )
+                if allow_missing:
+                    continue
+                else:
+                    raise ValueError(
+                        f"Index {geom_idx} is missing from the input indices."
+                    )
 
             # check if we need to close a linearring
             if geometry_type == 2:
@@ -318,15 +323,21 @@ def collections_1d(object geometries, object indices, int geometry_type = 7, obj
 
     # The final target array
     cdef Py_ssize_t n_colls = collection_size.shape[0]
+    # Allow missing indices only if 'out' was given explicitly (if 'out' is not
+    # supplied by the user, we would have to come up with an output value ourselves).
+    cdef char allow_missing = out is not None
     out = _check_out_array(out, n_colls)
     cdef object[:] out_view = out
 
     with get_geos_handle() as geos_handle:
         for coll_idx in range(n_colls):
             if collection_size[coll_idx] == 0:
-                raise ValueError(
-                    f"Index {coll_idx} is missing from the input indices."
-                )
+                if allow_missing:
+                    continue
+                else:
+                    raise ValueError(
+                        f"Index {coll_idx} is missing from the input indices."
+                    )
             coll_size = 0
 
             # fill the temporary array with geometries belonging to this collection
