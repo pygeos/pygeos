@@ -65,7 +65,7 @@ def _check_out_array(object out, Py_ssize_t size):
     if out.dtype != object:
         raise TypeError("out array dtype must be object")
     if out.ndim != 1:
-        raise TypeError("out is not a one-dimensional array.") 
+        raise TypeError("out must be a one-dimensional array.") 
     if out.shape[0] < size:
         raise ValueError(f"out array is to small ({out.shape[0]} < {size})") 
     return out
@@ -86,11 +86,11 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type, 
     # Cast input arrays and define memoryviews for later usage
     coordinates = np.asarray(coordinates, dtype=np.float64)
     if coordinates.ndim != 2:
-        raise TypeError("coordinates is not a two-dimensional array.")
+        raise TypeError("coordinates must be a two-dimensional array.")
 
     indices = np.asarray(indices, dtype=np.intp)  # intp is what bincount takes
     if indices.ndim != 1:
-        raise TypeError("indices is not a one-dimensional array.")
+        raise TypeError("indices must be a one-dimensional array.")
 
     if coordinates.shape[0] != indices.shape[0]:
         raise ValueError("geometries and indices do not have equal size.")
@@ -297,11 +297,11 @@ def collections_1d(object geometries, object indices, int geometry_type = 7, obj
     # Cast input arrays and define memoryviews for later usage
     geometries = np.asarray(geometries, dtype=object)
     if geometries.ndim != 1:
-        raise TypeError("geometries is not a one-dimensional array.")
+        raise TypeError("geometries must be a one-dimensional array.")
 
     indices = np.asarray(indices, dtype=np.intp)  # intp is what bincount takes
     if indices.ndim != 1:
-        raise TypeError("indices is not a one-dimensional array.")
+        raise TypeError("indices must be a one-dimensional array.")
 
     if geometries.shape[0] != indices.shape[0]:
         raise ValueError("geometries and indices do not have equal size.")
