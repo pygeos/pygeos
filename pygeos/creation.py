@@ -500,7 +500,7 @@ def empty(shape, geom_type=None, order="C"):
     """
     if geom_type is None:
         return np.empty(shape, dtype=object, order=order)
-    else:
-        wkt = GeometryType(geom_type).name + " EMPTY"
+
+    wkt = GeometryType(geom_type).name + " EMPTY"
     fill_value = Geometry(wkt)
     return np.full(shape, fill_value, dtype=object, order=order)
