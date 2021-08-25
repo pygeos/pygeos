@@ -67,7 +67,7 @@ def _check_out_array(object out, Py_ssize_t size):
     if out.ndim != 1:
         raise TypeError("out must be a one-dimensional array.") 
     if out.shape[0] < size:
-        raise ValueError(f"out array is to small ({out.shape[0]} < {size})") 
+        raise ValueError(f"out array is too small ({out.shape[0]} < {size})") 
     return out
 
  
