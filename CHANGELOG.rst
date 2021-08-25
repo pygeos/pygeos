@@ -7,7 +7,8 @@ Version 0.11 (unreleased)
 
 **Major enhancements**
 
-* ...
+* Added ``pygeos.empty`` to create a geometry array pre-filled with None or
+  with empty geometries (#381).
 
 **API Changes**
 

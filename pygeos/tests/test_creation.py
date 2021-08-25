@@ -468,3 +468,16 @@ def test_subclass_is_geometry(with_point_in_registry):
 
 def test_subclass_is_valid_input(with_point_in_registry):
     assert pygeos.is_valid_input(Point("POINT (1 1)"))
+
+
+def test_empty_none():
+    actual = pygeos.empty((2,))
+    assert pygeos.is_missing(actual).all()
+
+
+@pytest.mark.parametrize("geom_type", range(8))
+def test_empty(geom_type):
+    actual = pygeos.empty((2,), geom_type=geom_type)
+    assert (~pygeos.is_missing(actual)).all()
+    assert pygeos.is_empty(actual).all()
+    assert (pygeos.get_type_id(actual) == geom_type).all()
