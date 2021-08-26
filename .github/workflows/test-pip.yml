@@ -109,3 +109,10 @@ jobs:
         continue-on-error: ${{ matrix.geos == 'main' }}
         run: |
           pytest pygeos
+
+      - name: Run doctests
+        shell: bash
+        run: |
+          rm -rf pygeos/tests 
+          pytest --doctest-modules pygeos
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.8' }}
