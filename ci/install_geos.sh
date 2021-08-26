@@ -37,10 +37,10 @@ build_geos(){
     echo "Building geos-$GEOS_VERSION"
     mkdir build
     cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
-    make -j 2
+    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
+    cmake --build -j 2 .
     # ctest .
-    make install
+    cmake --install .
 }
 
 if [ "$GEOS_VERSION" = "main" ]; then
