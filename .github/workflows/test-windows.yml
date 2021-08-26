@@ -67,7 +67,10 @@ jobs:
         if: ${{ matrix.os == 'windows-2019' && matrix.archs == 'auto64' }}
 
       - name: Install GEOS
-        run: ".\ci\install_geos.cmd"
+        shell: bash
+        run: |
+          ./ci/install_geos.sh
+          cd ${{ github.workspace }}
 
       - name: Install python dependencies
         shell: bash
