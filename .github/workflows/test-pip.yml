@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   TestLinux:
-    name: ${{ matrix.os }} Python ${{ matrix.python }} (GEOS ${{ matrix.geos }}, numpy ${{ matrix.numpy || 'latest' }})
+    name: ${{ env.RUNNER_OS }} Py${{ matrix.python }} GEOS ${{ matrix.geos }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -47,7 +47,7 @@ jobs:
       - name: Cache GEOS and pip packages
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-geos-${{ matrix.geos }}
+          key: ${{ runner.os }}-geos-${{ matrix.geos }}-2
           path: |
             ~/.cache/pip
             ${{ github.workspace }}/geosinstall
