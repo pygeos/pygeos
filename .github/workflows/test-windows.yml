@@ -5,11 +5,12 @@ on: [push, pull_request]
 jobs:
   TestLinux:
     name: Python ${{ matrix.python }} (GEOS ${{ matrix.geos }}, numpy ${{ matrix.numpy || 'latest' }})
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [windows-2019]
+        python: [3.6, 3.7, 3.8, 3.9]
         archs: [auto32, auto64]
         include:
           # 2017
