@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 
 import pygeos
+from pygeos.geometry import GeometryType
 
 from .common import (
     empty_polygon,
@@ -470,8 +471,9 @@ def test_subclass_is_valid_input(with_point_in_registry):
     assert pygeos.is_valid_input(Point("POINT (1 1)"))
 
 
-def test_empty_none():
-    actual = pygeos.empty((2,))
+@pytest.mark.parametrize("geom_type", [None, GeometryType.MISSING, -1])
+def test_empty_missing(geom_type):
+    actual = pygeos.empty((2,), geom_type=geom_type)
     assert pygeos.is_missing(actual).all()
 
 
