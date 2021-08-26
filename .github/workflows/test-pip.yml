@@ -4,7 +4,7 @@ on: [push, pull_request]
 
 jobs:
   TestLinux:
-    name: ${{ env.RUNNER_OS }} Py${{ matrix.python }} GEOS ${{ matrix.geos }}
+    name: ${{ matrix.os }} Py${{ matrix.python }} GEOS ${{ matrix.geos }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
