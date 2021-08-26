@@ -1,4 +1,4 @@
-name: Linux
+name: Windows
 
 on: [push, pull_request]
 
@@ -9,6 +9,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        os: [windows-2019]
+        archs: [auto32, auto64]
         include:
           # 2017
           - python: 3.6
@@ -26,13 +28,15 @@ jobs:
           - python: 3.9
             geos: 3.9.1
             numpy: 1.19.5
-          # dev
-          - python: 3.9
-            geos: main
+          # # dev build is disabled; install_geos.cmd doesn't have this option (yet?)
+          # - python: 3.9
+          #   geos: main
 
     env:
       GEOS_VERSION: ${{ matrix.geos }}
-      GEOS_INSTALL: ${{ github.workspace }}/geosinstall/geos-${{ matrix.geos }}
+      GEOS_INSTALL: ${{ github.workspace }}\geos-${{ matrix.geos }}
+      GEOS_LIBRARY_PATH: ${{ github.workspace }}\geos-${{ matrix.geos }}\lib
+      GEOS_INCLUDE_PATH: ${{ github.workspace }}\geos-${{ matrix.geos }}\include
 
     steps:
       - uses: actions/checkout@v2
@@ -42,19 +46,27 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
 
-      - name: Cache GEOS and pip packages
+      - name: Cache GEOS build
         uses: actions/cache@v2
         with:
-          key: ${{ runner.os }}-geos-${{ matrix.geos }}
           path: |
-            ~/.cache/pip
-            ${{ github.workspace }}/geosinstall
+            geos-${{ env.GEOS_VERSION }}
+          key: ${{ matrix.os }}-${{ matrix.archs }}-2
+
+      - name: Activate MSVC 32-bit
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x86
+        if: ${{ matrix.os == 'windows-2019' && matrix.archs == 'auto32' }}
+
+      - name: Activate MSVC 64-bit
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+        if: ${{ matrix.os == 'windows-2019' && matrix.archs == 'auto64' }}
 
       - name: Install GEOS
-        shell: bash
-        run: |
-          ./ci/install_geos.sh
-          cd ${{ github.workspace }}
+        run: .\ci\install_geos.cmd
 
       - name: Install python dependencies
         shell: bash
@@ -69,10 +81,7 @@ jobs:
           pip list
 
       - name: Set environment variables
-        shell: bash
-        run: |
-          echo "LD_LIBRARY_PATH=$GEOS_INSTALL/lib" >> $GITHUB_ENV
-          echo $GEOS_INSTALL/bin >> $GITHUB_PATH
+        run: echo "${{ env.GEOS_INSTALL }}\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Build PyGEOS
         shell: bash
@@ -83,5 +92,4 @@ jobs:
       - name: Run tests
         shell: bash
         continue-on-error: ${{ matrix.geos == 'main' }}
-        run: |
-          pytest pygeos
+        run: pytest pygeos
