@@ -14,13 +14,13 @@ if [ -z '$GEOS_INSTALL' ]; then
 elif [ -z '$GEOS_VERSION' ]; then
     echo "GEOS_VERSION must be set"
     exit 1
-fiets 
+fi
 
 # Create directories, if they don't exist
 mkdir -p '$GEOS_INSTALL'
 
 # Download and build GEOS outside other source tree
-if [ -z 'GEOS_BUILD' ]; then
+if [ -z '$GEOS_BUILD' ]; then
     GEOS_BUILD='$HOME/geosbuild'
 fi
 
@@ -37,7 +37,7 @@ build_geos(){
     echo "Building geos-$GEOS_VERSION"
     mkdir build
     cd build
-    cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
+    cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX='$GEOS_INSTALL' ..
     cmake --build . -j 2
     # ctest .
     cmake --install .
