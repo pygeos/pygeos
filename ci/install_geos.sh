@@ -8,26 +8,26 @@
 
 set -e
 
-if [ -z '$GEOS_INSTALL' ]; then
+if [ -z "$GEOS_INSTALL" ]; then
     echo "GEOS_INSTALL must be set"
     exit 1
-elif [ -z '$GEOS_VERSION' ]; then
+elif [ -z "$GEOS_VERSION" ]; then
     echo "GEOS_VERSION must be set"
     exit 1
 fi
 
 # Create directories, if they don't exist
-mkdir -p '$GEOS_INSTALL'
+mkdir -p "$GEOS_INSTALL"
 
 # Download and build GEOS outside other source tree
-if [ -z '$GEOS_BUILD' ]; then
-    GEOS_BUILD='$HOME/geosbuild'
+if [ -z "$GEOS_BUILD" ]; then
+    GEOS_BUILD=$HOME/geosbuild
 fi
 
 prepare_geos_build_dir(){
-  rm -rf '$GEOS_BUILD'
-  mkdir -p '$GEOS_BUILD'
-  cd '$GEOS_BUILD'
+  rm -rf $GEOS_BUILD
+  mkdir -p $GEOS_BUILD
+  cd $GEOS_BUILD
 }
 
 build_geos(){
@@ -37,13 +37,13 @@ build_geos(){
     echo "Building geos-$GEOS_VERSION"
     mkdir build
     cd build
-    cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX='$GEOS_INSTALL' ..
+    cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=${GEOS_INSTALL//\\//} ..
     cmake --build . -j 2
     # ctest .
     cmake --install .
 }
 
-if [ '$GEOS_VERSION' = "main" ]; then
+if [ "$GEOS_VERSION" = "main" ]; then
     prepare_geos_build_dir
     # use GitHub mirror
     git clone --depth 1 https://github.com/libgeos/geos.git geos-$GEOS_VERSION
