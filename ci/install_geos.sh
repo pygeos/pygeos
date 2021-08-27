@@ -37,7 +37,8 @@ build_geos(){
     echo "Building geos-$GEOS_VERSION"
     mkdir build
     cd build
-    cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=${GEOS_INSTALL//\\//} ..
+    GEOS_INSTALL_FW=$(printf "%s" "$GEOS_INSTALL" | sed 's/\\/\//g')
+    cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL_FW ..
     cmake --build . -j 2
     # ctest .
     cmake --install .
