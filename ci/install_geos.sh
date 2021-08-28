@@ -38,7 +38,7 @@ build_geos(){
     mkdir build
     cd build
     cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
-    cmake --build . -j 2
+    cmake --build .
     # ctest .
     cmake --install .
 }
