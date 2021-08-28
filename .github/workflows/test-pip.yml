@@ -52,17 +52,23 @@ jobs:
             ~/.cache/pip
             ${{ github.workspace }}/geosinstall
 
-      - name: Activate MSVC 64-bit
+      - name: Activate MSVC 64-bit (Windows)
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+        if: ${{ matrix.os == 'windows-2019' }}
+
+      - name: Correct slashes in GEOS_INSTALL (Windows)
+        shell: bash
+        run: |
+          echo 'GEOS_INSTALL=${{ github.workspace }}\geosinstall\geos-${{ matrix.geos }}' >> $GITHUB_ENV
         if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Install GEOS
         shell: bash
         run: |
           ./ci/install_geos.sh
-          cd '${{ github.workspace }}'
+          cd ${{ github.workspace }}
 
       - name: Install python dependencies
         shell: bash
@@ -79,24 +85,24 @@ jobs:
       - name: Set environment variables (Linux)
         shell: bash
         run: |
-          echo "LD_LIBRARY_PATH=${{ env.GEOS_INSTALL }}/lib" >> $GITHUB_ENV
           echo "${{ env.GEOS_INSTALL }}/bin" >> $GITHUB_PATH
+          echo "LD_LIBRARY_PATH=${{ env.GEOS_INSTALL }}/lib" >> $GITHUB_ENV
         if: ${{ matrix.os == 'ubuntu-latest' }}
 
       - name: Set environment variables (OSX)
         shell: bash
         run: |
+          echo "${{ env.GEOS_INSTALL }}/bin" >> $GITHUB_PATH
           echo "DYLD_FALLBACK_LIBRARY_PATH=${{ env.GEOS_INSTALL }}/lib" >> $GITHUB_ENV
           echo "LDFLAGS=-Wl,-rpath,${{ env.GEOS_INSTALL }}/lib" >> $GITHUB_ENV
-          echo "${{ env.GEOS_INSTALL }}/bin" >> $GITHUB_PATH
         if: ${{ matrix.os == 'macos-latest' }}
 
       - name: Set environment variables (Windows)
         shell: bash
         run: |
           echo '${{ env.GEOS_INSTALL }}\bin' >> $GITHUB_PATH
-          echo 'GEOS_LIBRARY_PATH=${{ github.workspace }}\geos-${{ matrix.geos }}\lib' >> $GITHUB_ENV
-          echo 'GEOS_INCLUDE_PATH=${{ github.workspace }}\geos-${{ matrix.geos }}\include' >> $GITHUB_ENV
+          echo 'GEOS_LIBRARY_PATH=${{ env.GEOS_INSTALL }}\lib' >> $GITHUB_ENV
+          echo 'GEOS_INCLUDE_PATH=${{ env.GEOS_INSTALL }}\include' >> $GITHUB_ENV
         if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Build PyGEOS
