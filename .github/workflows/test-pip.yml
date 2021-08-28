@@ -68,7 +68,7 @@ jobs:
         shell: bash
         run: |
           ./ci/install_geos.sh
-          cd ${{ github.workspace }}
+          cd '${{ github.workspace }}'
 
       - name: Install python dependencies
         shell: bash
