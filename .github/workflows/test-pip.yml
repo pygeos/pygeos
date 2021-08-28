@@ -62,7 +62,7 @@ jobs:
         shell: bash
         run: |
           ./ci/install_geos.sh
-          cd ${{ github.workspace }}
+          cd '${{ github.workspace }}'
 
       - name: Install python dependencies
         shell: bash
@@ -94,9 +94,9 @@ jobs:
       - name: Set environment variables (Windows)
         shell: bash
         run: |
-          echo "${{ env.GEOS_INSTALL }}\bin" >> $GITHUB_PATH
-          echo "GEOS_LIBRARY_PATH=${{ github.workspace }}\geos-${{ matrix.geos }}\lib" >> $GITHUB_ENV
-          echo "GEOS_INCLUDE_PATH=${{ github.workspace }}\geos-${{ matrix.geos }}\include" >> $GITHUB_ENV
+          echo '${{ env.GEOS_INSTALL }}\bin' >> $GITHUB_PATH
+          echo 'GEOS_LIBRARY_PATH=${{ github.workspace }}\geos-${{ matrix.geos }}\lib' >> $GITHUB_ENV
+          echo 'GEOS_INCLUDE_PATH=${{ github.workspace }}\geos-${{ matrix.geos }}\include' >> $GITHUB_ENV
         if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Build PyGEOS
