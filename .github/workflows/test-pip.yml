@@ -10,7 +10,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
-        geos: [3.6.4, 3.7.3, 3.8.2, 3.9.1, main]
+        geos: [3.6.4, 3.7.3, 3.8.1, 3.9.1, main]
         include:
           # 2017
           - python: 3.6
@@ -22,7 +22,7 @@ jobs:
             numpy: 1.15.4
           # 2019
           - python: 3.8
-            geos: 3.8.2
+            geos: 3.8.1
             numpy: 1.17.5
           # 2020
           - python: 3.9
@@ -51,7 +51,6 @@ jobs:
           path: |
             ~/.cache/pip
             ${{ github.workspace }}/geosinstall
-        if: ${{ matrix.os != 'windows-2019' }}
 
       - name: Activate MSVC 64-bit (Windows)
         uses: ilammy/msvc-dev-cmd@v1
@@ -75,7 +74,7 @@ jobs:
         shell: bash
         run: |
           pip install --disable-pip-version-check --upgrade pip
-          pip install --upgrade wheel
+          pip install --upgrade wheel setuptools
           if [ "$GEOS_VERSION" = "main" ]; then
             pip install --upgrade --pre Cython numpy pytest;
           else
