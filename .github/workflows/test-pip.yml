@@ -22,7 +22,7 @@ jobs:
             numpy: 1.15.4
           # 2019
           - python: 3.8
-            geos: 3.8.1
+            geos: 3.8.2
             numpy: 1.17.5
           # 2020
           - python: 3.9
@@ -51,6 +51,7 @@ jobs:
           path: |
             ~/.cache/pip
             ${{ github.workspace }}/geosinstall
+        if: ${{ matrix.os != 'windows-2019' }}
 
       - name: Activate MSVC 64-bit (Windows)
         uses: ilammy/msvc-dev-cmd@v1
