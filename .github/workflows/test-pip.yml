@@ -17,7 +17,7 @@ jobs:
             geos: 3.6.4
             numpy: 1.13.3
           # 2018
-          - python: 3.7
+          - python: 3.8
             geos: 3.7.3
             numpy: 1.15.4
           # 2019
