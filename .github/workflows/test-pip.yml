@@ -120,6 +120,5 @@ jobs:
       - name: Run doctests
         shell: bash
         run: |
-          rm -rf pygeos/tests 
-          pytest --doctest-modules pygeos
+          pytest --doctest-modules pygeos --ignore=pygeos/tests
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.python == '3.8' }}
