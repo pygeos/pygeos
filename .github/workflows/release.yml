@@ -124,6 +124,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\bin -w {dest_dir} {wheel}
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND: pytest --pyargs pygeos.tests
+          CIBW_BUILD_VERBOSITY: 2
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v2
