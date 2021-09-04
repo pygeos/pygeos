@@ -6,7 +6,7 @@ import sys
 from distutils.version import LooseVersion
 from pathlib import Path
 
-from setuptools import Extension, setup, find_packages
+from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext as _build_ext
 
 import versioneer
@@ -153,6 +153,17 @@ elif "sdist" in sys.argv:
         )
 else:
     ext_options = get_geos_paths()
+
+    library_dirs = ext_options["library_dirs"]
+    if os.name != "nt":
+        log.info(f"Adding {library_dirs} to the pygeos runtime library dirs...")
+        ext_options["runtime_library_dirs"] = library_dirs
+    else:
+        log.warning(
+            f"When compiling PyGEOS in Windows, make sure that the GEOS DLLs "
+            f"corresponding to {library_dirs} are available in the pygeos "
+            f"module directory, the Python directory, or the System32 folder."
+        )
 
     ext_modules = [
         Extension(
