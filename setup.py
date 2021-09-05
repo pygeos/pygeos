@@ -70,6 +70,7 @@ def get_geos_paths():
             "include_dirs": ["./src", include_dir],
             "library_dirs": [library_dir],
             "libraries": ["geos_c"],
+            "extra_link_args": [],
         }
 
     geos_version = get_geos_config("--version")
@@ -155,15 +156,20 @@ else:
     ext_options = get_geos_paths()
 
     library_dirs = ext_options["library_dirs"]
-    if os.name != "nt":
-        log.info(f"Adding {library_dirs} to the pygeos runtime library dirs...")
-        ext_options["runtime_library_dirs"] = library_dirs
-    else:
+    if os.name == "nt":
         log.warning(
             f"When compiling PyGEOS in Windows, make sure that the GEOS DLLs "
             f"corresponding to {library_dirs} are available in the pygeos "
             f"module directory, the Python directory, or the System32 folder."
         )
+    elif sys.platform[:6] == "darwin":
+        ext_options["extra_link_args"].extend(
+            [f"-Wl,-rpath,{path}" for path in library_dirs]
+        )
+        log.info(f"Adding {library_dirs} to the extra_link_args...")
+    else:
+        log.info(f"Adding {library_dirs} to the runtime_library_dirs...")
+        ext_options["runtime_library_dirs"] = library_dirs
 
     ext_modules = [
         Extension(
