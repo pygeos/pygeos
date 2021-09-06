@@ -70,7 +70,6 @@ def get_geos_paths():
             "include_dirs": ["./src", include_dir],
             "library_dirs": [library_dir],
             "libraries": ["geos_c"],
-            "extra_link_args": [],
         }
 
     geos_version = get_geos_config("--version")
@@ -114,6 +113,39 @@ def get_geos_paths():
     }
 
 
+def set_runtime_library_dirs(ext_options):
+    """Set the runtime library dirs (runpaths or rpaths) so that the GEOS libraries
+    are found at runtime.
+
+    Only works for Linux and OSX. This function emits a warning with instructions
+    on Windows.
+    """
+    library_dirs = ext_options["library_dirs"]
+    if os.name == "nt":
+        # Emit a warning that the user should make the DLLs available.
+        # Before, adding their directory to the PATH sufficed but
+        # as of Python 3.8 the PATH is ignored so you are left with copying them
+        # to a location that is searched by Python.
+        log.warning(
+            f"When compiling PyGEOS in Windows, make sure that the GEOS DLLs "
+            f"corresponding to {library_dirs} are available in the pygeos "
+            f"module directory, the Python directory, or the System32 folder. "
+        )
+    elif sys.platform[:6] == "darwin":
+        # For OSX >= 10.5, the "runtime_library_dirs" are not correctly implemented
+        # by distutils. There is a more complete implementation in setuptools' vendored
+        # version of distutils, but that isn't used by default. Until this implementation
+        # becomes the default, we set the custom linker arg ourselves:
+        log.info(f"Adding {library_dirs} to the extra_link_args...")
+        extra_link_args = ext_options.get("extra_link_args", [])
+        extra_link_args += [f"-Wl,-rpath,{path}" for path in library_dirs]
+        ext_options["extra_link_args"] = extra_link_args
+    else:
+        # For Linux, "runtime_library_dirs" is handled correctly by distutils/setuptools.
+        log.info(f"Adding {library_dirs} to the runtime_library_dirs...")
+        ext_options["runtime_library_dirs"] = library_dirs
+
+
 class build_ext(_build_ext):
     def finalize_options(self):
         _build_ext.finalize_options(self)
@@ -155,21 +187,7 @@ elif "sdist" in sys.argv:
 else:
     ext_options = get_geos_paths()
 
-    library_dirs = ext_options["library_dirs"]
-    if os.name == "nt":
-        log.warning(
-            f"When compiling PyGEOS in Windows, make sure that the GEOS DLLs "
-            f"corresponding to {library_dirs} are available in the pygeos "
-            f"module directory, the Python directory, or the System32 folder."
-        )
-    elif sys.platform[:6] == "darwin":
-        ext_options["extra_link_args"].extend(
-            [f"-Wl,-rpath,{path}" for path in library_dirs]
-        )
-        log.info(f"Adding {library_dirs} to the extra_link_args...")
-    else:
-        log.info(f"Adding {library_dirs} to the runtime_library_dirs...")
-        ext_options["runtime_library_dirs"] = library_dirs
+    set_runtime_library_dirs(ext_options)
 
     ext_modules = [
         Extension(

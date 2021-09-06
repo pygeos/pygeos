@@ -98,27 +98,23 @@ GEOS discovery (runtime)
 ------------------------
 
 PyGEOS is dynamically linked to GEOS. This means that the same GEOS library that was used
-during PyGEOS compilation is required on your system. Make sure that the dynamic linker paths are
-set such that the libraries are found.
+during PyGEOS compilation is required on your system.
 
-When using a binary wheel, conda, the Anaconda shell, or the OSGeo4W shell, this is automatically
-the case and you can stop reading. In other cases this can be tricky, especially if you have
-multiple GEOS installations next to each other. For PyGEOS this can be solved by prepending
-the GEOS path before you start Python.
+This section is only meant for users that compile PyGEOS themselves. Binary distributions
+of PyGEOS ship a corresponding version of GEOS.
 
-On Linux::
+If you compiled GEOS yourself, be wary of library load order issues. This documentation does
+not intend to be a complete guide on the dynamic library load order on different platforms. Be sure
+that the dynamic loader loads the correct version of GEOS. If a different version of GEOS is
+loaded first, this will most probably result in a compiler crash.
 
-    $ export LD_LIBRARY_PATH=/path/to/geos/lib:$LD_LIBRARY_PATH
-    $ sudo ldconfig  # refresh dynamic linker cache
+On Linux / OSX the library paths are stored inside the compiled binary. So as long as you don't
+move the libraries after compiling, you should be fine.
 
-On OSX::
-
-    $ export DYLD_LIBRARY_PATH=/path/to/geos/lib:$DYLD_LIBRARY_PATH
-
-On Windows::
+On Windows this is not done and you have to make sure that the GEOS DLLs are findable
+at runtime. Before Python 3.8, you could just to this::
 
     $ set PATH=C:\path\to\geos\bin;%PATH%
 
-Note that setting environment variables like this is temporary. You will need to
-repeat this every time before you want to use PyGEOS. Also, it will influence other
-applications that are using GEOS; they may find a different GEOS version and crash.
+But for Python 3.8 and later, the PATH is ignored and you'll have to copy the ``geos.dll`` and ``geos_c.dll``
+files into the pygeos module directory, the python.exe directory, or the System32 folder.
