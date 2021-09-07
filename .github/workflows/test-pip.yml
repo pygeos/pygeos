@@ -10,14 +10,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
-        architecture: [x86, x64]
+        architecture: [x64]
         geos: [3.6.4, 3.7.3, 3.8.1, 3.9.1, main]
-        exclude:
-          - os: ubuntu-latest
-            architecture: x86
-          - os: macos-latest
-            architecture: x86
         include:
+          # 32-bit windows builds
+          - os: windows-2019
+            architecture: x86
           # 2017
           - python: 3.6
             geos: 3.6.4
