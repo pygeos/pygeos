@@ -13,9 +13,6 @@ jobs:
         architecture: [x64]
         geos: [3.6.4, 3.7.3, 3.8.1, 3.9.1, main]
         include:
-          # 32-bit windows builds
-          - os: windows-2019
-            architecture: x86
           # 2017
           - python: 3.6
             geos: 3.6.4
@@ -35,6 +32,17 @@ jobs:
           # dev
           - python: 3.9
             geos: main
+          # enable two 32-bit windows builds:
+          - os: windows-2019
+            architecture: x86
+            python: 3.6
+            geos: 3.6.4
+            numpy: 1.13.3
+          - os: windows-2019
+            architecture: x86
+            python: 3.9
+            geos: 3.9.1
+            numpy: 1.19.5
 
     env:
       GEOS_VERSION: ${{ matrix.geos }}
