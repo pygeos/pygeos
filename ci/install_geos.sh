@@ -32,7 +32,7 @@ prepare_geos_build_dir(){
 
 build_geos(){
     echo "Installing cmake"
-    python -m pip install cmake ninja
+    pip install cmake ninja
 
     echo "Building geos-$GEOS_VERSION"
     mkdir build
