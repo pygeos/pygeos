@@ -72,6 +72,7 @@ jobs:
           path: |
             geos-${{ env.GEOS_VERSION }}
           key: ${{ matrix.os }}-${{ matrix.archs }}-2
+        if: ${{ matrix.os == 'skipcachefornow' }}
 
       - name: Add GEOS LICENSE
         run: |
@@ -119,7 +120,7 @@ jobs:
             GEOS_LIBRARY_PATH='${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\lib'
             GEOS_INCLUDE_PATH='${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\include'
           CIBW_BEFORE_ALL: ./ci/install_geos.sh
-          CIBW_BEFORE_ALL_WINDOWS: ci\install_geos.cmd
+          # CIBW_BEFORE_ALL_WINDOWS: ci\install_geos.cmd
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: delvewheel repair --add-path ${{ github.workspace }}\geos-${{ env.GEOS_VERSION }}\bin -w {dest_dir} {wheel}
           CIBW_TEST_REQUIRES: pytest
