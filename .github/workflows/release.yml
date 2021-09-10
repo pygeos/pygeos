@@ -40,6 +40,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       GEOS_VERSION: "3.9.1"
+    defaults:
+      run:
+        shell: bash
     strategy:
       fail-fast: false
       matrix:
@@ -75,14 +78,10 @@ jobs:
         if: ${{ matrix.os == 'skipcachefornow' }}
 
       - name: Add GEOS LICENSE
-        run: |
-          cp ci/wheelbuilder/LICENSE_GEOS .
-        shell: bash
+        run: cp ci/wheelbuilder/LICENSE_GEOS .
 
       - name: Add MSVC LICENSE
-        run: |
-          cp ci/wheelbuilder/LICENSE_win32 .
-        shell: bash
+        run: cp ci/wheelbuilder/LICENSE_win32 .
         if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Set up QEMU
