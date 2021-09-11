@@ -9,6 +9,7 @@ on:
   pull_request:  # also build on PRs touching this file
     paths:
       - ".github/workflows/release.yml"
+      - "ci/*"
 
 jobs:
   build_sdist:
@@ -69,10 +70,8 @@ jobs:
       - name: Cache GEOS build
         uses: actions/cache@v2
         with:
-          path: |
-            geos-${{ env.GEOS_VERSION }}
-          key: ${{ matrix.os }}-${{ matrix.archs }}-2
-        if: ${{ matrix.os == 'skipcachefornow' }}
+          path: geos-${{ env.GEOS_VERSION }}
+          key: ${{ matrix.os }}-${{ matrix.archs }}-${{ env.GEOS_VERSION }}-${{ hashFiles('ci/*') }}
 
       - name: Add GEOS LICENSE
         run: |
