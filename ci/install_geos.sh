@@ -39,12 +39,11 @@ build_geos(){
     cd build
     # Use Ninja on windows, otherwise, use the platform's default
     if [ "$RUNNER_OS" = "Windows" ]; then
-        cmake -DCMAKE_BUILD_TYPE=Release -GNinja -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
+        cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -GNinja -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
     else
-        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
+        cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
     fi
-    cmake --build .
-    # ctest .
+    cmake --build . -j 4
     cmake --install .
 }
 
