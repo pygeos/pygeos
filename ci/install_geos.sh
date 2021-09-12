@@ -39,10 +39,10 @@ build_geos(){
     cd build
     # Use Ninja on windows, otherwise, use the platform's default
     if [ "$RUNNER_OS" = "Windows" ]; then
-        pip install ninja
-        CMAKE_GENERATOR="Ninja"
-    fi
-    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
+        cmake -DCMAKE_BUILD_TYPE=Release -GNinja -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
+    else
+        cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
+    fix
     cmake --build .
     # ctest .
     cmake --install .
