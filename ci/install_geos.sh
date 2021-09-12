@@ -42,7 +42,7 @@ build_geos(){
         cmake -DCMAKE_BUILD_TYPE=Release -GNinja -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
     else
         cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
-    fix
+    fi
     cmake --build .
     # ctest .
     cmake --install .
