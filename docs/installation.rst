@@ -118,3 +118,32 @@ at runtime. Before Python 3.8, you could just to this::
 
 But for Python 3.8 and later, the PATH is ignored and you'll have to copy the ``geos.dll`` and ``geos_c.dll``
 files into the pygeos module directory, the python.exe directory, or the System32 folder.
+
+
+GEOS discovery (runtime)
+------------------------
+
+PyGEOS is dynamically linked to GEOS. This means that the same GEOS library that was used
+during PyGEOS compilation is required on your system at runtime. When using pygeos that was distributed
+as a binary wheel or through conda,this is automatically the case and you can stop reading.
+
+In other cases this can be tricky, especially if you have multiple GEOS installations next
+to each other. We only include some guidelines here to address this issue as this document is
+not intended as a general guide of shared library finding.
+
+There are in general four ways of making Python aware of the location of shared library::
+
+1. Copy the shared libraries into the pygeos module directory
+2. Copy the shared libraries into the directory of the Python interpreter
+3. Copy the shared libraries into some system location (``C:\Windows\System32``; ``/usr/local/lib``)
+4. Add the shared library location to a the dynamic linker path variable at runtime.
+   (Linux and OSX only; on Windows this method was deprecated in Python 3.8)
+
+The filenames of the GEOS shared libraries are:
+
+* On Linux: ``libgeos-*.so.*, libgeos_c-*.so.*``
+* On OSX: ``libgeos.dylib, libgeos_c.dylib``
+* On Windows: ``geos-*.dll, geos_c-*.dll``
+
+Note that pygeos does not make use of any RUNPATH (RPATH) header. The location
+of the GEOS shared library is not stored inside the compiled PyGEOS library.
