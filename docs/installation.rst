@@ -98,32 +98,6 @@ GEOS discovery (runtime)
 ------------------------
 
 PyGEOS is dynamically linked to GEOS. This means that the same GEOS library that was used
-during PyGEOS compilation is required on your system.
-
-This section is only meant for users that compile PyGEOS themselves. Binary distributions
-of PyGEOS ship a corresponding version of GEOS.
-
-If you compiled GEOS yourself, be wary of library load order issues. This documentation does
-not intend to be a complete guide on the dynamic library load order on different platforms. Be sure
-that the dynamic loader loads the correct version of GEOS. If a different version of GEOS is
-loaded first, this will most probably result in a compiler crash.
-
-On Linux / OSX the library paths are stored inside the compiled binary. So as long as you don't
-move the libraries after compiling, you should be fine.
-
-On Windows this is not done and you have to make sure that the GEOS DLLs are findable
-at runtime. Before Python 3.8, you could just to this::
-
-    $ set PATH=C:\path\to\geos\bin;%PATH%
-
-But for Python 3.8 and later, the PATH is ignored and you'll have to copy the ``geos.dll`` and ``geos_c.dll``
-files into the pygeos module directory, the python.exe directory, or the System32 folder.
-
-
-GEOS discovery (runtime)
-------------------------
-
-PyGEOS is dynamically linked to GEOS. This means that the same GEOS library that was used
 during PyGEOS compilation is required on your system at runtime. When using pygeos that was distributed
 as a binary wheel or through conda,this is automatically the case and you can stop reading.
 
