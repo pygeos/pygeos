@@ -105,7 +105,7 @@ In other cases this can be tricky, especially if you have multiple GEOS installa
 to each other. We only include some guidelines here to address this issue as this document is
 not intended as a general guide of shared library finding.
 
-There are in general four ways of making Python aware of the location of shared library::
+There are in general four ways of making Python aware of the location of shared library:
 
 1. Copy the shared libraries into the pygeos module directory
 2. Copy the shared libraries into the directory of the Python interpreter
