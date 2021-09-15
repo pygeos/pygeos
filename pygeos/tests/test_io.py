@@ -7,7 +7,7 @@ import pytest
 
 import pygeos
 
-from .common import all_types, empty_point, point, point_z
+from .common import all_types, empty_point, empty_point_z, point, point_z
 
 # fmt: off
 POINT11_WKB = b"\x01\x01\x00\x00\x00" + struct.pack("<2d", 1.0, 1.0)
@@ -406,13 +406,16 @@ def test_to_wkb_point_empty_pre_geos38(geom, dims, expected):
 
 
 @pytest.mark.skipif(
-    pygeos.geos_version < (3, 8, 0), reason="Post GEOS 3.8.0 has 2D empty points"
+    pygeos.geos_version < (3, 9, 0),
+    reason="Pre GEOS 3.9 empty point serialization is buggy",
 )
 @pytest.mark.parametrize(
     "geom,dims,expected",
     [
         (empty_point, 2, POINT_NAN_WKB),
         (empty_point, 3, POINT_NAN_WKB),
+        (empty_point_z, 2, POINT_NAN_WKB),
+        (empty_point_z, 3, POINTZ_NAN_WKB),
         (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB),
         (pygeos.multipoints([empty_point]), 3, MULTIPOINT_NAN_WKB),
         (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB),
@@ -429,7 +432,7 @@ def test_to_wkb_point_empty_pre_geos38(geom, dims, expected):
         ),
     ],
 )
-def test_to_wkb_point_empty_post_geos38(geom, dims, expected):
+def test_to_wkb_point_empty(geom, dims, expected):
     # Post GEOS 3.8: empty point is 2D
     actual = pygeos.to_wkb(geom, output_dimension=dims, byte_order=1)
     # Use numpy.isnan; there are many byte representations for NaN
@@ -438,24 +441,26 @@ def test_to_wkb_point_empty_post_geos38(geom, dims, expected):
 
 
 @pytest.mark.parametrize(
-    "wkb,expected_type",
+    "wkb,expected_type,expected_dim",
     [
-        (POINT_NAN_WKB, 0),
-        (POINTZ_NAN_WKB, 0),
-        (MULTIPOINT_NAN_WKB, 4),
-        (MULTIPOINTZ_NAN_WKB, 4),
-        (GEOMETRYCOLLECTION_NAN_WKB, 7),
-        (GEOMETRYCOLLECTIONZ_NAN_WKB, 7),
-        (NESTED_COLLECTION_NAN_WKB, 7),
-        (NESTED_COLLECTIONZ_NAN_WKB, 7),
+        (POINT_NAN_WKB, 0, 2),
+        (POINTZ_NAN_WKB, 0, 3),
+        (MULTIPOINT_NAN_WKB, 4, 2),
+        (MULTIPOINTZ_NAN_WKB, 4, 3),
+        (GEOMETRYCOLLECTION_NAN_WKB, 7, 2),
+        (GEOMETRYCOLLECTIONZ_NAN_WKB, 7, 3),
+        (NESTED_COLLECTION_NAN_WKB, 7, 2),
+        (NESTED_COLLECTIONZ_NAN_WKB, 7, 3),
     ],
 )
-def test_from_wkb_point_empty(wkb, expected_type):
+def test_from_wkb_point_empty(wkb, expected_type, expected_dim):
     geom = pygeos.from_wkb(wkb)
     # POINT (nan nan) transforms to an empty point
-    # Note that the dimensionality (2D/3D) is GEOS-version dependent
     assert pygeos.is_empty(geom)
     assert pygeos.get_type_id(geom) == expected_type
+    # Note that the dimensionality (2D/3D) is GEOS-version dependent
+    if pygeos.geos_version >= (3, 9, 0):
+        assert pygeos.get_coordinate_dimension(geom) == expected_dim
 
 
 def test_to_wkb_point_empty_srid():

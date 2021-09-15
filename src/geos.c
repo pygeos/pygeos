@@ -51,7 +51,7 @@ char multipoint_has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
 }
 
 // POINT EMPTY is converted to POINT (nan nan)
-// by GEOS >= 3.10.0. Before that, we do it ourselves here.
+// by GEOS >= 3.9.0. Before that, we do it ourselves here.
 #if !GEOS_SINCE_3_9_0
 
 /* Returns 1 if geometry is an empty point, 0 otherwise, 2 on error.

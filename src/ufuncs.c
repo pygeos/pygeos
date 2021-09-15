@@ -2836,7 +2836,7 @@ static void to_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps, void
       *out = Py_None;
     } else {
 #if !GEOS_SINCE_3_9_0
-      // WKB Does not allow empty points in GEOS<3.10.
+      // WKB Does not allow empty points in GEOS<3.9.
       // We check for that and patch the POINT EMPTY if necessary
       has_empty = has_point_empty(ctx, in1);
       if (has_empty == 2) {
