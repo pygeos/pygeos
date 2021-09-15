@@ -9,7 +9,7 @@ def test_coordinate_dimension_2d():
 
 
 def test_coordinate_dimension_3d():
-    assert pygeos.get_coordinate_dimension(empty_point_z) == 2
+    assert pygeos.get_coordinate_dimension(empty_point_z) == 3
 
 
 def test_has_z_2d():
