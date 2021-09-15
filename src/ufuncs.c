@@ -2791,9 +2791,9 @@ static void to_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps, void
   GEOSWKBWriter* writer;
   unsigned char* wkb;
   size_t size;
-#if !GEOS_SINCE_3_10_0
+#if !GEOS_SINCE_3_9_0
   char has_empty;
-#endif  // !GEOS_SINCE_3_10_0
+#endif  // !GEOS_SINCE_3_9_0
 
   if ((is2 != 0) || (is3 != 0) || (is4 != 0) || (is5 != 0)) {
     PyErr_Format(PyExc_ValueError, "to_wkb function called with non-scalar parameters");
@@ -2835,7 +2835,7 @@ static void to_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps, void
       Py_INCREF(Py_None);
       *out = Py_None;
     } else {
-#if !GEOS_SINCE_3_10_0
+#if !GEOS_SINCE_3_9_0
       // WKB Does not allow empty points in GEOS<3.10.
       // We check for that and patch the POINT EMPTY if necessary
       has_empty = has_point_empty(ctx, in1);
@@ -2850,18 +2850,18 @@ static void to_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps, void
       }
 #else
       temp_geom = in1;
-#endif  // !GEOS_SINCE_3_10_0
+#endif  // !GEOS_SINCE_3_9_0
       if (hex) {
         wkb = GEOSWKBWriter_writeHEX_r(ctx, writer, temp_geom, &size);
       } else {
         wkb = GEOSWKBWriter_write_r(ctx, writer, temp_geom, &size);
       }
-#if !GEOS_SINCE_3_10_0
+#if !GEOS_SINCE_3_9_0
       // Destroy the temp_geom if it was patched (POINT EMPTY patch)
       if (has_empty) {
         GEOSGeom_destroy_r(ctx, temp_geom);
       }
-#endif  // !GEOS_SINCE_3_10_0
+#endif  // !GEOS_SINCE_3_9_0
       if (wkb == NULL) {
         errstate = PGERR_GEOS_EXCEPTION;
         goto finish;

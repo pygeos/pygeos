@@ -126,7 +126,7 @@ static PyObject* GeometryObject_ToWKB(GeometryObject* obj) {
 
   GEOS_INIT;
 
-#if !GEOS_SINCE_3_10_0
+#if !GEOS_SINCE_3_9_0
   // WKB Does not allow empty points in GEOS < 3.10.
   // We check for that and patch the POINT EMPTY if necessary
   has_empty = has_point_empty(ctx, obj->ptr);
@@ -141,7 +141,7 @@ static PyObject* GeometryObject_ToWKB(GeometryObject* obj) {
   }
 #else
   geom = obj->ptr;
-#endif  // !GEOS_SINCE_3_10_0
+#endif  // !GEOS_SINCE_3_9_0
 
   /* Create the WKB writer */
   writer = GEOSWKBWriter_create_r(ctx);
