@@ -387,8 +387,12 @@ def test_to_wkb_srid():
         (empty_point_z, 3, POINTZ_NAN_WKB),
         (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB),
         (pygeos.multipoints([empty_point]), 3, MULTIPOINT_NAN_WKB),
+        (pygeos.multipoints([empty_point_z]), 2, MULTIPOINT_NAN_WKB),
+        (pygeos.multipoints([empty_point_z]), 3, MULTIPOINTZ_NAN_WKB),
         (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB),
         (pygeos.geometrycollections([empty_point]), 3, GEOMETRYCOLLECTION_NAN_WKB),
+        (pygeos.geometrycollections([empty_point_z]), 2, GEOMETRYCOLLECTION_NAN_WKB),
+        (pygeos.geometrycollections([empty_point_z]), 3, GEOMETRYCOLLECTIONZ_NAN_WKB),
         (
             pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
             2,
@@ -398,6 +402,16 @@ def test_to_wkb_srid():
             pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
             3,
             NESTED_COLLECTION_NAN_WKB,
+        ),
+        (
+            pygeos.geometrycollections([pygeos.multipoints([empty_point_z])]),
+            2,
+            NESTED_COLLECTION_NAN_WKB,
+        ),
+        (
+            pygeos.geometrycollections([pygeos.multipoints([empty_point_z])]),
+            3,
+            NESTED_COLLECTIONZ_NAN_WKB,
         ),
     ],
 )
