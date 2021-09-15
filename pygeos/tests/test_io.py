@@ -375,37 +375,6 @@ def test_to_wkb_srid():
 
 
 @pytest.mark.skipif(
-    pygeos.geos_version >= (3, 8, 0), reason="Pre GEOS 3.8.0 has 3D empty points"
-)
-@pytest.mark.parametrize(
-    "geom,dims,expected",
-    [
-        (empty_point, 2, POINT_NAN_WKB),
-        (empty_point, 3, POINTZ_NAN_WKB),
-        (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB),
-        (pygeos.multipoints([empty_point]), 3, MULTIPOINTZ_NAN_WKB),
-        (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB),
-        (pygeos.geometrycollections([empty_point]), 3, GEOMETRYCOLLECTIONZ_NAN_WKB),
-        (
-            pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
-            2,
-            NESTED_COLLECTION_NAN_WKB,
-        ),
-        (
-            pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
-            3,
-            NESTED_COLLECTIONZ_NAN_WKB,
-        ),
-    ],
-)
-def test_to_wkb_point_empty_pre_geos38(geom, dims, expected):
-    actual = pygeos.to_wkb(geom, output_dimension=dims, byte_order=1)
-    # Use numpy.isnan; there are many byte representations for NaN
-    assert actual[: -dims * 8] == expected[: -dims * 8]
-    assert np.isnan(struct.unpack("<{}d".format(dims), actual[-dims * 8 :])).all()
-
-
-@pytest.mark.skipif(
     pygeos.geos_version < (3, 9, 0),
     reason="Pre GEOS 3.9 empty point serialization is buggy",
 )
