@@ -302,11 +302,10 @@ def test_repr_max_length():
     assert representation.endswith("...>")
 
 
-@pytest.mark.skipif(pygeos.geos_version >= (3, 9, 0), "On GEOS 3.9.0 this is fixed")
 def test_repr_multipoint_with_point_empty():
     # Test if segfault is prevented
     geom = pygeos.multipoints([point, empty_point])
-    assert repr(geom) == "<pygeos.Geometry Exception in WKT writer>"
+    assert repr(geom)
 
 
 def test_to_wkb():
