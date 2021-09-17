@@ -374,10 +374,6 @@ def test_to_wkb_srid():
     assert np.frombuffer(result[5:9], "<u4").item() == 4326
 
 
-@pytest.mark.skipif(
-    pygeos.geos_version < (3, 9, 0),
-    reason="Pre GEOS 3.9 empty point serialization is buggy",
-)
 @pytest.mark.parametrize(
     "geom,dims,expected",
     [
