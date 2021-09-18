@@ -283,13 +283,24 @@ def test_to_wkt_geometrycollection_with_point_empty():
     assert pygeos.to_wkt(collection).endswith("(POINT EMPTY, POINT (2 3))")
 
 
-def test_to_wkt_multipoint_with_point_empty_errors():
-    # Only test if segfault is prevented
+@pytest.mark.skipif(
+    pygeos.geos_version < (3, 9, 0),
+    reason="MULTIPOINT (EMPTY, 2 3) only works for GEOS >= 3.9",
+)
+def test_to_wkt_multipoint_with_point_empty():
     geom = pygeos.multipoints([empty_point, point])
-    try:
+    assert pygeos.to_wkt(geom) == "MULTIPOINT (EMPTY, 2 3)"
+
+
+@pytest.mark.skipif(
+    pygeos.geos_version >= (3, 9, 0),
+    reason="MULTIPOINT (EMPTY, 2 3) gives ValueError on GEOS < 3.9",
+)
+def test_to_wkt_multipoint_with_point_empty_errors():
+    # test if segfault is prevented
+    geom = pygeos.multipoints([empty_point, point])
+    with pytest.raises(ValueError):
         pygeos.to_wkt(geom)
-    except ValueError:  # On GEOS < 3.9.0
-        pass
 
 
 def test_repr():
@@ -304,10 +315,14 @@ def test_repr_max_length():
     assert representation.endswith("...>")
 
 
+@pytest.mark.skipif(
+    pygeos.geos_version >= (3, 9, 0),
+    reason="MULTIPOINT (EMPTY, 2 3) gives Exception on GEOS < 3.9",
+)
 def test_repr_multipoint_with_point_empty():
     # Test if segfault is prevented
     geom = pygeos.multipoints([point, empty_point])
-    assert repr(geom)
+    assert repr(geom) == "<pygeos.Geometry Exception in WKT writer>"
 
 
 def test_to_wkb():
@@ -377,95 +392,92 @@ def test_to_wkb_srid():
 
 
 @pytest.mark.parametrize(
-    "geom,output_dimension,expected,dims",
+    "geom,expected",
     [
-        (empty_point, 2, POINT_NAN_WKB, 2),
-        pytest.param(
-            empty_point,
-            3,
-            POINT_NAN_WKB,
-            2,
-            marks=pytest.mark.xfail(pygeos.geos_version < (3, 8, 0), reason="GEOS<3.8"),
-        ),
-        (empty_point_z, 2, POINT_NAN_WKB, 2),
-        pytest.param(
-            empty_point_z,
-            3,
-            POINTZ_NAN_WKB,
-            3,
-            marks=pytest.mark.xfail(pygeos.geos_version < (3, 9, 0), reason="GEOS<3.9"),
-        ),
-        (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB, 2),
-        pytest.param(
-            pygeos.multipoints([empty_point]),
-            3,
-            MULTIPOINT_NAN_WKB,
-            2,
-            marks=pytest.mark.xfail(pygeos.geos_version < (3, 8, 0), reason="GEOS<3.8"),
-        ),
-        (pygeos.multipoints([empty_point_z]), 2, MULTIPOINT_NAN_WKB, 2),
-        pytest.param(
-            pygeos.multipoints([empty_point_z]),
-            3,
-            MULTIPOINTZ_NAN_WKB,
-            3,
-            marks=pytest.mark.xfail(pygeos.geos_version < (3, 9, 0), reason="GEOS<3.9"),
-        ),
-        (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB, 2),
-        pytest.param(
-            pygeos.geometrycollections([empty_point]),
-            3,
-            GEOMETRYCOLLECTION_NAN_WKB,
-            2,
-            marks=pytest.mark.xfail(pygeos.geos_version < (3, 8, 0), reason="GEOS<3.8"),
-        ),
-        (pygeos.geometrycollections([empty_point_z]), 2, GEOMETRYCOLLECTION_NAN_WKB, 2),
-        pytest.param(
-            pygeos.geometrycollections([empty_point_z]),
-            3,
-            GEOMETRYCOLLECTIONZ_NAN_WKB,
-            3,
-            marks=pytest.mark.xfail(pygeos.geos_version < (3, 9, 0), reason="GEOS<3.9"),
-        ),
+        (empty_point, POINT_NAN_WKB),
+        (empty_point_z, POINT_NAN_WKB),
+        (pygeos.multipoints([empty_point]), MULTIPOINT_NAN_WKB),
+        (pygeos.multipoints([empty_point_z]), MULTIPOINT_NAN_WKB),
+        (pygeos.geometrycollections([empty_point]), GEOMETRYCOLLECTION_NAN_WKB),
+        (pygeos.geometrycollections([empty_point_z]), GEOMETRYCOLLECTION_NAN_WKB),
         (
             pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
-            2,
             NESTED_COLLECTION_NAN_WKB,
-            2,
-        ),
-        pytest.param(
-            pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
-            3,
-            NESTED_COLLECTION_NAN_WKB,
-            2,
-            marks=pytest.mark.xfail(pygeos.geos_version < (3, 8, 0), reason="GEOS<3.8"),
         ),
         (
             pygeos.geometrycollections([pygeos.multipoints([empty_point_z])]),
-            2,
             NESTED_COLLECTION_NAN_WKB,
-            2,
-        ),
-        pytest.param(
-            pygeos.geometrycollections([pygeos.multipoints([empty_point_z])]),
-            3,
-            NESTED_COLLECTIONZ_NAN_WKB,
-            3,
-            marks=pytest.mark.xfail(pygeos.geos_version < (3, 9, 0), reason="GEOS<3.9"),
         ),
     ],
 )
-def test_to_wkb_point_empty(geom, output_dimension, expected, dims):
-    actual = pygeos.to_wkb(geom, output_dimension=output_dimension, byte_order=1)
+def test_to_wkb_point_empty_2d(geom, expected):
+    actual = pygeos.to_wkb(geom, output_dimension=2, byte_order=1)
     # Split 'actual' into header and coordinates
-    coordinate_length = dims * 8
+    coordinate_length = 16
     header_length = len(expected) - coordinate_length
     # Check the total length (this checks the correct dimensionality)
     assert len(actual) == header_length + coordinate_length
     # Check the header
     assert actual[:header_length] == expected[:header_length]
     # Check the coordinates (using numpy.isnan; there are many byte representations for NaN)
-    assert np.isnan(struct.unpack("<{}d".format(dims), actual[header_length:])).all()
+    assert np.isnan(struct.unpack("<2d", actual[header_length:])).all()
+
+
+@pytest.mark.xfail(
+    pygeos.geos_version[:2] == (3, 8), reason="GEOS==3.8 never outputs 3D empty points"
+)
+@pytest.mark.parametrize(
+    "geom,expected",
+    [
+        (empty_point_z, POINTZ_NAN_WKB),
+        (pygeos.multipoints([empty_point_z]), MULTIPOINTZ_NAN_WKB),
+        (pygeos.geometrycollections([empty_point_z]), GEOMETRYCOLLECTIONZ_NAN_WKB),
+        (
+            pygeos.geometrycollections([pygeos.multipoints([empty_point_z])]),
+            NESTED_COLLECTIONZ_NAN_WKB,
+        ),
+    ],
+)
+def test_to_wkb_point_empty_3d(geom, expected):
+    actual = pygeos.to_wkb(geom, output_dimension=3, byte_order=1)
+    # Split 'actual' into header and coordinates
+    coordinate_length = 24
+    header_length = len(expected) - coordinate_length
+    # Check the total length (this checks the correct dimensionality)
+    assert len(actual) == header_length + coordinate_length
+    # Check the header
+    assert actual[:header_length] == expected[:header_length]
+    # Check the coordinates (using numpy.isnan; there are many byte representations for NaN)
+    assert np.isnan(struct.unpack("<3d", actual[header_length:])).all()
+
+
+@pytest.mark.xfail(
+    pygeos.geos_version < (3, 8, 0),
+    reason="GEOS<3.8 always outputs 3D empty points if output_dimension=3",
+)
+@pytest.mark.parametrize(
+    "geom,expected",
+    [
+        (empty_point, POINT_NAN_WKB),
+        (pygeos.multipoints([empty_point]), MULTIPOINT_NAN_WKB),
+        (pygeos.geometrycollections([empty_point]), GEOMETRYCOLLECTION_NAN_WKB),
+        (
+            pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
+            NESTED_COLLECTION_NAN_WKB,
+        ),
+    ],
+)
+def test_to_wkb_point_empty_2d_output_dim_3(geom, expected):
+    actual = pygeos.to_wkb(geom, output_dimension=3, byte_order=1)
+    # Split 'actual' into header and coordinates
+    coordinate_length = 16
+    header_length = len(expected) - coordinate_length
+    # Check the total length (this checks the correct dimensionality)
+    assert len(actual) == header_length + coordinate_length
+    # Check the header
+    assert actual[:header_length] == expected[:header_length]
+    # Check the coordinates (using numpy.isnan; there are many byte representations for NaN)
+    assert np.isnan(struct.unpack("<2d", actual[header_length:])).all()
 
 
 @pytest.mark.parametrize(

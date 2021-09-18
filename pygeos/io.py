@@ -174,7 +174,9 @@ def to_wkb(
 
     - linearrings will be converted to linestrings
     - a point with only NaN coordinates is converted to an empty point
-    - for GEOS <= 3.8, the dimensionality of empty points is lost
+    - for GEOS <= 3.7, empty points are always serialized to 3D if
+      output_dimension=3, and to 2D if output_dimension=2
+    - for GEOS == 3.8, empty points are always serialized to 2D
 
     Parameters
     ----------
