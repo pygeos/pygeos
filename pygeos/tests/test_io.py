@@ -284,10 +284,12 @@ def test_to_wkt_geometrycollection_with_point_empty():
 
 
 def test_to_wkt_multipoint_with_point_empty_errors():
-    # Test if segfault is prevented
+    # Only test if segfault is prevented
     geom = pygeos.multipoints([empty_point, point])
-    with pytest.raises(ValueError):
+    try:
         pygeos.to_wkt(geom)
+    except ValueError:  # On GEOS < 3.9.0
+        pass
 
 
 def test_repr():
@@ -378,7 +380,13 @@ def test_to_wkb_srid():
     "geom,output_dimension,expected,dims",
     [
         (empty_point, 2, POINT_NAN_WKB, 2),
-        (empty_point, 3, POINT_NAN_WKB, 2),
+        pytest.param(
+            empty_point,
+            3,
+            POINT_NAN_WKB,
+            2,
+            marks=pytest.mark.xfail(pygeos.geos_version < (3, 8, 0), reason="GEOS<3.8"),
+        ),
         (empty_point_z, 2, POINT_NAN_WKB, 2),
         pytest.param(
             empty_point_z,
@@ -388,7 +396,13 @@ def test_to_wkb_srid():
             marks=pytest.mark.xfail(pygeos.geos_version < (3, 9, 0), reason="GEOS<3.9"),
         ),
         (pygeos.multipoints([empty_point]), 2, MULTIPOINT_NAN_WKB, 2),
-        (pygeos.multipoints([empty_point]), 3, MULTIPOINT_NAN_WKB, 2),
+        pytest.param(
+            pygeos.multipoints([empty_point]),
+            3,
+            MULTIPOINT_NAN_WKB,
+            2,
+            marks=pytest.mark.xfail(pygeos.geos_version < (3, 8, 0), reason="GEOS<3.8"),
+        ),
         (pygeos.multipoints([empty_point_z]), 2, MULTIPOINT_NAN_WKB, 2),
         pytest.param(
             pygeos.multipoints([empty_point_z]),
@@ -398,7 +412,13 @@ def test_to_wkb_srid():
             marks=pytest.mark.xfail(pygeos.geos_version < (3, 9, 0), reason="GEOS<3.9"),
         ),
         (pygeos.geometrycollections([empty_point]), 2, GEOMETRYCOLLECTION_NAN_WKB, 2),
-        (pygeos.geometrycollections([empty_point]), 3, GEOMETRYCOLLECTION_NAN_WKB, 2),
+        pytest.param(
+            pygeos.geometrycollections([empty_point]),
+            3,
+            GEOMETRYCOLLECTION_NAN_WKB,
+            2,
+            marks=pytest.mark.xfail(pygeos.geos_version < (3, 8, 0), reason="GEOS<3.8"),
+        ),
         (pygeos.geometrycollections([empty_point_z]), 2, GEOMETRYCOLLECTION_NAN_WKB, 2),
         pytest.param(
             pygeos.geometrycollections([empty_point_z]),
@@ -413,11 +433,12 @@ def test_to_wkb_srid():
             NESTED_COLLECTION_NAN_WKB,
             2,
         ),
-        (
+        pytest.param(
             pygeos.geometrycollections([pygeos.multipoints([empty_point])]),
             3,
             NESTED_COLLECTION_NAN_WKB,
             2,
+            marks=pytest.mark.xfail(pygeos.geos_version < (3, 8, 0), reason="GEOS<3.8"),
         ),
         (
             pygeos.geometrycollections([pygeos.multipoints([empty_point_z])]),

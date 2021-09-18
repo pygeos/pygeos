@@ -72,10 +72,13 @@ static PyObject* GeometryObject_ToWKT(GeometryObject* obj) {
 
   GEOS_INIT;
 
+  // Before GEOS 3.9.0, there was as segfault on e.g. MULTIPOINT (1 1, EMPTY)
+  #if !GEOS_SINCE_3_9_0
   errstate = check_to_wkt_compatible(ctx, obj->ptr);
   if (errstate != PGERR_SUCCESS) {
     goto finish;
   }
+  #endif
 
   GEOSWKTWriter* writer = GEOSWKTWriter_create_r(ctx);
   if (writer == NULL) {
