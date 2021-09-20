@@ -96,14 +96,12 @@ jobs:
           pip list
 
       - name: Set environment variables (Linux)
-        shell: bash
         run: |
           echo "${{ env.GEOS_INSTALL }}/bin" >> $GITHUB_PATH
           echo "LD_LIBRARY_PATH=${{ env.GEOS_INSTALL }}/lib" >> $GITHUB_ENV
         if: ${{ matrix.os == 'ubuntu-latest' }}
 
       - name: Set environment variables (OSX)
-        shell: bash
         run: |
           echo "${{ env.GEOS_INSTALL }}/bin" >> $GITHUB_PATH
           echo "LDFLAGS=-Wl,-rpath,${{ env.GEOS_INSTALL }}/lib" >> $GITHUB_ENV
@@ -113,8 +111,6 @@ jobs:
       # - geos-config does not exist, so we specify include and library paths
       # - Python >=3.8 ignores the PATH for finding DLLs, so we copy them into the package 
       - name: Set environment variables + copy DLLs (Windows)
-      - name: Set environment variables + copy DLLs (Windows)
-        shell: bash
         run: |
           cp geosinstall/geos-${{ matrix.geos }}/bin/*.dll pygeos
           echo 'GEOS_LIBRARY_PATH=${{ env.GEOS_INSTALL }}\lib' >> $GITHUB_ENV
@@ -127,7 +123,6 @@ jobs:
           pip install --no-deps -e .
 
       - name: Run tests
-        shell: bash
         continue-on-error: ${{ matrix.geos == 'main' }}
         run: pytest pygeos
 
