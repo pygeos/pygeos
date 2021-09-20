@@ -41,7 +41,7 @@ build_geos(){
     if [ "$RUNNER_OS" = "Windows" ]; then
         export CMAKE_GENERATOR=Ninja
     fi
-    cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
     cmake --build . -j 4
     cmake --install .
 }
