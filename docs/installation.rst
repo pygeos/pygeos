@@ -99,19 +99,29 @@ GEOS discovery (runtime)
 
 PyGEOS is dynamically linked to GEOS. This means that the same GEOS library that was used
 during PyGEOS compilation is required on your system at runtime. When using pygeos that was distributed
-as a binary wheel or through conda,this is automatically the case and you can stop reading.
+as a binary wheel or through conda, this is automatically the case and you can stop reading.
 
 In other cases this can be tricky, especially if you have multiple GEOS installations next
 to each other. We only include some guidelines here to address this issue as this document is
-not intended as a general guide of shared library finding.
+not intended as a general guide of shared library discovery.
 
-There are in general four ways of making Python aware of the location of shared library:
+If you encountered exceptions like:
 
-1. Copy the shared libraries into the pygeos module directory
-2. Copy the shared libraries into the directory of the Python interpreter
-3. Copy the shared libraries into some system location (``C:\Windows\System32``; ``/usr/local/lib``)
+.. code-block:: none
+
+   ImportError: libgeos_c.so.1: cannot open shared object file: No such file or directory
+
+You will have to make the shared library file available to the Python interpreter. There are in
+general four ways of making Python aware of the location of shared library:
+
+1. Copy the shared libraries into the pygeos module directory (this is how Windows binary wheels work:
+   they are distributed with the correct dlls in the pygeos module directory)
+2. Copy the shared libraries into the library directory of the Python interpreter (this is how
+   Anaconda environments work)
+3. Copy the shared libraries into some system location (``C:\Windows\System32``; ``/usr/local/lib``,
+   this happens if you installed GEOS through ``apt`` or ``brew``)
 4. Add the shared library location to a the dynamic linker path variable at runtime.
-   (Linux and OSX only; on Windows this method was deprecated in Python 3.8)
+   (Advanced usage; Linux and OSX only; on Windows this method was deprecated in Python 3.8)
 
 The filenames of the GEOS shared libraries are:
 
