@@ -156,5 +156,6 @@ int get_bounds(GEOSContextHandle_t ctx, GEOSGeometry* geom, double* xmin, double
 GEOSGeometry* create_box(GEOSContextHandle_t ctx, double xmin, double ymin, double xmax,
                          double ymax, char ccw);
 GEOSGeometry* create_point(GEOSContextHandle_t ctx, double x, double y);
+GEOSGeometry* PyGEOSForce2D(GEOSContextHandle_t ctx, GEOSGeometry* geom);
 
 #endif  // _GEOS_H

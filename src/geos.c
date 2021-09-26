@@ -597,3 +597,71 @@ GEOSGeometry* create_point(GEOSContextHandle_t ctx, double x, double y) {
   return geom;
 #endif
 }
+
+
+/* Force 2D */
+
+
+
+GEOSGeometry* force_2d_simple(GEOSContextHandle_t ctx, GEOSGeometry* geom, int type) {
+  int dims, i;
+  unsigned int n, j;
+  int target_dims = 2;
+  double coord;
+  const GEOSCoordSequence* seq = GEOSGeom_getCoordSeq_r(ctx, geom);
+
+  if (GEOSCoordSeq_getDimensions_r(ctx, seq, &dims) == 0) {
+    return NULL;
+  }
+  if (dims == target_dims) {
+    return GEOSGeom_clone_r(ctx, geom);
+  }
+
+  if (GEOSCoordSeq_getSize_r(ctx, seq, &n) == 0) {
+    return NULL;
+  }
+  
+  /* Create a new one to fill with the new coordinates */
+  GEOSCoordSequence* seq_new = GEOSCoordSeq_create_r(ctx, n, target_dims);
+  if (seq_new == NULL) {
+    return NULL;
+  }
+
+  for (i = 0; i < n; i++) {
+    for (j = 0; j < target_dims; j++) {
+      if (!GEOSCoordSeq_getOrdinate_r(ctx, seq, i, j, &coord)) {
+        GEOSCoordSeq_destroy_r(ctx, seq_new);
+        return NULL;
+      }
+      if (!GEOSCoordSeq_setOrdinate_r(ctx, seq_new, i, j, coord)) {
+        GEOSCoordSeq_destroy_r(ctx, seq_new);
+        return NULL;
+      }
+    }
+  }
+
+  /* Construct a new geometry */
+  if (type == 0) {
+    return GEOSGeom_createPoint_r(ctx, seq_new);
+  } else if (type == 1) {
+    return GEOSGeom_createLineString_r(ctx, seq_new);
+  } else if (type == 2) {
+    return GEOSGeom_createLinearRing_r(ctx, seq_new);
+  } else {
+    return NULL;
+  }
+}
+
+
+GEOSGeometry* PyGEOSForce2D(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
+  int type = GEOSGeomTypeId_r(ctx, geom);
+  if ((type == 0) || (type == 1) || (type == 2)) {
+    return force_2d_simple(ctx, geom, type);
+  } else if (type == 3) {
+    return NULL;
+  } else if ((type >= 4) && (type <= 7)) {
+    return NULL;
+  } else {
+    return NULL;
+  }
+}

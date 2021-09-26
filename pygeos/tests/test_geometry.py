@@ -560,3 +560,15 @@ def test_empty():
     """Compatibility with empty_like, see GH373"""
     g = np.empty_like(np.array([None, None]))
     assert pygeos.is_missing(g).all()
+
+
+@pytest.mark.parametrize(
+    "geom,expected",
+    [
+        (point, point),
+        (pygeos.Geometry("POINT Z (1 2 3)"), pygeos.Geometry("POINT (1 2)")),
+    ],
+)
+def test_force_2d(geom, expected):
+    actual = pygeos.force_2d(geom)
+    assert pygeos.equals(actual, expected)

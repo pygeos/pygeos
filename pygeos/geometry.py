@@ -28,6 +28,7 @@ __all__ = [
     "get_rings",
     "get_precision",
     "set_precision",
+    "force_2d",
 ]
 
 
@@ -735,3 +736,8 @@ def set_precision(geometry, grid_size, preserve_topology=False, **kwargs):
     """
 
     return lib.set_precision(geometry, grid_size, preserve_topology, **kwargs)
+
+
+@multithreading_enabled
+def force_2d(geometry, **kwargs):
+    return lib.force_2d(geometry, **kwargs)
