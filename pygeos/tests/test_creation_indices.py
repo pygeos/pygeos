@@ -187,7 +187,7 @@ def test_linearrings(coordinates):
 @pytest.mark.parametrize(
     "coordinates",
     [
-        ([[1, 1]]),  # too few coordinates
+        ([[1, 1], [2, 1], [1, 1]]),  # too few coordinates
         ([[1, np.nan], [2, 1], [2, 2], [1, 1]]),  # starting with nan
     ],
 )
