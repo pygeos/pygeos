@@ -1,13 +1,49 @@
 Changelog
 =========
 
-Version 0.10.2 (2021-08-19)
+
+Version 0.11 (unreleased)
+-------------------------
+
+**Major enhancements**
+
+* Optionally output to a user-specified array (``out`` keyword argument) when constructing
+  geometries from ``indices`` (#380).
+* Added ``pygeos.empty`` to create a geometry array pre-filled with None or
+  with empty geometries (#381).
+
+**API Changes**
+
+* ...
+
+
+**Added GEOS functions**
+
+* ...
+
+**Bug fixes**
+
+* Return True instead of False for LINEARRING geometries in ``is_closed`` (#379).
+* Fixed the WKB serialization of 3D empty points for GEOS >= 3.9.0 (#392).
+* Fixed the WKT serialization of multipoints with empty points for GEOS >= 3.9.0 (#392).
+
+**Acknowledgments**
+
+Thanks to everyone who contributed to this release!
+People with a "+" by their names contributed a patch for the first time.
+
+* Brendan Ward
+* Casper van der Wel
+* Joris Van den Bossche
+
+
+Version 0.10.2 (2021-08-23)
 ---------------------------
 
 **Distribution**
 
 Unittests are now included in the pygeos distribution. Run them by 1) installing
-``pytest`` (or ``pygeos[test]``) and invoking ``pytest --pyargs pygeos.tests``.
+``pytest`` (or ``pygeos[test]``) and 2) invoking ``pytest --pyargs pygeos.tests``.
 
 We started using a new tool for building binary wheels: ``cibuildwheel``. This
 resulted into the following improvements in the distributed binary wheels:

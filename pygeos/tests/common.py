@@ -3,6 +3,7 @@ from contextlib import contextmanager
 
 import numpy as np
 import pytest
+from numpy.testing import assert_array_equal
 
 import pygeos
 
@@ -33,6 +34,7 @@ polygon_with_hole = pygeos.Geometry(
     "POLYGON((0 0, 0 10, 10 10, 10 0, 0 0), (2 2, 2 4, 4 4, 4 2, 2 2))"
 )
 empty_point = pygeos.Geometry("POINT EMPTY")
+empty_point_z = pygeos.Geometry("POINT Z EMPTY")
 empty_line_string = pygeos.Geometry("LINESTRING EMPTY")
 empty_polygon = pygeos.Geometry("POLYGON EMPTY")
 empty = pygeos.Geometry("GEOMETRYCOLLECTION EMPTY")
@@ -78,4 +80,4 @@ def assert_geometries_equal(actual, expected):
     if np.any(mask):
         assert pygeos.equals(actual[mask], expected[mask]).all()
     if np.any(~mask):
-        assert pygeos.is_missing(actual[~mask])
+        assert_array_equal(actual[~mask], expected[~mask])

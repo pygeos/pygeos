@@ -37,10 +37,13 @@ build_geos(){
     echo "Building geos-$GEOS_VERSION"
     mkdir build
     cd build
+     # Use Ninja on windows, otherwise, use the platform's default
+    if [ "$RUNNER_OS" = "Windows" ]; then
+        export CMAKE_GENERATOR=Ninja
+    fi
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$GEOS_INSTALL ..
-    make -j 2
-    # ctest .
-    make install
+    cmake --build . -j 4
+    cmake --install .
 }
 
 if [ "$GEOS_VERSION" = "main" ]; then
