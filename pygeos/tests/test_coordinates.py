@@ -8,6 +8,8 @@ from pygeos import apply, count_coordinates, get_coordinates, set_coordinates
 from .common import (
     empty,
     empty_point,
+    empty_point_z,
+    empty_line_string_z,
     geometry_collection,
     geometry_collection_z,
     line_string,
@@ -239,6 +241,26 @@ def test_apply_check_shape():
 def test_apply_correct_coordinate_dimension():
     # ensure that new geometry is 2D with include_z=False
     geom = line_string_z
+    assert pygeos.get_coordinate_dimension(geom) == 3
+    new_geom = apply(geom, lambda x: x + 1, include_z=False)
+    assert pygeos.get_coordinate_dimension(new_geom) == 2
+
+
+@pytest.mark.parametrize("geom", [
+    pytest.param(empty_point_z, marks=pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="Empty points don't have a dimensionality before GEOS 3.9")),
+    empty_line_string_z,
+])
+def test_apply_empty_preserve_z(geom):
+    assert pygeos.get_coordinate_dimension(geom) == 3
+    new_geom = apply(geom, lambda x: x + 1, include_z=True)
+    assert pygeos.get_coordinate_dimension(new_geom) == 3
+
+
+@pytest.mark.parametrize("geom", [
+    pytest.param(empty_point_z, marks=pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="Empty points don't have a dimensionality before GEOS 3.9")),
+    empty_line_string_z,
+])
+def test_apply_remove_z(geom):
     assert pygeos.get_coordinate_dimension(geom) == 3
     new_geom = apply(geom, lambda x: x + 1, include_z=False)
     assert pygeos.get_coordinate_dimension(new_geom) == 2

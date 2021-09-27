@@ -312,8 +312,8 @@ char geos_interpolate_checker(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
   type = GEOSGeomTypeId_r(ctx, geom);
   if (type == -1) {
     return PGERR_GEOS_EXCEPTION;
-  } else if ((type == GEOS_POINT) || (type == GEOS_POLYGON) || (type == GEOS_MULTIPOINT) ||
-             (type == GEOS_MULTIPOLYGON)) {
+  } else if ((type == GEOS_POINT) || (type == GEOS_POLYGON) ||
+             (type == GEOS_MULTIPOINT) || (type == GEOS_MULTIPOLYGON)) {
     return PGERR_GEOMETRY_TYPE;
   }
 
@@ -598,42 +598,81 @@ GEOSGeometry* create_point(GEOSContextHandle_t ctx, double x, double y) {
 #endif
 }
 
+GEOSGeometry* create_empty_point(GEOSContextHandle_t ctx, unsigned int dims) {
+#if GEOS_SINCE_3_9_0
+  // POINT (nan nan) gets interpreted as empty point
+  GEOSCoordSequence* coord_seq = NULL;
+  GEOSGeometry* geom = NULL;
+  unsigned int j;
+
+  coord_seq = GEOSCoordSeq_create_r(ctx, 1, dims);
+  if (coord_seq == NULL) {
+    return NULL;
+  }
+  for (j = 0; j < dims; j++) {
+    if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, 0, j, NPY_NAN)) {
+      GEOSCoordSeq_destroy_r(ctx, coord_seq);
+      return NULL;
+    }
+  }
+  geom = GEOSGeom_createPoint_r(ctx, coord_seq);
+  if (geom == NULL) {
+    GEOSCoordSeq_destroy_r(ctx, coord_seq);
+    return NULL;
+  }
+  return geom;
+#else
+  // Always 2D
+  return GEOSGeom_createEmptyPoint_r(ctx);
+#endif
+}
 
 /* Force 2D */
 
+/* The function prototype enables recursive calls (for collections) */
+GEOSGeometry* force_dims(GEOSContextHandle_t, GEOSGeometry*, unsigned int, double);
 
-
-GEOSGeometry* force_2d_simple(GEOSContextHandle_t ctx, GEOSGeometry* geom, int type) {
-  int dims, i;
-  unsigned int n, j;
-  int target_dims = 2;
+GEOSGeometry* force_dims_simple(GEOSContextHandle_t ctx, GEOSGeometry* geom, int type,
+                                unsigned int dims, double z) {
+  unsigned int actual_dims, n, i, j;
   double coord;
   const GEOSCoordSequence* seq = GEOSGeom_getCoordSeq_r(ctx, geom);
 
-  if (GEOSCoordSeq_getDimensions_r(ctx, seq, &dims) == 0) {
-    return NULL;
-  }
-  if (dims == target_dims) {
-    return GEOSGeom_clone_r(ctx, geom);
+  /* Special case for POINT EMPTY (Point coordinate list cannot be 0-length) */
+  if ((type == 0) && (GEOSisEmpty_r(ctx, geom) == 1)) {
+    return create_empty_point(ctx, dims);
   }
 
+  /* Investigate the coordinate sequence, return when already of correct dimensionality */
+  if (GEOSCoordSeq_getDimensions_r(ctx, seq, &actual_dims) == 0) {
+    return NULL;
+  }
+  if (actual_dims == dims) {
+    return GEOSGeom_clone_r(ctx, geom);
+  }
   if (GEOSCoordSeq_getSize_r(ctx, seq, &n) == 0) {
     return NULL;
   }
-  
+
   /* Create a new one to fill with the new coordinates */
-  GEOSCoordSequence* seq_new = GEOSCoordSeq_create_r(ctx, n, target_dims);
+  GEOSCoordSequence* seq_new = GEOSCoordSeq_create_r(ctx, n, dims);
   if (seq_new == NULL) {
     return NULL;
   }
 
   for (i = 0; i < n; i++) {
-    for (j = 0; j < target_dims; j++) {
+    for (j = 0; j < 2; j++) {
       if (!GEOSCoordSeq_getOrdinate_r(ctx, seq, i, j, &coord)) {
         GEOSCoordSeq_destroy_r(ctx, seq_new);
         return NULL;
       }
       if (!GEOSCoordSeq_setOrdinate_r(ctx, seq_new, i, j, coord)) {
+        GEOSCoordSeq_destroy_r(ctx, seq_new);
+        return NULL;
+      }
+    }
+    if (dims == 3) {
+      if (!GEOSCoordSeq_setZ_r(ctx, seq_new, i, z)) {
         GEOSCoordSeq_destroy_r(ctx, seq_new);
         return NULL;
       }
@@ -652,16 +691,116 @@ GEOSGeometry* force_2d_simple(GEOSContextHandle_t ctx, GEOSGeometry* geom, int t
   }
 }
 
+GEOSGeometry* force_dims_polygon(GEOSContextHandle_t ctx, GEOSGeometry* geom,
+                                 unsigned int dims, double z) {
+  int i, n;
+  const GEOSGeometry *shell, *hole;
+  GEOSGeometry *new_shell, *new_hole, *result = NULL;
+  GEOSGeometry** new_holes;
 
-GEOSGeometry* PyGEOSForce2D(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
+  n = GEOSGetNumInteriorRings_r(ctx, geom);
+  if (n == -1) {
+    return NULL;
+  }
+
+  /* create the exterior ring */
+  shell = GEOSGetExteriorRing_r(ctx, geom);
+  if (shell == NULL) {
+    return NULL;
+  }
+  new_shell = force_dims_simple(ctx, (GEOSGeometry*)shell, 2, dims, z);
+  if (new_shell == NULL) {
+    return NULL;
+  }
+
+  new_holes = malloc(sizeof(void*) * n);
+  if (new_holes == NULL) {
+    GEOSGeom_destroy_r(ctx, new_shell);
+    return NULL;
+  }
+
+  for (i = 0; i < n; i++) {
+    hole = GEOSGetInteriorRingN_r(ctx, geom, i);
+    if (hole == NULL) {
+      GEOSGeom_destroy_r(ctx, new_shell);
+      destroy_geom_arr(ctx, new_holes, i - 1);
+      goto finish;
+    }
+    new_hole = force_dims_simple(ctx, (GEOSGeometry*)hole, 2, dims, z);
+    if (hole == NULL) {
+      GEOSGeom_destroy_r(ctx, new_shell);
+      destroy_geom_arr(ctx, new_holes, i - 1);
+      goto finish;
+    }
+    new_holes[i] = new_hole;
+  }
+
+  result = GEOSGeom_createPolygon_r(ctx, new_shell, new_holes, n);
+
+finish:
+  if (new_holes != NULL) {
+    free(new_holes);
+  }
+  return result;
+}
+
+GEOSGeometry* force_dims_collection(GEOSContextHandle_t ctx, GEOSGeometry* geom, int type,
+                                    unsigned int dims, double z) {
+  int i, n;
+  const GEOSGeometry* sub_geom;
+  GEOSGeometry *new_sub_geom, *result = NULL;
+  GEOSGeometry** geoms;
+
+  n = GEOSGetNumGeometries_r(ctx, geom);
+  if (n == -1) {
+    return NULL;
+  }
+
+  geoms = malloc(sizeof(void*) * n);
+  if (geoms == NULL) {
+    return NULL;
+  }
+
+  for (i = 0; i < n; i++) {
+    sub_geom = GEOSGetGeometryN_r(ctx, geom, i);
+    if (sub_geom == NULL) {
+      destroy_geom_arr(ctx, geoms, i - i);
+      goto finish;
+    }
+    new_sub_geom = force_dims(ctx, (GEOSGeometry*)sub_geom, dims, z);
+    if (new_sub_geom == NULL) {
+      destroy_geom_arr(ctx, geoms, i - i);
+      goto finish;
+    }
+    geoms[i] = new_sub_geom;
+  }
+
+  result = GEOSGeom_createCollection_r(ctx, type, geoms, n);
+finish:
+  if (geoms != NULL) {
+    free(geoms);
+  }
+  return result;
+}
+
+GEOSGeometry* force_dims(GEOSContextHandle_t ctx, GEOSGeometry* geom, unsigned int dims,
+                         double z) {
   int type = GEOSGeomTypeId_r(ctx, geom);
   if ((type == 0) || (type == 1) || (type == 2)) {
-    return force_2d_simple(ctx, geom, type);
+    return force_dims_simple(ctx, geom, type, dims, z);
   } else if (type == 3) {
-    return NULL;
+    return force_dims_polygon(ctx, geom, dims, z);
   } else if ((type >= 4) && (type <= 7)) {
-    return NULL;
+    return force_dims_collection(ctx, geom, type, dims, z);
   } else {
     return NULL;
   }
+}
+
+GEOSGeometry* PyGEOSForce2D(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
+  return force_dims(ctx, geom, 2, 0.0);
+}
+
+GEOSGeometry* PyGEOSForce3D(GEOSContextHandle_t ctx, GEOSGeometry* geom, double z) {
+  return force_dims(ctx, geom, 3, z);
 }

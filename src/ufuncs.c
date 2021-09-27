@@ -534,6 +534,7 @@ static void* line_interpolate_point_normalized_data[1] = {
 
 static void* simplify_data[1] = {GEOSSimplify_r};
 static void* simplify_preserve_topology_data[1] = {GEOSTopologyPreserveSimplify_r};
+static void* force_3d_data[1] = {PyGEOSForce3D};
 
 #if GEOS_SINCE_3_9_0
 static void* unary_union_prec_data[1] = {GEOSUnaryUnionPrec_r};
@@ -3112,6 +3113,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Yd_Y(line_interpolate_point_normalized);
   DEFINE_Yd_Y(simplify);
   DEFINE_Yd_Y(simplify_preserve_topology);
+  DEFINE_Yd_Y(force_3d);
 
   // 'REORDERABLE' sets PyUFunc_ReorderableNone instead of PyUFunc_None as 'identity',
   // meaning that the order of arguments does not matter. This enables reduction over

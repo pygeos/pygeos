@@ -1,3 +1,4 @@
+from pygeos import geometry
 import numpy as np
 import pytest
 
@@ -8,10 +9,14 @@ from .common import empty as empty_geometry_collection
 from .common import (
     empty_line_string,
     empty_point,
+    empty_point_z,
+    empty_line_string_z,
     empty_polygon,
     geometry_collection,
+    geometry_collection_z,
     line_string,
     line_string_nan,
+    line_string_z,
     linear_ring,
     multi_line_string,
     multi_point,
@@ -19,6 +24,7 @@ from .common import (
     point,
     point_z,
     polygon,
+    polygon_z,
     polygon_with_hole,
 )
 
@@ -562,13 +568,60 @@ def test_empty():
     assert pygeos.is_missing(g).all()
 
 
+# corresponding to geometry_collection_z:
+geometry_collection_2 = pygeos.geometrycollections([point, line_string])
+empty_point_mark = pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="Empty points don't have a dimensionality before GEOS 3.9")
+
 @pytest.mark.parametrize(
     "geom,expected",
     [
         (point, point),
-        (pygeos.Geometry("POINT Z (1 2 3)"), pygeos.Geometry("POINT (1 2)")),
-    ],
-)
+        (point_z, point),
+        pytest.param(empty_point, empty_point, marks=empty_point_mark),
+        pytest.param(empty_point_z, empty_point, marks=empty_point_mark),
+        (line_string, line_string),
+        (line_string_z, line_string),
+        (empty_line_string, empty_line_string),
+        (empty_line_string_z, empty_line_string),
+        (polygon, polygon),
+        (polygon_z, polygon),
+        (polygon_with_hole, polygon_with_hole),
+        (multi_point, None),
+        (multi_line_string, None),
+        (multi_polygon, None),
+        (geometry_collection_2, geometry_collection_2),
+        (geometry_collection_z, geometry_collection_2),
+    ])
 def test_force_2d(geom, expected):
     actual = pygeos.force_2d(geom)
-    assert pygeos.equals(actual, expected)
+    assert pygeos.get_coordinate_dimension(actual) == 2
+    if expected is not None:
+        assert pygeos.equals(actual, expected)
+
+
+@pytest.mark.parametrize(
+    "geom,expected",
+    [
+        (point, point_z),
+        (point_z, point_z),
+        pytest.param(empty_point, empty_point_z, marks=empty_point_mark),
+        pytest.param(empty_point_z, empty_point_z, marks=empty_point_mark),
+        (line_string, line_string_z),
+        (line_string_z, line_string_z),
+        (empty_line_string, empty_line_string_z),
+        (empty_line_string_z, empty_line_string_z),
+        (polygon, polygon_z),
+        (polygon_z, polygon_z),
+        (polygon_with_hole, None),
+        (multi_point, None),
+        (multi_line_string, None),
+        (multi_polygon, None),
+        (geometry_collection_2, geometry_collection_z),
+        (geometry_collection_z, geometry_collection_z),
+    ],
+)
+def test_force_3d(geom, expected):
+    actual = pygeos.force_3d(geom, z=4)
+    assert pygeos.get_coordinate_dimension(actual) == 3
+    if expected is not None:
+        assert pygeos.equals(actual, expected)   
