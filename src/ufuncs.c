@@ -386,11 +386,11 @@ static void* GEOSNormalize_r_with_clone(void* context, void* geom) {
   return new_geom;
 }
 static void* normalize_data[1] = {GEOSNormalize_r_with_clone};
+static void* force_2d_data[1] = {PyGEOSForce2D};
 #if GEOS_SINCE_3_8_0
 static void* build_area_data[1] = {GEOSBuildArea_r};
 static void* make_valid_data[1] = {GEOSMakeValid_r};
 static void* coverage_union_data[1] = {GEOSCoverageUnion_r};
-static void* force_2d_data[1] = {PyGEOSForce2D};
 static void* GEOSMinimumBoundingCircleWithReturn(void* context, void* geom) {
   GEOSGeometry* center = NULL;
   double radius;
