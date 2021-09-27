@@ -1,4 +1,3 @@
-from pygeos import geometry
 import numpy as np
 import pytest
 
@@ -8,9 +7,9 @@ from .common import all_types
 from .common import empty as empty_geometry_collection
 from .common import (
     empty_line_string,
+    empty_line_string_z,
     empty_point,
     empty_point_z,
-    empty_line_string_z,
     empty_polygon,
     geometry_collection,
     geometry_collection_z,
@@ -24,8 +23,8 @@ from .common import (
     point,
     point_z,
     polygon,
-    polygon_z,
     polygon_with_hole,
+    polygon_z,
 )
 
 
@@ -181,16 +180,16 @@ def test_get_xyz_no_point(func, geom):
 
 
 def test_get_x():
-    assert pygeos.get_x([point, point_z]).tolist() == [2.0, 1.0]
+    assert pygeos.get_x([point, point_z]).tolist() == [2.0, 2.0]
 
 
 def test_get_y():
-    assert pygeos.get_y([point, point_z]).tolist() == [3.0, 1.0]
+    assert pygeos.get_y([point, point_z]).tolist() == [3.0, 3.0]
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
 def test_get_z():
-    assert pygeos.get_z([point_z]).tolist() == [1.0]
+    assert pygeos.get_z([point_z]).tolist() == [4.0]
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 7, 0), reason="GEOS < 3.7")
@@ -570,7 +569,11 @@ def test_empty():
 
 # corresponding to geometry_collection_z:
 geometry_collection_2 = pygeos.geometrycollections([point, line_string])
-empty_point_mark = pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="Empty points don't have a dimensionality before GEOS 3.9")
+empty_point_mark = pytest.mark.skipif(
+    pygeos.geos_version < (3, 9, 0),
+    reason="Empty points don't have a dimensionality before GEOS 3.9",
+)
+
 
 @pytest.mark.parametrize(
     "geom,expected",
@@ -591,7 +594,8 @@ empty_point_mark = pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="E
         (multi_polygon, None),
         (geometry_collection_2, geometry_collection_2),
         (geometry_collection_z, geometry_collection_2),
-    ])
+    ],
+)
 def test_force_2d(geom, expected):
     actual = pygeos.force_2d(geom)
     assert pygeos.get_coordinate_dimension(actual) == 2
@@ -624,4 +628,4 @@ def test_force_3d(geom, expected):
     actual = pygeos.force_3d(geom, z=4)
     assert pygeos.get_coordinate_dimension(actual) == 3
     if expected is not None:
-        assert pygeos.equals(actual, expected)   
+        assert pygeos.equals(actual, expected)

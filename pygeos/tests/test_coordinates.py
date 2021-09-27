@@ -7,9 +7,9 @@ from pygeos import apply, count_coordinates, get_coordinates, set_coordinates
 
 from .common import (
     empty,
+    empty_line_string_z,
     empty_point,
     empty_point_z,
-    empty_line_string_z,
     geometry_collection,
     geometry_collection_z,
     line_string,
@@ -121,10 +121,10 @@ def test_get_coords_index_multidim(order):
 @pytest.mark.parametrize(
     "geoms,x,y,z",
     [
-        ([point, point_z], [2, 1], [3, 1], [np.nan, 1]),
-        ([line_string_z], [0, 1, 1], [0, 0, 1], [0, 1, 2]),
-        ([polygon_z], [0, 2, 2, 0, 0], [0, 0, 2, 2, 0], [0, 1, 2, 3, 0]),
-        ([geometry_collection_z], [1, 0, 1, 1], [1, 0, 0, 1], [1, 0, 1, 2]),
+        ([point, point_z], [2, 2], [3, 3], [np.nan, 4]),
+        ([line_string_z], [0, 1, 1], [0, 0, 1], [4, 4, 4]),
+        ([polygon_z], [0, 2, 2, 0, 0], [0, 0, 2, 2, 0], [4, 4, 4, 4, 4]),
+        ([geometry_collection_z], [2, 0, 1, 1], [3, 0, 0, 1], [4, 4, 4, 4]),
     ],
 )  # fmt: on
 def test_get_coords_3d(geoms, x, y, z, include_z):
