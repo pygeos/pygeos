@@ -63,7 +63,7 @@ jobs:
       - name: Checkout PyGEOS
         uses: actions/checkout@v2
 
-      - name: Checkout GEOS
+      - name: Checkout GEOS (main)
         uses: actions/checkout@v2
         with:
           repository: libgeos/geos
