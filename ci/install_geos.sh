@@ -47,23 +47,11 @@ build_geos(){
 }
 
 if [ "$GEOS_VERSION" = "main" ]; then
-    prepare_geos_build_dir
-    # use GitHub mirror
-    git clone --depth 1 https://github.com/libgeos/geos.git geos-$GEOS_VERSION
-    cd geos-$GEOS_VERSION
-    git log -1
-    git rev-parse HEAD > newrev.txt
-    BUILD=no
-    # Only build if nothing cached or if the GEOS revision changed
-    if test ! -f $GEOS_INSTALL/rev.txt; then
-        BUILD=yes
-    elif ! diff newrev.txt $GEOS_INSTALL/rev.txt >/dev/null; then
-        BUILD=yes
-    fi
-    if test "$BUILD" = "no"; then
+    if [ -d "$GEOS_INSTALL/include/geos" ]; then
         echo "Using cached install $GEOS_INSTALL"
     else
-        cp newrev.txt $GEOS_INSTALL/rev.txt
+        # Expect the CI to have put the latest checkout in GEOS_BUILD
+        cd $GEOS_BUILD
         build_geos
     fi
 else
