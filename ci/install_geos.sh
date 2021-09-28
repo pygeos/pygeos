@@ -46,17 +46,13 @@ build_geos(){
     cmake --install .
 }
 
-if [ "$GEOS_VERSION" = "main" ]; then
-    if [ -d "$GEOS_INSTALL/include/geos" ]; then
-        echo "Using cached install $GEOS_INSTALL"
-    else
+if [ -d "$GEOS_INSTALL/include/geos" ]; then
+    echo "Using cached install $GEOS_INSTALL"
+else
+    if [ "$GEOS_VERSION" = "main" ]; then
         # Expect the CI to have put the latest checkout in GEOS_BUILD
         cd $GEOS_BUILD
         build_geos
-    fi
-else
-    if [ -d "$GEOS_INSTALL/include/geos" ]; then
-        echo "Using cached install $GEOS_INSTALL"
     else
         prepare_geos_build_dir
         curl -OL http://download.osgeo.org/geos/geos-$GEOS_VERSION.tar.bz2
