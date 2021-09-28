@@ -139,7 +139,7 @@ def get_coordinate_dimension(geometry, **kwargs):
     >>> get_coordinate_dimension(None)
     -1
     >>> get_coordinate_dimension(Geometry("POINT Z (0 0 nan)"))
-    3
+    2
     """
     return lib.get_coordinate_dimension(geometry, **kwargs)
 
@@ -744,9 +744,55 @@ def set_precision(geometry, grid_size, preserve_topology=False, **kwargs):
 
 @multithreading_enabled
 def force_2d(geometry, **kwargs):
+    """Forces the dimensionality of a geometry to 2D.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+
+    Examples
+    --------
+    >>> force_2d(Geometry("POINT Z (0 0 0)"))
+    <pygeos.Geometry POINT (0 0)>
+    >>> force_2d(Geometry("POINT (0 0)"))
+    <pygeos.Geometry POINT (0 0)>
+    >>> force_2d(Geometry("LINESTRING (0 0 0, 0 1 1, 1 1 2)"))
+    <pygeos.Geometry LINESTRING (0 0, 0 1, 1 1)>
+    >>> force_2d(None) is None
+    True
+    """
     return lib.force_2d(geometry, **kwargs)
 
 
 @multithreading_enabled
 def force_3d(geometry, z=0.0, **kwargs):
+    """Forces the dimensionality of a geometry to 3D.
+
+    2D geometries will get the provided Z coordinate; Z coordinates of 3D geometries
+    are unchanged. None is returned if NaN is provided as Z coordinate.
+
+    Parameters
+    ----------
+    geometry : Geometry or array_like
+    z : float or array_like, default 0.0
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+
+    Examples
+    --------
+    >>> force_3d(Geometry("POINT (0 0)"), z=3)
+    <pygeos.Geometry POINT Z (0 0 3)>
+    >>> force_3d(Geometry("POINT Z (0 0 0)"), z=3)
+    <pygeos.Geometry POINT Z (0 0 0)>
+    >>> force_3d(Geometry("LINESTRING (0 0, 0 1, 1 1)"))
+    <pygeos.Geometry LINESTRING Z (0 0 0, 0 1 0, 1 1 0)>
+    >>> force_3d(None) is None
+    True
+    >>> force_3d(Geometry("POINT (0 0)"), z=np.nan) is None
+    True
+    """
     return lib.force_3d(geometry, z, **kwargs)
