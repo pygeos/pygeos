@@ -136,9 +136,7 @@ jobs:
         if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Build PyGEOS
-        run: |
-          python setup.py build_ext --inplace
-          pip install --no-deps -e .
+        run: python setup.py build_ext --inplace
 
       - name: Run tests
         continue-on-error: ${{ matrix.geos == 'main' }}
