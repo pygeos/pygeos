@@ -72,7 +72,8 @@ jobs:
         if: ${{ matrix.geos == 'main' }}
 
       - name: Put the latest commit hash in the cache token
-        run: GEOS_VERSION_SPEC=$(git rev-parse HEAD) >> $GITHUB_ENV
+        run: |
+          echo 'GEOS_VERSION_SPEC=$(git rev-parse HEAD)' >> $GITHUB_ENV
         working-directory: ${{ env.GEOS_BUILD }}
         if: ${{ matrix.geos == 'main' }}
 
