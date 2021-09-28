@@ -580,8 +580,8 @@ empty_point_mark = pytest.mark.skipif(
     [
         (point, point),
         (point_z, point),
-        pytest.param(empty_point, empty_point, marks=empty_point_mark),
-        pytest.param(empty_point_z, empty_point, marks=empty_point_mark),
+        pytest.param(empty_point, None, marks=empty_point_mark),
+        pytest.param(empty_point_z, None, marks=empty_point_mark),
         (line_string, line_string),
         (line_string_z, line_string),
         (empty_line_string, empty_line_string),
@@ -608,8 +608,8 @@ def test_force_2d(geom, expected):
     [
         (point, point_z),
         (point_z, point_z),
-        pytest.param(empty_point, empty_point_z, marks=empty_point_mark),
-        pytest.param(empty_point_z, empty_point_z, marks=empty_point_mark),
+        pytest.param(empty_point, None, marks=empty_point_mark),
+        pytest.param(empty_point_z, None, marks=empty_point_mark),
         (line_string, line_string_z),
         (line_string_z, line_string_z),
         (empty_line_string, empty_line_string_z),

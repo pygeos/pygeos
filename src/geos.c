@@ -598,38 +598,42 @@ GEOSGeometry* create_point(GEOSContextHandle_t ctx, double x, double y) {
 #endif
 }
 
-GEOSGeometry* create_empty_point(GEOSContextHandle_t ctx, unsigned int dims) {
-#if GEOS_SINCE_3_9_0
-  // POINT (nan nan) gets interpreted as empty point
-  GEOSCoordSequence* coord_seq = NULL;
-  GEOSGeometry* geom = NULL;
-  unsigned int j;
+/* Create a 3D empty Point
+ *
+ * Works around a limitation of the GEOS C API by constructing the point
+ * from its WKT representation (POINT Z EMPTY).
+ *
+ * Returns
+ * -------
+ * GEOSGeometry* on success (owned by caller) or NULL on failure
+ */
+GEOSGeometry* PyGEOS_create3DEmptyPoint(GEOSContextHandle_t ctx) {
+  const char* wkt = "POINT Z EMPTY";
+  GEOSGeometry* geom;
+  GEOSWKTReader* reader;
 
-  coord_seq = GEOSCoordSeq_create_r(ctx, 1, dims);
-  if (coord_seq == NULL) {
+  reader = GEOSWKTReader_create_r(ctx);
+  if (reader == NULL) {
     return NULL;
   }
-  for (j = 0; j < dims; j++) {
-    if (!GEOSCoordSeq_setOrdinate_r(ctx, coord_seq, 0, j, NPY_NAN)) {
-      GEOSCoordSeq_destroy_r(ctx, coord_seq);
-      return NULL;
-    }
-  }
-  geom = GEOSGeom_createPoint_r(ctx, coord_seq);
-  if (geom == NULL) {
-    GEOSCoordSeq_destroy_r(ctx, coord_seq);
-    return NULL;
-  }
+  geom = GEOSWKTReader_read_r(ctx, reader, wkt);
+  GEOSWKTReader_destroy_r(ctx, reader);
   return geom;
-#else
-  // Always 2D
-  return GEOSGeom_createEmptyPoint_r(ctx);
-#endif
 }
 
-/* Force 2D */
-
-/* The function prototype enables recursive calls (for collections) */
+/* Force the coordinate dimensionality (2D / 3D) of any geometry
+ *
+ * Parameters
+ * ----------
+ * ctx: GEOS context handle
+ * geom: geometry
+ * dims: dimensions to force (2 or 3)
+ * z: Z coordinate (ignored if dims==2)
+ *
+ * Returns
+ * -------
+ * GEOSGeometry* on success (owned by caller) or NULL on failure
+ */
 GEOSGeometry* force_dims(GEOSContextHandle_t, GEOSGeometry*, unsigned int, double);
 
 GEOSGeometry* force_dims_simple(GEOSContextHandle_t ctx, GEOSGeometry* geom, int type,
@@ -640,7 +644,13 @@ GEOSGeometry* force_dims_simple(GEOSContextHandle_t ctx, GEOSGeometry* geom, int
 
   /* Special case for POINT EMPTY (Point coordinate list cannot be 0-length) */
   if ((type == 0) && (GEOSisEmpty_r(ctx, geom) == 1)) {
-    return create_empty_point(ctx, dims);
+    if (dims == 2) {
+      return GEOSGeom_createEmptyPoint_r(ctx);
+    } else if (dims == 3) {
+      return PyGEOS_create3DEmptyPoint(ctx);
+    } else {
+      return NULL;
+    }
   }
 
   /* Investigate the coordinate sequence, return when already of correct dimensionality */
