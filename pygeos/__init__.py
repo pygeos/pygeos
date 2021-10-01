@@ -13,6 +13,7 @@ from .linear import *  # NOQA
 from .coordinates import *  # NOQA
 from .strtree import *  # NOQA
 from .io import *  # NOQA
+from .testing import *  # NOQA
 
 from ._version import get_versions
 
