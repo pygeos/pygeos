@@ -79,6 +79,6 @@ def assert_geometries_equal(actual, expected):
     expected = np.broadcast_to(expected, actual.shape)
     mask = pygeos.is_geometry(expected)
     if np.any(mask):
-        assert pygeos.equals(actual[mask], expected[mask]).all()
+        assert pygeos.equals_exact(actual[mask], expected[mask]).all()
     if np.any(~mask):
         assert_array_equal(actual[~mask], expected[~mask])
