@@ -792,8 +792,6 @@ def force_3d(geometry, z=0.0, **kwargs):
     <pygeos.Geometry POINT Z (0 0 0)>
     >>> force_3d(Geometry("LINESTRING (0 0, 0 1, 1 1)"))
     <pygeos.Geometry LINESTRING Z (0 0 0, 0 1 0, 1 1 0)>
-    >>> force_3d(Geometry("LINESTRING EMPTY"))
-    <pygeos.Geometry LINESTRING Z EMPTY>
     >>> force_3d(None) is None
     True
     """
