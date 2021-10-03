@@ -40,6 +40,17 @@ empty_line_string_z = pygeos.Geometry("LINESTRING Z EMPTY")
 empty_polygon = pygeos.Geometry("POLYGON EMPTY")
 empty = pygeos.Geometry("GEOMETRYCOLLECTION EMPTY")
 line_string_nan = pygeos.linestrings([(np.nan, np.nan), (np.nan, np.nan)])
+multi_point_z = pygeos.multipoints([(0, 0, 4), (1, 2, 4)])
+multi_line_string_z = pygeos.multilinestrings([[(0, 0, 4), (1, 2, 4)]])
+multi_polygon_z = pygeos.multipolygons(
+    [
+        [(0, 0, 4), (1, 0, 4), (1, 1, 4), (0, 1, 4), (0, 0, 4)],
+        [(2.1, 2.1, 4), (2.2, 2.1, 4), (2.2, 2.2, 4), (2.1, 2.2, 4), (2.1, 2.1, 4)],
+    ]
+)
+polygon_with_hole_z = pygeos.Geometry(
+    "POLYGON Z((0 0 4, 0 10 4, 10 10 4, 10 0 4, 0 0 4), (2 2 4, 2 4 4, 4 4 4, 4 2 4, 2 2 4))"
+)
 
 all_types = (
     point,

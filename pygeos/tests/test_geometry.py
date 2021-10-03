@@ -18,12 +18,16 @@ from .common import (
     line_string_z,
     linear_ring,
     multi_line_string,
+    multi_line_string_z,
     multi_point,
+    multi_point_z,
     multi_polygon,
+    multi_polygon_z,
     point,
     point_z,
     polygon,
     polygon_with_hole,
+    polygon_with_hole_z,
     polygon_z,
 )
 
@@ -589,9 +593,13 @@ empty_point_mark = pytest.mark.skipif(
         (polygon, polygon),
         (polygon_z, polygon),
         (polygon_with_hole, polygon_with_hole),
+        (polygon_with_hole_z, polygon_with_hole),
         (multi_point, multi_point),
+        (multi_point_z, multi_point),
         (multi_line_string, multi_line_string),
+        (multi_line_string_z, multi_line_string),
         (multi_polygon, multi_polygon),
+        (multi_polygon_z, multi_polygon),
         (geometry_collection_2, geometry_collection_2),
         (geometry_collection_z, geometry_collection_2),
     ],
@@ -599,8 +607,7 @@ empty_point_mark = pytest.mark.skipif(
 def test_force_2d(geom, expected):
     actual = pygeos.force_2d(geom)
     assert pygeos.get_coordinate_dimension(actual) == 2
-    if expected is not None:
-        assert_geometries_equal(actual, expected)
+    assert_geometries_equal(actual, expected)
 
 
 @pytest.mark.parametrize(
@@ -616,10 +623,14 @@ def test_force_2d(geom, expected):
         (empty_line_string_z, empty_line_string_z),
         (polygon, polygon_z),
         (polygon_z, polygon_z),
-        (polygon_with_hole, None),  # skips the equals check
-        (multi_point, None),  # skips the equals check
-        (multi_line_string, None),  # skips the equals check
-        (multi_polygon, None),  # skips the equals check
+        (polygon_with_hole, polygon_with_hole_z),
+        (polygon_with_hole_z, polygon_with_hole_z),
+        (multi_point, multi_point_z),
+        (multi_point_z, multi_point_z),
+        (multi_line_string, multi_line_string_z),
+        (multi_line_string_z, multi_line_string_z),
+        (multi_polygon, multi_polygon_z),
+        (multi_polygon_z, multi_polygon_z),
         (geometry_collection_2, geometry_collection_z),
         (geometry_collection_z, geometry_collection_z),
     ],
@@ -627,5 +638,4 @@ def test_force_2d(geom, expected):
 def test_force_3d(geom, expected):
     actual = pygeos.force_3d(geom, z=4)
     assert pygeos.get_coordinate_dimension(actual) == 3
-    if expected is not None:
-        assert_geometries_equal(actual, expected)
+    assert_geometries_equal(actual, expected)

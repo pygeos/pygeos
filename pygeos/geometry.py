@@ -761,6 +761,8 @@ def force_2d(geometry, **kwargs):
     <pygeos.Geometry POINT (0 0)>
     >>> force_2d(Geometry("LINESTRING (0 0 0, 0 1 1, 1 1 2)"))
     <pygeos.Geometry LINESTRING (0 0, 0 1, 1 1)>
+    >>> force_2d(Geometry("POLYGON Z EMPTY"))
+    <pygeos.Geometry POLYGON EMPTY>
     >>> force_2d(None) is None
     True
     """
@@ -772,7 +774,7 @@ def force_3d(geometry, z=0.0, **kwargs):
     """Forces the dimensionality of a geometry to 3D.
 
     2D geometries will get the provided Z coordinate; Z coordinates of 3D geometries
-    are unchanged. None is returned if NaN is provided as Z coordinate.
+    are unchanged (unless they are nan).
 
     Parameters
     ----------
@@ -790,9 +792,13 @@ def force_3d(geometry, z=0.0, **kwargs):
     <pygeos.Geometry POINT Z (0 0 0)>
     >>> force_3d(Geometry("LINESTRING (0 0, 0 1, 1 1)"))
     <pygeos.Geometry LINESTRING Z (0 0 0, 0 1 0, 1 1 0)>
+    >>> force_3d(Geometry("POLYGON EMPTY"))
+    <pygeos.Geometry POLYGON Z EMPTY>
     >>> force_3d(None) is None
     True
-    >>> force_3d(Geometry("POINT (0 0)"), z=np.nan) is None
-    True
+    >>> force_3d(Geometry("POINT Z (0 0 nan)"), z=3)
+    <pygeos.Geometry POINT Z (0 0 3)>
     """
+    if np.isnan(z).any():
+        raise ValueError("It is not allowed to set the Z coordinate to NaN.")
     return lib.force_3d(geometry, z, **kwargs)
