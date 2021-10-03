@@ -792,12 +792,10 @@ def force_3d(geometry, z=0.0, **kwargs):
     <pygeos.Geometry POINT Z (0 0 0)>
     >>> force_3d(Geometry("LINESTRING (0 0, 0 1, 1 1)"))
     <pygeos.Geometry LINESTRING Z (0 0 0, 0 1 0, 1 1 0)>
-    >>> force_3d(Geometry("POLYGON EMPTY"))
-    <pygeos.Geometry POLYGON Z EMPTY>
+    >>> force_3d(Geometry("LINESTRING EMPTY"))
+    <pygeos.Geometry LINESTRING Z EMPTY>
     >>> force_3d(None) is None
     True
-    >>> force_3d(Geometry("POINT Z (0 0 nan)"), z=3)
-    <pygeos.Geometry POINT Z (0 0 3)>
     """
     if np.isnan(z).any():
         raise ValueError("It is not allowed to set the Z coordinate to NaN.")
