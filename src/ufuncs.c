@@ -2945,6 +2945,15 @@ static void to_wkt_func(char** args, npy_intp* dimensions, npy_intp* steps, void
         goto finish;
       }
 #endif
+#if GEOS_SINCE_3_9_0
+      // 3D empty points are allowed but not serialized correctly to WKT (<=GEOS 3.9.1)
+      // https://trac.osgeo.org/geos/ticket/1129
+      if (GEOSisEmpty_r(ctx, in1) && (GEOSGeomTypeId_r(ctx, in1) == GEOS_POINT) &&
+          (GEOSGeom_getCoordinateDimension_r(ctx, in1) == 3)) {
+        *out = PyUnicode_FromString("POINT Z EMPTY");
+        continue;
+      }
+#endif
       wkt = GEOSWKTWriter_write_r(ctx, writer, in1);
       if (wkt == NULL) {
         errstate = PGERR_GEOS_EXCEPTION;

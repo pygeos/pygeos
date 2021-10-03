@@ -65,20 +65,31 @@ static PyMemberDef GeometryObject_members[] = {
 static PyObject* GeometryObject_ToWKT(GeometryObject* obj) {
   char* wkt;
   PyObject* result;
-  if (obj->ptr == NULL) {
+  GEOSGeometry* geom = obj->ptr;
+
+  if (geom == NULL) {
     Py_INCREF(Py_None);
     return Py_None;
   }
 
   GEOS_INIT;
 
-  // Before GEOS 3.9.0, there was as segfault on e.g. MULTIPOINT (1 1, EMPTY)
-  #if !GEOS_SINCE_3_9_0
-  errstate = check_to_wkt_compatible(ctx, obj->ptr);
+// Before GEOS 3.9.0, there was as segfault on e.g. MULTIPOINT (1 1, EMPTY)
+#if !GEOS_SINCE_3_9_0
+  errstate = check_to_wkt_compatible(ctx, geom);
   if (errstate != PGERR_SUCCESS) {
     goto finish;
   }
-  #endif
+#endif
+#if GEOS_SINCE_3_9_0
+  // 3D empty points are allowed but not serialized correctly to WKT (<=GEOS 3.9.1)
+  // https://trac.osgeo.org/geos/ticket/1129
+  if (GEOSisEmpty_r(ctx, geom) && (GEOSGeomTypeId_r(ctx, geom) == GEOS_POINT) &&
+      (GEOSGeom_getCoordinateDimension_r(ctx, geom) == 3)) {
+    result = PyUnicode_FromString("POINT Z EMPTY");
+    goto finish;
+  }
+#endif
 
   GEOSWKTWriter* writer = GEOSWKTWriter_create_r(ctx);
   if (writer == NULL) {
@@ -101,7 +112,7 @@ static PyObject* GeometryObject_ToWKT(GeometryObject* obj) {
     goto finish;
   }
 
-  wkt = GEOSWKTWriter_write_r(ctx, writer, obj->ptr);
+  wkt = GEOSWKTWriter_write_r(ctx, writer, geom);
   result = PyUnicode_FromString(wkt);
   GEOSFree_r(ctx, wkt);
   GEOSWKTWriter_destroy_r(ctx, writer);
