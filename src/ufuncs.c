@@ -2946,7 +2946,7 @@ static void to_wkt_func(char** args, npy_intp* dimensions, npy_intp* steps, void
       }
 #endif
 #if GEOS_SINCE_3_9_0
-      errstate = wkt_empty_3d_geometry(ctx, geom, &wkt);
+      errstate = wkt_empty_3d_geometry(ctx, in1, &wkt);
       if (errstate != PGERR_SUCCESS) {
         goto finish;
       }
