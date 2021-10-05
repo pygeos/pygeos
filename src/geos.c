@@ -295,9 +295,9 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
 
 /* Checks whether the geometry is a 3D empty geometry and, if so, create the WKT string
  *
- * GEOS 3.9.* is the first version to (internally) distinguish 2D and 3D empty geometries,
+ * GEOS 3.9.* is able to distiguish 2D and 3D simple geometries (non-collections). But the
  * but the WKT serialization never writes a 3D empty geometry. This function fixes that.
- * It only makes sense to use for GEOS versions >= 3.9.
+ * It only makes sense to use this for GEOS versions >= 3.9.
  *
  * Pending GEOS ticket: https://trac.osgeo.org/geos/ticket/1129
  *

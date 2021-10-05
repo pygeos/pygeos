@@ -287,10 +287,6 @@ def test_to_wkt_point_empty():
         "LINESTRING Z EMPTY",
         "LINEARRING Z EMPTY",
         "POLYGON Z EMPTY",
-        "MULTIPOINT Z EMPTY",
-        "MULTILINESTRING Z EMPTY",
-        "MULTIPOLYGON Z EMPTY",
-        "GEOMETRYCOLLECTION Z EMPTY",
     ],
 )
 def test_to_wkt_empty_z(wkt):
