@@ -291,6 +291,72 @@ char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
 
 #endif  // !GEOS_SINCE_3_9_0
 
+#if GEOS_SINCE_3_9_0
+
+/* Checks whether the geometry is a 3D empty geometry and, if so, create the WKT string
+ *
+ * GEOS 3.9.* is the first version to (internally) distinguish 2D and 3D empty geometries,
+ * but the WKT serialization never writes a 3D empty geometry. This function fixes that.
+ * It only makes sense to use for GEOS versions >= 3.9.
+ *
+ * Pending GEOS ticket: https://trac.osgeo.org/geos/ticket/1129
+ *
+ * If the geometry is a 3D empty, then the (char**) wkt argument is filled with the
+ * correct WKT string. Else, wkt becomes NULL and the GEOS WKT writer should be used.
+ *
+ * The return value is one of:
+ * - PGERR_SUCCESS
+ * - PGERR_GEOS_EXCEPTION
+ */
+char wkt_empty_3d_geometry(GEOSContextHandle_t ctx, GEOSGeometry* geom, char** wkt) {
+  char is_empty;
+  int geom_type;
+
+  is_empty = GEOSisEmpty_r(ctx, geom);
+  if (is_empty == 0) {
+    *wkt = NULL;
+    return PGERR_SUCCESS;
+  } else if (is_empty != 1) {
+    return PGERR_GEOS_EXCEPTION;
+  }
+  if (GEOSGeom_getCoordinateDimension_r(ctx, geom) == 2) {
+    *wkt = NULL;
+    return PGERR_SUCCESS;
+  }
+  geom_type = GEOSGeomTypeId_r(ctx, geom);
+  switch (geom_type) {
+    case GEOS_POINT:
+      *wkt = "POINT Z EMPTY";
+      return PGERR_SUCCESS;
+    case GEOS_LINESTRING:
+      *wkt = "LINESTRING Z EMPTY";
+      break;
+    case GEOS_LINEARRING:
+      *wkt = "LINEARRING Z EMPTY";
+      break;
+    case GEOS_POLYGON:
+      *wkt = "POLYGON Z EMPTY";
+      break;
+    case GEOS_MULTIPOINT:
+      *wkt = "MULTIPOINT Z EMPTY";
+      break;
+    case GEOS_MULTILINESTRING:
+      *wkt = "MULTILINESTRING Z EMPTY";
+      break;
+    case GEOS_MULTIPOLYGON:
+      *wkt = "MULTIPOLYGON Z EMPTY";
+      break;
+    case GEOS_GEOMETRYCOLLECTION:
+      *wkt = "GEOMETRYCOLLECTION Z EMPTY";
+      break;
+    default:
+      return PGERR_GEOS_EXCEPTION;
+  }
+  return PGERR_SUCCESS;
+}
+
+#endif  // GEOS_SINCE_3_9_0
+
 /* GEOSInterpolate_r and GEOSInterpolateNormalized_r segfault on empty
  * geometries and also on collections with the first geometry empty.
  *
@@ -312,8 +378,8 @@ char geos_interpolate_checker(GEOSContextHandle_t ctx, GEOSGeometry* geom) {
   type = GEOSGeomTypeId_r(ctx, geom);
   if (type == -1) {
     return PGERR_GEOS_EXCEPTION;
-  } else if ((type == GEOS_POINT) || (type == GEOS_POLYGON) || (type == GEOS_MULTIPOINT) ||
-             (type == GEOS_MULTIPOLYGON)) {
+  } else if ((type == GEOS_POINT) || (type == GEOS_POLYGON) ||
+             (type == GEOS_MULTIPOINT) || (type == GEOS_MULTIPOLYGON)) {
     return PGERR_GEOMETRY_TYPE;
   }
 

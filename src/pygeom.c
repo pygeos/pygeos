@@ -81,12 +81,14 @@ static PyObject* GeometryObject_ToWKT(GeometryObject* obj) {
     goto finish;
   }
 #endif
+
 #if GEOS_SINCE_3_9_0
-  // 3D empty points are allowed but not serialized correctly to WKT (<=GEOS 3.9.1)
-  // https://trac.osgeo.org/geos/ticket/1129
-  if (GEOSisEmpty_r(ctx, geom) && (GEOSGeomTypeId_r(ctx, geom) == GEOS_POINT) &&
-      (GEOSGeom_getCoordinateDimension_r(ctx, geom) == 3)) {
-    result = PyUnicode_FromString("POINT Z EMPTY");
+  errstate = wkt_empty_3d_geometry(ctx, geom, &wkt);
+  if (errstate != PGERR_SUCCESS) {
+    goto finish;
+  }
+  if (wkt != NULL) {
+    result = PyUnicode_FromString(wkt);
     goto finish;
   }
 #endif

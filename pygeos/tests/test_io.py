@@ -278,10 +278,23 @@ def test_to_wkt_point_empty():
 
 @pytest.mark.skipif(
     pygeos.geos_version < (3, 9, 0),
-    reason="POINT EMPTY has no dimensionality on GEOS < 3.9",
+    reason="Empty geometries has no dimensionality on GEOS < 3.9",
 )
-def test_to_wkt_point_z_empty():
-    assert pygeos.to_wkt(empty_point_z) == "POINT Z EMPTY"
+@pytest.mark.parametrize(
+    "wkt",
+    [
+        "POINT Z EMPTY",
+        "LINESTRING Z EMPTY",
+        "LINEARRING Z EMPTY",
+        "POLYGON Z EMPTY",
+        "MULTIPOINT Z EMPTY",
+        "MULTILINESTRING Z EMPTY",
+        "MULTIPOLYGON Z EMPTY",
+        "GEOMETRYCOLLECTION Z EMPTY",
+    ],
+)
+def test_to_wkt_empty_z(wkt):
+    assert pygeos.to_wkt(pygeos.Geometry(wkt)) == wkt
 
 
 def test_to_wkt_geometrycollection_with_point_empty():
@@ -335,7 +348,7 @@ def test_repr_multipoint_with_point_empty():
 
 @pytest.mark.skipif(
     pygeos.geos_version < (3, 9, 0),
-    reason="POINT EMPTY has no dimensionality on GEOS < 3.9",
+    reason="Empty geometries have no dimensionality on GEOS < 3.9",
 )
 def test_repr_point_z_empty():
     assert repr(empty_point_z) == "<pygeos.Geometry POINT Z EMPTY>"
