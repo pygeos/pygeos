@@ -278,7 +278,7 @@ def test_to_wkt_point_empty():
 
 @pytest.mark.skipif(
     pygeos.geos_version < (3, 9, 0),
-    reason="Empty geometries has no dimensionality on GEOS < 3.9",
+    reason="Empty geometries have no dimensionality on GEOS < 3.9",
 )
 @pytest.mark.parametrize(
     "wkt",
