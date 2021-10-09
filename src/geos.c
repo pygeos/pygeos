@@ -313,11 +313,11 @@ char wkt_empty_3d_geometry(GEOSContextHandle_t ctx, GEOSGeometry* geom, char** w
   int geom_type;
 
   is_empty = GEOSisEmpty_r(ctx, geom);
-  if (is_empty == 0) {
+  if (is_empty == 2) {
+    return PGERR_GEOS_EXCEPTION;
+  } else if (is_empty == 0) {
     *wkt = NULL;
     return PGERR_SUCCESS;
-  } else if (is_empty != 1) {
-    return PGERR_GEOS_EXCEPTION;
   }
   if (GEOSGeom_getCoordinateDimension_r(ctx, geom) == 2) {
     *wkt = NULL;
@@ -337,6 +337,8 @@ char wkt_empty_3d_geometry(GEOSContextHandle_t ctx, GEOSGeometry* geom, char** w
     case GEOS_POLYGON:
       *wkt = "POLYGON Z EMPTY";
       break;
+    // Note: Empty collections cannot be 3D in GEOS.
+    // We do include the options incase of future support.
     case GEOS_MULTIPOINT:
       *wkt = "MULTIPOINT Z EMPTY";
       break;
