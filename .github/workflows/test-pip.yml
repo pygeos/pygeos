@@ -100,7 +100,6 @@ jobs:
       - name: Install GEOS
         run: |
           ./ci/install_geos.sh
-          cd '${{ github.workspace }}'
 
       - name: Install python dependencies
         run: |
