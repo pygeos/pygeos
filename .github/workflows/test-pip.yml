@@ -99,7 +99,7 @@ jobs:
 
       - name: Install GEOS
         run: |
-          ./ci/install_geos.sh
+          bash ci/install_geos.sh
 
       - name: Install python dependencies
         run: |
