@@ -338,7 +338,7 @@ char wkt_empty_3d_geometry(GEOSContextHandle_t ctx, GEOSGeometry* geom, char** w
       *wkt = "POLYGON Z EMPTY";
       break;
     // Note: Empty collections cannot be 3D in GEOS.
-    // We do include the options incase of future support.
+    // We do include the options in case of future support.
     case GEOS_MULTIPOINT:
       *wkt = "MULTIPOINT Z EMPTY";
       break;

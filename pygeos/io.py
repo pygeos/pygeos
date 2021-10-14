@@ -103,7 +103,7 @@ def to_wkt(
 
     - for GEOS <= 3.8 a multipoint with an empty sub-geometry will raise an exception
     - for GEOS <= 3.8 empty geometries are always serialized to 2D
-    - for GEOS == 3.9 only simple empty geometries can be 3D, collections are still
+    - for GEOS >= 3.9 only simple empty geometries can be 3D, collections are still
       always 2D
 
     Parameters
