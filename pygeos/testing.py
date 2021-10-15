@@ -1,27 +1,43 @@
 import numpy as np
-from numpy.testing import assert_almost_equal
 
 import pygeos
 
 __all__ = ["assert_geometries_equal"]
 
 
-def _assert_nan_coords_same(x, y, decimal):
-    x_ndim = pygeos.get_coordinate_dimension(x)
-    y_ndim = pygeos.get_coordinate_dimension(y)
-    if x_ndim != y_ndim:
-        return False
+def _equals_exact_with_ndim(x, y, tolerance):
+    return pygeos.equals_exact(x, y, tolerance=tolerance) & (
+        pygeos.get_coordinate_dimension(x) == pygeos.get_coordinate_dimension(y)
+    )
 
-    x_coords = pygeos.get_coordinates(x, include_z=x_ndim == 3)
-    y_coords = pygeos.get_coordinates(y, include_z=x_ndim == 3)
 
-    # Check NaN equality
-    try:
-        assert_almost_equal(x_coords, y_coords)
-    except AssertionError:
-        return False
-    else:
-        return True
+def _replace_nan(arr):
+    return np.where(np.isnan(arr), 0.0, arr)
+
+
+def _assert_nan_coords_same(x, y, tolerance):
+    x_coords = pygeos.get_coordinates(x, include_z=True)
+    y_coords = pygeos.get_coordinates(y, include_z=True)
+
+    # Check the shapes (condition is copied from numpy test_array_equal)
+    if x_coords.shape != y_coords.shape:
+        raise AssertionError(
+            f"Coordinate arrays not equal: (shapes {x_coords.shape}, {y_coords.shape} mismatch)"
+        )
+
+    # Check NaN positional equality
+    x_id = np.isnan(x_coords)
+    y_id = np.isnan(y_coords)
+    if not (x_id == y_id).all():
+        raise AssertionError(
+            "One of the geometries contains a NaN coordinate where the other does not."
+        )
+
+    # If this passed, replace NaN with a number to be able to use equals_exact
+    x_no_nan = pygeos.apply(x, _replace_nan, include_z=True)
+    y_no_nan = pygeos.apply(y, _replace_nan, include_z=True)
+
+    return _equals_exact_with_ndim(x_no_nan, y_no_nan, tolerance=tolerance)
 
 
 def _assert_none_same(x, y):
@@ -43,7 +59,7 @@ def _assert_none_same(x, y):
         return y_id
 
 
-def assert_geometries_equal(x, y, decimal=7, equal_none=True, equal_nan=True):
+def assert_geometries_equal(x, y, tolerance=1e-7, equal_none=True, equal_nan=True):
     """Raises an AssertionError if two geometry array_like objects are not equal.
 
     Given two array_like objects, check that the shape is equal and all elements of
@@ -51,7 +67,7 @@ def assert_geometries_equal(x, y, decimal=7, equal_none=True, equal_nan=True):
     values. In contrast to the standard usage in pygeos, NaNs and Nones are compared like numbers,
     no assertion is raised if both objects have NaNs/Nones in the same positions.
     """
-    __tracebackhide__ = True  # Hide traceback for py.test
+    # __tracebackhide__ = True  # Hide traceback for py.test
     x = np.array(x, copy=False)
     y = np.array(y, copy=False)
 
@@ -68,7 +84,7 @@ def assert_geometries_equal(x, y, decimal=7, equal_none=True, equal_nan=True):
     if equal_none:
         flagged = _assert_none_same(x, y)
 
-    if flagged.ndim > 0:
+    if not np.isscalar(flagged):
         x, y = x[~flagged], y[~flagged]
         # Only do the comparison if actual values are left
         if x.size == 0:
@@ -77,11 +93,14 @@ def assert_geometries_equal(x, y, decimal=7, equal_none=True, equal_nan=True):
         # no sense doing comparison if everything is flagged.
         return
 
-    is_equal = pygeos.equals_exact(x, y, tolerance=10 ** -decimal)
-
-    if not equal_nan:
+    is_equal = _equals_exact_with_ndim(x, y, tolerance=tolerance)
+    if np.all(is_equal):
         return
-    if is_equal.ndim > 0:
+    elif not equal_nan:
+        raise AssertionError("One of the geometries are not equal")
+
+    # Optionally refine failing elements if NaN should be considered equal
+    if not np.isscalar(is_equal):
         x, y = x[~is_equal], y[~is_equal]
         # Only do the NaN check if actual values are left
         if x.size == 0:
@@ -90,6 +109,6 @@ def assert_geometries_equal(x, y, decimal=7, equal_none=True, equal_nan=True):
         # no sense in checking for NaN if everything is equal.
         return
 
-    for (_x, _y) in np.broadcast(x, y):
-        if not _assert_nan_coords_same(_x, _y):
-            raise AssertionError("One of the geometries are not equal")
+    is_equal = _assert_nan_coords_same(x, y, tolerance=tolerance)
+    if not np.all(is_equal):
+        raise AssertionError("One of the geometries are not equal")
