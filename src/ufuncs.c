@@ -386,6 +386,7 @@ static void* GEOSNormalize_r_with_clone(void* context, void* geom) {
   return new_geom;
 }
 static void* normalize_data[1] = {GEOSNormalize_r_with_clone};
+static void* force_2d_data[1] = {PyGEOSForce2D};
 #if GEOS_SINCE_3_8_0
 static void* build_area_data[1] = {GEOSBuildArea_r};
 static void* make_valid_data[1] = {GEOSMakeValid_r};
@@ -533,6 +534,7 @@ static void* line_interpolate_point_normalized_data[1] = {
 
 static void* simplify_data[1] = {GEOSSimplify_r};
 static void* simplify_preserve_topology_data[1] = {GEOSTopologyPreserveSimplify_r};
+static void* force_3d_data[1] = {PyGEOSForce3D};
 
 #if GEOS_SINCE_3_9_0
 static void* unary_union_prec_data[1] = {GEOSUnaryUnionPrec_r};
@@ -2938,8 +2940,18 @@ static void to_wkt_func(char** args, npy_intp* dimensions, npy_intp* steps, void
       Py_INCREF(Py_None);
       *out = Py_None;
     } else {
-// Before GEOS 3.9.0, there was as segfault on e.g. MULTIPOINT (1 1, EMPTY)
-#if !GEOS_SINCE_3_9_0
+#if GEOS_SINCE_3_9_0
+      errstate = wkt_empty_3d_geometry(ctx, in1, &wkt);
+      if (errstate != PGERR_SUCCESS) {
+        goto finish;
+      }
+      if (wkt != NULL) {
+        *out = PyUnicode_FromString(wkt);
+        goto finish;
+      }
+
+#else
+      // Before GEOS 3.9.0, there was as segfault on e.g. MULTIPOINT (1 1, EMPTY)
       errstate = check_to_wkt_compatible(ctx, in1);
       if (errstate != PGERR_SUCCESS) {
         goto finish;
@@ -3103,6 +3115,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Y_Y(extract_unique_points);
   DEFINE_Y_Y(get_exterior_ring);
   DEFINE_Y_Y(normalize);
+  DEFINE_Y_Y(force_2d);
 
   DEFINE_Y(prepare);
   DEFINE_Y(destroy_prepared);
@@ -3116,6 +3129,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_Yd_Y(line_interpolate_point_normalized);
   DEFINE_Yd_Y(simplify);
   DEFINE_Yd_Y(simplify_preserve_topology);
+  DEFINE_Yd_Y(force_3d);
 
   // 'REORDERABLE' sets PyUFunc_ReorderableNone instead of PyUFunc_None as 'identity',
   // meaning that the order of arguments does not matter. This enables reduction over
