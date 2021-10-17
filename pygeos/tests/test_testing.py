@@ -11,7 +11,10 @@ from .common import (
     empty_point,
     empty_point_z,
     empty_polygon,
+    line_string,
     line_string_nan,
+    line_string_z,
+    point,
 )
 
 EMPTY_GEOMS = (
@@ -33,35 +36,46 @@ def make_array(left, right, use_array):
 
 
 @pytest.mark.parametrize("use_array", ["none", "left", "right", "both"])
-@pytest.mark.parametrize("geom1", all_types + EMPTY_GEOMS)
-@pytest.mark.parametrize("geom2", all_types + EMPTY_GEOMS)
-def test_assert_geometries_equal(geom1, geom2, use_array):
-    if geom1 is geom2:
-        assert_geometries_equal(*make_array(geom1, geom2, use_array))
-    else:
-        with pytest.raises(AssertionError):
-            assert_geometries_equal(*make_array(geom1, geom2, use_array))
+@pytest.mark.parametrize("geom", all_types + EMPTY_GEOMS)
+def test_assert_geometries_equal(geom, use_array):
+    assert_geometries_equal(*make_array(geom, geom, use_array))
 
 
 @pytest.mark.parametrize("use_array", ["none", "left", "right", "both"])
-def test_assert_geometries_equal_none_equal(use_array):
+@pytest.mark.parametrize(
+    "geom1,geom2",
+    [
+        (point, line_string),
+        (line_string, line_string_z),
+        (empty_point, empty_polygon),
+        (empty_point, empty_point_z),
+        (empty_line_string, empty_line_string_z),
+    ],
+)
+def test_assert_geometries_not_equal(geom1, geom2, use_array):
+    with pytest.raises(AssertionError):
+        assert_geometries_equal(*make_array(geom1, geom2, use_array))
+
+
+@pytest.mark.parametrize("use_array", ["none", "left", "right", "both"])
+def test_assert_none_equal(use_array):
     assert_geometries_equal(*make_array(None, None, use_array))
 
 
 @pytest.mark.parametrize("use_array", ["none", "left", "right", "both"])
-def test_assert_geometries_equal_none_not_equal(use_array):
+def test_assert_none_not_equal(use_array):
     with pytest.raises(AssertionError):
-        assert_geometries_equal(*make_array(None, None, use_array), none_equal=False)
+        assert_geometries_equal(*make_array(None, None, use_array), equal_none=False)
 
 
 @pytest.mark.parametrize("use_array", ["none", "left", "right", "both"])
-def test_assert_geometries_equal_nan_equal(use_array):
+def test_assert_nan_equal(use_array):
     assert_geometries_equal(*make_array(line_string_nan, line_string_nan, use_array))
 
 
 @pytest.mark.parametrize("use_array", ["none", "left", "right", "both"])
-def test_assert_geometries_equal_nan_not_equal(use_array):
+def test_assert_nan_not_equal(use_array):
     with pytest.raises(AssertionError):
         assert_geometries_equal(
-            *make_array(line_string_nan, line_string_nan, use_array), nan_equal=False
+            *make_array(line_string_nan, line_string_nan, use_array), equal_nan=False
         )
