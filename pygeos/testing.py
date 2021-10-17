@@ -1,3 +1,5 @@
+from functools import partial
+
 import numpy as np
 
 import pygeos
@@ -15,23 +17,25 @@ def _replace_nan(arr):
     return np.where(np.isnan(arr), 0.0, arr)
 
 
-def _assert_nan_coords_same(x, y, tolerance):
+def _assert_nan_coords_same(x, y, tolerance, err_msg, verbose):
+    x, y = np.broadcast_arrays(x, y)
     x_coords = pygeos.get_coordinates(x, include_z=True)
     y_coords = pygeos.get_coordinates(y, include_z=True)
 
     # Check the shapes (condition is copied from numpy test_array_equal)
     if x_coords.shape != y_coords.shape:
-        raise AssertionError(
-            f"Coordinate arrays not equal: (shapes {x_coords.shape}, {y_coords.shape} mismatch)"
-        )
+        return False
 
     # Check NaN positional equality
     x_id = np.isnan(x_coords)
     y_id = np.isnan(y_coords)
     if not (x_id == y_id).all():
-        raise AssertionError(
-            "One of the geometries contains a NaN coordinate where the other does not."
+        msg = build_err_msg(
+            [x, y],
+            err_msg + "\nx and y nan coordinate location mismatch:",
+            verbose=verbose,
         )
+        raise AssertionError(msg)
 
     # If this passed, replace NaN with a number to be able to use equals_exact
     x_no_nan = pygeos.apply(x, _replace_nan, include_z=True)
@@ -40,49 +44,69 @@ def _assert_nan_coords_same(x, y, tolerance):
     return _equals_exact_with_ndim(x_no_nan, y_no_nan, tolerance=tolerance)
 
 
-def _assert_none_same(x, y):
+def _assert_none_same(x, y, err_msg, verbose):
     x_id = pygeos.is_missing(x)
     y_id = pygeos.is_missing(y)
 
     if not (x_id == y_id).all():
-        raise AssertionError(
-            "One of the arrays contains a None where the other has a geometry."
+        msg = build_err_msg(
+            [x, y],
+            err_msg + "\nx and y None location mismatch:",
+            verbose=verbose,
         )
+        raise AssertionError(msg)
 
     # If there is a scalar, then here we know the array has the same
     # flag as it everywhere, so we should return the scalar flag.
-    if isinstance(x_id, bool) or x_id.ndim == 0:
+    if x.ndim == 0:
         return bool(x_id)
-    elif isinstance(y_id, bool) or y_id.ndim == 0:
+    elif y.ndim == 0:
         return bool(y_id)
     else:
         return y_id
 
 
-def assert_geometries_equal(x, y, tolerance=1e-7, equal_none=True, equal_nan=True):
+def assert_geometries_equal(
+    x, y, tolerance=1e-7, equal_none=True, equal_nan=True, err_msg="", verbose=True
+):
     """Raises an AssertionError if two geometry array_like objects are not equal.
 
     Given two array_like objects, check that the shape is equal and all elements of
     these objects are equal. An exception is raised at shape mismatch or conflicting
-    values. In contrast to the standard usage in pygeos, NaNs and Nones are compared like numbers,
-    no assertion is raised if both objects have NaNs/Nones in the same positions.
+    values. In contrast to the standard usage in pygeos, no assertion is raised if
+    both objects have NaNs/Nones in the same positions.
+
+    Parameters
+    ----------
+    x : Geometry or array_like
+    y : Geometry or array_like
+    equal_none : bool, default True
+        Whether to consider None elements equal to other None elements.
+    equal_nan : bool, default True
+        Whether to consider nan coordinates as equal to other nan coordinates.
+    err_msg : str, optional
+        The error message to be printed in case of failure.
+    verbose : bool, optional
+        If True, the conflicting values are appended to the error message.
     """
-    # __tracebackhide__ = True  # Hide traceback for py.test
+    __tracebackhide__ = True  # Hide traceback for py.test
     x = np.array(x, copy=False)
     y = np.array(y, copy=False)
 
-    # Check the shapes (condition is copied from numpy test_array_equal)
-    if not ((x.shape == () or y.shape == ()) or x.shape == y.shape):
-        raise AssertionError(
-            f"Arrays not equal: (shapes {x.shape}, {y.shape} mismatch)"
-        )
+    is_scalar = x.ndim == 0 or y.ndim == 0
 
-    if (not pygeos.is_valid_input(x).all()) or (not pygeos.is_valid_input(y).all()):
-        raise AssertionError("One of the arrays contains non-geometry input.")
+    # Check the shapes (condition is copied from numpy test_array_equal)
+    if not (is_scalar or x.shape == y.shape):
+        msg = build_err_msg(
+            [x, y],
+            err_msg + f"\n(shapes {x.shape}, {y.shape} mismatch)",
+            verbose=verbose,
+        )
+        raise AssertionError(msg)
 
     flagged = False
     if equal_none:
-        flagged = _assert_none_same(x, y)
+        flagged = _assert_none_same(x, y, err_msg, verbose)
 
     if not np.isscalar(flagged):
         x, y = x[~flagged], y[~flagged]
@@ -94,10 +118,18 @@ def assert_geometries_equal(x, y, tolerance=1e-7, equal_none=True, equal_nan=Tru
         return
 
     is_equal = _equals_exact_with_ndim(x, y, tolerance=tolerance)
+    if is_scalar and not np.isscalar(is_equal):
+        is_equal = bool(is_equal[0])
+
     if np.all(is_equal):
         return
     elif not equal_nan:
-        raise AssertionError("One of the geometries are not equal")
+        msg = build_err_msg(
+            [x, y],
+            err_msg + f"\nNot equal to tolerance {tolerance:g}",
+            verbose=verbose,
+        )
+        raise AssertionError(msg)
 
     # Optionally refine failing elements if NaN should be considered equal
     if not np.isscalar(is_equal):
@@ -109,6 +141,48 @@ def assert_geometries_equal(x, y, tolerance=1e-7, equal_none=True, equal_nan=Tru
         # no sense in checking for NaN if everything is equal.
         return
 
-    is_equal = _assert_nan_coords_same(x, y, tolerance=tolerance)
+    is_equal = _assert_nan_coords_same(x, y, tolerance, err_msg, verbose)
     if not np.all(is_equal):
-        raise AssertionError("One of the geometries are not equal")
+        msg = build_err_msg(
+            [x, y],
+            err_msg + f"\nNot equal to tolerance {tolerance:g}",
+            verbose=verbose,
+        )
+        raise AssertionError(msg)
+
+
+## BELOW A COPY FROM numpy.testing._private.utils (numpy version 1.20.2)
+
+
+def build_err_msg(
+    arrays,
+    err_msg,
+    header="Geometries are not equal:",
+    verbose=True,
+    names=("x", "y"),
+    precision=8,
+):
+    msg = ["\n" + header]
+    if err_msg:
+        if err_msg.find("\n") == -1 and len(err_msg) < 79 - len(header):
+            msg = [msg[0] + " " + err_msg]
+        else:
+            msg.append(err_msg)
+    if verbose:
+        for i, a in enumerate(arrays):
+
+            if isinstance(a, np.ndarray):
+                # precision argument is only needed if the objects are ndarrays
+                r_func = partial(np.array_repr, precision=precision)
+            else:
+                r_func = repr
+
+            try:
+                r = r_func(a)
+            except Exception as exc:
+                r = f"[repr failed for <{type(a).__name__}>: {exc}]"
+            if r.count("\n") > 3:
+                r = "\n".join(r.splitlines()[:3])
+                r += "..."
+            msg.append(f" {names[i]}: {r}")
+    return "\n".join(msg)
