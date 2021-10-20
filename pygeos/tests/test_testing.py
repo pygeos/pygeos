@@ -27,6 +27,14 @@ EMPTY_GEOMS = (
     empty,
 )
 
+line_string_reversed = pygeos.linestrings([(0, 0), (1, 0), (1, 1)][::-1])
+
+
+PRE_GEOS_390 = pytest.mark.skipif(
+    pygeos.geos_version < (3, 9, 0),
+    reason="All empty geometries were considered equal before GEOS 3.9",
+)
+
 
 def make_array(left, right, use_array):
     if use_array in ("left", "both"):
@@ -48,8 +56,8 @@ def test_assert_geometries_equal(geom, use_array):
     [
         (point, line_string),
         (line_string, line_string_z),
-        (empty_point, empty_polygon),
-        (empty_point, empty_point_z),
+        pytest.param(empty_point, empty_polygon, marks=PRE_GEOS_390),
+        pytest.param(empty_point, empty_point_z, marks=PRE_GEOS_390),
         (empty_line_string, empty_line_string_z),
     ],
 )
@@ -83,16 +91,14 @@ def test_assert_nan_not_equal(use_array):
 
 
 def test_normalize_true():
-    assert_geometries_equal(pygeos.reverse(line_string), line_string, normalize=True)
+    assert_geometries_equal(line_string_reversed, line_string, normalize=True)
 
 
 def test_normalize_default():
     with pytest.raises(AssertionError):
-        assert_geometries_equal(pygeos.reverse(line_string), line_string)
+        assert_geometries_equal(line_string_reversed, line_string)
 
 
 def test_normalize_false():
     with pytest.raises(AssertionError):
-        assert_geometries_equal(
-            pygeos.reverse(line_string), line_string, normalize=False
-        )
+        assert_geometries_equal(line_string_reversed, line_string, normalize=False)

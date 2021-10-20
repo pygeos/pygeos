@@ -175,7 +175,7 @@ def test_shortest_line(prepare):
     g2 = pygeos.linestrings([(0, 3), (3, 0)])
     actual = pygeos.shortest_line(_prepare_input(g1, prepare), g2)
     expected = pygeos.linestrings([(1, 1), (1.5, 1.5)])
-    assert_geometries_equal(actual, expected)
+    assert pygeos.equals(actual, expected)
 
 
 @pytest.mark.parametrize("prepare", [True, False])
