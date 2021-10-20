@@ -2,8 +2,9 @@ import numpy as np
 import pytest
 
 import pygeos
+from pygeos.testing import assert_geometries_equal
 
-from .common import assert_geometries_equal, line_string, linear_ring, point, polygon
+from .common import line_string, linear_ring, point, polygon
 
 pnts = pygeos.points
 lstrs = pygeos.linestrings
@@ -346,7 +347,11 @@ def test_geometrycollections_out(indices, expected):
     out = np.empty(4, dtype=object)
     out[3] = "foo"
     actual = pygeos.geometrycollections([point, line_string], indices=indices, out=out)
-    assert_geometries_equal(out, expected)
+    if expected[3] == "foo":
+        assert_geometries_equal(out[:3], expected[:3])
+        assert out[3] == "foo"
+    else:
+        assert_geometries_equal(out, expected)
     assert actual is out
 
 

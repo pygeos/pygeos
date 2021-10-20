@@ -2,8 +2,9 @@ import numpy as np
 import pytest
 
 import pygeos
+from pygeos.testing import assert_geometries_equal
 
-from .common import all_types, assert_geometries_equal
+from .common import all_types
 from .common import empty as empty_geometry_collection
 from .common import (
     empty_line_string,
@@ -67,7 +68,7 @@ def test_get_point_non_linestring(geom):
 def test_get_point(geom):
     n = pygeos.get_num_points(geom)
     actual = pygeos.get_point(geom, [0, -n, n, -(n + 1)])
-    assert pygeos.equals(actual[0], actual[1]).all()
+    assert_geometries_equal(actual[0], actual[1])
     assert pygeos.is_missing(actual[2:4]).all()
 
 
@@ -112,14 +113,14 @@ def test_get_interior_ring_non_polygon(geom):
 
 def test_get_interior_ring():
     actual = pygeos.get_interior_ring(polygon_with_hole, [0, -1, 1, -2])
-    assert pygeos.equals(actual[0], actual[1]).all()
+    assert_geometries_equal(actual[0], actual[1])
     assert pygeos.is_missing(actual[2:4]).all()
 
 
 @pytest.mark.parametrize("geom", [point, line_string, linear_ring, polygon])
 def test_get_geometry_simple(geom):
     actual = pygeos.get_geometry(geom, [0, -1, 1, -2])
-    assert pygeos.equals(actual[0], actual[1]).all()
+    assert_geometries_equal(actual[0], actual[1])
     assert pygeos.is_missing(actual[2:4]).all()
 
 
@@ -129,7 +130,7 @@ def test_get_geometry_simple(geom):
 def test_get_geometry_collection(geom):
     n = pygeos.get_num_geometries(geom)
     actual = pygeos.get_geometry(geom, [0, -n, n, -(n + 1)])
-    assert pygeos.equals(actual[0], actual[1]).all()
+    assert_geometries_equal(actual[0], actual[1])
     assert pygeos.is_missing(actual[2:4]).all()
 
 
@@ -204,7 +205,7 @@ def test_get_z_2d():
 @pytest.mark.parametrize("geom", all_types)
 def test_new_from_wkt(geom):
     actual = pygeos.Geometry(str(geom))
-    assert pygeos.equals(actual, geom)
+    assert_geometries_equal(actual, geom)
 
 
 def test_adapt_ptr_raises():
@@ -290,7 +291,7 @@ def test_get_parts(geom):
 
     parts = pygeos.get_parts(geom)
     assert len(parts) == expected_num_parts
-    assert np.all(pygeos.equals_exact(parts, expected_parts))
+    assert_geometries_equal(parts, expected_parts)
 
 
 def test_get_parts_array():
@@ -304,7 +305,7 @@ def test_get_parts_array():
 
     parts = pygeos.get_parts(geom)
     assert len(parts) == len(expected_parts)
-    assert np.all(pygeos.equals_exact(parts, expected_parts))
+    assert_geometries_equal(parts, expected_parts)
 
 
 def test_get_parts_geometry_collection_multi():
@@ -318,7 +319,7 @@ def test_get_parts_geometry_collection_multi():
 
     parts = pygeos.get_parts(geom)
     assert len(parts) == expected_num_parts
-    assert np.all(pygeos.equals_exact(parts, expected_parts))
+    assert_geometries_equal(parts, expected_parts)
 
     expected_subparts = []
     for g in np.asarray(expected_parts):
@@ -327,7 +328,7 @@ def test_get_parts_geometry_collection_multi():
 
     subparts = pygeos.get_parts(parts)
     assert len(subparts) == len(expected_subparts)
-    assert np.all(pygeos.equals_exact(subparts, expected_subparts))
+    assert_geometries_equal(subparts, expected_subparts)
 
 
 def test_get_parts_return_index():
@@ -341,7 +342,7 @@ def test_get_parts_return_index():
 
     parts, index = pygeos.get_parts(geom, return_index=True)
     assert len(parts) == len(expected_parts)
-    assert np.all(pygeos.equals_exact(parts, expected_parts))
+    assert_geometries_equal(parts, expected_parts)
     assert np.array_equal(index, expected_index)
 
 
@@ -358,7 +359,7 @@ def test_get_parts_invalid_dimensions(geom):
 @pytest.mark.parametrize("geom", [point, line_string, polygon])
 def test_get_parts_non_multi(geom):
     """Non-multipart geometries should be returned identical to inputs"""
-    assert np.all(pygeos.equals_exact(np.asarray(geom), pygeos.get_parts(geom)))
+    assert_geometries_equal(geom, pygeos.get_parts(geom))
 
 
 @pytest.mark.parametrize("geom", [None, [None], []])
@@ -423,7 +424,7 @@ def test_get_rings_return_index():
 
     parts, index = pygeos.get_rings(geom, return_index=True)
     assert len(parts) == len(expected_parts)
-    assert np.all(pygeos.equals_exact(parts, expected_parts))
+    assert_geometries_equal(parts, expected_parts)
     assert np.array_equal(index, expected_index)
 
 
@@ -458,13 +459,13 @@ def test_set_precision():
 
     geometry = pygeos.set_precision(initial_geometry, 0)
     assert pygeos.get_precision(geometry) == 0
-    assert pygeos.equals(geometry, initial_geometry)
+    assert_geometries_equal(geometry, initial_geometry)
 
     geometry = pygeos.set_precision(initial_geometry, 1)
     assert pygeos.get_precision(geometry) == 1
-    assert pygeos.equals(geometry, pygeos.Geometry("POINT (1 1)"))
+    assert_geometries_equal(geometry, pygeos.Geometry("POINT (1 1)"))
     # original should remain unchanged
-    assert pygeos.equals(initial_geometry, pygeos.Geometry("POINT (0.9 0.9)"))
+    assert_geometries_equal(initial_geometry, pygeos.Geometry("POINT (0.9 0.9)"))
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -473,18 +474,20 @@ def test_set_precision_drop_coords():
     geometry = pygeos.set_precision(
         pygeos.Geometry("LINESTRING (0 0, 0 0, 0 1, 1 1)"), 0
     )
-    assert pygeos.equals(geometry, pygeos.Geometry("LINESTRING (0 0, 0 0, 0 1, 1 1)"))
+    assert_geometries_equal(
+        geometry, pygeos.Geometry("LINESTRING (0 0, 0 0, 0 1, 1 1)")
+    )
 
     # setting precision will remove duplicated points
     geometry = pygeos.set_precision(geometry, 1)
-    assert pygeos.equals(geometry, pygeos.Geometry("LINESTRING (0 0, 0 1, 1 1)"))
+    assert_geometries_equal(geometry, pygeos.Geometry("LINESTRING (0 0, 0 1, 1 1)"))
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 def test_set_precision_z():
     geometry = pygeos.set_precision(pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1)
     assert pygeos.get_precision(geometry) == 1
-    assert pygeos.equals(geometry, pygeos.Geometry("POINT Z (1 1 0.9)"))
+    assert_geometries_equal(geometry, pygeos.Geometry("POINT Z (1 1 0.9)"))
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -512,12 +515,12 @@ def test_set_precision_preserve_topology():
         "POLYGON((10 10,20 10,16 15,20 20, 10 20, 14 15, 10 10))"
     )
 
-    assert pygeos.equals(
+    assert_geometries_equal(
         pygeos.set_precision(geometry, 5, preserve_topology=False),
         pygeos.Geometry("POLYGON ((10 10, 20 10, 15 15, 20 20, 10 20, 15 15, 10 10))"),
     )
 
-    assert pygeos.equals(
+    assert_geometries_equal(
         pygeos.set_precision(geometry, 5, preserve_topology=True),
         pygeos.Geometry(
             "MULTIPOLYGON (((10 10, 15 15, 20 10, 10 10)), ((15 15, 10 20, 20 20, 15 15)))"
@@ -545,7 +548,7 @@ def test_set_precision_preserve_topology():
 )
 def test_set_precision_collapse(geometry, expected):
     """Lines and polygons collapse to empty geometries if vertices are too close"""
-    assert pygeos.equals(pygeos.set_precision(geometry, 1), expected)
+    assert_geometries_equal(pygeos.set_precision(geometry, 1), expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -562,7 +565,7 @@ def test_set_precision_intersection():
     box2 = pygeos.set_precision(box2, 1)
     out = pygeos.intersection(box1, box2)
     assert pygeos.get_precision(out) == 0.5
-    assert pygeos.equals(out, pygeos.Geometry("LINESTRING (1 1, 1 0)"))
+    assert_geometries_equal(out, pygeos.Geometry("LINESTRING (1 1, 1 0)"))
 
 
 def test_empty():
