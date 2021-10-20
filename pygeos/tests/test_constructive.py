@@ -775,7 +775,7 @@ def test_oriented_envelope_all_types(geometry):
 )
 def test_oriented_envelope(geometry, expected):
     actual = pygeos.oriented_envelope(geometry)
-    assert_geometries_equal(actual, expected)
+    assert pygeos.equals(actual, expected).all()
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -810,4 +810,4 @@ def test_oriented_envelope(geometry, expected):
 )
 def test_minimum_rotated_rectangle(geometry, expected):
     actual = pygeos.minimum_rotated_rectangle(geometry)
-    assert_geometries_equal(actual, expected)
+    assert pygeos.equals(actual, expected).all()

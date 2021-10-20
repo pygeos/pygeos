@@ -576,7 +576,7 @@ def test_empty():
 
 # corresponding to geometry_collection_z:
 geometry_collection_2 = pygeos.geometrycollections([point, line_string])
-empty_point_mark = pytest.mark.skipif(
+empty_geom_mark = pytest.mark.skipif(
     pygeos.geos_version < (3, 9, 0),
     reason="Empty points don't have a dimensionality before GEOS 3.9",
 )
@@ -587,12 +587,12 @@ empty_point_mark = pytest.mark.skipif(
     [
         (point, point),
         (point_z, point),
-        pytest.param(empty_point, empty_point, marks=empty_point_mark),
-        pytest.param(empty_point_z, empty_point, marks=empty_point_mark),
+        pytest.param(empty_point, empty_point, marks=empty_geom_mark),
+        pytest.param(empty_point_z, empty_point, marks=empty_geom_mark),
         (line_string, line_string),
         (line_string_z, line_string),
-        (empty_line_string, empty_line_string),
-        (empty_line_string_z, empty_line_string),
+        pytest.param(empty_line_string, empty_line_string, marks=empty_geom_mark),
+        pytest.param(empty_line_string_z, empty_line_string, marks=empty_geom_mark),
         (polygon, polygon),
         (polygon_z, polygon),
         (polygon_with_hole, polygon_with_hole),
@@ -618,12 +618,12 @@ def test_force_2d(geom, expected):
     [
         (point, point_z),
         (point_z, point_z),
-        pytest.param(empty_point, empty_point_z, marks=empty_point_mark),
-        pytest.param(empty_point_z, empty_point_z, marks=empty_point_mark),
+        pytest.param(empty_point, empty_point_z, marks=empty_geom_mark),
+        pytest.param(empty_point_z, empty_point_z, marks=empty_geom_mark),
         (line_string, line_string_z),
         (line_string_z, line_string_z),
-        (empty_line_string, empty_line_string_z),
-        (empty_line_string_z, empty_line_string_z),
+        pytest.param(empty_line_string, empty_line_string_z, marks=empty_geom_mark),
+        pytest.param(empty_line_string_z, empty_line_string_z, marks=empty_geom_mark),
         (polygon, polygon_z),
         (polygon_z, polygon_z),
         (polygon_with_hole, polygon_with_hole_z),
