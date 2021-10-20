@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+import pygeos
 from pygeos.testing import assert_geometries_equal
 
 from .common import (
@@ -78,4 +79,20 @@ def test_assert_nan_not_equal(use_array):
     with pytest.raises(AssertionError):
         assert_geometries_equal(
             *make_array(line_string_nan, line_string_nan, use_array), equal_nan=False
+        )
+
+
+def test_normalize_true():
+    assert_geometries_equal(pygeos.reverse(line_string), line_string, normalize=True)
+
+
+def test_normalize_default():
+    with pytest.raises(AssertionError):
+        assert_geometries_equal(pygeos.reverse(line_string), line_string)
+
+
+def test_normalize_false():
+    with pytest.raises(AssertionError):
+        assert_geometries_equal(
+            pygeos.reverse(line_string), line_string, normalize=False
         )
