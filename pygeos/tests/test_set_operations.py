@@ -97,7 +97,7 @@ def test_set_operation_reduce_1dim(n, func, related_func):
     expected = reduce_test_data[0]
     for i in range(1, n):
         expected = related_func(expected, reduce_test_data[i])
-    assert pygeos.equals(pygeos.normalize(actual), pygeos.normalize(expected)).all()
+    assert pygeos.equals(actual, expected)
 
 
 @pytest.mark.parametrize("func, related_func", REDUCE_SET_OPERATIONS)
@@ -190,7 +190,7 @@ def test_set_operation_prec_reduce_1dim(n, func, related_func, grid_size):
     for i in range(1, n):
         expected = related_func(expected, reduce_test_data[i], grid_size=grid_size)
 
-    assert pygeos.equals(pygeos.normalize(actual), pygeos.normalize(expected)).all()
+    assert pygeos.equals(actual, expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 9, 0), reason="GEOS < 3.9")
@@ -347,4 +347,4 @@ def test_coverage_union_non_polygon_inputs(geom_1, geom_2):
 )
 def test_union_all_prec(geom, grid_size, expected):
     actual = pygeos.union_all(geom, grid_size=grid_size)
-    assert pygeos.equals(pygeos.normalize(actual), pygeos.normalize(expected)).all()
+    assert pygeos.equals(actual, expected)
