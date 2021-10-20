@@ -32,7 +32,7 @@ line_string_reversed = pygeos.linestrings([(0, 0), (1, 0), (1, 1)][::-1])
 
 PRE_GEOS_390 = pytest.mark.skipif(
     pygeos.geos_version < (3, 9, 0),
-    reason="All empty geometries were considered equal before GEOS 3.9",
+    reason="2D and 3D empty geometries did not have dimensionality before GEOS 3.9",
 )
 
 
@@ -56,9 +56,9 @@ def test_assert_geometries_equal(geom, use_array):
     [
         (point, line_string),
         (line_string, line_string_z),
-        pytest.param(empty_point, empty_polygon, marks=PRE_GEOS_390),
+        (empty_point, empty_polygon),
         pytest.param(empty_point, empty_point_z, marks=PRE_GEOS_390),
-        (empty_line_string, empty_line_string_z),
+        pytest.param(empty_line_string, empty_line_string_z, marks=PRE_GEOS_390),
     ],
 )
 def test_assert_geometries_not_equal(geom1, geom2, use_array):
