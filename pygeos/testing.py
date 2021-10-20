@@ -67,7 +67,14 @@ def _assert_none_same(x, y, err_msg, verbose):
 
 
 def assert_geometries_equal(
-    x, y, tolerance=1e-7, equal_none=True, equal_nan=True, err_msg="", verbose=True
+    x,
+    y,
+    tolerance=1e-7,
+    equal_none=True,
+    equal_nan=True,
+    normalize=False,
+    err_msg="",
+    verbose=True,
 ):
     """Raises an AssertionError if two geometry array_like objects are not equal.
 
@@ -84,12 +91,17 @@ def assert_geometries_equal(
         Whether to consider None elements equal to other None elements.
     equal_nan : bool, default True
         Whether to consider nan coordinates as equal to other nan coordinates.
+    normalize : bool, default False
+        Whether to normalize geometries prior to comparison.
     err_msg : str, optional
         The error message to be printed in case of failure.
     verbose : bool, optional
         If True, the conflicting values are appended to the error message.
     """
     __tracebackhide__ = True  # Hide traceback for py.test
+    if normalize:
+        x = pygeos.normalize(x)
+        y = pygeos.normalize(y)
     x = np.array(x, copy=False)
     y = np.array(y, copy=False)
 

@@ -216,6 +216,8 @@ def test_from_wkb_on_invalid_unsupported_option():
 @pytest.mark.parametrize("use_hex", [False, True])
 @pytest.mark.parametrize("byte_order", [0, 1])
 def test_from_wkb_all_types(geom, use_hex, byte_order):
+    if pygeos.get_type_id(geom) == pygeos.GeometryType.LINEARRING:
+        pytest.skip("Linearrings are not preserved in WKB")
     wkb = pygeos.to_wkb(geom, hex=use_hex, byte_order=byte_order)
     actual = pygeos.from_wkb(wkb)
     assert_geometries_equal(actual, geom)
@@ -594,6 +596,8 @@ def test_from_shapely_error(geom):
 @mock.patch("pygeos.io.shapely_compatible", False)
 @mock.patch("pygeos.io._shapely_checked", True)
 def test_from_shapely_incompatible(geom):
+    if pygeos.get_type_id(geom) == pygeos.GeometryType.LINEARRING:
+        pytest.skip("Linearrings are not preserved in WKB")
     actual = pygeos.from_shapely(ShapelyGeometryMock(geom))
     assert isinstance(actual, pygeos.Geometry)
     assert_geometries_equal(geom, actual)
@@ -606,6 +610,8 @@ def test_from_shapely_incompatible(geom):
 @mock.patch("pygeos.io.shapely_compatible", False)
 @mock.patch("pygeos.io._shapely_checked", True)
 def test_from_shapely_incompatible_prepared(geom):
+    if pygeos.get_type_id(geom) == pygeos.GeometryType.LINEARRING:
+        pytest.skip("Linearrings are not preserved in WKB")
     actual = pygeos.from_shapely(ShapelyPreparedMock(geom))
     assert isinstance(actual, pygeos.Geometry)
     assert_geometries_equal(geom, actual)
@@ -636,6 +642,8 @@ def test_from_shapely_incompatible_array():
 @mock.patch("pygeos.io.shapely_compatible", False)
 @mock.patch("pygeos.io._shapely_checked", True)
 def test_to_shapely_incompatible(geom):
+    if pygeos.get_type_id(geom) == pygeos.GeometryType.LINEARRING:
+        pytest.skip("Linearrings are not preserved in WKB")
     actual = pygeos.to_shapely(geom)
     assert isinstance(actual, ShapelyGeometryMock)
     assert_geometries_equal(geom, actual.g)

@@ -134,14 +134,16 @@ def test_line_locate_point_invalid_geometry(normalized):
 def test_line_merge_geom_array():
     actual = pygeos.line_merge([line_string, multi_line_string])
     assert_geometries_equal(actual[0], line_string)
-    assert_geometries_equal(actual[1], multi_line_string)
+    assert_geometries_equal(actual[1], pygeos.Geometry("LINESTRING (0 0, 1 2)"))
 
 
 def test_shared_paths_linestring():
     g1 = pygeos.linestrings([(0, 0), (1, 0), (1, 1)])
     g2 = pygeos.linestrings([(0, 0), (1, 0)])
     actual1 = pygeos.shared_paths(g1, g2)
-    assert_geometries_equal(pygeos.get_geometry(actual1, 0), g2)
+    assert_geometries_equal(
+        pygeos.get_geometry(actual1, 0), pygeos.multilinestrings([g2])
+    )
 
 
 def test_shared_paths_none():

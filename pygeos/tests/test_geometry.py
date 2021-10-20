@@ -515,12 +515,12 @@ def test_set_precision_preserve_topology():
         "POLYGON((10 10,20 10,16 15,20 20, 10 20, 14 15, 10 10))"
     )
 
-    assert_geometries_equal(
+    assert pygeos.equals(
         pygeos.set_precision(geometry, 5, preserve_topology=False),
         pygeos.Geometry("POLYGON ((10 10, 20 10, 15 15, 20 20, 10 20, 15 15, 10 10))"),
     )
 
-    assert_geometries_equal(
+    assert pygeos.equals(
         pygeos.set_precision(geometry, 5, preserve_topology=True),
         pygeos.Geometry(
             "MULTIPOLYGON (((10 10, 15 15, 20 10, 10 10)), ((15 15, 10 20, 20 20, 15 15)))"
@@ -548,7 +548,7 @@ def test_set_precision_preserve_topology():
 )
 def test_set_precision_collapse(geometry, expected):
     """Lines and polygons collapse to empty geometries if vertices are too close"""
-    assert_geometries_equal(pygeos.set_precision(geometry, 1), expected)
+    assert pygeos.equals(pygeos.set_precision(geometry, 1), expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
