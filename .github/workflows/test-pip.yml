@@ -142,7 +142,7 @@ jobs:
         run: python setup.py build_ext --inplace
 
       - name: Run tests
-        continue-on-error: ${{ matrix.geos == 'main' }}
+        continue-on-error: ${{ matrix.geos == 'main' || matrix.geos == '3.10' }}
         run: pytest pygeos
 
       # Only run doctests on 1 runner (because of typographic differences in doctest results)
