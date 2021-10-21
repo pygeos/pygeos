@@ -272,9 +272,12 @@ def test_offset_curve_join_style_invalid():
                 "POLYGON((0 0, 0 10, 10 10, 10 0, 0 0), (2 2, 4 2, 4 4, 2 4, 2 2))"
             ),
         ),
-        (
+        pytest.param(
             pygeos.Geometry("MULTILINESTRING ((0 0, 1 2), (3 3, 4 4))"),
             pygeos.Geometry("MULTILINESTRING ((1 2, 0 0), (4 4, 3 3))"),
+            marks=pytest.mark.skipif(
+                pygeos.geos_version < (3, 8, 0), reason="GEOS , 3.8"
+            ),
         ),
         (
             pygeos.Geometry(
