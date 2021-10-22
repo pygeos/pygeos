@@ -453,15 +453,16 @@ def test_get_precision_none():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-def test_set_precision():
+@pytest.mark.parametrize("flags", ("make_valid", "no_topo", "keep_collapsed"))
+def test_set_precision(flags):
     initial_geometry = pygeos.Geometry("POINT (0.9 0.9)")
     assert pygeos.get_precision(initial_geometry) == 0
 
-    geometry = pygeos.set_precision(initial_geometry, 0)
+    geometry = pygeos.set_precision(initial_geometry, 0, flags=flags)
     assert pygeos.get_precision(geometry) == 0
     assert_geometries_equal(geometry, initial_geometry)
 
-    geometry = pygeos.set_precision(initial_geometry, 1)
+    geometry = pygeos.set_precision(initial_geometry, 1, flags=flags)
     assert pygeos.get_precision(geometry) == 1
     assert_geometries_equal(geometry, pygeos.Geometry("POINT (1 1)"))
     # original should remain unchanged
@@ -484,17 +485,20 @@ def test_set_precision_drop_coords():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-def test_set_precision_z():
-    geometry = pygeos.set_precision(pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1)
+@pytest.mark.parametrize("flags", ("make_valid", "no_topo", "keep_collapsed"))
+def test_set_precision_z(flags):
+    geometry = pygeos.set_precision(
+        pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1, flags=flags
+    )
     assert pygeos.get_precision(geometry) == 1
     assert_geometries_equal(geometry, pygeos.Geometry("POINT Z (1 1 0.9)"))
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-def test_set_precision_nan():
-    assert np.all(
-        np.isnan(pygeos.get_coordinates(pygeos.set_precision(line_string_nan, 1)))
-    )
+@pytest.mark.parametrize("flags", ("make_valid", "no_topo", "keep_collapsed"))
+def test_set_precision_nan(flags):
+    actual = pygeos.set_precision(line_string_nan, 1, flags=flags)
+    assert_geometries_equal(actual, line_string_nan)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
@@ -508,47 +512,82 @@ def test_set_precision_grid_size_nan():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-def test_set_precision_preserve_topology():
-    # GEOS test case - geometry is valid initially but becomes
-    # invalid after rounding
-    geometry = pygeos.Geometry(
-        "POLYGON((10 10,20 10,16 15,20 20, 10 20, 14 15, 10 10))"
-    )
-
-    assert pygeos.equals(
-        pygeos.set_precision(geometry, 5, preserve_topology=False),
-        pygeos.Geometry("POLYGON ((10 10, 20 10, 15 15, 20 20, 10 20, 15 15, 10 10))"),
-    )
-
-    assert pygeos.equals(
-        pygeos.set_precision(geometry, 5, preserve_topology=True),
-        pygeos.Geometry(
-            "MULTIPOLYGON (((10 10, 15 15, 20 10, 10 10)), ((15 15, 10 20, 20 20, 15 15)))"
-        ),
-    )
-
-
-@pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 @pytest.mark.parametrize(
-    "geometry,expected",
+    "geometry,flags,expected",
     [
         (
+            pygeos.Geometry("POLYGON((2 2,4 2,3.2 3,4 4, 2 4, 2.8 3, 2 2))"),
+            "make_valid",
+            pygeos.Geometry(
+                "MULTIPOLYGON (((4 2, 2 2, 3 3, 4 2)), ((2 4, 4 4, 3 3, 2 4)))"
+            ),
+        ),
+        (
+            pygeos.Geometry("POLYGON((2 2,4 2,3.2 3,4 4, 2 4, 2.8 3, 2 2))"),
+            "no_topo",
+            pygeos.Geometry("POLYGON ((2 2, 4 2, 3 3, 4 4, 2 4, 3 3, 2 2))"),
+        ),
+        (
+            pygeos.Geometry("POLYGON((2 2,4 2,3.2 3,4 4, 2 4, 2.8 3, 2 2))"),
+            "keep_collapsed",
+            pygeos.Geometry(
+                "MULTIPOLYGON (((4 2, 2 2, 3 3, 4 2)), ((2 4, 4 4, 3 3, 2 4)))"
+            ),
+        ),
+        (
             pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
+            "make_valid",
             pygeos.Geometry("LINESTRING EMPTY"),
         ),
         (
+            pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
+            "no_topo",
+            pygeos.Geometry("LINESTRING (0 0, 0 0)"),
+        ),
+        (
+            pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
+            "keep_collapsed",
+            pygeos.Geometry("LINESTRING (0 0, 0 0)"),
+        ),
+        pytest.param(
             pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)"),
+            "make_valid",
             pygeos.Geometry("LINEARRING EMPTY"),
+            marks=pytest.mark.skipif(
+                pygeos.geos_version == (3, 10, 0), reason="Segfaults on GEOS 3.10.0"
+            ),
+        ),
+        (
+            pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)"),
+            "no_topo",
+            pygeos.Geometry("LINEARRING (0 0, 0 0, 0 0, 0 0, 0 0)"),
+        ),
+        (
+            pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)"),
+            "keep_collapsed",
+            pygeos.Geometry("LINESTRING (0 0, 0 0, 0 0)"),
         ),
         (
             pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))"),
+            "make_valid",
+            pygeos.Geometry("POLYGON EMPTY"),
+        ),
+        (
+            pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))"),
+            "no_topo",
+            pygeos.Geometry("POLYGON ((0 0, 0 0, 0 0, 0 0, 0 0))"),
+        ),
+        (
+            pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))"),
+            "keep_collapsed",
             pygeos.Geometry("POLYGON EMPTY"),
         ),
     ],
 )
-def test_set_precision_collapse(geometry, expected):
+def test_set_precision_collapse(geometry, flags, expected):
     """Lines and polygons collapse to empty geometries if vertices are too close"""
-    assert pygeos.equals(pygeos.set_precision(geometry, 1), expected)
+    actual = pygeos.set_precision(geometry, 1, flags=flags)
+    assert_geometries_equal(pygeos.force_2d(actual), expected)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")

@@ -1,3 +1,4 @@
+import warnings
 from enum import IntEnum
 
 import numpy as np
@@ -5,6 +6,7 @@ import numpy as np
 from . import Geometry  # NOQA
 from . import _geometry, lib
 from .decorators import multithreading_enabled, requires_geos
+from .enum import ParamEnum
 
 __all__ = [
     "GeometryType",
@@ -686,9 +688,17 @@ def get_precision(geometry, **kwargs):
     return lib.get_precision(geometry, **kwargs)
 
 
+class PrecisionFlags(ParamEnum):
+    make_valid = 0
+    no_topo = 1
+    keep_collapsed = 2
+
+
 @requires_geos("3.6.0")
 @multithreading_enabled
-def set_precision(geometry, grid_size, preserve_topology=False, **kwargs):
+def set_precision(
+    geometry, grid_size, preserve_topology=None, flags="make_valid", **kwargs
+):
     """Returns geometry with the precision set to a precision grid size.
 
     By default, geometries use double precision coordinates (grid_size = 0).
@@ -716,9 +726,10 @@ def set_precision(geometry, grid_size, preserve_topology=False, **kwargs):
         geometry if precision grid size was not previously set). If this
         value is more precise than input geometry, the input geometry will
         not be modified.
-    preserve_topology : bool, default False
-        If True, will attempt to preserve the topology of a geometry after
-        rounding coordinates.
+    preserve_topology : bool, optional
+        .. deprecated:: 0.11
+          Use `flags`` instead.
+    flags :  {'make_valid', 'no_topo', 'keep_collapsed'}, default 'make_valid'
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -738,8 +749,18 @@ def set_precision(geometry, grid_size, preserve_topology=False, **kwargs):
     >>> set_precision(None, 1.0) is None
     True
     """
-
-    return lib.set_precision(geometry, grid_size, preserve_topology, **kwargs)
+    if isinstance(flags, str):
+        flags = PrecisionFlags.get_value(flags)
+    elif not np.isscalar(flags):
+        raise TypeError("flags only accepts scalar values")
+    if "preserve_topology" in kwargs:
+        warnings.warn(
+            "preserve_topology is deprecated, use 'flags' instead", DeprecationWarning
+        )
+        flags = (
+            PrecisionFlags.no_topo if preserve_topology else PrecisionFlags.make_valid
+        )
+    return lib.set_precision(geometry, grid_size, np.intc(flags), **kwargs)
 
 
 @multithreading_enabled
