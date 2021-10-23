@@ -688,7 +688,7 @@ def get_precision(geometry, **kwargs):
     return lib.get_precision(geometry, **kwargs)
 
 
-class PrecisionFlags(ParamEnum):
+class SetPrecisionMode(ParamEnum):
     make_valid = 0
     pointwise = 1
     keep_collapsed = 2
@@ -767,7 +767,7 @@ def set_precision(
     True
     """
     if isinstance(mode, str):
-        mode = PrecisionFlags.get_value(mode)
+        mode = SetPrecisionMode.get_value(mode)
     elif not np.isscalar(mode):
         raise TypeError("mode only accepts scalar values")
     if preserve_topology is not None:
@@ -775,7 +775,9 @@ def set_precision(
             "preserve_topology is deprecated, use 'mode' instead", DeprecationWarning
         )
         mode = (
-            PrecisionFlags.no_topo if preserve_topology else PrecisionFlags.make_valid
+            SetPrecisionMode.no_topo
+            if preserve_topology
+            else SetPrecisionMode.make_valid
         )
     return lib.set_precision(geometry, grid_size, np.intc(mode), **kwargs)
 
