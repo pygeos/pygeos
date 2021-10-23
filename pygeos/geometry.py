@@ -690,14 +690,14 @@ def get_precision(geometry, **kwargs):
 
 class PrecisionFlags(ParamEnum):
     make_valid = 0
-    no_topo = 1
+    pointwise = 1
     keep_collapsed = 2
 
 
 @requires_geos("3.6.0")
 @multithreading_enabled
 def set_precision(
-    geometry, grid_size, preserve_topology=None, flags="make_valid", **kwargs
+    geometry, grid_size, preserve_topology=None, mode="make_valid", **kwargs
 ):
     """Returns geometry with the precision set to a precision grid size.
 
@@ -728,8 +728,19 @@ def set_precision(
         not be modified.
     preserve_topology : bool, optional
         .. deprecated:: 0.11
-          Use `flags`` instead.
-    flags :  {'make_valid', 'no_topo', 'keep_collapsed'}, default 'make_valid'
+          Use ``mode`` instead.
+    mode :  {'make_valid', 'pointwise', 'keep_collapsed'}, default 'make_valid'
+        This parameter determines how to handle invalid geometries. There are
+        three modes:
+
+        1. `'make_valid'` (default):  The output is always valid. Collapsed geometry elements
+           (including both polygons and lines) are removed. Duplicate vertices are removed.
+        2. `'pointwise'`: Precision reduction is performed pointwise. Output geometry
+           may be invalid due to collapse or self-intersection. Duplicate vertices are not
+           removed. In GEOS this option is called NO_TOPO.
+        3. `'keep_collapsed'`: Like the default mode, except that collapsed linear geometry
+           elements are preserved. Collapsed polygonal input elements are removed. Duplicate
+           vertices are removed.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -746,21 +757,27 @@ def set_precision(
     <pygeos.Geometry POINT Z (1 1 0.9)>
     >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0 1, 1 1)"), 1.0)
     <pygeos.Geometry LINESTRING (0 0, 0 1, 1 1)>
+    >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0.1 0.1)"), 1.0, mode="make_valid")
+    <pygeos.Geometry LINESTRING Z EMPTY>
+    >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0.1 0.1)"), 1.0, mode="pointwise")
+    <pygeos.Geometry LINESTRING (0 0, 0 0, 0 0)>
+    >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0.1 0.1)"), 1.0, mode="keep_collapsed")
+    <pygeos.Geometry LINESTRING (0 0, 0 0)>
     >>> set_precision(None, 1.0) is None
     True
     """
-    if isinstance(flags, str):
-        flags = PrecisionFlags.get_value(flags)
-    elif not np.isscalar(flags):
-        raise TypeError("flags only accepts scalar values")
-    if "preserve_topology" in kwargs:
+    if isinstance(mode, str):
+        mode = PrecisionFlags.get_value(mode)
+    elif not np.isscalar(mode):
+        raise TypeError("mode only accepts scalar values")
+    if preserve_topology is not None:
         warnings.warn(
-            "preserve_topology is deprecated, use 'flags' instead", DeprecationWarning
+            "preserve_topology is deprecated, use 'mode' instead", DeprecationWarning
         )
-        flags = (
+        mode = (
             PrecisionFlags.no_topo if preserve_topology else PrecisionFlags.make_valid
         )
-    return lib.set_precision(geometry, grid_size, np.intc(flags), **kwargs)
+    return lib.set_precision(geometry, grid_size, np.intc(mode), **kwargs)
 
 
 @multithreading_enabled

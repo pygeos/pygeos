@@ -2037,14 +2037,14 @@ static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* step
    */
   if (steps[2] != 0) {
     PyErr_Format(PyExc_ValueError,
-                 "set_precision function called with non-scalar flags parameter");
+                 "set_precision function called with non-scalar mode");
     return;
   }
   flags = *(int*)args[2];
   if (!((flags == 0) || (flags == GEOS_PREC_NO_TOPO) ||
         (flags == GEOS_PREC_KEEP_COLLAPSED))) {
     PyErr_Format(PyExc_ValueError,
-                 "set_precision function called with illegal flags parameter");
+                 "set_precision function called with illegal mode");
     return;
   }
 

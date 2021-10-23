@@ -453,16 +453,16 @@ def test_get_precision_none():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-@pytest.mark.parametrize("flags", ("make_valid", "no_topo", "keep_collapsed"))
-def test_set_precision(flags):
+@pytest.mark.parametrize("mode", ("make_valid", "pointwise", "keep_collapsed"))
+def test_set_precision(mode):
     initial_geometry = pygeos.Geometry("POINT (0.9 0.9)")
     assert pygeos.get_precision(initial_geometry) == 0
 
-    geometry = pygeos.set_precision(initial_geometry, 0, flags=flags)
+    geometry = pygeos.set_precision(initial_geometry, 0, mode=mode)
     assert pygeos.get_precision(geometry) == 0
     assert_geometries_equal(geometry, initial_geometry)
 
-    geometry = pygeos.set_precision(initial_geometry, 1, flags=flags)
+    geometry = pygeos.set_precision(initial_geometry, 1, mode=mode)
     assert pygeos.get_precision(geometry) == 1
     assert_geometries_equal(geometry, pygeos.Geometry("POINT (1 1)"))
     # original should remain unchanged
@@ -485,19 +485,19 @@ def test_set_precision_drop_coords():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-@pytest.mark.parametrize("flags", ("make_valid", "no_topo", "keep_collapsed"))
-def test_set_precision_z(flags):
+@pytest.mark.parametrize("mode", ("make_valid", "pointwise", "keep_collapsed"))
+def test_set_precision_z(mode):
     geometry = pygeos.set_precision(
-        pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1, flags=flags
+        pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1, mode=mode
     )
     assert pygeos.get_precision(geometry) == 1
     assert_geometries_equal(geometry, pygeos.Geometry("POINT Z (1 1 0.9)"))
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-@pytest.mark.parametrize("flags", ("make_valid", "no_topo", "keep_collapsed"))
-def test_set_precision_nan(flags):
-    actual = pygeos.set_precision(line_string_nan, 1, flags=flags)
+@pytest.mark.parametrize("mode", ("make_valid", "pointwise", "keep_collapsed"))
+def test_set_precision_nan(mode):
+    actual = pygeos.set_precision(line_string_nan, 1, mode=mode)
     assert_geometries_equal(actual, line_string_nan)
 
 
@@ -515,7 +515,7 @@ def test_set_precision_grid_size_nan():
     pygeos.geos_version < (3, 10, 0), reason="Tests are only for GEOS 3.10"
 )
 @pytest.mark.parametrize(
-    "geometry,flags,expected",
+    "geometry,mode,expected",
     [
         (
             pygeos.Geometry("POLYGON((2 2,4 2,3.2 3,4 4, 2 4, 2.8 3, 2 2))"),
@@ -526,7 +526,7 @@ def test_set_precision_grid_size_nan():
         ),
         (
             pygeos.Geometry("POLYGON((2 2,4 2,3.2 3,4 4, 2 4, 2.8 3, 2 2))"),
-            "no_topo",
+            "pointwise",
             pygeos.Geometry("POLYGON ((2 2, 4 2, 3 3, 4 4, 2 4, 3 3, 2 2))"),
         ),
         (
@@ -543,7 +543,7 @@ def test_set_precision_grid_size_nan():
         ),
         (
             pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
-            "no_topo",
+            "pointwise",
             pygeos.Geometry("LINESTRING (0 0, 0 0)"),
         ),
         (
@@ -561,7 +561,7 @@ def test_set_precision_grid_size_nan():
         ),
         (
             pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)"),
-            "no_topo",
+            "pointwise",
             pygeos.Geometry("LINEARRING (0 0, 0 0, 0 0, 0 0, 0 0)"),
         ),
         pytest.param(
@@ -579,7 +579,7 @@ def test_set_precision_grid_size_nan():
         ),
         (
             pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))"),
-            "no_topo",
+            "pointwise",
             pygeos.Geometry("POLYGON ((0 0, 0 0, 0 0, 0 0, 0 0))"),
         ),
         (
@@ -589,9 +589,9 @@ def test_set_precision_grid_size_nan():
         ),
     ],
 )
-def test_set_precision_collapse(geometry, flags, expected):
+def test_set_precision_collapse(geometry, mode, expected):
     """Lines and polygons collapse to empty geometries if vertices are too close"""
-    actual = pygeos.set_precision(geometry, 1, flags=flags)
+    actual = pygeos.set_precision(geometry, 1, mode=mode)
     assert_geometries_equal(pygeos.force_2d(actual), expected)
 
 
