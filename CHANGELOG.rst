@@ -18,7 +18,7 @@ Version 0.11 (unreleased)
 **API Changes**
 
 * The default behaviour of ``pygeos.set_precision`` is now to always return valid geometries.
-  Before pygeos 0.10 did the opposite: it preserved topology. This behaviour can be modified
+  Before, pygeos did the opposite: it preserved topology. This behaviour can be modified
   by using the new ``mode`` argument. The ``preserve_topology`` argument is deprecated (#410).
 * When constructing a linearring through ``pygeos.linearrings`` or a polygon through 
   ``pygeos.polygons`` now a ``ValueError`` is raised (instead of a ``GEOSException``)

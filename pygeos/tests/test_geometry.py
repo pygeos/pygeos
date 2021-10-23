@@ -612,6 +612,26 @@ def test_set_precision_intersection():
     assert_geometries_equal(out, pygeos.Geometry("LINESTRING (1 1, 1 0)"))
 
 
+def set_precision_preserve_topology_false():
+    with pytest.warns(DeprecationWarning):
+        actual = pygeos.set_precision(
+            pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"), 1.0, preserve_topology=False
+        )
+        assert_geometries_equal(
+            pygeos.force_2d(actual), pygeos.Geometry("LINESTRING EMPTY")
+        )
+
+
+def set_precision_preserve_topology_true():
+    with pytest.warns(DeprecationWarning):
+        actual = pygeos.set_precision(
+            pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"), 1.0, preserve_topology=True
+        )
+        assert_geometries_equal(
+            pygeos.force_2d(actual), pygeos.Geometry("LINESTRING (0 0, 0 0)")
+        )
+
+
 def test_empty():
     """Compatibility with empty_like, see GH373"""
     g = np.empty_like(np.array([None, None]))

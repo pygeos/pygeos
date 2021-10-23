@@ -775,7 +775,7 @@ def set_precision(
             "preserve_topology is deprecated, use 'mode' instead", DeprecationWarning
         )
         mode = (
-            SetPrecisionMode.no_topo
+            SetPrecisionMode.pointwise
             if preserve_topology
             else SetPrecisionMode.make_valid
         )
