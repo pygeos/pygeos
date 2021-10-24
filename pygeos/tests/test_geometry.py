@@ -611,8 +611,10 @@ def test_set_precision_collapse(geometry, mode, expected):
     actual = pygeos.set_precision(geometry, 1, mode=mode)
     if pygeos.geos_version < (3, 9, 0):
         # pre GEOS 3.9 has difficulty comparing empty geometries exactly
-        # compare spatially instead
-        assert pygeos.equals(actual, expected).all()
+        # normalize and compare by WKT instead
+        assert pygeos.to_wkt(pygeos.normalize(actual)) == pygeos.to_wkt(
+            pygeos.normalize(expected)
+        )
     else:
         # force to 2D because GEOS 3.10 yields 3D geometries when they are empty.
         assert_geometries_equal(pygeos.force_2d(actual), expected)
