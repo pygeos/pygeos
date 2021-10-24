@@ -696,9 +696,7 @@ class SetPrecisionMode(ParamEnum):
 
 @requires_geos("3.6.0")
 @multithreading_enabled
-def set_precision(
-    geometry, grid_size, preserve_topology=None, mode="valid_output", **kwargs
-):
+def set_precision(geometry, grid_size, mode="valid_output", **kwargs):
     """Returns geometry with the precision set to a precision grid size.
 
     By default, geometries use double precision coordinates (grid_size = 0).
@@ -726,12 +724,8 @@ def set_precision(
         geometry if precision grid size was not previously set). If this
         value is more precise than input geometry, the input geometry will
         not be modified.
-    preserve_topology : bool, optional
-        .. deprecated:: 0.11
-          This parameter is ignored. Use ``mode`` instead.
     mode :  {'valid_output', 'pointwise', 'keep_collapsed'}, default 'valid_output'
-        This parameter determines how to handle invalid geometries. There are
-        three modes:
+        This parameter determines how to handle invalid output geometries. There are three modes:
 
         1. `'valid_output'` (default):  The output is always valid. Collapsed geometry elements
            (including both polygons and lines) are removed. Duplicate vertices are removed.
@@ -746,6 +740,9 @@ def set_precision(
         3. `'keep_collapsed'`: Like the default mode, except that collapsed linear geometry
            elements are preserved. Collapsed polygonal input elements are removed. Duplicate
            vertices are removed.
+    preserve_topology : bool, optional
+        .. deprecated:: 0.11
+          This parameter is ignored. Use ``mode`` instead.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -775,12 +772,13 @@ def set_precision(
         mode = SetPrecisionMode.get_value(mode)
     elif not np.isscalar(mode):
         raise TypeError("mode only accepts scalar values")
-    if preserve_topology is not None:
+    if "preserve_topology" in kwargs:
         warnings.warn(
             "preserve_topology is deprecated (ignored), use 'mode' instead",
             UserWarning,
             stacklevel=2,
         )
+        del kwargs["preserve_topology"]
     if mode == SetPrecisionMode.pointwise and geos_version < (3, 10, 0):
         warnings.warn(
             "'pointwise' is only supported for GEOS 3.10",
