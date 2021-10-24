@@ -1579,10 +1579,22 @@ static void equals_exact_func(char** args, npy_intp* dimensions, npy_intp* steps
       /* return 0 (False) for missing values */
       ret = 0;
     } else {
-      ret = GEOSEqualsExact_r(ctx, in1, in2, in3);
-      if ((ret != 0) && (ret != 1)) {
-        errstate = PGERR_GEOS_EXCEPTION;
-        goto finish;
+      if (GEOSGeom_getCoordinateDimension_r(ctx, in1) !=
+          GEOSGeom_getCoordinateDimension_r(ctx, in2)) {
+        /* Shortcut when coordinate dimenionality is not equal, because:
+         * - comparing geometries with different dimensionality may cause crashes on
+         *   GEOS 3.8.0
+         * - for GEOS >= 3.9.0, empty simple geometries carray dimensionality, but
+         *   GEOSEqualsExact ignores that and and returns True when comparing for instance
+         *   LINESTRING EMPTY with LINESTRING Z EMPTY
+         */
+        *(npy_bool*)op1 = 0;
+      } else {
+        ret = GEOSEqualsExact_r(ctx, in1, in2, in3);
+        if ((ret != 0) && (ret != 1)) {
+          errstate = PGERR_GEOS_EXCEPTION;
+          goto finish;
+        }
       }
     }
     *(npy_bool*)op1 = ret;

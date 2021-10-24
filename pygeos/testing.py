@@ -7,12 +7,6 @@ import pygeos
 __all__ = ["assert_geometries_equal"]
 
 
-def _equals_exact_with_ndim(x, y, tolerance):
-    return pygeos.equals_exact(x, y, tolerance=tolerance) & (
-        pygeos.get_coordinate_dimension(x) == pygeos.get_coordinate_dimension(y)
-    )
-
-
 def _replace_nan(arr):
     return np.where(np.isnan(arr), 0.0, arr)
 
@@ -41,7 +35,7 @@ def _assert_nan_coords_same(x, y, tolerance, err_msg, verbose):
     x_no_nan = pygeos.apply(x, _replace_nan, include_z=True)
     y_no_nan = pygeos.apply(y, _replace_nan, include_z=True)
 
-    return _equals_exact_with_ndim(x_no_nan, y_no_nan, tolerance=tolerance)
+    return pygeos.equals_exact(x_no_nan, y_no_nan, tolerance=tolerance)
 
 
 def _assert_none_same(x, y, err_msg, verbose):
@@ -129,7 +123,7 @@ def assert_geometries_equal(
         # no sense doing comparison if everything is flagged.
         return
 
-    is_equal = _equals_exact_with_ndim(x, y, tolerance=tolerance)
+    is_equal = pygeos.equals_exact(x, y, tolerance=tolerance)
     if is_scalar and not np.isscalar(is_equal):
         is_equal = bool(is_equal[0])
 

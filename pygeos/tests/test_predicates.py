@@ -9,6 +9,7 @@ from .common import (
     empty,
     geometry_collection,
     line_string,
+    line_string_z,
     linear_ring,
     point,
     polygon,
@@ -110,6 +111,21 @@ def test_equals_exact_tolerance():
     # default value for tolerance
     assert pygeos.equals_exact(p1, p1).item() is True
     assert pygeos.equals_exact(p1, p2).item() is False
+
+
+def test_equals_exact_differing_ndim():
+    # this segfaults on GEOS 3.8.0
+    assert not pygeos.equals_exact(line_string, line_string_z)
+
+
+@pytest.mark.skipif(
+    pygeos.geos_version < (3, 9, 0),
+    reason="Pre GEOS 3.9.0 did not have dimensionality on empty geometries",
+)
+def test_equals_exact_differing_ndim_empty():
+    assert not pygeos.equals_exact(
+        pygeos.Geometry("LINESTRING EMPTY"), pygeos.Geometry("LINESTRING Z EMPTY")
+    )
 
 
 @pytest.mark.parametrize(
