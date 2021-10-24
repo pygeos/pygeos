@@ -1588,7 +1588,7 @@ static void equals_exact_func(char** args, npy_intp* dimensions, npy_intp* steps
          *   GEOSEqualsExact ignores that and and returns True when comparing for instance
          *   LINESTRING EMPTY with LINESTRING Z EMPTY
          */
-        *(npy_bool*)op1 = 0;
+        ret = 0;
       } else {
         ret = GEOSEqualsExact_r(ctx, in1, in2, in3);
         if ((ret != 0) && (ret != 1)) {
