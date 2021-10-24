@@ -2031,20 +2031,18 @@ static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* step
 
   /* preserve topology flag
    * flags:
-   * - 0: default (from GEOS 3.10 this is named GEOS_PREC_MAKE_VALID)
+   * - 0: default (from GEOS 3.10 this is named GEOS_PREC_VALID_OUTPUT)
    * - 1: GEOS_PREC_NO_TOPO
    * - 2: GEOS_PREC_KEEP_COLLAPSED
    */
   if (steps[2] != 0) {
-    PyErr_Format(PyExc_ValueError,
-                 "set_precision function called with non-scalar mode");
+    PyErr_Format(PyExc_ValueError, "set_precision function called with non-scalar mode");
     return;
   }
   flags = *(int*)args[2];
   if (!((flags == 0) || (flags == GEOS_PREC_NO_TOPO) ||
         (flags == GEOS_PREC_KEEP_COLLAPSED))) {
-    PyErr_Format(PyExc_ValueError,
-                 "set_precision function called with illegal mode");
+    PyErr_Format(PyExc_ValueError, "set_precision function called with illegal mode");
     return;
   }
 

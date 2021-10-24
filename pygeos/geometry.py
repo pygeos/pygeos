@@ -4,7 +4,7 @@ from enum import IntEnum
 import numpy as np
 
 from . import Geometry  # NOQA
-from . import _geometry, lib
+from . import _geometry, geos_version, lib
 from .decorators import multithreading_enabled, requires_geos
 from .enum import ParamEnum
 
@@ -689,7 +689,7 @@ def get_precision(geometry, **kwargs):
 
 
 class SetPrecisionMode(ParamEnum):
-    make_valid = 0
+    valid_output = 0
     pointwise = 1
     keep_collapsed = 2
 
@@ -697,7 +697,7 @@ class SetPrecisionMode(ParamEnum):
 @requires_geos("3.6.0")
 @multithreading_enabled
 def set_precision(
-    geometry, grid_size, preserve_topology=None, mode="make_valid", **kwargs
+    geometry, grid_size, preserve_topology=None, mode="valid_output", **kwargs
 ):
     """Returns geometry with the precision set to a precision grid size.
 
@@ -728,16 +728,21 @@ def set_precision(
         not be modified.
     preserve_topology : bool, optional
         .. deprecated:: 0.11
-          Use ``mode`` instead.
-    mode :  {'make_valid', 'pointwise', 'keep_collapsed'}, default 'make_valid'
+          This parameter is ignored. Use ``mode`` instead.
+    mode :  {'valid_output', 'pointwise', 'keep_collapsed'}, default 'valid_output'
         This parameter determines how to handle invalid geometries. There are
         three modes:
 
-        1. `'make_valid'` (default):  The output is always valid. Collapsed geometry elements
+        1. `'valid_output'` (default):  The output is always valid. Collapsed geometry elements
            (including both polygons and lines) are removed. Duplicate vertices are removed.
         2. `'pointwise'`: Precision reduction is performed pointwise. Output geometry
            may be invalid due to collapse or self-intersection. Duplicate vertices are not
            removed. In GEOS this option is called NO_TOPO.
+
+           .. note::
+
+             'pointwise' mode requires at least GEOS 3.10. It is accepted in earlier versions,
+             but the results may be unexpected.
         3. `'keep_collapsed'`: Like the default mode, except that collapsed linear geometry
            elements are preserved. Collapsed polygonal input elements are removed. Duplicate
            vertices are removed.
@@ -757,7 +762,7 @@ def set_precision(
     <pygeos.Geometry POINT Z (1 1 0.9)>
     >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0 1, 1 1)"), 1.0)
     <pygeos.Geometry LINESTRING (0 0, 0 1, 1 1)>
-    >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0.1 0.1)"), 1.0, mode="make_valid")
+    >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0.1 0.1)"), 1.0, mode="valid_output")
     <pygeos.Geometry LINESTRING Z EMPTY>
     >>> set_precision(Geometry("LINESTRING (0 0, 0 0.1, 0.1 0.1)"), 1.0, mode="pointwise")
     <pygeos.Geometry LINESTRING (0 0, 0 0, 0 0)>
@@ -772,12 +777,15 @@ def set_precision(
         raise TypeError("mode only accepts scalar values")
     if preserve_topology is not None:
         warnings.warn(
-            "preserve_topology is deprecated, use 'mode' instead", DeprecationWarning
+            "preserve_topology is deprecated (ignored), use 'mode' instead",
+            UserWarning,
+            stacklevel=2,
         )
-        mode = (
-            SetPrecisionMode.pointwise
-            if preserve_topology
-            else SetPrecisionMode.make_valid
+    if mode == SetPrecisionMode.pointwise and geos_version < (3, 10, 0):
+        warnings.warn(
+            "'pointwise' is only supported for GEOS 3.10",
+            UserWarning,
+            stacklevel=2,
         )
     return lib.set_precision(geometry, grid_size, np.intc(mode), **kwargs)
 

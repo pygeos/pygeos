@@ -18,11 +18,16 @@ Version 0.11 (unreleased)
 **API Changes**
 
 * The default behaviour of ``pygeos.set_precision`` is now to always return valid geometries.
-  Before, pygeos did the opposite: it preserved topology. This behaviour can be modified
-  by using the new ``mode`` argument. The ``preserve_topology`` argument is deprecated (#410).
+  Before, the default was ``preserve_topology=False`` which caused confusion because
+  it mapped to GEOS_PREC_NO_TOPO (the new 'pointwise') which in fact should preserve the topology.
+  At the same time, GEOS < 3.10 implementation was not entirely correct so that some geometries
+  did collapse (did not preserve topology) with this mode. Now, the new ``mode`` argument controls
+  the behaviour and the ``preserve_topology`` argument is deprecated (#410).
 * When constructing a linearring through ``pygeos.linearrings`` or a polygon through 
   ``pygeos.polygons`` now a ``ValueError`` is raised (instead of a ``GEOSException``)
   if the ring contains less than 4 coordinates including ring closure (#378).
+* Removed deprecated ``normalize`` keyword argument in ``pygeos.line_locate_point`` and
+  ``pygeos.line_interpolate_point`` (#410).
 
 **Added GEOS functions**
 

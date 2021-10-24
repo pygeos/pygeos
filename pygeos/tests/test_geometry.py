@@ -453,7 +453,7 @@ def test_get_precision_none():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-@pytest.mark.parametrize("mode", ("make_valid", "pointwise", "keep_collapsed"))
+@pytest.mark.parametrize("mode", ("valid_output", "pointwise", "keep_collapsed"))
 def test_set_precision(mode):
     initial_geometry = pygeos.Geometry("POINT (0.9 0.9)")
     assert pygeos.get_precision(initial_geometry) == 0
@@ -485,8 +485,10 @@ def test_set_precision_drop_coords():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-@pytest.mark.parametrize("mode", ("make_valid", "pointwise", "keep_collapsed"))
+@pytest.mark.parametrize("mode", ("valid_output", "pointwise", "keep_collapsed"))
 def test_set_precision_z(mode):
+    if mode == "pointwise" and pygeos.geos_version < (3, 10, 0):
+        pytest.skip("'pointwise' is not supported pre-GEOS 3.10")
     geometry = pygeos.set_precision(
         pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1, mode=mode
     )
@@ -495,8 +497,10 @@ def test_set_precision_z(mode):
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
-@pytest.mark.parametrize("mode", ("make_valid", "pointwise", "keep_collapsed"))
+@pytest.mark.parametrize("mode", ("valid_output", "pointwise", "keep_collapsed"))
 def test_set_precision_nan(mode):
+    if mode == "pointwise" and pygeos.geos_version < (3, 10, 0):
+        pytest.skip("'pointwise' is not supported pre-GEOS 3.10")
     actual = pygeos.set_precision(line_string_nan, 1, mode=mode)
     assert_geometries_equal(actual, line_string_nan)
 
@@ -511,23 +515,24 @@ def test_set_precision_grid_size_nan():
     assert pygeos.set_precision(pygeos.Geometry("POINT (0.9 0.9)"), np.nan) is None
 
 
-@pytest.mark.skipif(
-    pygeos.geos_version < (3, 10, 0), reason="Tests are only for GEOS 3.10"
-)
 @pytest.mark.parametrize(
     "geometry,mode,expected",
     [
         (
             pygeos.Geometry("POLYGON((2 2,4 2,3.2 3,4 4, 2 4, 2.8 3, 2 2))"),
-            "make_valid",
+            "valid_output",
             pygeos.Geometry(
                 "MULTIPOLYGON (((4 2, 2 2, 3 3, 4 2)), ((2 4, 4 4, 3 3, 2 4)))"
             ),
         ),
-        (
+        pytest.param(
             pygeos.Geometry("POLYGON((2 2,4 2,3.2 3,4 4, 2 4, 2.8 3, 2 2))"),
             "pointwise",
             pygeos.Geometry("POLYGON ((2 2, 4 2, 3 3, 4 4, 2 4, 3 3, 2 2))"),
+            marks=pytest.mark.skipif(
+                pygeos.geos_version < (3, 10, 0),
+                reason="pointwise does not work pre-GEOS 3.10",
+            ),
         ),
         (
             pygeos.Geometry("POLYGON((2 2,4 2,3.2 3,4 4, 2 4, 2.8 3, 2 2))"),
@@ -538,13 +543,17 @@ def test_set_precision_grid_size_nan():
         ),
         (
             pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
-            "make_valid",
+            "valid_output",
             pygeos.Geometry("LINESTRING EMPTY"),
         ),
-        (
+        pytest.param(
             pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
             "pointwise",
             pygeos.Geometry("LINESTRING (0 0, 0 0)"),
+            marks=pytest.mark.skipif(
+                pygeos.geos_version < (3, 10, 0),
+                reason="pointwise does not work pre-GEOS 3.10",
+            ),
         ),
         (
             pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
@@ -553,16 +562,20 @@ def test_set_precision_grid_size_nan():
         ),
         pytest.param(
             pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)"),
-            "make_valid",
+            "valid_output",
             pygeos.Geometry("LINEARRING EMPTY"),
             marks=pytest.mark.skipif(
                 pygeos.geos_version == (3, 10, 0), reason="Segfaults on GEOS 3.10.0"
             ),
         ),
-        (
+        pytest.param(
             pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)"),
             "pointwise",
             pygeos.Geometry("LINEARRING (0 0, 0 0, 0 0, 0 0, 0 0)"),
+            marks=pytest.mark.skipif(
+                pygeos.geos_version < (3, 10, 0),
+                reason="pointwise does not work pre-GEOS 3.10",
+            ),
         ),
         pytest.param(
             pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)"),
@@ -574,13 +587,17 @@ def test_set_precision_grid_size_nan():
         ),
         (
             pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))"),
-            "make_valid",
+            "valid_output",
             pygeos.Geometry("POLYGON EMPTY"),
         ),
-        (
+        pytest.param(
             pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))"),
             "pointwise",
             pygeos.Geometry("POLYGON ((0 0, 0 0, 0 0, 0 0, 0 0))"),
+            marks=pytest.mark.skipif(
+                pygeos.geos_version < (3, 10, 0),
+                reason="pointwise does not work pre-GEOS 3.10",
+            ),
         ),
         (
             pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))"),
@@ -592,6 +609,7 @@ def test_set_precision_grid_size_nan():
 def test_set_precision_collapse(geometry, mode, expected):
     """Lines and polygons collapse to empty geometries if vertices are too close"""
     actual = pygeos.set_precision(geometry, 1, mode=mode)
+    # force to 2D because GEOS 3.10 yields 3D geometries when they are empty.
     assert_geometries_equal(pygeos.force_2d(actual), expected)
 
 
@@ -612,24 +630,39 @@ def test_set_precision_intersection():
     assert_geometries_equal(out, pygeos.Geometry("LINESTRING (1 1, 1 0)"))
 
 
-def set_precision_preserve_topology_false():
-    with pytest.warns(DeprecationWarning):
+@pytest.mark.parametrize("preserve_topology", [False, True])
+def set_precision_preserve_topology(preserve_topology):
+    # the preserve_topology kwarg is deprecated (ignored)
+    with pytest.warns(UserWarning):
         actual = pygeos.set_precision(
-            pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"), 1.0, preserve_topology=False
+            pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
+            1.0,
+            preserve_topology=preserve_topology,
         )
-        assert_geometries_equal(
-            pygeos.force_2d(actual), pygeos.Geometry("LINESTRING EMPTY")
-        )
+    assert_geometries_equal(
+        pygeos.force_2d(actual), pygeos.Geometry("LINESTRING EMPTY")
+    )
 
 
-def set_precision_preserve_topology_true():
-    with pytest.warns(DeprecationWarning):
+@pytest.mark.skipif(pygeos.geos_version >= (3, 10, 0), reason="GEOS >= 3.10")
+def set_precision_pointwise_pre_310():
+    # using 'pointwise' emits a warning
+    with pytest.warns(UserWarning):
         actual = pygeos.set_precision(
-            pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"), 1.0, preserve_topology=True
+            pygeos.Geometry("LINESTRING (0 0, 0.1 0.1)"),
+            1.0,
+            mode="pointwise",
         )
-        assert_geometries_equal(
-            pygeos.force_2d(actual), pygeos.Geometry("LINESTRING (0 0, 0 0)")
-        )
+    assert_geometries_equal(
+        pygeos.force_2d(actual), pygeos.Geometry("LINESTRING EMPTY")
+    )
+
+
+@pytest.mark.parametrize("flags", [np.array([0, 1]), 4, "foo"])
+def set_precision_illegal_flags(flags):
+    # the preserve_topology kwarg is deprecated (ignored)
+    with pytest.raises((ValueError, TypeError)):
+        pygeos.lib.set_precision(line_string, 1.0, flags)
 
 
 def test_empty():
