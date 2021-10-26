@@ -1,3 +1,4 @@
+import json
 import pickle
 import struct
 from unittest import mock
@@ -85,7 +86,7 @@ def test_from_wkt_none():
 
 
 def test_from_wkt_exceptions():
-    with pytest.raises(TypeError, match="Expected bytes, got int"):
+    with pytest.raises(TypeError, match="Expected bytes or string, got int"):
         pygeos.from_wkt(1)
 
     with pytest.raises(
@@ -157,7 +158,7 @@ def test_from_wkb_none():
 
 
 def test_from_wkb_exceptions():
-    with pytest.raises(TypeError, match="Expected bytes, got int"):
+    with pytest.raises(TypeError, match="Expected bytes or string, got int"):
         pygeos.from_wkb(1)
 
     # invalid WKB
@@ -676,3 +677,165 @@ def test_pickle_with_srid():
     geom = pygeos.set_srid(point, 4326)
     pickled = pickle.dumps(geom)
     assert pygeos.get_srid(pickle.loads(pickled)) == 4326
+
+
+GEOJSON_GEOMETRY = json.dumps({"type": "Point", "coordinates": [125.6, 10.1]})
+GEOJSON_FEATURE = json.dumps(
+    {
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [125.6, 10.1]},
+        "properties": {"name": "Dinagat Islands"},
+    }
+)
+GEOJSON_FEATURECOLECTION = json.dumps(
+    {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [102.0, 0.6]},
+                "properties": {"prop0": "value0"},
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [102.0, 0.0],
+                        [103.0, 1.0],
+                        [104.0, 0.0],
+                        [105.0, 1.0],
+                    ],
+                },
+                "properties": {"prop1": 0.0, "prop0": "value0"},
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [
+                        [
+                            [100.0, 0.0],
+                            [101.0, 0.0],
+                            [101.0, 1.0],
+                            [100.0, 1.0],
+                            [100.0, 0.0],
+                        ]
+                    ],
+                },
+                "properties": {"prop1": {"this": "that"}, "prop0": "value0"},
+            },
+        ],
+    }
+)
+
+GEOJSON_GEOMETRY_EXPECTED = pygeos.points(125.6, 10.1)
+GEOJSON_COLLECTION_EXPECTED = [
+    pygeos.points([102.0, 0.6]),
+    pygeos.linestrings([[102.0, 0.0], [103.0, 1.0], [104.0, 0.0], [105.0, 1.0]]),
+    pygeos.polygons(
+        [[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]]
+    ),
+]
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geojson,expected",
+    [
+        (GEOJSON_GEOMETRY, GEOJSON_GEOMETRY_EXPECTED),
+        (GEOJSON_FEATURE, GEOJSON_GEOMETRY_EXPECTED),
+        (
+            GEOJSON_FEATURECOLECTION,
+            pygeos.geometrycollections(GEOJSON_COLLECTION_EXPECTED),
+        ),
+    ],
+)
+def test_from_geojson(geojson, expected):
+    actual = pygeos.from_geojson(geojson)
+    assert_geometries_equal(actual, expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geojson,expected",
+    [
+        (GEOJSON_GEOMETRY, GEOJSON_GEOMETRY_EXPECTED),
+        (GEOJSON_FEATURE, GEOJSON_GEOMETRY_EXPECTED),
+        (GEOJSON_FEATURECOLECTION, GEOJSON_COLLECTION_EXPECTED),
+    ],
+)
+def test_from_geojson_unpack(geojson, expected):
+    actual = pygeos.from_geojson(geojson, unpack=True)
+    assert_geometries_equal(actual, expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geojson",
+    [
+        [GEOJSON_GEOMETRY],
+        [GEOJSON_GEOMETRY, GEOJSON_GEOMETRY],
+        np.array([GEOJSON_GEOMETRY, GEOJSON_GEOMETRY]),
+    ],
+)
+def test_from_geojson_unpack_nonscalar(geojson):
+    # can only unpack scalar input
+    with pytest.raises(ValueError):
+        pygeos.from_geojson(geojson, unpack=True)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geojson",
+    [
+        [GEOJSON_GEOMETRY],
+        [GEOJSON_GEOMETRY, GEOJSON_GEOMETRY],
+        np.array([GEOJSON_GEOMETRY, GEOJSON_GEOMETRY]),
+    ],
+)
+def test_from_geojson_unpack_raises(geojson):
+    # can only unpack scalar input
+    with pytest.raises(ValueError):
+        pygeos.from_geojson(geojson, unpack=True)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+def test_from_geojson_none():
+    # None propagates
+    assert pygeos.from_geojson(None) is None
+
+
+def test_from_geojson_exceptions():
+    with pytest.raises(TypeError, match="Expected bytes or string, got int"):
+        pygeos.from_geojson(1)
+
+    with pytest.raises(pygeos.GEOSException, match="Error parsing JSON"):
+        pygeos.from_geojson("")
+
+    # Aborts with GEOS 3.10.0:
+    # with pytest.raises(pygeos.GEOSException, match="Unknown type: 'NOT'"):
+    #     pygeos.from_geojson('{"no": "geojson"}')
+
+
+def test_from_geojson_warn_on_invalid():
+    with pytest.warns(Warning, match="Invalid GeoJSON"):
+        pygeos.from_geojson("", on_invalid="warn")
+
+    # Aborts with GEOS 3.10.0:
+    # with pytest.warns(Warning, match="Invalid GeoJSON"):
+    #     pygeos.from_geojson('{"no": "geojson"}', on_invalid="warn")
+
+
+def test_from_geojson_ignore_on_invalid():
+    with pytest.warns(None):
+        pygeos.from_geojson("", on_invalid="ignore")
+
+    # Aborts with GEOS 3.10.0:
+    # with pytest.warns(None):
+    #     pygeos.from_geojson('{"no": "geojson"}', on_invalid="ignore")
+
+
+def test_from_geojson_on_invalid_unsupported_option():
+    with pytest.raises(ValueError, match="not a valid option"):
+        pygeos.from_geojson(GEOJSON_GEOMETRY, on_invalid="unsupported_option")

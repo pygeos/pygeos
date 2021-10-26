@@ -4,8 +4,21 @@ from collections.abc import Sized
 import numpy as np
 
 from . import Geometry  # noqa
-from . import geos_capi_version_string, lib
+from . import GeometryType, geos_capi_version_string, get_parts, get_type_id, lib
+from .decorators import requires_geos
 from .enum import ParamEnum
+
+__all__ = [
+    "from_geojson",
+    "from_shapely",
+    "from_wkb",
+    "from_wkt",
+    "to_geojson",
+    "to_shapely",
+    "to_wkb",
+    "to_wkt",
+]
+
 
 # Allowed options for handling WKB/WKT decoding errors
 # Note: cannot use standard constructor since "raise" is a keyword
@@ -82,16 +95,13 @@ def check_shapely_version():
         _shapely_checked = True
 
 
-__all__ = ["from_shapely", "from_wkb", "from_wkt", "to_shapely", "to_wkb", "to_wkt"]
-
-
 def to_wkt(
     geometry,
     rounding_precision=6,
     trim=True,
     output_dimension=3,
     old_3d=False,
-    **kwargs
+    **kwargs,
 ):
     """
     Converts to the Well-Known Text (WKT) representation of a Geometry.
@@ -231,6 +241,50 @@ def to_wkb(
     )
 
 
+@requires_geos("3.10.0")
+def to_geojson(geometry, indent=None, **kwargs):
+    """Converts to the GeoJSON representation of a Geometry.
+
+    The GeoJSON format is defined in the `RFC 7946 <https://geojson.org/>`__.
+
+    Parameters
+    ----------
+    geometry : str, bytes or array_like
+        The GeoJSON string or byte object(s) to convert.
+    indent : int, optional
+        If indent is a non-negative integer, then GeoJSON will be formatted.
+        An indent level of 0 will only insert newlines. None (the default)
+        selects the most compact representation.
+    unpack : bool, default True
+        If True, unpacks a FeatureCollection or GeometryCollection into a 1D ndarray.
+        Only works for scalar inputs.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+
+    Examples
+    --------
+    >>> to_geojson(Geometry("POINT (1 1)"))
+    '{"type":"Point","coordinates":[1.0,1.0]}'
+    >>> print(to_geojson(Geometry("POINT (1 1)"), indent=2))
+    {
+      "type": "Point",
+      "coordinates": [
+          1.0,
+          1.0
+      ]
+    }
+    """
+    if indent is None:
+        indent = -1
+    elif not np.isscalar(indent):
+        raise TypeError("indent only accepts scalar values")
+    elif indent < 0:
+        raise ValueError("indent cannot be negative")
+
+    return lib.to_geojson(geometry, np.intc(indent), **kwargs)
+
+
 def to_shapely(geometry):
     """
     Converts PyGEOS geometries to Shapely.
@@ -322,7 +376,7 @@ def from_wkb(geometry, on_invalid="raise", **kwargs):
     geometry : str or array_like
         The WKB byte object(s) to convert.
     on_invalid : {"raise", "warn", "ignore"}, default "raise"
-        - raise: an exception will be raised if WKB input geometries are invalid.
+        - raise: an exception will be raised if a WKB input geometry is invalid.
         - warn: a warning will be raised and invalid WKB geometries will be
           returned as ``None``.
         - ignore: invalid WKB geometries will be returned as ``None`` without a warning.
@@ -346,6 +400,60 @@ def from_wkb(geometry, on_invalid="raise", **kwargs):
     # of array elements)
     geometry = np.asarray(geometry, dtype=object)
     return lib.from_wkb(geometry, invalid_handler, **kwargs)
+
+
+@requires_geos("3.10.0")
+def from_geojson(geometry, on_invalid="raise", unpack=False, **kwargs):
+    """Creates geometries from GeoJSON representations (strings).
+
+    If a GeoJSON is a FeatureCollection, it is read as a single geometry
+    (with type GEOMETRYCOLLECTION). Properties fields are not read.
+
+    A single input FeatureCollection can optionally be unpacked into a
+    1D ndarray by using ``unpack=True`` parameter.
+
+    The GeoJSON format is defined in `RFC 7946 <https://geojson.org/>`__.
+
+    Parameters
+    ----------
+    geometry : str, bytes or array_like
+        The GeoJSON string or byte object(s) to convert.
+    on_invalid : {"raise", "warn", "ignore"}, default "raise"
+        - raise: an exception will be raised if a GeoJSON input geometry is invalid.
+        - warn: a warning will be emitted and invalid GeoJSON geometries will be
+          returned as ``None``.
+        - ignore: invalid GeoJSON geometries will be returned as ``None`` without a warning.
+    unpack : bool, default False
+        If True, unpacks a FeatureCollection or GeometryCollection into a 1D ndarray.
+        Raises a ValueError for non-scalar inputs.
+    **kwargs
+        For other keyword-only arguments, see the
+        `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
+
+    Examples
+    --------
+    >>> from_geojson('{"type": "Point","coordinates": [1, 2]}')
+    <pygeos.Geometry POINT (1 2)>
+    """
+    if not np.isscalar(on_invalid):
+        raise TypeError("on_invalid only accepts scalar values")
+
+    invalid_handler = np.uint8(DecodingErrorOptions.get_value(on_invalid))
+
+    # ensure the input has object dtype, to avoid numpy inferring it as a
+    # fixed-length string dtype (which removes trailing null bytes upon access
+    # of array elements)
+    geometry = np.asarray(geometry, dtype=object)
+
+    if unpack and geometry.ndim != 0:
+        raise ValueError(
+            f"Can only unpack 0-dimensional (scalar) input, got: {geometry.ndim}"
+        )
+
+    result = lib.from_geojson(geometry, invalid_handler, **kwargs)
+    if unpack and get_type_id(result) == GeometryType.GEOMETRYCOLLECTION:
+        result = get_parts(result)
+    return result
 
 
 def from_shapely(geometry, **kwargs):
