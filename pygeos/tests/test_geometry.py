@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 
@@ -487,22 +489,22 @@ def test_set_precision_drop_coords():
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 @pytest.mark.parametrize("mode", ("valid_output", "pointwise", "keep_collapsed"))
 def test_set_precision_z(mode):
-    if mode == "pointwise" and pygeos.geos_version < (3, 10, 0):
-        pytest.skip("'pointwise' is not supported pre-GEOS 3.10")
-    geometry = pygeos.set_precision(
-        pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1, mode=mode
-    )
-    assert pygeos.get_precision(geometry) == 1
-    assert_geometries_equal(geometry, pygeos.Geometry("POINT Z (1 1 0.9)"))
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # GEOS <= 3.9 emits warning for 'pointwise'
+        geometry = pygeos.set_precision(
+            pygeos.Geometry("POINT Z (0.9 0.9 0.9)"), 1, mode=mode
+        )
+        assert pygeos.get_precision(geometry) == 1
+        assert_geometries_equal(geometry, pygeos.Geometry("POINT Z (1 1 0.9)"))
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
 @pytest.mark.parametrize("mode", ("valid_output", "pointwise", "keep_collapsed"))
 def test_set_precision_nan(mode):
-    if mode == "pointwise" and pygeos.geos_version < (3, 10, 0):
-        pytest.skip("'pointwise' is not supported pre-GEOS 3.10")
-    actual = pygeos.set_precision(line_string_nan, 1, mode=mode)
-    assert_geometries_equal(actual, line_string_nan)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # GEOS <= 3.9 emits warning for 'pointwise'
+        actual = pygeos.set_precision(line_string_nan, 1, mode=mode)
+        assert_geometries_equal(actual, line_string_nan)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
