@@ -247,6 +247,8 @@ def to_geojson(geometry, indent=None, **kwargs):
 
     The GeoJSON format is defined in the `RFC 7946 <https://geojson.org/>`__.
 
+    3-dimensional geometries are currently unsupported.
+
     Parameters
     ----------
     geometry : str, bytes or array_like

@@ -839,3 +839,42 @@ def test_from_geojson_ignore_on_invalid():
 def test_from_geojson_on_invalid_unsupported_option():
     with pytest.raises(ValueError, match="not a valid option"):
         pygeos.from_geojson(GEOJSON_GEOMETRY, on_invalid="unsupported_option")
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize("indent", [None, 0, 4])
+def test_to_geojson(indent):
+    separators = (",", ":") if indent is None else (",", ": ")
+    expected = json.dumps(
+        json.loads(GEOJSON_GEOMETRY), indent=indent, separators=separators
+    )
+    actual = pygeos.to_geojson(GEOJSON_GEOMETRY_EXPECTED, indent=indent)
+    assert actual == expected
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+def test_to_geojson_none():
+    # None propagates
+    assert pygeos.to_geojson(None) is None
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+def test_to_geojson_exceptions():
+    with pytest.raises(TypeError):
+        pygeos.to_geojson(1)
+
+
+# @pytest.mark.skip("Segfaults")
+# @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+# def test_to_geojson_point_empty():
+#     assert pygeos.to_geojson(pygeos.Geometry("POINT EMPTY")) == '{"type":"Point","coordinates":[]}'
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize("geom", all_types)
+def test_geojson_all_types(geom):
+    if pygeos.get_type_id(geom) == pygeos.GeometryType.LINEARRING:
+        pytest.skip("Linearrings are not preserved in GeoJSON")
+    geojson = pygeos.to_geojson(geom)
+    actual = pygeos.from_geojson(geojson)
+    assert_geometries_equal(actual, geom)
