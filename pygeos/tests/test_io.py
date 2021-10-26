@@ -806,6 +806,7 @@ def test_from_geojson_none():
     assert pygeos.from_geojson(None) is None
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 def test_from_geojson_exceptions():
     with pytest.raises(TypeError, match="Expected bytes or string, got int"):
         pygeos.from_geojson(1)
@@ -818,6 +819,7 @@ def test_from_geojson_exceptions():
     #     pygeos.from_geojson('{"no": "geojson"}')
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 def test_from_geojson_warn_on_invalid():
     with pytest.warns(Warning, match="Invalid GeoJSON"):
         pygeos.from_geojson("", on_invalid="warn")
@@ -827,6 +829,7 @@ def test_from_geojson_warn_on_invalid():
     #     pygeos.from_geojson('{"no": "geojson"}', on_invalid="warn")
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 def test_from_geojson_ignore_on_invalid():
     with pytest.warns(None):
         pygeos.from_geojson("", on_invalid="ignore")
@@ -836,6 +839,7 @@ def test_from_geojson_ignore_on_invalid():
     #     pygeos.from_geojson('{"no": "geojson"}', on_invalid="ignore")
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 def test_from_geojson_on_invalid_unsupported_option():
     with pytest.raises(ValueError, match="not a valid option"):
         pygeos.from_geojson(GEOJSON_GEOMETRY, on_invalid="unsupported_option")
