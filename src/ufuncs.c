@@ -2617,7 +2617,7 @@ static void from_wkb_func(char** args, npy_intp* dimensions, npy_intp* steps,
           goto finish;
         }
       } else {
-        PyErr_Format(PyExc_TypeError, "Expected bytes, got %s", Py_TYPE(in1)->tp_name);
+        PyErr_Format(PyExc_TypeError, "Expected bytes or string, got %s", Py_TYPE(in1)->tp_name);
         goto finish;
       }
 
@@ -2704,7 +2704,7 @@ static void from_wkt_func(char** args, npy_intp* dimensions, npy_intp* steps,
           goto finish;
         }
       } else {
-        PyErr_Format(PyExc_TypeError, "Expected bytes, got %s", Py_TYPE(in1)->tp_name);
+        PyErr_Format(PyExc_TypeError, "Expected bytes or string, got %s", Py_TYPE(in1)->tp_name);
         goto finish;
       }
 
@@ -2730,6 +2730,82 @@ finish:
   GEOS_FINISH;
 }
 static PyUFuncGenericFunction from_wkt_funcs[1] = {&from_wkt_func};
+
+static char from_geojson_dtypes[3] = {NPY_OBJECT, NPY_UINT8, NPY_OBJECT};
+static void from_geojson_func(char** args, npy_intp* dimensions, npy_intp* steps,
+                          void* data) {
+  char *ip1 = args[0], *ip2 = args[1], *op1 = args[2];
+  npy_intp is1 = steps[0], is2 = steps[1], os1 = steps[2];
+  PyObject* in1;
+  npy_uint8 on_invalid = *(npy_uint8*)ip2;
+  npy_intp n = dimensions[0];
+  npy_intp i;
+  GEOSGeometry* ret_ptr;
+  GEOSGeoJSONReader* reader;
+  const char* geojson;
+
+  if ((is2 != 0)) {
+    PyErr_Format(PyExc_ValueError, "from_geojson function called with non-scalar parameters");
+    return;
+  }
+
+  GEOS_INIT;
+
+  /* Create the WKT reader */
+  reader = GEOSGeoJSONReader_create_r(ctx);
+  if (reader == NULL) {
+    errstate = PGERR_GEOS_EXCEPTION;
+    goto finish;
+  }
+
+  for (i = 0; i < n; i++, ip1 += is1, op1 += os1) {
+    /* ip1 is pointer to array element PyObject* */
+    in1 = *(PyObject**)ip1;
+
+    if (in1 == Py_None) {
+      /* None in the input propagates to the output */
+      ret_ptr = NULL;
+    } else {
+      /* Cast the PyObject (bytes or str) to char* */
+      if (PyBytes_Check(in1)) {
+        geojson = PyBytes_AsString(in1);
+        if (geojson == NULL) {
+          errstate = PGERR_GEOS_EXCEPTION;
+          goto finish;
+        }
+      } else if (PyUnicode_Check(in1)) {
+        geojson = PyUnicode_AsUTF8(in1);
+        if (geojson == NULL) {
+          errstate = PGERR_GEOS_EXCEPTION;
+          goto finish;
+        }
+      } else {
+        PyErr_Format(PyExc_TypeError, "Expected bytes or string, got %s", Py_TYPE(in1)->tp_name);
+        goto finish;
+      }
+
+      /* Read the GeoJSON */
+      ret_ptr = GEOSGeoJSONReader_readGeometry_r(ctx, reader, geojson);
+      if (ret_ptr == NULL) {
+        if (on_invalid == 2) {
+          // raise exception
+          errstate = PGERR_GEOS_EXCEPTION;
+          goto finish;
+        } else if (on_invalid == 1) {
+          // raise warning, return None
+          errstate = PGWARN_INVALID_GEOJSON;
+        }
+        // else: return None, no warning
+      }
+    }
+    OUTPUT_Y;
+  }
+
+finish:
+  GEOSGeoJSONReader_destroy_r(ctx, reader);
+  GEOS_FINISH;
+}
+static PyUFuncGenericFunction from_geojson_funcs[1] = {&from_geojson_func};
 
 static char from_shapely_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
 static void from_shapely_func(char** args, npy_intp* dimensions, npy_intp* steps,
@@ -2974,6 +3050,62 @@ finish:
 }
 static PyUFuncGenericFunction to_wkt_funcs[1] = {&to_wkt_func};
 
+
+static char to_geojson_dtypes[3] = {NPY_OBJECT, NPY_INT, NPY_OBJECT};
+static void to_geojson_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
+  char *ip1 = args[0], *ip2 = args[1], *op1 = args[2];
+  npy_intp is1 = steps[0], is2 = steps[1], os1 = steps[2];
+  npy_intp n = dimensions[0];
+  npy_intp i;
+
+  GEOSGeometry* in1;
+  int indent;
+  GEOSGeoJSONWriter* writer;
+  char* geojson;
+
+  if (is2 != 0) {
+    PyErr_Format(PyExc_ValueError, "to_geojson function called with non-scalar parameters");
+    return;
+  }
+  indent = *(int*)ip2;
+
+  GEOS_INIT;
+
+  /* Create the WKT writer */
+  writer = GEOSGeoJSONWriter_create_r(ctx);
+  if (writer == NULL) {
+    errstate = PGERR_GEOS_EXCEPTION;
+    goto finish;
+  }
+
+  for (i = 0; i < n; i++, ip1 += is1, op1 += os1) {
+    if (!get_geom(*(GeometryObject**)ip1, &in1)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      goto finish;
+    }
+    PyObject** out = (PyObject**)op1;
+
+    if (in1 == NULL) {
+      Py_XDECREF(*out);
+      Py_INCREF(Py_None);
+      *out = Py_None;
+    } else {
+      geojson = GEOSGeoJSONWriter_writeGeometry_r(ctx, writer, in1, indent);
+      if (geojson == NULL) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        goto finish;
+      }
+      Py_XDECREF(*out);
+      *out = PyUnicode_FromString(geojson);
+      GEOSFree_r(ctx, geojson);
+    }
+  }
+
+finish:
+  GEOSGeoJSONWriter_destroy_r(ctx, writer);
+  GEOS_FINISH;
+}
+static PyUFuncGenericFunction to_geojson_funcs[1] = {&to_geojson_func};
 /*
 TODO polygonizer functions
 TODO prepared geometry predicate functions
@@ -3223,6 +3355,8 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 
 #if GEOS_SINCE_3_10_0
   DEFINE_Yd_Y(segmentize);
+  DEFINE_CUSTOM(from_geojson, 2);
+  DEFINE_CUSTOM(to_geojson, 2);
 #endif
 
   Py_DECREF(ufunc);
