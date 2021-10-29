@@ -7,9 +7,9 @@ Version 0.11 (unreleased)
 
 **Distribution**
 
-* Distribute binary wheels for Python 3.10.
+* Distribute binary wheels for Python 3.10 (#441601).
 * All binary wheels now have GEOS 3.10.0. See https://github.com/libgeos/geos/blob/main/NEWS
-  for the changes.
+  for the changes (#416).
 
 
 **Major enhancements**
@@ -22,10 +22,8 @@ Version 0.11 (unreleased)
   the coordinates in a geometry (#396).
 * Added ``pygeos.testing.assert_geometries_equal`` (#401).
 
-
 **API Changes**
 
-* Removed support for GEOS 3.5, GEOS 3.6, Python 3.6, and Numpy 1.13.
 * The default behaviour of ``pygeos.set_precision`` is now to always return valid geometries.
   Before, the default was ``preserve_topology=False`` which caused confusion because
   it mapped to GEOS_PREC_NO_TOPO (the new 'pointwise').
@@ -38,14 +36,13 @@ Version 0.11 (unreleased)
 * Removed deprecated ``normalize`` keyword argument in ``pygeos.line_locate_point`` and
   ``pygeos.line_interpolate_point`` (#410).
 
-
 **Bug fixes**
 
 * Return True instead of False for LINEARRING geometries in ``is_closed`` (#379).
 * Fixed the WKB serialization of 3D empty points for GEOS >= 3.9.0 (#392).
 * Fixed the WKT serialization of single part 3D empty geometries for GEOS >= 3.9.0 (#402).
 * Fixed the WKT serialization of multipoints with empty points for GEOS >= 3.9.0 (#392).
-* Fixed a segfault when getting coordinates from empty points in GEOS 3.8.0.
+* Fixed a segfault when getting coordinates from empty points in GEOS 3.8.0 (#415).
 
 **Acknowledgments**
 

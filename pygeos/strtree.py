@@ -1,6 +1,7 @@
 import numpy as np
 
 from . import lib
+from .decorators import requires_geos
 from .enum import ParamEnum
 
 __all__ = ["STRtree"]
@@ -176,6 +177,7 @@ class STRtree:
 
         return self._tree.query_bulk(geometry, predicate)
 
+    @requires_geos("3.6.0")
     def nearest(self, geometry):
         """Returns the index of the nearest item in the tree for each input
         geometry.
@@ -222,6 +224,7 @@ class STRtree:
 
         return self._tree.nearest(geometry)
 
+    @requires_geos("3.6.0")
     def nearest_all(self, geometry, max_distance=None, return_distance=False):
         """Returns the index of the nearest item(s) in the tree for each input
         geometry.
