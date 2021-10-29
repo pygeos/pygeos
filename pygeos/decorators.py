@@ -1,9 +1,10 @@
 import os
 from functools import wraps
+from multiprocessing import Process, Queue
 
 import numpy as np
 
-from . import lib
+from . import GEOSException, lib
 
 
 class UnsupportedGEOSOperation(ImportError):
@@ -83,3 +84,38 @@ def multithreading_enabled(func):
                 arr.flags.writeable = old_flag
 
     return wrapped
+
+
+def may_segfault(func):
+    """The wrapped function will be called in another process.
+
+    If the execution crashes with a segfault or sigabort, a GEOSException
+    will be raised.
+    """
+
+    # wrap the function so that it also returns exceptions
+    def return_exc(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            return e
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        queue = Queue()
+        process = Process(
+            target=lambda q: q.put(return_exc(*args, **kwargs)),
+            args=(queue,),
+        )
+        process.start()
+        process.join()
+        if process.exitcode == 0:
+            result = queue.get()
+            if isinstance(result, Exception):
+                raise result
+            else:
+                return result
+        else:
+            raise GEOSException(f"GEOS crashed with exit code {process.exitcode}.")
+
+    return wrapper
