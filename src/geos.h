@@ -52,6 +52,7 @@ enum {
   PGERR_GEOMETRY_TYPE,
   PGERR_MULTIPOINT_WITH_POINT_EMPTY,
   PGERR_EMPTY_GEOMETRY,
+  PGERR_GEOJSON_EMPTY_POINT,
   PGERR_LINEARRING_NCOORDS,
   PGWARN_INVALID_WKB,  // raise the GEOS WKB error as a warning instead of exception
   PGWARN_INVALID_WKT,  // raise the GEOS WKT error as a warning instead of exception
@@ -89,6 +90,9 @@ enum {
     case PGERR_EMPTY_GEOMETRY:                                                           \
       PyErr_SetString(PyExc_ValueError, "One of the Geometry inputs is empty.");         \
       break;                                                                             \
+    case PGERR_GEOJSON_EMPTY_POINT:                                                      \
+      PyErr_SetString(PyExc_ValueError, "GeoJSON output of empty points is unsupported."); \
+      break;  \
     case PGERR_LINEARRING_NCOORDS:                                                       \
       PyErr_SetString(PyExc_ValueError,                                                  \
                       "A linearring requires at least 4 coordinates.");                  \
@@ -151,12 +155,10 @@ extern PyObject* geos_exception[1];
 extern void geos_error_handler(const char* message, void* userdata);
 extern void geos_notice_handler(const char* message, void* userdata);
 extern void destroy_geom_arr(void* context, GEOSGeometry** array, int length);
-#if !GEOS_SINCE_3_9_0
 extern char has_point_empty(GEOSContextHandle_t ctx, GEOSGeometry* geom);
 extern GEOSGeometry* point_empty_to_nan_all_geoms(GEOSContextHandle_t ctx,
                                                   GEOSGeometry* geom);
 extern char check_to_wkt_compatible(GEOSContextHandle_t ctx, GEOSGeometry* geom);
-#endif  // !GEOS_SINCE_3_9_0
 #if GEOS_SINCE_3_9_0
 extern char wkt_empty_3d_geometry(GEOSContextHandle_t ctx, GEOSGeometry* geom,
                                   char** wkt);

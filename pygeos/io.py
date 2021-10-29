@@ -409,6 +409,11 @@ def from_geojson(geometry, **kwargs):
     (with type GEOMETRYCOLLECTION). This may be unpacked using the ``pygeos.get_parts``.
     Properties are not read.
 
+    .. note::
+
+       This function is executed in a subprocess as GEOS may crash on invalid input.
+
+
     The GeoJSON format is defined in `RFC 7946 <https://geojson.org/>`__.
     ``null`` or ``nan`` coordinates are not supported.
 

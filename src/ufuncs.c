@@ -3079,6 +3079,7 @@ static void to_geojson_func(char** args, npy_intp* dimensions, npy_intp* steps,
   int indent;
   GEOSGeoJSONWriter* writer;
   char* geojson;
+  char point_empty_error;
 
   if (is2 != 0) {
     PyErr_Format(PyExc_ValueError,
@@ -3089,7 +3090,7 @@ static void to_geojson_func(char** args, npy_intp* dimensions, npy_intp* steps,
 
   GEOS_INIT;
 
-  /* Create the WKT writer */
+  /* Create the GeoJSON writer */
   writer = GEOSGeoJSONWriter_create_r(ctx);
   if (writer == NULL) {
     errstate = PGERR_GEOS_EXCEPTION;
@@ -3108,6 +3109,14 @@ static void to_geojson_func(char** args, npy_intp* dimensions, npy_intp* steps,
       Py_INCREF(Py_None);
       *out = Py_None;
     } else {
+      point_empty_error = has_point_empty(ctx, in1);
+      if (point_empty_error == 2) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        goto finish;
+      } else if (point_empty_error == 1) {
+        errstate = PGERR_GEOJSON_EMPTY_POINT;
+        goto finish;
+      }
       geojson = GEOSGeoJSONWriter_writeGeometry_r(ctx, writer, in1, indent);
       if (geojson == NULL) {
         errstate = PGERR_GEOS_EXCEPTION;

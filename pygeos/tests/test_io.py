@@ -785,12 +785,6 @@ def test_from_geojson_exceptions():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
-def test_from_geojson_on_invalid_unsupported_option():
-    with pytest.raises(ValueError, match="not a valid option"):
-        pygeos.from_geojson(GEOJSON_GEOMETRY, on_invalid="unsupported_option")
-
-
-@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 @pytest.mark.parametrize("indent", [None, 0, 4])
 def test_to_geojson(indent):
     separators = (",", ":") if indent is None else (",", ": ")
@@ -813,10 +807,17 @@ def test_to_geojson_exceptions():
         pygeos.to_geojson(1)
 
 
-# @pytest.mark.skip("Segfaults")
-# @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
-# def test_to_geojson_point_empty():
-#     assert pygeos.to_geojson(pygeos.Geometry("POINT EMPTY")) == '{"type":"Point","coordinates":[]}'
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geom",
+    [
+        empty_point,
+        pygeos.multipoints([empty_point, point]),
+    ],
+)
+def test_to_geojson_point_empty(geom):
+    with pytest.raises(ValueError):
+        assert pygeos.to_geojson(geom)
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
