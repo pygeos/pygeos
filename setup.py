@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 ch = logging.StreamHandler()
 log.addHandler(ch)
 
-MIN_GEOS_VERSION = "3.5"
+MIN_GEOS_VERSION = "3.7"
 
 if "all" in sys.warnoptions:
     # show GEOS messages in console with: python -W all
@@ -221,12 +221,12 @@ setup(
     author_email="caspervdw@gmail.com",
     license="BSD 3-Clause",
     packages=find_packages(include=["pygeos", "pygeos.*"]),
-    install_requires=["numpy>=1.13"],
+    install_requires=["numpy>=1.14"],
     extras_require={
         "test": ["pytest"],
         "docs": ["sphinx", "numpydoc"],
     },
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     include_package_data=True,
     ext_modules=ext_modules,
     classifiers=[

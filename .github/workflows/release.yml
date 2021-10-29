@@ -40,7 +40,7 @@ jobs:
     name: Build ${{ matrix.archs }} wheels on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     env:
-      GEOS_VERSION: "3.9.1"
+      GEOS_VERSION: "3.10.0"
     strategy:
       fail-fast: false
       matrix:
@@ -103,10 +103,10 @@ jobs:
         if: ${{ matrix.os == 'windows-2019' && matrix.archs == 'auto64' }}
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.0.0
+        uses: pypa/cibuildwheel@v2.2.2
         env:
           CIBW_ARCHS: ${{ matrix.archs }}
-          CIBW_SKIP: pp*
+          CIBW_SKIP: pp* cp36*
           CIBW_ENVIRONMENT_LINUX:
             GEOS_VERSION=${{ env.GEOS_VERSION }}
             GEOS_INSTALL=/host${{ github.workspace }}/geos-${{ env.GEOS_VERSION }}

@@ -93,7 +93,6 @@ static char GEOSisClosedAllTypes_r(void* context, void* geom) {
 static void* is_closed_data[1] = {GEOSisClosedAllTypes_r};
 static void* is_valid_data[1] = {GEOSisValid_r};
 
-#if GEOS_SINCE_3_7_0
 static char GEOSGeom_isCCW_r(void* context, void* geom) {
   const GEOSCoordSequence* coord_seq;
   char is_ccw = 2;  // return value of 2 means GEOSException
@@ -128,7 +127,6 @@ static char GEOSGeom_isCCW_r(void* context, void* geom) {
   return is_ccw;
 }
 static void* is_ccw_data[1] = {GEOSGeom_isCCW_r};
-#endif
 
 typedef char FuncGEOS_Y_b(void* context, void* a);
 static char Y_b_dtypes[2] = {NPY_OBJECT, NPY_BOOL};
@@ -403,12 +401,8 @@ static void* GEOSMinimumBoundingCircleWithReturn(void* context, void* geom) {
 }
 static void* minimum_bounding_circle_data[1] = {GEOSMinimumBoundingCircleWithReturn};
 #endif
-#if GEOS_SINCE_3_7_0
 static void* reverse_data[1] = {GEOSReverse_r};
-#endif
-#if GEOS_SINCE_3_6_0
 static void* oriented_envelope_data[1] = {GEOSMinimumRotatedRectangle_r};
-#endif
 typedef void* FuncGEOS_Y_Y(void* context, void* a);
 static char Y_Y_dtypes[2] = {NPY_OBJECT, NPY_OBJECT};
 static void Y_Y_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -897,7 +891,6 @@ static int GetY(void* context, void* a, double* b) {
   }
 }
 static void* get_y_data[1] = {GetY};
-#if GEOS_SINCE_3_7_0
 static int GetZ(void* context, void* a, double* b) {
   char typ = GEOSGeomTypeId_r(context, a);
   if (typ != 0) {
@@ -908,11 +901,9 @@ static int GetZ(void* context, void* a, double* b) {
   }
 }
 static void* get_z_data[1] = {GetZ};
-#endif
 static void* area_data[1] = {GEOSArea_r};
 static void* length_data[1] = {GEOSLength_r};
 
-#if GEOS_SINCE_3_6_0
 static int GetPrecision(void* context, void* a, double* b) {
   // GEOS returns -1 on error; 0 indicates double precision; > 0 indicates a precision
   // grid size was set for this geometry.
@@ -936,7 +927,6 @@ static int MinimumClearance(void* context, void* a, double* b) {
   }
 }
 static void* minimum_clearance_data[1] = {MinimumClearance};
-#endif
 #if GEOS_SINCE_3_8_0
 static int GEOSMinimumBoundingRadius(void* context, GEOSGeometry* geom, double* radius) {
   GEOSGeometry* center = NULL;
@@ -1068,7 +1058,6 @@ static PyUFuncGenericFunction Y_i_funcs[1] = {&Y_i_func};
 /* Define the geom, geom -> double functions (YY_d) */
 static void* distance_data[1] = {GEOSDistance_r};
 static void* hausdorff_distance_data[1] = {GEOSHausdorffDistance_r};
-#if GEOS_SINCE_3_7_0
 static int GEOSFrechetDistanceWrapped_r(void* context, void* a, void* b, double* c) {
   /* Handle empty geometries (they give segfaults) */
   if (GEOSisEmpty_r(context, a) || GEOSisEmpty_r(context, b)) {
@@ -1078,7 +1067,6 @@ static int GEOSFrechetDistanceWrapped_r(void* context, void* a, void* b, double*
   return GEOSFrechetDistance_r(context, a, b, c);
 }
 static void* frechet_distance_data[1] = {GEOSFrechetDistanceWrapped_r};
-#endif
 /* Project and ProjectNormalize don't return error codes. wrap them. */
 static int GEOSProjectWrapped_r(void* context, void* a, void* b, double* c) {
   /* Handle empty points (they give segfaults (for b) or give exception (for a)) */
@@ -1160,9 +1148,7 @@ static PyUFuncGenericFunction YY_d_funcs[1] = {&YY_d_func};
 
 /* Define the geom, geom, double -> double functions (YYd_d) */
 static void* hausdorff_distance_densify_data[1] = {GEOSHausdorffDistanceDensify_r};
-#if GEOS_SINCE_3_7_0
 static void* frechet_distance_densify_data[1] = {GEOSFrechetDistanceDensify_r};
-#endif
 typedef int FuncGEOS_YYd_d(void* context, void* a, void* b, double c, double* d);
 static char YYd_d_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_DOUBLE};
 static void YYd_d_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
@@ -2019,7 +2005,6 @@ static void shortest_line_func(char** args, npy_intp* dimensions, npy_intp* step
 }
 static PyUFuncGenericFunction shortest_line_funcs[1] = {&shortest_line_func};
 
-#if GEOS_SINCE_3_6_0
 static char set_precision_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_INT, NPY_OBJECT};
 static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* steps,
                                void* data) {
@@ -2085,7 +2070,6 @@ static void set_precision_func(char** args, npy_intp* dimensions, npy_intp* step
 }
 
 static PyUFuncGenericFunction set_precision_funcs[1] = {&set_precision_func};
-#endif
 
 /* define double -> geometry construction functions */
 static char points_dtypes[2] = {NPY_DOUBLE, NPY_OBJECT};
@@ -3201,20 +3185,16 @@ int init_ufuncs(PyObject* m, PyObject* d) {
   DEFINE_CUSTOM(to_wkt, 5);
   DEFINE_CUSTOM(from_shapely, 1);
 
-#if GEOS_SINCE_3_6_0
   DEFINE_Y_d(minimum_clearance);
   DEFINE_Y_d(get_precision);
   DEFINE_Y_Y(oriented_envelope);
   DEFINE_CUSTOM(set_precision, 3);
-#endif
 
-#if GEOS_SINCE_3_7_0
   DEFINE_Y_b(is_ccw);
   DEFINE_Y_d(get_z);
   DEFINE_Y_Y(reverse);
   DEFINE_YY_d(frechet_distance);
   DEFINE_YYd_d(frechet_distance_densify);
-#endif
 
 #if GEOS_SINCE_3_8_0
   DEFINE_Y_Y(make_valid);

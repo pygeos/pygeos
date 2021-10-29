@@ -5,6 +5,13 @@ Changelog
 Version 0.11 (unreleased)
 -------------------------
 
+**Distribution**
+
+* Distribute binary wheels for Python 3.10.
+* All binary wheels now have GEOS 3.10.0. See https://github.com/libgeos/geos/blob/main/NEWS
+  for the changes.
+
+
 **Major enhancements**
 
 * Optionally output to a user-specified array (``out`` keyword argument) when constructing
@@ -15,8 +22,10 @@ Version 0.11 (unreleased)
   the coordinates in a geometry (#396).
 * Added ``pygeos.testing.assert_geometries_equal`` (#401).
 
+
 **API Changes**
 
+* Removed support for GEOS 3.5, GEOS 3.6, Python 3.6, and Numpy 1.13.
 * The default behaviour of ``pygeos.set_precision`` is now to always return valid geometries.
   Before, the default was ``preserve_topology=False`` which caused confusion because
   it mapped to GEOS_PREC_NO_TOPO (the new 'pointwise').
@@ -29,9 +38,6 @@ Version 0.11 (unreleased)
 * Removed deprecated ``normalize`` keyword argument in ``pygeos.line_locate_point`` and
   ``pygeos.line_interpolate_point`` (#410).
 
-**Added GEOS functions**
-
-* ...
 
 **Bug fixes**
 

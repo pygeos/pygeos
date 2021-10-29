@@ -5,7 +5,7 @@ import numpy as np
 
 from . import Geometry  # NOQA
 from . import _geometry, geos_version, lib
-from .decorators import multithreading_enabled, requires_geos
+from .decorators import multithreading_enabled
 from .enum import ParamEnum
 
 __all__ = [
@@ -285,7 +285,6 @@ def get_y(point, **kwargs):
     return lib.get_y(point, **kwargs)
 
 
-@requires_geos("3.7.0")
 @multithreading_enabled
 def get_z(point, **kwargs):
     """Returns the z-coordinate of a point.
@@ -653,7 +652,6 @@ def get_num_geometries(geometry, **kwargs):
     return lib.get_num_geometries(geometry, **kwargs)
 
 
-@requires_geos("3.6.0")
 @multithreading_enabled
 def get_precision(geometry, **kwargs):
     """Get the precision of a geometry.
@@ -694,7 +692,6 @@ class SetPrecisionMode(ParamEnum):
     keep_collapsed = 2
 
 
-@requires_geos("3.6.0")
 @multithreading_enabled
 def set_precision(geometry, grid_size, mode="valid_output", **kwargs):
     """Returns geometry with the precision set to a precision grid size.
