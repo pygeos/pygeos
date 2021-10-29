@@ -5,7 +5,6 @@
 # This script requires environment variables to be set
 #  - export GEOS_INSTALL=/path/to/cached/prefix -- to build or use as cache
 #  - export GEOS_VERSION=3.7.3 or main -- to download and compile
-pushd .
 
 set -e
 
@@ -62,5 +61,3 @@ else
         build_geos
     fi
 fi
-
-popd

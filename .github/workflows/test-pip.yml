@@ -103,7 +103,8 @@ jobs:
 
       - name: Install GEOS
         run: |
-          bash ci/install_geos.sh
+          ./ci/install_geos.sh
+          cd '${{ github.workspace }}'
 
       - name: Install python dependencies
         run: |
