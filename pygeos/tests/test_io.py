@@ -776,7 +776,7 @@ def test_from_geojson_exceptions():
         pygeos.from_geojson('{"type": "LineString", "coordinates": null}')
 
     # The following inputs give crash, PyGEOS captures these:
-    with pytest.raises(pygeos.GEOSException, match="GEOS crashed"):
+    with pytest.raises(pygeos.GEOSException, match="ParseException"):
         pygeos.from_geojson('{"geometry": null, "properties": []}')
 
     with pytest.raises(pygeos.GEOSException, match="GEOS crashed"):
