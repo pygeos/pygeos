@@ -779,7 +779,7 @@ def test_from_geojson_exceptions():
     with pytest.raises(pygeos.GEOSException, match="ParseException"):
         pygeos.from_geojson('{"geometry": null, "properties": []}')
 
-    with pytest.raises(pygeos.GEOSException, match="GEOS crashed"):
+    with pytest.raises(pygeos.GEOSException, match="ParseException"):
         pygeos.from_geojson('{"no": "geojson"}')
 
 
