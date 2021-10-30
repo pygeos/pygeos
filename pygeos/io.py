@@ -5,7 +5,7 @@ import numpy as np
 
 from . import Geometry  # noqa
 from . import geos_capi_version_string, lib
-from .decorators import may_segfault, requires_geos
+from .decorators import requires_geos
 from .enum import ParamEnum
 
 __all__ = [
@@ -406,18 +406,12 @@ def from_wkb(geometry, on_invalid="raise", **kwargs):
 
 
 @requires_geos("3.10.0")
-def from_geojson(geometry, **kwargs):
+def from_geojson(geometry, on_invalid="raise", **kwargs):
     """Creates geometries from GeoJSON representations (strings).
 
     If a GeoJSON is a FeatureCollection, it is read as a single geometry
     (with type GEOMETRYCOLLECTION). This may be unpacked using the ``pygeos.get_parts``.
     Properties are not read.
-
-    .. note::
-
-       GEOS 3.10.0 may crash on invalid input. Because of that, this function
-       creates a subprocess.
-
 
     The GeoJSON format is defined in `RFC 7946 <https://geojson.org/>`__.
 
@@ -427,6 +421,11 @@ def from_geojson(geometry, **kwargs):
     ----------
     geometry : str, bytes or array_like
         The GeoJSON string or byte object(s) to convert.
+    on_invalid : {"raise", "warn", "ignore"}, default "raise"
+        - raise: an exception will be raised if an input GeoJSON is invalid.
+        - warn: a warning will be raised and invalid input geometries will be
+          returned as ``None``.
+        - ignore: invalid input geometries will be returned as ``None`` without a warning.
     **kwargs
         For other keyword-only arguments, see the
         `NumPy ufunc docs <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs-kwargs>`_.
@@ -440,9 +439,11 @@ def from_geojson(geometry, **kwargs):
     >>> from_geojson('{"type": "Point","coordinates": [1, 2]}')
     <pygeos.Geometry POINT (1 2)>
     """
-    # Hardcode this until GEOS doesn't crash anymore. Not all errors
-    # can be caught and warnings are lost anyway.
-    invalid_handler = np.uint8(DecodingErrorOptions.get_value("raise"))
+
+    if not np.isscalar(on_invalid):
+        raise TypeError("on_invalid only accepts scalar values")
+
+    invalid_handler = np.uint8(DecodingErrorOptions.get_value(on_invalid))
 
     # ensure the input has object dtype, to avoid numpy inferring it as a
     # fixed-length string dtype (which removes trailing null bytes upon access
