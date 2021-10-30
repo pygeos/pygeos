@@ -406,7 +406,6 @@ def from_wkb(geometry, on_invalid="raise", **kwargs):
 
 
 @requires_geos("3.10.0")
-@may_segfault
 def from_geojson(geometry, **kwargs):
     """Creates geometries from GeoJSON representations (strings).
 
