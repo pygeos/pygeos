@@ -106,7 +106,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.2.2
         env:
           CIBW_ARCHS: ${{ matrix.archs }}
-          CIBW_SKIP: pp*
+          CIBW_SKIP: pp* *musllinux*
           CIBW_ENVIRONMENT_LINUX:
             GEOS_VERSION=${{ env.GEOS_VERSION }}
             GEOS_INSTALL=/host${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}
