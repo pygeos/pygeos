@@ -1,6 +1,6 @@
+import multiprocessing
 import os
 from functools import wraps
-from multiprocessing import Process, Queue
 
 import numpy as np
 
@@ -86,6 +86,27 @@ def multithreading_enabled(func):
     return wrapped
 
 
+class ReturningProcess(multiprocessing.Process):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._pconn, self._cconn = multiprocessing.Pipe()
+        self._result = None
+
+    def run(self):
+        if not self._target:
+            return
+        try:
+            self._cconn.send(self._target(*self._args, **self._kwargs))
+        except Exception as e:
+            self._cconn.send(e)
+
+    @property
+    def result(self):
+        if self._result is None and self._pconn.poll():
+            self._result = self._pconn.recv()
+        return self._result
+
+
 def may_segfault(func):
     """The wrapped function will be called in another process.
 
@@ -93,29 +114,17 @@ def may_segfault(func):
     will be raised.
     """
 
-    # wrap the function so that it also returns exceptions
-    def return_exc(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as e:
-            return e
-
     @wraps(func)
     def wrapper(*args, **kwargs):
-        queue = Queue()
-        process = Process(
-            target=lambda q: q.put(return_exc(*args, **kwargs)),
-            args=(queue,),
-        )
+        process = ReturningProcess(target=func, args=args, kwargs=kwargs)
         process.start()
         process.join()
-        if process.exitcode == 0:
-            result = queue.get()
-            if isinstance(result, Exception):
-                raise result
-            else:
-                return result
-        else:
+        result = process.result
+        if isinstance(result, Exception):
+            raise result
+        elif process.exitcode != 0:
             raise GEOSException(f"GEOS crashed with exit code {process.exitcode}.")
+        else:
+            return result
 
     return wrapper

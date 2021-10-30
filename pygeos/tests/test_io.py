@@ -813,6 +813,8 @@ def test_to_geojson_exceptions():
     [
         empty_point,
         pygeos.multipoints([empty_point, point]),
+        pygeos.geometrycollections([empty_point, point]),
+        pygeos.geometrycollections([pygeos.geometrycollections([empty_point]), point]),
     ],
 )
 def test_to_geojson_point_empty(geom):

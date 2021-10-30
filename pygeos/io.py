@@ -247,7 +247,7 @@ def to_geojson(geometry, indent=None, **kwargs):
 
     The GeoJSON format is defined in the `RFC 7946 <https://geojson.org/>`__.
 
-    3-dimensional geometries are currently unsupported.
+    Unsupported are: 3D geometries, nan coordinates, and empty points.
 
     Parameters
     ----------
@@ -411,11 +411,12 @@ def from_geojson(geometry, **kwargs):
 
     .. note::
 
-       This function is executed in a subprocess as GEOS may crash on invalid input.
+       GEOS 3.10.0 may crash on invalid input. Because of that, this function
+       creates a subprocess.
 
 
     The GeoJSON format is defined in `RFC 7946 <https://geojson.org/>`__.
-    ``null`` or ``nan`` coordinates are not supported.
+    Unsupported are: 3D geometries, ``null``, or ``nan``.
 
     Parameters
     ----------
@@ -436,7 +437,7 @@ def from_geojson(geometry, **kwargs):
     """
     # Hardcode this until GEOS doesn't crash anymore. Not all errors
     # can be caught and warnings are lost anyway.
-    invalid_handler = DecodingErrorOptions.error
+    invalid_handler = np.uint8(DecodingErrorOptions.get_value("raise"))
 
     # ensure the input has object dtype, to avoid numpy inferring it as a
     # fixed-length string dtype (which removes trailing null bytes upon access
