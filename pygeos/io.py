@@ -247,7 +247,12 @@ def to_geojson(geometry, indent=None, **kwargs):
 
     The GeoJSON format is defined in the `RFC 7946 <https://geojson.org/>`__.
 
-    Unsupported are: 3D geometries, nan coordinates, and empty points.
+    Unsupported are:
+
+    - Geometries of type LINEARRING: these are output as 'null'.
+    - Three-dimensional geometries: the third dimension is ignored.
+    - NaN (not-a-number) coordinates: these are written as 'null', which renders
+      the GeoJSON invalid.
 
     Parameters
     ----------
@@ -416,7 +421,8 @@ def from_geojson(geometry, **kwargs):
 
 
     The GeoJSON format is defined in `RFC 7946 <https://geojson.org/>`__.
-    Unsupported are: 3D geometries, ``null``, or ``nan``.
+
+    Three-dimensional geometries are unsupported. The third dimension will be ignored.
 
     Parameters
     ----------

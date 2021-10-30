@@ -26,13 +26,14 @@ INVALID_WKB = "01030000000100000002000000507daec600b1354100de02498e5e3d41306ea32
 # fmt: on
 
 
-GEOJSON_GEOMETRY = json.dumps({"type": "Point", "coordinates": [125.6, 10.1]})
+GEOJSON_GEOMETRY = json.dumps({"type": "Point", "coordinates": [125.6, 10.1]}, indent=4)
 GEOJSON_FEATURE = json.dumps(
     {
         "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [125.6, 10.1]},
         "properties": {"name": "Dinagat Islands"},
-    }
+    },
+    indent=4,
 )
 GEOJSON_FEATURECOLECTION = json.dumps(
     {
@@ -73,7 +74,8 @@ GEOJSON_FEATURECOLECTION = json.dumps(
                 "properties": {"prop1": {"this": "that"}, "prop0": "value0"},
             },
         ],
-    }
+    },
+    indent=4,
 )
 
 GEOJSON_GEOMETRY_EXPECTED = pygeos.points(125.6, 10.1)
@@ -749,17 +751,14 @@ def test_pickle_with_srid():
             GEOJSON_FEATURECOLECTION,
             pygeos.geometrycollections(GEOJSON_COLLECTION_EXPECTED),
         ),
+        ([GEOJSON_GEOMETRY] * 2, [GEOJSON_GEOMETRY_EXPECTED] * 2),
+        (None, None),
+        ([GEOJSON_GEOMETRY, None], [GEOJSON_GEOMETRY_EXPECTED, None]),
     ],
 )
 def test_from_geojson(geojson, expected):
     actual = pygeos.from_geojson(geojson)
     assert_geometries_equal(actual, expected)
-
-
-@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
-def test_from_geojson_none():
-    # None propagates
-    assert pygeos.from_geojson(None) is None
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
@@ -785,20 +784,29 @@ def test_from_geojson_exceptions():
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "expected,geometry",
+    [
+        (GEOJSON_GEOMETRY, GEOJSON_GEOMETRY_EXPECTED),
+        ([GEOJSON_GEOMETRY] * 2, [GEOJSON_GEOMETRY_EXPECTED] * 2),
+        (None, None),
+        ([GEOJSON_GEOMETRY, None], [GEOJSON_GEOMETRY_EXPECTED, None]),
+    ],
+)
+def test_to_geojson(geometry, expected):
+    actual = pygeos.to_geojson(geometry, indent=4)
+    assert np.all(actual == np.asarray(expected))
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 @pytest.mark.parametrize("indent", [None, 0, 4])
-def test_to_geojson(indent):
+def test_to_geojson_indent(indent):
     separators = (",", ":") if indent is None else (",", ": ")
     expected = json.dumps(
         json.loads(GEOJSON_GEOMETRY), indent=indent, separators=separators
     )
     actual = pygeos.to_geojson(GEOJSON_GEOMETRY_EXPECTED, indent=indent)
     assert actual == expected
-
-
-@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
-def test_to_geojson_none():
-    # None propagates
-    assert pygeos.to_geojson(None) is None
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")

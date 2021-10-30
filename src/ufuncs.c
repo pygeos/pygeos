@@ -3082,8 +3082,7 @@ static void to_geojson_func(char** args, npy_intp* dimensions, npy_intp* steps,
   char point_empty_error;
 
   if (is2 != 0) {
-    PyErr_Format(PyExc_ValueError,
-                 "to_geojson function called with non-scalar parameters");
+    PyErr_Format(PyExc_ValueError, "to_geojson indent parameter must be a scalar");
     return;
   }
   indent = *(int*)ip2;
