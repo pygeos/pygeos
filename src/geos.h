@@ -91,8 +91,9 @@ enum {
       PyErr_SetString(PyExc_ValueError, "One of the Geometry inputs is empty.");         \
       break;                                                                             \
     case PGERR_GEOJSON_EMPTY_POINT:                                                      \
-      PyErr_SetString(PyExc_ValueError, "GeoJSON output of empty points is unsupported."); \
-      break;  \
+      PyErr_SetString(PyExc_ValueError,                                                  \
+                      "GeoJSON output of empty points is currently unsupported.");       \
+      break;                                                                             \
     case PGERR_LINEARRING_NCOORDS:                                                       \
       PyErr_SetString(PyExc_ValueError,                                                  \
                       "A linearring requires at least 4 coordinates.");                  \

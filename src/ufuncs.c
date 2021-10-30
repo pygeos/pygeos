@@ -3108,6 +3108,7 @@ static void to_geojson_func(char** args, npy_intp* dimensions, npy_intp* steps,
       Py_INCREF(Py_None);
       *out = Py_None;
     } else {
+      // Check for empty points (https://trac.osgeo.org/geos/ticket/1139)
       point_empty_error = has_point_empty(ctx, in1);
       if (point_empty_error == 2) {
         errstate = PGERR_GEOS_EXCEPTION;

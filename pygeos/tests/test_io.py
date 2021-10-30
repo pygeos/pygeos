@@ -775,12 +775,34 @@ def test_from_geojson_exceptions():
     with pytest.raises(pygeos.GEOSException, match="type must be array, but is null"):
         pygeos.from_geojson('{"type": "LineString", "coordinates": null}')
 
-    # The following inputs give crash, PyGEOS captures these:
+    # Note: The two below tests make GEOS 3.10.0 crash if it is compiled in Debug mode
+    # https://trac.osgeo.org/geos/ticket/1138
     with pytest.raises(pygeos.GEOSException, match="ParseException"):
         pygeos.from_geojson('{"geometry": null, "properties": []}')
 
     with pytest.raises(pygeos.GEOSException, match="ParseException"):
         pygeos.from_geojson('{"no": "geojson"}')
+
+
+def test_from_geojson_warn_on_invalid():
+    with pytest.warns(Warning, match="Invalid GeoJSON"):
+        assert pygeos.from_geojson("", on_invalid="warn") is None
+
+    with pytest.warns(Warning, match="Invalid GeoJSON"):
+        assert pygeos.from_geojson('{"no": "geojson"}', on_invalid="warn") is None
+
+
+def test_from_geojson_ignore_on_invalid():
+    with pytest.warns(None):
+        assert pygeos.from_geojson("", on_invalid="ignore") is None
+
+    with pytest.warns(None):
+        assert pygeos.from_geojson('{"no": "geojson"}', on_invalid="ignore") is None
+
+
+def test_from_geojson_on_invalid_unsupported_option():
+    with pytest.raises(ValueError, match="not a valid option"):
+        pygeos.from_geojson(GEOJSON_GEOMETRY, on_invalid="unsupported_option")
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
@@ -826,6 +848,7 @@ def test_to_geojson_exceptions():
     ],
 )
 def test_to_geojson_point_empty(geom):
+    # Pending GEOS ticket: https://trac.osgeo.org/geos/ticket/1139
     with pytest.raises(ValueError):
         assert pygeos.to_geojson(geom)
 

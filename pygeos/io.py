@@ -246,13 +246,12 @@ def to_geojson(geometry, indent=None, **kwargs):
     """Converts to the GeoJSON representation of a Geometry.
 
     The GeoJSON format is defined in the `RFC 7946 <https://geojson.org/>`__.
+    NaN (not-a-number) coordinates will be written as 'null'.
 
-    Unsupported are:
+    The following are currently unsupported:
 
     - Geometries of type LINEARRING: these are output as 'null'.
     - Three-dimensional geometries: the third dimension is ignored.
-    - NaN (not-a-number) coordinates: these are written as 'null', which renders
-      the GeoJSON invalid.
 
     Parameters
     ----------
@@ -278,6 +277,9 @@ def to_geojson(geometry, indent=None, **kwargs):
       ]
     }
     """
+    # GEOS Tickets:
+    # - handle linearrings: https://trac.osgeo.org/geos/ticket/1140
+    # - support 3D: https://trac.osgeo.org/geos/ticket/1141
     if indent is None:
         indent = -1
     elif not np.isscalar(indent):
@@ -415,7 +417,10 @@ def from_geojson(geometry, on_invalid="raise", **kwargs):
 
     The GeoJSON format is defined in `RFC 7946 <https://geojson.org/>`__.
 
-    Three-dimensional geometries are unsupported. The third dimension will be ignored.
+    The following are currently unsupported:
+
+    - Three-dimensional geometries: the third dimension is ignored.
+    - Geometries having 'null' in the coordinates.
 
     Parameters
     ----------
@@ -439,7 +444,9 @@ def from_geojson(geometry, on_invalid="raise", **kwargs):
     >>> from_geojson('{"type": "Point","coordinates": [1, 2]}')
     <pygeos.Geometry POINT (1 2)>
     """
-
+    # GEOS Tickets:
+    # - support 3D: https://trac.osgeo.org/geos/ticket/1141
+    # - handle null coordinates: https://trac.osgeo.org/geos/ticket/1142
     if not np.isscalar(on_invalid):
         raise TypeError("on_invalid only accepts scalar values")
 
