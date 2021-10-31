@@ -4,8 +4,8 @@ from collections.abc import Sized
 import numpy as np
 
 from . import Geometry  # noqa
-from . import geos_capi_version_string, lib
-from .decorators import requires_geos
+from . import geos_capi_version_string, geos_version, lib
+from .decorators import may_segfault, requires_geos
 from .enum import ParamEnum
 
 __all__ = [
@@ -415,6 +415,11 @@ def from_geojson(geometry, on_invalid="raise", **kwargs):
     (with type GEOMETRYCOLLECTION). This may be unpacked using the ``pygeos.get_parts``.
     Properties are not read.
 
+    .. note::
+
+      For GEOS 3.10.0, this function is executed in a subprocess. This is because invalid
+      GeoJSON input may result in a crash. For GEOS 3.10.1 the issue is expected to be fixed.
+
     The GeoJSON format is defined in `RFC 7946 <https://geojson.org/>`__.
 
     The following are currently unsupported:
@@ -457,7 +462,13 @@ def from_geojson(geometry, on_invalid="raise", **kwargs):
     # of array elements)
     geometry = np.asarray(geometry, dtype=object)
 
-    return lib.from_geojson(geometry, invalid_handler, **kwargs)
+    # GEOS 3.10.0 may segfault on invalid GeoJSON input. This bug is currently
+    # solved in main branch, expected fix in (3, 10, 1)
+    if geos_version == (3, 10, 0):
+        _from_geojson = may_segfault(lib.from_geojson)
+    else:
+        _from_geojson = lib.from_geojson
+    return _from_geojson(geometry, invalid_handler, **kwargs)
 
 
 def from_shapely(geometry, **kwargs):

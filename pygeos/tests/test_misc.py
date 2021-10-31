@@ -1,5 +1,7 @@
+import ctypes
 import os
 import sys
+import warnings
 from itertools import chain
 from string import ascii_letters, digits
 from unittest import mock
@@ -8,7 +10,8 @@ import numpy as np
 import pytest
 
 import pygeos
-from pygeos.decorators import multithreading_enabled, requires_geos
+from pygeos import GEOSException
+from pygeos.decorators import may_segfault, multithreading_enabled, requires_geos
 
 
 @pytest.fixture
@@ -184,3 +187,47 @@ def test_multithreading_enabled_preserves_flag():
 def test_multithreading_enabled_ok(args, kwargs):
     result = set_first_element(42, *args, **kwargs)
     assert result[0] == 42
+
+
+def test_may_segfault():
+    @may_segfault
+    def my_func():
+        ctypes.string_at(0)  # segfault
+
+    with pytest.raises(GEOSException, match="GEOS crashed with exit code"):
+        my_func()
+
+
+def test_may_segfault_exit():
+    @may_segfault
+    def my_func():
+        exit(1)
+
+    with pytest.raises(GEOSException, match="GEOS crashed with exit code 1."):
+        my_func()
+
+
+def test_may_segfault_raises():
+    @may_segfault
+    def my_func():
+        raise GEOSException("This is a test")
+
+    with pytest.raises(GEOSException, match="This is a test"):
+        my_func()
+
+
+def test_may_segfault_returns():
+    @may_segfault
+    def my_func():
+        return "This is a test"
+
+    assert my_func() == "This is a test"
+
+
+def test_may_segfault_warns():
+    @may_segfault
+    def my_func():
+        warnings.warn("This is a test", UserWarning)
+
+    with pytest.warns(UserWarning, match="This is a test"):
+        my_func()
