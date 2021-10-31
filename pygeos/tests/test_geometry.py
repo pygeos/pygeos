@@ -582,10 +582,8 @@ def test_set_precision_grid_size_nan():
         pytest.param(
             pygeos.Geometry("LINEARRING (0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0)"),
             "keep_collapsed",
-            pygeos.Geometry("LINEARRING (0 0, 0 0, 0 0, 0 0, 0 0)"),
-            marks=pytest.mark.skipif(
-                pygeos.geos_version == (3, 10, 0), reason="GEOS 3.10.0"
-            ),
+            # See https://trac.osgeo.org/geos/ticket/1135#comment:5
+            pygeos.Geometry("LINESTRING (0 0, 0 0, 0 0)"),
         ),
         (
             pygeos.Geometry("POLYGON ((0 0, 0.1 0, 0.1 0.1, 0 0.1, 0 0))"),
