@@ -5,7 +5,7 @@ from functools import wraps
 
 import numpy as np
 
-from . import GEOSException, lib
+from . import lib
 
 
 class UnsupportedGEOSOperation(ImportError):
@@ -127,7 +127,7 @@ class ReturningProcess(multiprocessing.Process):
 def may_segfault(func):
     """The wrapped function will be called in another process.
 
-    If the execution crashes with a segfault or sigabort, an Exception
+    If the execution crashes with a segfault or sigabort, an OSError
     will be raised.
 
     Note: do not use this to decorate a function at module level, because this
@@ -148,7 +148,7 @@ def may_segfault(func):
         if process.exception:
             raise process.exception
         elif process.exitcode != 0:
-            raise GEOSException(f"GEOS crashed with exit code {process.exitcode}.")
+            raise OSError(f"GEOS crashed with exit code {process.exitcode}.")
         else:
             for w in process.warnings:
                 warnings.warn_explicit(

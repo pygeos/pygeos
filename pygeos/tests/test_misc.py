@@ -10,7 +10,6 @@ import numpy as np
 import pytest
 
 import pygeos
-from pygeos import GEOSException
 from pygeos.decorators import may_segfault, multithreading_enabled, requires_geos
 
 
@@ -203,12 +202,16 @@ def my_unstable_func(event=None):
 
 
 def test_may_segfault():
-    with pytest.raises(GEOSException, match="GEOS crashed with exit code"):
+    if os.name == "nt":
+        match = "access violation"
+    else:
+        match = "GEOS crashed"
+    with pytest.raises(OSError, match=match):
         may_segfault(my_unstable_func)("segfault")
 
 
 def test_may_segfault_exit():
-    with pytest.raises(GEOSException, match="GEOS crashed with exit code 1."):
+    with pytest.raises(OSError, match="GEOS crashed with exit code 1."):
         may_segfault(my_unstable_func)("exit")
 
 

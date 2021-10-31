@@ -777,10 +777,10 @@ def test_from_geojson_exceptions():
 
     # Note: The two below tests may make GEOS 3.10.0 crash
     # https://trac.osgeo.org/geos/ticket/1138
-    with pytest.raises(pygeos.GEOSException):
+    with pytest.raises((pygeos.GEOSException, OSError)):
         pygeos.from_geojson('{"geometry": null, "properties": []}')
 
-    with pytest.raises(pygeos.GEOSException):
+    with pytest.raises((pygeos.GEOSException, OSError)):
         pygeos.from_geojson('{"no": "geojson"}')
 
 
