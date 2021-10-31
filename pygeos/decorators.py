@@ -129,6 +129,15 @@ def may_segfault(func):
 
     If the execution crashes with a segfault or sigabort, an Exception
     will be raised.
+
+    Note: do not use this to decorate a function at module level, because this
+    will render the function un-Picklable so that multiprocessing fails on OSX/Windows.
+
+    Instead, use it like this:
+
+    >>> def some_unstable_func():
+    ...     ...
+    >>> some_func = may_segfault(some_unstable_func)
     """
 
     @wraps(func)
