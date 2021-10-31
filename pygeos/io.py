@@ -4,7 +4,7 @@ from collections.abc import Sized
 import numpy as np
 
 from . import Geometry  # noqa
-from . import geos_capi_version_string, geos_version, lib
+from . import geos_capi_version_string, geos_version_string, lib
 from .decorators import may_segfault, requires_geos
 from .enum import ParamEnum
 
@@ -464,7 +464,7 @@ def from_geojson(geometry, on_invalid="raise", **kwargs):
 
     # GEOS 3.10.0 may segfault on invalid GeoJSON input. This bug is currently
     # solved in main branch, expected fix in (3, 10, 1)
-    if geos_version == (3, 10, 0):
+    if geos_version_string == "3.10.0":  # so not on dev versions!
         _from_geojson = may_segfault(lib.from_geojson)
     else:
         _from_geojson = lib.from_geojson
