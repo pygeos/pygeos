@@ -10,7 +10,8 @@ import numpy as np
 import pytest
 
 import pygeos
-from pygeos.decorators import may_segfault, multithreading_enabled, requires_geos
+from pygeos.decorators import multithreading_enabled, requires_geos
+from pygeos.may_segfault import may_segfault
 
 
 @pytest.fixture

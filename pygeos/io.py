@@ -5,8 +5,9 @@ import numpy as np
 
 from . import Geometry  # noqa
 from . import geos_capi_version_string, geos_version_string, lib
-from .decorators import may_segfault, requires_geos
+from .decorators import requires_geos
 from .enum import ParamEnum
+from .may_segfault import may_segfault
 
 __all__ = [
     "from_geojson",
