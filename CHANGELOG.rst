@@ -8,6 +8,8 @@ Version 0.12 (unreleased)
 **Major enhancements**
 
 * Added ``pygeos.distance_within`` for GEOS >= 3.10 (#417).
+* Added GeoJSON input/output capabilities (``pygeos.from_geojson``, 
+  ``pygeos.to_geojson``) (#413).
 
 **API Changes**
 
@@ -15,7 +17,9 @@ Version 0.12 (unreleased)
 
 **Bug fixes**
 
-* ...
+* Protect ``pygeos.from_geojson`` against segfaults by running the function in a
+  subprocess (GEOS 3.10.0 only) (#418).
+
 
 **Acknowledgments**
 
