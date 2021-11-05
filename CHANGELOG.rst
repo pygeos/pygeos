@@ -7,7 +7,7 @@ Version 0.12 (unreleased)
 
 **Major enhancements**
 
-* ...
+* Added ``pygeos.distance_within`` for GEOS >= 3.10 (#417).
 
 **API Changes**
 
