@@ -118,6 +118,7 @@ def test_equals_exact_tolerance():
     assert pygeos.equals_exact(p1, p2).item() is False
 
 
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
 def test_distance_within():
     # specifying tolerance
     p1 = pygeos.points(50, 4)
