@@ -1596,9 +1596,8 @@ static PyUFuncGenericFunction equals_exact_funcs[1] = {&equals_exact_func};
 
 #if GEOS_SINCE_3_10_0
 
-static char distance_within_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_BOOL};
-static void distance_within_func(char** args, npy_intp* dimensions, npy_intp* steps,
-                                 void* data) {
+static char dwithin_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_BOOL};
+static void dwithin_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
   GEOSGeometry *in1 = NULL, *in2 = NULL;
   GEOSPreparedGeometry* in1_prepared = NULL;
   double in3;
@@ -1641,7 +1640,7 @@ finish:
 
   GEOS_FINISH_THREADS;
 }
-static PyUFuncGenericFunction distance_within_funcs[1] = {&distance_within_func};
+static PyUFuncGenericFunction dwithin_funcs[1] = {&dwithin_func};
 
 #endif  // GEOS_SINCE_3_10_0
 
@@ -3437,7 +3436,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 
 #if GEOS_SINCE_3_10_0
   DEFINE_Yd_Y(segmentize);
-  DEFINE_CUSTOM(distance_within, 3);
+  DEFINE_CUSTOM(dwithin, 3);
   DEFINE_CUSTOM(from_geojson, 2);
   DEFINE_CUSTOM(to_geojson, 2);
 #endif

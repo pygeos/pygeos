@@ -23,7 +23,7 @@ __all__ = [
     "covered_by",
     "covers",
     "disjoint",
-    "distance_within",
+    "dwithin",
     "equals",
     "intersects",
     "overlaps",
@@ -1006,7 +1006,7 @@ def relate_pattern(a, b, pattern, **kwargs):
 
 @multithreading_enabled
 @requires_geos("3.10.0")
-def distance_within(a, b, distance, **kwargs):
+def dwithin(a, b, distance, **kwargs):
     """
     Returns True if the geometries are within a given distance.
 
@@ -1030,13 +1030,13 @@ def distance_within(a, b, distance, **kwargs):
     Examples
     --------
     >>> point = Geometry("POINT (0.5 0.5)")
-    >>> distance_within(point, Geometry("POINT (2 0.5)"), 2)
+    >>> dwithin(point, Geometry("POINT (2 0.5)"), 2)
     True
-    >>> distance_within(point, Geometry("POINT (2 0.5)"), [2, 1.5, 1]).tolist()
+    >>> dwithin(point, Geometry("POINT (2 0.5)"), [2, 1.5, 1]).tolist()
     [True, True, False]
-    >>> distance_within(point, Geometry("POINT (0.5 0.5)"), 0)
+    >>> dwithin(point, Geometry("POINT (0.5 0.5)"), 0)
     True
-    >>> distance_within(point, None, 100)
+    >>> dwithin(point, None, 100)
     False
     """
-    return lib.distance_within(a, b, distance, **kwargs)
+    return lib.dwithin(a, b, distance, **kwargs)
