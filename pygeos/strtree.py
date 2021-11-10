@@ -303,3 +303,56 @@ class STRtree:
             return self._tree.nearest_all(geometry, max_distance)
 
         return self._tree.nearest_all(geometry, max_distance)[0]
+
+    @requires_geos("3.10.0")
+    def dwithin(self, geometry, distance):
+        """Returns all combinations of each input geometry and geometries in the tree
+        where each tree geometry is within distance of each input geometry.
+
+        This returns an array with shape (2,n) where the subarrays correspond
+        to the indexes of the input geometries and indexes of the tree geometries
+        associated with each.  To generate an array of pairs of input geometry
+        index and tree geometry index, simply transpose the results.
+
+        Any geometry that is None or empty in the input geometries is omitted from
+        the output.
+
+        Parameters
+        ----------
+        geometry : Geometry or array_like
+            Input geometries to query the tree.  The envelope of each geometry
+            is automatically calculated for querying the tree.
+        distance : number or array_like
+            Distances within which to query the tree for each input geometry.
+            If array_like, shape must be broadcastable to shape of geometry.
+
+        Returns
+        -------
+        ndarray of shape (n,) if geometry is scalar, otherwise ndarray with shape (2, n)
+            The first subarray contains input geometry indexes.
+            The second subarray contains tree geometry indexes.
+
+        Examples
+        --------
+        >>> import pygeos
+        >>> tree = pygeos.STRtree(pygeos.points([[0, 0], [1, 1], [0, 4]]))
+        >>> tree.dwithin(pygeos.points([[0,1]]), 1.25).tolist()
+        [[0, 0], [0, 1]]
+        """
+
+        is_scalar = np.isscalar(geometry)
+
+        geometry = np.asarray(geometry, dtype=object)
+        if geometry.ndim == 0:
+            geometry = np.expand_dims(geometry, 0)
+
+        distance = np.broadcast_to(
+            np.asarray(distance, dtype="float64"), geometry.shape
+        )
+
+        results = self._tree.dwithin(geometry, distance)
+
+        if is_scalar:
+            return results[1]
+
+        return results
