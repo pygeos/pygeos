@@ -44,12 +44,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [] # [ubuntu-20.04, windows-2019]
-        archs: [] # [auto32, auto64]
+        os: [ubuntu-20.04, windows-2019]
+        archs: [auto32, auto64]
         include:
-        # Only numpy >= 1.19 has aarch64 wheels
-        # - os: ubuntu-20.04
-        #   archs: aarch64
+        - os: ubuntu-20.04
+          archs: aarch64
         # Numpy doesn't have ppc64le wheels:
         # - os: ubuntu-20.04
         #   archs: ppc64le
