@@ -127,7 +127,7 @@ def test_dwithin():
     p1 = pygeos.points(50, 4)
     p2 = pygeos.points(50.1, 4.1)
     actual = pygeos.dwithin([p1, p2, None], p1, distance=0.05)
-    np.testing.assert_allclose(actual, [True, False, False])
+    np.testing.assert_equal(actual, [True, False, False])
     assert actual.dtype == np.bool_
     actual = pygeos.dwithin([p1, p2, None], p1, distance=0.2)
     np.testing.assert_allclose(actual, [True, True, False])
