@@ -47,13 +47,13 @@ jobs:
         include:
         - os: ubuntu-20.04
           arch: x86_64
-          geos_build_arch: x86_64
+          geos_build_arch: x86_64  # for cache key
         - os: ubuntu-20.04
           arch: i686
-          geos_build_arch: i686
+          geos_build_arch: i686  # for cache key
         - os: ubuntu-20.04
           arch: aarch64
-          geos_build_arch: aarch64
+          geos_build_arch: aarch64  # for cache key
         # Numpy doesn't have ppc64le wheels:
         # - os: ubuntu-20.04
         #   arch: ppc64le
@@ -61,20 +61,20 @@ jobs:
         # - os: ubuntu-20.04
         #   arch: s390x  
         - os: windows-2019
-          arch: win32
-          geos_build_arch: win32
+          arch: x86
+          geos_build_arch: x86  # for cache key & MSVC activation
         - os: windows-2019
           arch: AMD64
-          geos_build_arch: AMD64
+          geos_build_arch: x64  # for cache key & MSVC activation
         - os: macos-10.15
           arch: x86_64
-          geos_build_arch: "x86_64;arm64"
+          geos_build_arch: x86_64  # for cache key & CMAKE_OSX_ARCHITECTURES
         - os: macos-10.15
           arch: arm64
-          geos_build_arch: "x86_64;arm64"
+          geos_build_arch: arm64  # for cache key & CMAKE_OSX_ARCHITECTURES
         - os: macos-10.15
           arch: universal2
-          geos_build_arch: "x86_64;arm64"
+          geos_build_arch: "x86_64;arm64"  # for cache key & CMAKE_OSX_ARCHITECTURES
 
     steps:
       - uses: actions/checkout@v2
@@ -102,17 +102,11 @@ jobs:
           platforms: arm64
         if: ${{ matrix.arch == 'aarch64' }}
 
-      - name: Activate MSVC 32-bit
+      - name: Activate MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: x86
-        if: ${{ matrix.arch == 'win32' }}
-
-      - name: Activate MSVC 64-bit
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-        if: ${{ matrix.arch == 'AMD64' }}
+          arch: ${{ matrix.geos_build_arch }}
+        if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.2.2
