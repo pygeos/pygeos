@@ -47,34 +47,27 @@ jobs:
         include:
         - os: ubuntu-20.04
           arch: x86_64
-          geos_build_arch: x86_64  # for cache key
         - os: ubuntu-20.04
           arch: i686
-          geos_build_arch: i686  # for cache key
         - os: ubuntu-20.04
           arch: aarch64
-          geos_build_arch: aarch64  # for cache key
-        # Numpy doesn't have ppc64le wheels:
-        # - os: ubuntu-20.04
-        #   arch: ppc64le
-        # We know that tests don't pass on s390x:
-        # - os: ubuntu-20.04
-        #   arch: s390x  
+        # Note: Numpy doesn't have ppc64le & s390x wheels
+        # Also, some GEOS tests fail on s390x.
         - os: windows-2019
           arch: x86
-          geos_build_arch: x86  # for cache key & MSVC activation
+          msvc_arch: x86
         - os: windows-2019
           arch: AMD64
-          geos_build_arch: x64  # for cache key & MSVC activation
+          msvc_arch: x64
         - os: macos-10.15
           arch: x86_64
-          geos_build_arch: x86_64  # for cache key & CMAKE_OSX_ARCHITECTURES
+          cmake_osx_architectures: x86_64
         - os: macos-10.15
           arch: arm64
-          geos_build_arch: arm64  # for cache key & CMAKE_OSX_ARCHITECTURES
+          cmake_osx_architectures: arm64
         - os: macos-10.15
           arch: universal2
-          geos_build_arch: "x86_64;arm64"  # for cache key & CMAKE_OSX_ARCHITECTURES
+          cmake_osx_architectures: "x86_64;arm64"
 
     steps:
       - uses: actions/checkout@v2
@@ -83,7 +76,7 @@ jobs:
         uses: actions/cache@v2
         with:
           path: ${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}
-          key: ${{ matrix.os }}-${{ matrix.geos_build_arch }}-${{ env.GEOS_VERSION }}-${{ hashFiles('ci/*') }}
+          key: ${{ matrix.os }}-${{ matrix.arch }}-${{ env.GEOS_VERSION }}-${{ hashFiles('ci/*') }}
 
       - name: Add GEOS LICENSE
         run: |
@@ -105,7 +98,7 @@ jobs:
       - name: Activate MSVC
         uses: ilammy/msvc-dev-cmd@v1
         with:
-          arch: ${{ matrix.geos_build_arch }}
+          arch: ${{ matrix.msvc_arch }}
         if: ${{ matrix.os == 'windows-2019' }}
 
       - name: Build wheels
@@ -123,7 +116,7 @@ jobs:
             GEOS_CONFIG=${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}/bin/geos-config
             LDFLAGS=-Wl,-rpath,${{ runner.temp }}/geos-${{ env.GEOS_VERSION }}/lib
             MACOSX_DEPLOYMENT_TARGET=10.9
-            CMAKE_OSX_ARCHITECTURES='${{ matrix.geos_build_arch }}'
+            CMAKE_OSX_ARCHITECTURES='${{ matrix.cmake_osx_architectures }}'
           CIBW_ENVIRONMENT_WINDOWS:
             GEOS_INSTALL='${{ runner.temp }}\geos-${{ env.GEOS_VERSION }}'
             GEOS_LIBRARY_PATH='${{ runner.temp }}\geos-${{ env.GEOS_VERSION }}\lib'
