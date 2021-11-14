@@ -29,7 +29,7 @@ Version 0.12 (unreleased)
 
 * Raise ``GEOSException`` in the rare case when predicate evalution in ``STRtree.query``
   errors. Previously, the exceptions were ignored silently and the geometry was added 
-  to the result (as if the predicated returned ``True``) (#432).
+  to the result (as if the predicate returned ``True``) (#432).
 
 
 **Acknowledgments**
