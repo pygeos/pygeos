@@ -309,7 +309,7 @@ static char evaluate_predicate(void* context, FuncGEOS_YpY_b* predicate_func,
     } else if (predicate_result == 1) {
       kv_push(GeometryObject**, *out_geoms, pg_geom_loc);
       (*count)++;
-    }      
+    }
   }
 
   if (prepared_geom == NULL) {
