@@ -66,7 +66,7 @@ def points(coords, y=None, z=None, indices=None, out=None, **kwargs):
 
     - GEOS >=3.10 automatically converts POINT (nan nan) to POINT EMPTY.
     - Usage of the ``y`` and ``z`` arguments will prevents lazy evaluation in ``dask``.
-      Instead provide the coordinates as a ``(..., 2)`` or ``(..., 3)`` array using only ``coords``.
+      Instead provide the coordinates as an array with shape ``(..., 2)`` or ``(..., 3)`` using only the ``coords`` argument.
     """
     coords = _xyz_to_coords(coords, y, z)
     if indices is None:
