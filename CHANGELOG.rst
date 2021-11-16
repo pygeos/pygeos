@@ -5,19 +5,33 @@ Changelog
 Version 0.12 (unreleased)
 -------------------------
 
+**Distribution**
+
+* Distribute binary wheels for Apple Silicon architecture
+  (arm64 and universal2) (#427).
+* Removed 32-bit architecture wheels for
+  Python 3.10 (#427).
+* All binary wheels now have GEOS 3.10.1. See https://github.com/libgeos/geos/blob/main/NEWS
+  for the changes (#422).
+
+
 **Major enhancements**
 
+* Added ``pygeos.dwithin`` for GEOS >= 3.10 (#417).
 * Added GeoJSON input/output capabilities (``pygeos.from_geojson``, 
-  ``pygeos.to_geojson``) (#413).
+  ``pygeos.to_geojson``) for GEOS >= 3.10 (#413).
 
 **API Changes**
 
-* ...
+* When constructing a linearring through ``pygeos.linearrings`` or a polygon through 
+  ``pygeos.polygons`` the ring is automatically closed when supplied with 3 coordinates
+  also when the first and last are already equal (#431).
 
 **Bug fixes**
 
-* Protect ``pygeos.from_geojson`` against segfaults by running the function in a
-  subprocess (GEOS 3.10.0 only) (#418).
+* Raise ``GEOSException`` in the rare case when predicate evalution in ``STRtree.query``
+  errors. Previously, the exceptions were ignored silently and the geometry was added 
+  to the result (as if the predicate returned ``True``) (#432).
 
 
 **Acknowledgments**

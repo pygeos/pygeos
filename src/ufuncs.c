@@ -1560,6 +1560,7 @@ static char equals_exact_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_BO
 static void equals_exact_func(char** args, npy_intp* dimensions, npy_intp* steps,
                               void* data) {
   GEOSGeometry *in1 = NULL, *in2 = NULL;
+  double in3;
   npy_bool ret;
 
   GEOS_INIT_THREADS;
@@ -1574,7 +1575,7 @@ static void equals_exact_func(char** args, npy_intp* dimensions, npy_intp* steps
       errstate = PGERR_NOT_A_GEOMETRY;
       goto finish;
     }
-    double in3 = *(double*)ip3;
+    in3 = *(double*)ip3;
     if ((in1 == NULL) || (in2 == NULL) || npy_isnan(in3)) {
       /* return 0 (False) for missing values */
       ret = 0;
@@ -1592,6 +1593,56 @@ finish:
   GEOS_FINISH_THREADS;
 }
 static PyUFuncGenericFunction equals_exact_funcs[1] = {&equals_exact_func};
+
+#if GEOS_SINCE_3_10_0
+
+static char dwithin_dtypes[4] = {NPY_OBJECT, NPY_OBJECT, NPY_DOUBLE, NPY_BOOL};
+static void dwithin_func(char** args, npy_intp* dimensions, npy_intp* steps, void* data) {
+  GEOSGeometry *in1 = NULL, *in2 = NULL;
+  GEOSPreparedGeometry* in1_prepared = NULL;
+  double in3;
+  npy_bool ret;
+
+  GEOS_INIT_THREADS;
+
+  TERNARY_LOOP {
+    /* get the geometries: return on error */
+    if (!get_geom_with_prepared(*(GeometryObject**)ip1, &in1, &in1_prepared)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      goto finish;
+    }
+    if (!get_geom(*(GeometryObject**)ip2, &in2)) {
+      errstate = PGERR_NOT_A_GEOMETRY;
+      goto finish;
+    }
+    in3 = *(double*)ip3;
+    if ((in1 == NULL) || (in2 == NULL) || npy_isnan(in3)) {
+      /* in case of a missing value: return 0 (False) */
+      ret = 0;
+    } else {
+      if (in1_prepared == NULL) {
+        /* call the GEOS function */
+        ret = GEOSDistanceWithin_r(ctx, in1, in2, in3);
+      } else {
+        /* call the prepared GEOS function */
+        ret = GEOSPreparedDistanceWithin_r(ctx, in1_prepared, in2, in3);
+      }
+      /* return for illegal values */
+      if (ret == 2) {
+        errstate = PGERR_GEOS_EXCEPTION;
+        goto finish;
+      }
+    }
+    *(npy_bool*)op1 = ret;
+  }
+
+finish:
+
+  GEOS_FINISH_THREADS;
+}
+static PyUFuncGenericFunction dwithin_funcs[1] = {&dwithin_func};
+
+#endif  // GEOS_SINCE_3_10_0
 
 static char delaunay_triangles_dtypes[4] = {NPY_OBJECT, NPY_DOUBLE, NPY_BOOL, NPY_OBJECT};
 static void delaunay_triangles_func(char** args, npy_intp* dimensions, npy_intp* steps,
@@ -2201,12 +2252,16 @@ static void linearrings_func(char** args, npy_intp* dimensions, npy_intp* steps,
   DOUBLE_COREDIM_LOOP_OUTER {
     /* check if first and last coords are equal; duplicate if necessary */
     ring_closure = 0;
-    DOUBLE_COREDIM_LOOP_INNER_2 {
-      first_coord = *(double*)(ip1 + i_c2 * cs2);
-      last_coord = *(double*)(ip1 + (n_c1 - 1) * cs1 + i_c2 * cs2);
-      if (first_coord != last_coord) {
-        ring_closure = 1;
-        break;
+    if (n_c1 == 3) {
+      ring_closure = 1;
+    } else {
+      DOUBLE_COREDIM_LOOP_INNER_2 {
+        first_coord = *(double*)(ip1 + i_c2 * cs2);
+        last_coord = *(double*)(ip1 + (n_c1 - 1) * cs1 + i_c2 * cs2);
+        if (first_coord != last_coord) {
+          ring_closure = 1;
+          break;
+        }
       }
     }
     /* the minimum number of coordinates in a linearring is 4 */
@@ -3385,6 +3440,7 @@ int init_ufuncs(PyObject* m, PyObject* d) {
 
 #if GEOS_SINCE_3_10_0
   DEFINE_Yd_Y(segmentize);
+  DEFINE_CUSTOM(dwithin, 3);
   DEFINE_CUSTOM(from_geojson, 2);
   DEFINE_CUSTOM(to_geojson, 2);
 #endif
