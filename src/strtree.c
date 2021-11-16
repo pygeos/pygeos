@@ -1099,7 +1099,7 @@ static PyObject* STRtree_dwithin(STRtreeObject* self, PyObject* args) {
   }
 
   if (PyArray_NDIM(pg_geoms) != 1) {
-    PyErr_SetString(PyExc_TypeError, "Geometry array should be one dimensional");
+    PyErr_SetString(PyExc_ValueError, "Geometry array should be one dimensional");
     return NULL;
   }
 
@@ -1110,13 +1110,13 @@ static PyObject* STRtree_dwithin(STRtreeObject* self, PyObject* args) {
   }
 
   if (PyArray_NDIM(distances) != 1) {
-    PyErr_SetString(PyExc_TypeError, "Distance array should be one dimensional");
+    PyErr_SetString(PyExc_ValueError, "Distance array should be one dimensional");
     return NULL;
   }
 
   n = PyArray_SIZE(pg_geoms);
   if (n != PyArray_SIZE(distances)) {
-    PyErr_SetString(PyExc_TypeError, "Geometries and distances must be same length");
+    PyErr_SetString(PyExc_ValueError, "Geometries and distances must be same length");
     return NULL;
   }
 
@@ -1148,8 +1148,6 @@ static PyObject* STRtree_dwithin(STRtreeObject* self, PyObject* args) {
     // prescreen geometries using simple bbox expansion
     if (get_bounds(ctx, geom, &xmin, &ymin, &xmax, &ymax) == 0) {
       errstate = PGERR_GEOS_EXCEPTION;
-      kv_destroy(src_indexes);
-      kv_destroy(target_geoms);
       break;
     }
 
@@ -1157,8 +1155,6 @@ static PyObject* STRtree_dwithin(STRtreeObject* self, PyObject* args) {
                           ymax + distance, 1);
     if (envelope == NULL) {
       errstate = PGERR_GEOS_EXCEPTION;
-      kv_destroy(src_indexes);
-      kv_destroy(target_geoms);
       break;
     }
 
@@ -1179,8 +1175,7 @@ static PyObject* STRtree_dwithin(STRtreeObject* self, PyObject* args) {
       // geom was not previously prepared, prepare it now
       prepared_geom_tmp = GEOSPrepare_r(ctx, (const GEOSGeometry*)geom);
       if (prepared_geom_tmp == NULL) {
-        kv_destroy(src_indexes);
-        kv_destroy(target_geoms);
+        errstate = PGERR_GEOS_EXCEPTION;
         kv_destroy(query_geoms);
         break;
       }
@@ -1224,8 +1219,7 @@ static PyObject* STRtree_dwithin(STRtreeObject* self, PyObject* args) {
     }
 
     if (errstate != PGERR_SUCCESS) {
-      kv_destroy(src_indexes);
-      kv_destroy(target_geoms);
+      // break outer loop
       break;
     }
   }
@@ -1233,6 +1227,8 @@ static PyObject* STRtree_dwithin(STRtreeObject* self, PyObject* args) {
   GEOS_FINISH_THREADS;
 
   if (errstate != PGERR_SUCCESS) {
+    kv_destroy(src_indexes);
+    kv_destroy(target_geoms);
     return NULL;
   }
 

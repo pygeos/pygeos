@@ -1527,3 +1527,120 @@ def test_strtree_threaded_query():
 
     with ThreadPoolExecutor() as pool:
         list(pool.map(thread_func, itertools.product(range(4), range(4))))
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance,expected",
+    [
+        (pygeos.points(0.25, 0.25), 0, [[], []]),
+        (pygeos.points(0.25, 0.25), -1, [[], []]),
+        (pygeos.points(0.25, 0.25), np.nan, [[], []]),
+        (pygeos.Geometry("POINT EMPTY"), 1, [[], []]),
+        (pygeos.points(0.25, 0.25), 0.5, [[0], [0]]),
+        (pygeos.points(0.25, 0.25), [0.5], [[0], [0]]),
+        (pygeos.points(0.25, 0.25), 2.5, [[0, 0, 0], [0, 1, 2]]),
+        (pygeos.points(3, 3), 1.5, [[0, 0, 0], [2, 3, 4]]),
+        # 2 equidistant points in tree
+        (pygeos.points(0.5, 0.5), 0.75, [[0, 0], [0, 1]]),
+        (
+            [None, pygeos.points(0.5, 0.5)],
+            0.75,
+            [
+                [
+                    1,
+                    1,
+                ],
+                [0, 1],
+            ],
+        ),
+        (
+            [pygeos.points(0.5, 0.5), pygeos.points(0.25, 0.25)],
+            0.75,
+            [[0, 0, 1], [0, 1, 0]],
+        ),
+        (
+            [pygeos.points(0, 0.2), pygeos.points(1.75, 1.75)],
+            [0.25, 2],
+            [[0, 1, 1, 1], [0, 1, 2, 3]],
+        ),
+        # all points intersect box
+        (box(0, 0, 3, 3), 0, [[0, 0, 0, 0], [0, 1, 2, 3]]),
+        (box(0, 0, 3, 3), 0.25, [[0, 0, 0, 0], [0, 1, 2, 3]]),
+        # intersecting and nearby points
+        (box(1, 1, 2, 2), 1.5, [[0, 0, 0, 0], [0, 1, 2, 3]]),
+        # # return nearest point in tree for each point in multipoint
+        (pygeos.multipoints([[0.25, 0.25], [1.5, 1.5]]), 0.75, [[0, 0, 0], [0, 1, 2]]),
+        # 2 equidistant points per point in multipoint
+        (
+            pygeos.multipoints([[0.5, 0.5], [3.5, 3.5]]),
+            0.75,
+            [[0, 0, 0, 0], [0, 1, 3, 4]],
+        ),
+    ],
+)
+def test_dwithin_points(tree, geometry, distance, expected):
+    assert_array_equal(tree.dwithin(geometry, distance), expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance,expected",
+    [
+        (pygeos.points(0.5, 0.5), 0, [[0], [0]]),
+        (pygeos.points(0.5, 0.5), 1.0, [[0, 0], [0, 1]]),
+        (pygeos.points(2, 2), 0.5, [[0, 0], [1, 2]]),
+        (box(0, 0, 1, 1), 0.5, [[0, 0], [0, 1]]),
+        (box(0.5, 0.5, 1.5, 1.5), 0.5, [[0, 0], [0, 1]]),
+        # multipoints at endpoints of 2 lines each
+        (pygeos.multipoints([[5, 5], [7, 7]]), 0.5, [[0, 0, 0, 0], [4, 5, 6, 7]]),
+        # multipoints are equidistant from 2 lines
+        (pygeos.multipoints([[5, 7], [7, 5]]), 1.5, [[0, 0], [5, 6]]),
+    ],
+)
+def test_dwithin_lines(line_tree, geometry, distance, expected):
+    assert_array_equal(line_tree.dwithin(geometry, distance), expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance,expected",
+    [
+        (pygeos.points(0, 0), 0, [[0], [0]]),
+        (pygeos.points(0, 0), 0.5, [[0], [0]]),
+        (pygeos.points(0, 0), 1.5, [[0, 0], [0, 1]]),
+        (pygeos.points(0.5, 0.5), 1, [[0, 0], [0, 1]]),
+        (pygeos.points(0.5, 0.5), 0.5, [[0, 0], [0, 1]]),
+        (box(0, 0, 1, 1), 0, [[0, 0], [0, 1]]),
+        (box(0, 0, 1, 1), 2, [[0, 0, 0], [0, 1, 2]]),
+        (pygeos.multipoints([[5, 5], [7, 7]]), 0.5, [[0, 0], [5, 7]]),
+        (
+            pygeos.multipoints([[5, 5], [7, 7]]),
+            2.5,
+            [[0, 0, 0, 0, 0, 0, 0], [3, 4, 5, 6, 7, 8, 9]],
+        ),
+    ],
+)
+def test_dwithin_polygons(poly_tree, geometry, distance, expected):
+    assert_array_equal(poly_tree.dwithin(geometry, distance), expected)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+def test_dwithin_invalid_length(tree):
+    with pytest.raises(
+        ValueError, match="Could not broadcast distance to match geometry"
+    ):
+        tree.dwithin(pygeos.points(0.5, 0.5), [0, 1])
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance",
+    [
+        ([[pygeos.points(0.25, 0.25)]], 1.0),
+        ([pygeos.points(0.25, 0.25)], [[1.0]]),
+    ],
+)
+def test_dwithin_invalid_dim(tree, geometry, distance):
+    with pytest.raises(ValueError, match="should be one dimensional"):
+        tree.dwithin(geometry, distance)

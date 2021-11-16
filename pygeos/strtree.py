@@ -336,8 +336,14 @@ class STRtree:
         --------
         >>> import pygeos
         >>> tree = pygeos.STRtree(pygeos.points([[0, 0], [1, 1], [0, 4]]))
-        >>> tree.dwithin(pygeos.points([[0,1]]), 1.25).tolist()
+        >>> tree.dwithin(pygeos.points([[0,1]]), 1.25).tolist()  # doctest: +SKIP
         [[0, 0], [0, 1]]
+        >>> tree.dwithin(pygeos.points([[0,0]]), 0).tolist()  # doctest: +SKIP
+        [[0], [0]]
+        >>> tree.dwithin(pygeos.points([[0,0]]), np.nan).tolist()  # doctest: +SKIP
+        [[], []]
+        >>> tree.dwithin(pygeos.Geometry('POINT EMPTY'), 10).tolist()  # doctest: +SKIP
+        [[], []]
         """
 
         is_scalar = np.isscalar(geometry)
@@ -346,9 +352,14 @@ class STRtree:
         if geometry.ndim == 0:
             geometry = np.expand_dims(geometry, 0)
 
-        distance = np.broadcast_to(
-            np.asarray(distance, dtype="float64"), geometry.shape
-        )
+        distance = np.asarray(distance, dtype="float64")
+        if distance.ndim > 1:
+            raise ValueError("Distance array should be one dimensional")
+
+        try:
+            distance = np.broadcast_to(distance, geometry.shape)
+        except ValueError:
+            raise ValueError("Could not broadcast distance to match geometry")
 
         results = self._tree.dwithin(geometry, distance)
 
