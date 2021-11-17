@@ -1244,6 +1244,8 @@ static PyObject* STRtree_dwithin(STRtreeObject* self, PyObject* args) {
   result = (PyArrayObject*)PyArray_SimpleNew(2, dims, NPY_INTP);
   if (result == NULL) {
     PyErr_SetString(PyExc_RuntimeError, "could not allocate numpy array");
+    kv_destroy(src_indexes);
+    kv_destroy(target_geoms);
     return NULL;
   }
 
