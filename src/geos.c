@@ -886,16 +886,14 @@ GEOSCoordSequence* coordseq_from_buffer(GEOSContextHandle_t ctx, const double* b
                                         unsigned int size, unsigned int dims, char ring_closure,
                                         npy_intp cs1, npy_intp cs2) {
   GEOSCoordSequence* coord_seq;
-  // unsigned int dims = 2 + hasZ;
-  int hasZ = dims == 3;
-  char* cp1;
-  char* cp2;
-  int i, j;
-  double first_coord, last_coord;
+  char *cp1, *cp2;
+  unsigned int i, j;
+  double first_coord;
 
 #if GEOS_SINCE_3_10_0
 
   if ((!ring_closure) && (cs1 == dims * 8) && (cs2 == 8)) {
+    int hasZ = dims == 3;
     coord_seq = GEOSCoordSeq_copyFromBuffer_r(ctx, buf, size, hasZ, 0);
     return coord_seq;
   }

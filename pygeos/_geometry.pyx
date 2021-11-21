@@ -12,12 +12,6 @@ import pygeos
 
 from pygeos._geos cimport (
     GEOSContextHandle_t,
-    GEOSCoordSeq_copyFromBuffer_r,
-    GEOSCoordSeq_create_r,
-    GEOSCoordSeq_destroy_r,
-    GEOSCoordSeq_setX_r,
-    GEOSCoordSeq_setY_r,
-    GEOSCoordSeq_setZ_r,
     GEOSCoordSequence,
     GEOSGeom_clone_r,
     GEOSGeom_createCollection_r,
@@ -36,9 +30,9 @@ from pygeos._geos cimport (
 )
 from pygeos._pygeos_api cimport (
     import_pygeos_c_api,
+    PyGEOS_CoordSeq_FromBuffer,
     PyGEOS_CreateGeometry,
     PyGEOS_GetGEOSGeometry,
-    PyGEOSCoordSeq_FromBuffer,
 )
 
 # initialize PyGEOS C API
@@ -64,7 +58,7 @@ def _check_out_array(object out, Py_ssize_t size):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def simple_geometries_1d(object coordinates, object indices, int geometry_type, object out = None):
-    cdef Py_ssize_t idx = 0, flat_idx = 0
+    cdef Py_ssize_t idx = 0
     cdef unsigned int coord_idx = 0
     cdef Py_ssize_t geom_idx = 0
     cdef unsigned int geom_size = 0
@@ -130,7 +124,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type, 
                     ring_closure = 1
                 else:
                     for coord_idx in range(dims):
-                        if coord_view[idx, coord_idx] != coord_view[idx + (geom_size - 1), coord_idx]:
+                        if coord_view[idx, coord_idx] != coord_view[idx + geom_size - 1, coord_idx]:
                             ring_closure = 1
                             break
                 # check the resulting size to prevent invalid rings
@@ -138,7 +132,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type, 
                     # the error equals PGERR_LINEARRING_NCOORDS (in pygeos/src/geos.h)
                     raise ValueError("A linearring requires at least 4 coordinates.")
 
-            seq = PyGEOSCoordSeq_FromBuffer(geos_handle, &coord_view[idx, 0], geom_size, dims, ring_closure)
+            seq = PyGEOS_CoordSeq_FromBuffer(geos_handle, &coord_view[idx, 0], geom_size, dims, ring_closure)
             if seq == NULL:
                 return  # GEOSException is raised by get_geos_handle
             idx += geom_size

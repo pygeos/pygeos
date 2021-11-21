@@ -32,11 +32,11 @@
 #define PyGEOS_GetGEOSGeometry_RETURN char
 #define PyGEOS_GetGEOSGeometry_PROTO (PyObject * obj, GEOSGeometry * *out)
 
-/* GEOSCoordSequence* PyGEOSCoordSeq_FromBuffer(GEOSContextHandle_t ctx, const double* buf,
+/* GEOSCoordSequence* PyGEOS_CoordSeq_FromBuffer(GEOSContextHandle_t ctx, const double* buf,
                                                 unsigned int size, unsigned int dims, char ring_closure)*/
-#define PyGEOSCoordSeq_FromBuffer_NUM 2
-#define PyGEOSCoordSeq_FromBuffer_RETURN GEOSCoordSequence*
-#define PyGEOSCoordSeq_FromBuffer_PROTO (GEOSContextHandle_t ctx, const double* buf, unsigned int size, unsigned int dims, char ring_closure)
+#define PyGEOS_CoordSeq_FromBuffer_NUM 2
+#define PyGEOS_CoordSeq_FromBuffer_RETURN GEOSCoordSequence*
+#define PyGEOS_CoordSeq_FromBuffer_PROTO (GEOSContextHandle_t ctx, const double* buf, unsigned int size, unsigned int dims, char ring_closure)
 
 /* Total number of C API pointers */
 #define PyGEOS_API_num_pointers 3
@@ -48,7 +48,7 @@
 
 extern PyGEOS_CreateGeometry_RETURN PyGEOS_CreateGeometry PyGEOS_CreateGeometry_PROTO;
 extern PyGEOS_GetGEOSGeometry_RETURN PyGEOS_GetGEOSGeometry PyGEOS_GetGEOSGeometry_PROTO;
-extern PyGEOSCoordSeq_FromBuffer_RETURN PyGEOSCoordSeq_FromBuffer PyGEOSCoordSeq_FromBuffer_PROTO;
+extern PyGEOS_CoordSeq_FromBuffer_RETURN PyGEOS_CoordSeq_FromBuffer PyGEOS_CoordSeq_FromBuffer_PROTO;
 
 #else
 /* This section is used in modules that use the PyGEOS C API
@@ -64,8 +64,8 @@ static void **PyGEOS_API;
 #define PyGEOS_GetGEOSGeometry \
     (*(PyGEOS_GetGEOSGeometry_RETURN(*) PyGEOS_GetGEOSGeometry_PROTO)PyGEOS_API[PyGEOS_GetGEOSGeometry_NUM])
 
-#define PyGEOSCoordSeq_FromBuffer \
-    (*(PyGEOSCoordSeq_FromBuffer_RETURN(*) PyGEOSCoordSeq_FromBuffer_PROTO)PyGEOS_API[PyGEOSCoordSeq_FromBuffer_NUM])
+#define PyGEOS_CoordSeq_FromBuffer \
+    (*(PyGEOS_CoordSeq_FromBuffer_RETURN(*) PyGEOS_CoordSeq_FromBuffer_PROTO)PyGEOS_API[PyGEOS_CoordSeq_FromBuffer_NUM])
 
 /* Dynamically load C API from PyCapsule.
  * This MUST be called prior to using C API functions in other modules; otherwise

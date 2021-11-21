@@ -42,7 +42,6 @@ cdef extern from "geos_c.h":
     int GEOSCoordSeq_setX_r(GEOSContextHandle_t handle, GEOSCoordSequence* s, unsigned int idx, double val) nogil
     int GEOSCoordSeq_setY_r(GEOSContextHandle_t handle, GEOSCoordSequence* s, unsigned int idx, double val) nogil
     int GEOSCoordSeq_setZ_r(GEOSContextHandle_t handle, GEOSCoordSequence* s, unsigned int idx, double val) nogil
-    GEOSCoordSequence* GEOSCoordSeq_copyFromBuffer_r(GEOSContextHandle_t handle, const double* buf, unsigned int size, int hasZ, int hasM)
 
 
 cdef class get_geos_handle:
