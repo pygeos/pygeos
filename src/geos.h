@@ -177,8 +177,8 @@ GEOSGeometry* create_point(GEOSContextHandle_t ctx, double x, double y);
 GEOSGeometry* PyGEOSForce2D(GEOSContextHandle_t ctx, GEOSGeometry* geom);
 GEOSGeometry* PyGEOSForce3D(GEOSContextHandle_t ctx, GEOSGeometry* geom, double z);
 
-GEOSCoordSequence* PyGEOSCoordSeq_copyFromBuffer(GEOSContextHandle_t ctx, const double* buf,
-                                                 unsigned int size, unsigned int dims, char ring_closure,
-                                                 npy_intp cs1, npy_intp cs2);
+GEOSCoordSequence* coordseq_from_buffer(GEOSContextHandle_t ctx, const double* buf,
+                                        unsigned int size, unsigned int dims, char ring_closure,
+                                        npy_intp cs1, npy_intp cs2);
 
 #endif  // _GEOS_H

@@ -7,7 +7,6 @@
 #include <numpy/ndarraytypes.h>
 #include <numpy/npy_math.h>
 #include <structmember.h>
-#include <stdio.h>
 
 /* This initializes a globally accessible GEOSException object */
 PyObject* geos_exception[1] = {NULL};
@@ -883,9 +882,9 @@ GEOSGeometry* PyGEOSForce3D(GEOSContextHandle_t ctx, GEOSGeometry* geom, double 
   return force_dims(ctx, geom, 3, z);
 }
 
-GEOSCoordSequence* PyGEOSCoordSeq_copyFromBuffer(GEOSContextHandle_t ctx, const double* buf,
-                                                 unsigned int size, unsigned int dims, char ring_closure,
-                                                 npy_intp cs1, npy_intp cs2) {
+GEOSCoordSequence* coordseq_from_buffer(GEOSContextHandle_t ctx, const double* buf,
+                                        unsigned int size, unsigned int dims, char ring_closure,
+                                        npy_intp cs1, npy_intp cs2) {
   GEOSCoordSequence* coord_seq;
   // unsigned int dims = 2 + hasZ;
   int hasZ = dims == 3;
@@ -893,15 +892,10 @@ GEOSCoordSequence* PyGEOSCoordSeq_copyFromBuffer(GEOSContextHandle_t ctx, const 
   char* cp2;
   int i, j;
   double first_coord, last_coord;
-  // printf("Shape: %d, %d \n", (int)size, (int)dims);
-  // printf("Steps: %d, %d \n", (int)cs1, (int)cs2);
-  // printf("Args: %d, %d\n", hasZ, ring_closure);
-  // printf("Args: %d, %d, %d\n", size, dims, ring_closure);
 
 #if GEOS_SINCE_3_10_0
 
   if ((!ring_closure) && (cs1 == dims * 8) && (cs2 == 8)) {
-    printf("Going to call GEOSCoordSeq_copyFromBuffer_r\n");
     coord_seq = GEOSCoordSeq_copyFromBuffer_r(ctx, buf, size, hasZ, 0);
     return coord_seq;
   }

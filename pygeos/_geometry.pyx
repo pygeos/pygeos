@@ -38,22 +38,11 @@ from pygeos._pygeos_api cimport (
     import_pygeos_c_api,
     PyGEOS_CreateGeometry,
     PyGEOS_GetGEOSGeometry,
+    PyGEOSCoordSeq_FromBuffer,
 )
 
 # initialize PyGEOS C API
 import_pygeos_c_api()
-
-
-cdef char _set_xyz(GEOSContextHandle_t geos_handle, GEOSCoordSequence *seq, unsigned int coord_idx,
-                   unsigned int dims, double[:, :] coord_view, Py_ssize_t idx):
-    if GEOSCoordSeq_setX_r(geos_handle, seq, coord_idx, coord_view[idx, 0]) == 0:
-        return 0
-    if GEOSCoordSeq_setY_r(geos_handle, seq, coord_idx, coord_view[idx, 1]) == 0:
-        return 0
-    if dims == 3:
-        if GEOSCoordSeq_setZ_r(geos_handle, seq, coord_idx, coord_view[idx, 2]) == 0:
-            return 0
-    return 1
 
 
 def _check_out_array(object out, Py_ssize_t size):
@@ -75,17 +64,16 @@ def _check_out_array(object out, Py_ssize_t size):
 @cython.boundscheck(False)
 @cython.wraparound(False)
 def simple_geometries_1d(object coordinates, object indices, int geometry_type, object out = None):
-    cdef Py_ssize_t idx = 0
+    cdef Py_ssize_t idx = 0, flat_idx = 0
     cdef unsigned int coord_idx = 0
     cdef Py_ssize_t geom_idx = 0
     cdef unsigned int geom_size = 0
     cdef unsigned int ring_closure = 0
-    cdef Py_ssize_t coll_geom_idx = 0
     cdef GEOSGeometry *geom = NULL
     cdef GEOSCoordSequence *seq = NULL
 
     # Cast input arrays and define memoryviews for later usage
-    coordinates = np.asarray(coordinates, dtype=np.float64)
+    coordinates = np.asarray(coordinates, dtype=np.float64, order="C")
     if coordinates.ndim != 2:
         raise TypeError("coordinates must be a two-dimensional array.")
 
@@ -99,7 +87,6 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type, 
     cdef unsigned int dims = coordinates.shape[1]
     if dims not in {2, 3}:
         raise ValueError("coordinates should N by 2 or N by 3.")
-    cdef int has_z = int(dims == 3)
 
     if geometry_type not in {0, 1, 2}:
         raise ValueError(f"Invalid geometry_type: {geometry_type}.")
@@ -111,7 +98,7 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type, 
     if np.any(indices[1:] < indices[:indices.shape[0] - 1]):
         raise ValueError("The indices must be sorted.")  
 
-    cdef double[:] coord_view = coordinates.ravel()
+    cdef double[:, :] coord_view = coordinates
 
     # get the geometry count per collection (this raises on negative indices)
     cdef unsigned int[:] coord_counts = np.bincount(indices).astype(np.uint32)
@@ -136,30 +123,22 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type, 
                         f"Index {geom_idx} is missing from the input indices."
                     )
 
-            # # check if we need to close a linearring
-            # if geometry_type == 2:
-            #     ring_closure = 0
-            #     if geom_size == 3:
-            #         ring_closure = 1
-            #     else:
-            #         for coord_idx in range(dims):
-            #             if coord_view[idx, coord_idx] != coord_view[idx + geom_size - 1, coord_idx]:
-            #                 ring_closure = 1
-            #                 break
-            #     # check the resulting size to prevent invalid rings
-            #     if geom_size + ring_closure < 4:
-            #         # the error equals PGERR_LINEARRING_NCOORDS (in pygeos/src/geos.h)
-            #         raise ValueError("A linearring requires at least 4 coordinates.")
+            # check if we need to close a linearring
+            if geometry_type == 2:
+                ring_closure = 0
+                if geom_size == 3:
+                    ring_closure = 1
+                else:
+                    for coord_idx in range(dims):
+                        if coord_view[idx, coord_idx] != coord_view[idx + (geom_size - 1), coord_idx]:
+                            ring_closure = 1
+                            break
+                # check the resulting size to prevent invalid rings
+                if geom_size + ring_closure < 4:
+                    # the error equals PGERR_LINEARRING_NCOORDS (in pygeos/src/geos.h)
+                    raise ValueError("A linearring requires at least 4 coordinates.")
 
-            # seq = GEOSCoordSeq_create_r(geos_handle, geom_size + ring_closure, dims)
-            # for coord_idx in range(geom_size):
-            #     if _set_xyz(geos_handle, seq, coord_idx, dims, coord_view, idx) == 0:
-            #         GEOSCoordSeq_destroy_r(geos_handle, seq)
-            #         return  # GEOSException is raised by get_geos_handle
-            #     idx += 1
-
-            seq = GEOSCoordSeq_copyFromBuffer_r(geos_handle, &coord_view[idx*dims], geom_size, has_z, 0)
-
+            seq = PyGEOSCoordSeq_FromBuffer(geos_handle, &coord_view[idx, 0], geom_size, dims, ring_closure)
             if seq == NULL:
                 return  # GEOSException is raised by get_geos_handle
             idx += geom_size
@@ -169,10 +148,6 @@ def simple_geometries_1d(object coordinates, object indices, int geometry_type, 
             elif geometry_type == 1:
                 geom = GEOSGeom_createLineString_r(geos_handle, seq)
             elif geometry_type == 2:
-                # if ring_closure == 1:
-                #     if _set_xyz(geos_handle, seq, geom_size, dims, coord_view, idx - geom_size) == 0:
-                #         GEOSCoordSeq_destroy_r(geos_handle, seq)
-                #         return  # GEOSException is raised by get_geos_handle
                 geom = GEOSGeom_createLinearRing_r(geos_handle, seq)
 
             if geom == NULL:
