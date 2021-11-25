@@ -18,8 +18,8 @@ Version 0.12 (unreleased)
 **Major enhancements**
 
 * Added ``pygeos.dwithin`` for GEOS >= 3.10 (#417).
-* Added ``dwithin`` function to ``STRtree`` to find geometries within a search
-  distance for GEOS >= 3.10 (#425).
+* Added ``dwithin`` predicate to ``STRtree`` ``query`` and ``query_bulk`` methods
+  to find geometries within a search distance for GEOS >= 3.10 (#425).
 * Added GeoJSON input/output capabilities (``pygeos.from_geojson``,
   ``pygeos.to_geojson``) for GEOS >= 3.10 (#413).
 
