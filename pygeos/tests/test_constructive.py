@@ -11,6 +11,7 @@ from .common import (
     empty_line_string,
     empty_point,
     empty_polygon,
+    ignore_invalid,
     line_string,
     multi_point,
     point,
@@ -51,7 +52,10 @@ def test_float_arg_array(geometry, func):
         with pytest.raises(GEOSException, match="only accept linestrings"):
             func([geometry, geometry], 0.0)
         return
-    actual = func([geometry, geometry], 0.0)
+    with ignore_invalid(
+        func is pygeos.voronoi_polygons and pygeos.get_type_id(geometry) == 0
+    ):
+        actual = func([geometry, geometry], 0.0)
     assert actual.shape == (2,)
     assert isinstance(actual[0], Geometry)
 
@@ -209,7 +213,8 @@ def test_normalize(geom, expected):
 
 
 def test_offset_curve_empty():
-    actual = pygeos.offset_curve(empty_line_string, 2.0)
+    with ignore_invalid():
+        actual = pygeos.offset_curve(empty_line_string, 2.0)
     assert pygeos.is_empty(actual)
 
 
