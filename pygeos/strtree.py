@@ -1,7 +1,7 @@
 import numpy as np
 
 from . import lib
-from .decorators import requires_geos
+from .decorators import requires_geos, UnsupportedGEOSOperation
 from .enum import ParamEnum
 
 __all__ = ["STRtree"]
@@ -103,7 +103,7 @@ class STRtree:
         >>> tree.query(pygeos.box(2, 2, 4, 4), predicate='contains').tolist()
         [3]
         >>> # Query geometries within 1 unit distance of input geometry
-        >>> tree.query(pygeos.points(0.5,0.5), predicate='dwithin', distance=1.0).tolist()  # doctest: +SKIP
+        >>> tree.query(pygeos.points(0.5, 0.5), predicate='dwithin', distance=1.0).tolist()  # doctest: +SKIP
         [0, 1]
         """
 
@@ -115,7 +115,9 @@ class STRtree:
 
         elif predicate == "dwithin":
             if lib.geos_version < (3, 10, 0):
-                raise ImportError("dwithin predicate requires GEOS >= 3.10")
+                raise UnsupportedGEOSOperation(
+                    "dwithin predicate requires GEOS >= 3.10"
+                )
             if distance is None:
                 raise ValueError(
                     "distance parameter must be provided for dwithin predicate"
@@ -204,7 +206,9 @@ class STRtree:
         # Requires GEOS >= 3.10
         elif predicate == "dwithin":
             if lib.geos_version < (3, 10, 0):
-                raise ImportError("dwithin predicate requires GEOS >= 3.10")
+                raise UnsupportedGEOSOperation(
+                    "dwithin predicate requires GEOS >= 3.10"
+                )
             if distance is None:
                 raise ValueError(
                     "distance parameter must be provided for dwithin predicate"

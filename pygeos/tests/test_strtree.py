@@ -7,7 +7,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 import pygeos
-from pygeos import box
+from pygeos import box, UnsupportedGEOSOperation
 
 from .common import (
     assert_decreases_refcount,
@@ -935,7 +935,7 @@ def test_query_contains_properly_polygons(poly_tree, geometry, expected):
 
 @pytest.mark.skipif(pygeos.geos_version >= (3, 10, 0), reason="GEOS >= 3.10")
 def test_query_dwithin_geos_version(tree):
-    with pytest.raises(ImportError, match="requires GEOS >= 3.10"):
+    with pytest.raises(UnsupportedGEOSOperation, match="requires GEOS >= 3.10"):
         tree.query(pygeos.points(0, 0), predicate="dwithin", distance=1)
 
 
@@ -1297,7 +1297,7 @@ def test_query_bulk_intersects_polygons(poly_tree, geometry, expected):
 
 @pytest.mark.skipif(pygeos.geos_version >= (3, 10, 0), reason="GEOS >= 3.10")
 def test_query_bulk_dwithin_geos_version(tree):
-    with pytest.raises(ImportError, match="requires GEOS >= 3.10"):
+    with pytest.raises(UnsupportedGEOSOperation, match="requires GEOS >= 3.10"):
         tree.query_bulk(pygeos.points(0, 0), predicate="dwithin", distance=1)
 
 
