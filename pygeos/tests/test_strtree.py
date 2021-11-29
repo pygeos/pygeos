@@ -7,7 +7,7 @@ import pytest
 from numpy.testing import assert_array_equal
 
 import pygeos
-from pygeos import box
+from pygeos import box, UnsupportedGEOSOperation
 
 from .common import (
     assert_decreases_refcount,
@@ -23,13 +23,13 @@ HALF_UNIT_DIAG = math.sqrt(2) / 2
 EPS = 1e-9
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def tree():
     geoms = pygeos.points(np.arange(10), np.arange(10))
     yield pygeos.STRtree(geoms)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def line_tree():
     x = np.arange(10)
     y = np.arange(10)
@@ -38,7 +38,7 @@ def line_tree():
     yield pygeos.STRtree(geoms)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def poly_tree():
     # create buffers so that midpoint between two buffers intersects
     # each buffer.  NOTE: add EPS to help mitigate rounding errors at midpoint.
@@ -211,9 +211,70 @@ def test_query_unsupported_predicate(tree):
         tree.query(pygeos.points(1, 1), predicate="disjoint")
 
 
-def test_query_predicate_errors(tree):
+@pytest.mark.parametrize(
+    "predicate,expected",
+    [
+        ("intersects", [0, 1, 2]),
+        ("within", []),
+        ("contains", [1]),
+        ("overlaps", []),
+        ("crosses", []),
+        ("covers", [0, 1, 2]),
+        ("covered_by", []),
+        ("contains_properly", [1]),
+    ],
+)
+def test_query_prepared_inputs(tree, predicate, expected):
+    geom = box(0, 0, 2, 2)
+    pygeos.prepare(geom)
+    assert_array_equal(tree.query(geom, predicate=predicate), expected)
+
+
+@pytest.mark.parametrize(
+    "predicate",
+    [
+        pytest.param(
+            "intersects",
+            marks=pytest.mark.xfail(reason="intersects does not raise exception"),
+        ),
+        pytest.param(
+            "within",
+            marks=pytest.mark.xfail(
+                pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8"
+            ),
+        ),
+        pytest.param(
+            "contains",
+            marks=pytest.mark.xfail(
+                pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8"
+            ),
+        ),
+        "overlaps",
+        "crosses",
+        "touches",
+        pytest.param(
+            "covers",
+            marks=pytest.mark.xfail(
+                pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8"
+            ),
+        ),
+        pytest.param(
+            "covered_by",
+            marks=pytest.mark.xfail(
+                pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8"
+            ),
+        ),
+        pytest.param(
+            "contains_properly",
+            marks=pytest.mark.xfail(
+                pygeos.geos_version < (3, 8, 0), reason="GEOS < 3.8"
+            ),
+        ),
+    ],
+)
+def test_query_predicate_errors(tree, predicate):
     with pytest.raises(pygeos.GEOSException):
-        tree.query(pygeos.linestrings([1, 1], [1, float("nan")]), predicate="touches")
+        tree.query(pygeos.linestrings([1, 1], [1, float("nan")]), predicate=predicate)
 
 
 def test_query_tree_with_none():
@@ -930,6 +991,112 @@ def test_query_contains_properly_polygons(poly_tree, geometry, expected):
     )
 
 
+### predicate = 'dwithin'
+
+
+@pytest.mark.skipif(pygeos.geos_version >= (3, 10, 0), reason="GEOS >= 3.10")
+def test_query_dwithin_geos_version(tree):
+    with pytest.raises(UnsupportedGEOSOperation, match="requires GEOS >= 3.10"):
+        tree.query(pygeos.points(0, 0), predicate="dwithin", distance=1)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "distance,match",
+    [
+        (None, "distance parameter must be provided"),
+        ("foo", "could not convert string to float"),
+        ([1.0], "distance must be a scalar value"),
+        ([None], "distance must be a scalar value"),
+    ],
+)
+def test_query_dwithin_invalid_distance(tree, distance, match):
+    with pytest.raises(ValueError, match=match):
+        tree.query(pygeos.points(0, 0), predicate="dwithin", distance=distance)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance,expected",
+    [
+        (None, 1.0, []),
+        (pygeos.points(0.25, 0.25), 0, []),
+        (pygeos.points(0.25, 0.25), -1, []),
+        (pygeos.points(0.25, 0.25), np.nan, []),
+        (pygeos.Geometry("POINT EMPTY"), 1, []),
+        (pygeos.points(0.25, 0.25), 0.5, [0]),
+        (pygeos.points(0.25, 0.25), 2.5, [0, 1, 2]),
+        (pygeos.points(3, 3), 1.5, [2, 3, 4]),
+        # 2 equidistant points in tree
+        (pygeos.points(0.5, 0.5), 0.75, [0, 1]),
+        # all points intersect box
+        (box(0, 0, 3, 3), 0, [0, 1, 2, 3]),
+        (box(0, 0, 3, 3), 0.25, [0, 1, 2, 3]),
+        # intersecting and nearby points
+        (box(1, 1, 2, 2), 1.5, [0, 1, 2, 3]),
+        # # return nearest point in tree for each point in multipoint
+        (pygeos.multipoints([[0.25, 0.25], [1.5, 1.5]]), 0.75, [0, 1, 2]),
+        # 2 equidistant points per point in multipoint
+        (
+            pygeos.multipoints([[0.5, 0.5], [3.5, 3.5]]),
+            0.75,
+            [0, 1, 3, 4],
+        ),
+    ],
+)
+def test_query_dwithin_points(tree, geometry, distance, expected):
+    assert_array_equal(
+        tree.query(geometry, predicate="dwithin", distance=distance), expected
+    )
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance,expected",
+    [
+        (None, 1.0, []),
+        (pygeos.points(0.5, 0.5), 0, [0]),
+        (pygeos.points(0.5, 0.5), 1.0, [0, 1]),
+        (pygeos.points(2, 2), 0.5, [1, 2]),
+        (box(0, 0, 1, 1), 0.5, [0, 1]),
+        (box(0.5, 0.5, 1.5, 1.5), 0.5, [0, 1]),
+        # multipoints at endpoints of 2 lines each
+        (pygeos.multipoints([[5, 5], [7, 7]]), 0.5, [4, 5, 6, 7]),
+        # multipoints are equidistant from 2 lines
+        (pygeos.multipoints([[5, 7], [7, 5]]), 1.5, [5, 6]),
+    ],
+)
+def test_query_dwithin_lines(line_tree, geometry, distance, expected):
+    assert_array_equal(
+        line_tree.query(geometry, predicate="dwithin", distance=distance), expected
+    )
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance,expected",
+    [
+        (pygeos.points(0, 0), 0, [0]),
+        (pygeos.points(0, 0), 0.5, [0]),
+        (pygeos.points(0, 0), 1.5, [0, 1]),
+        (pygeos.points(0.5, 0.5), 1, [0, 1]),
+        (pygeos.points(0.5, 0.5), 0.5, [0, 1]),
+        (box(0, 0, 1, 1), 0, [0, 1]),
+        (box(0, 0, 1, 1), 2, [0, 1, 2]),
+        (pygeos.multipoints([[5, 5], [7, 7]]), 0.5, [5, 7]),
+        (
+            pygeos.multipoints([[5, 5], [7, 7]]),
+            2.5,
+            [3, 4, 5, 6, 7, 8, 9],
+        ),
+    ],
+)
+def test_query_dwithin_polygons(poly_tree, geometry, distance, expected):
+    assert_array_equal(
+        poly_tree.query(geometry, predicate="dwithin", distance=distance), expected
+    )
+
+
 ### Bulk query tests
 @pytest.mark.parametrize(
     "tree_geometry,geometry,expected",
@@ -1187,6 +1354,140 @@ def test_query_bulk_intersects_lines(line_tree, geometry, expected):
 )
 def test_query_bulk_intersects_polygons(poly_tree, geometry, expected):
     assert_array_equal(poly_tree.query_bulk(geometry, predicate="intersects"), expected)
+
+
+def test_query_bulk_predicate_errors(tree):
+    with pytest.raises(pygeos.GEOSException):
+        tree.query_bulk(
+            [pygeos.linestrings([1, 1], [1, float("nan")])], predicate="touches"
+        )
+
+
+@pytest.mark.skipif(pygeos.geos_version >= (3, 10, 0), reason="GEOS >= 3.10")
+def test_query_bulk_dwithin_geos_version(tree):
+    with pytest.raises(UnsupportedGEOSOperation, match="requires GEOS >= 3.10"):
+        tree.query_bulk(pygeos.points(0, 0), predicate="dwithin", distance=1)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "distance,match",
+    [
+        (None, "distance parameter must be provided"),
+        ("foo", "could not convert string to float"),
+        (["foo"], "could not convert string to float"),
+        ([0, 1], "Could not broadcast distance to match geometry"),
+        ([[1.0]], "should be one dimensional"),
+    ],
+)
+def test_query_bulk_dwithin_invalid_distance(tree, distance, match):
+    with pytest.raises(ValueError, match=match):
+        tree.query_bulk(pygeos.points(0, 0), predicate="dwithin", distance=distance)
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance,expected",
+    [
+        (pygeos.points(0.25, 0.25), 0, [[], []]),
+        (pygeos.points(0.25, 0.25), -1, [[], []]),
+        (pygeos.points(0.25, 0.25), np.nan, [[], []]),
+        (pygeos.Geometry("POINT EMPTY"), 1, [[], []]),
+        (pygeos.points(0.25, 0.25), 0.5, [[0], [0]]),
+        (pygeos.points(0.25, 0.25), [0.5], [[0], [0]]),
+        (pygeos.points(0.25, 0.25), 2.5, [[0, 0, 0], [0, 1, 2]]),
+        (pygeos.points(3, 3), 1.5, [[0, 0, 0], [2, 3, 4]]),
+        # 2 equidistant points in tree
+        (pygeos.points(0.5, 0.5), 0.75, [[0, 0], [0, 1]]),
+        (
+            [None, pygeos.points(0.5, 0.5)],
+            0.75,
+            [
+                [
+                    1,
+                    1,
+                ],
+                [0, 1],
+            ],
+        ),
+        (
+            [pygeos.points(0.5, 0.5), pygeos.points(0.25, 0.25)],
+            0.75,
+            [[0, 0, 1], [0, 1, 0]],
+        ),
+        (
+            [pygeos.points(0, 0.2), pygeos.points(1.75, 1.75)],
+            [0.25, 2],
+            [[0, 1, 1, 1], [0, 1, 2, 3]],
+        ),
+        # all points intersect box
+        (box(0, 0, 3, 3), 0, [[0, 0, 0, 0], [0, 1, 2, 3]]),
+        (box(0, 0, 3, 3), 0.25, [[0, 0, 0, 0], [0, 1, 2, 3]]),
+        # intersecting and nearby points
+        (box(1, 1, 2, 2), 1.5, [[0, 0, 0, 0], [0, 1, 2, 3]]),
+        # # return nearest point in tree for each point in multipoint
+        (pygeos.multipoints([[0.25, 0.25], [1.5, 1.5]]), 0.75, [[0, 0, 0], [0, 1, 2]]),
+        # 2 equidistant points per point in multipoint
+        (
+            pygeos.multipoints([[0.5, 0.5], [3.5, 3.5]]),
+            0.75,
+            [[0, 0, 0, 0], [0, 1, 3, 4]],
+        ),
+    ],
+)
+def test_query_bulk_dwithin_points(tree, geometry, distance, expected):
+    assert_array_equal(
+        tree.query_bulk(geometry, predicate="dwithin", distance=distance), expected
+    )
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance,expected",
+    [
+        (pygeos.points(0.5, 0.5), 0, [[0], [0]]),
+        (pygeos.points(0.5, 0.5), 1.0, [[0, 0], [0, 1]]),
+        (pygeos.points(2, 2), 0.5, [[0, 0], [1, 2]]),
+        (box(0, 0, 1, 1), 0.5, [[0, 0], [0, 1]]),
+        (box(0.5, 0.5, 1.5, 1.5), 0.5, [[0, 0], [0, 1]]),
+        # multipoints at endpoints of 2 lines each
+        (pygeos.multipoints([[5, 5], [7, 7]]), 0.5, [[0, 0, 0, 0], [4, 5, 6, 7]]),
+        # multipoints are equidistant from 2 lines
+        (pygeos.multipoints([[5, 7], [7, 5]]), 1.5, [[0, 0], [5, 6]]),
+    ],
+)
+def test_query_bulk_dwithin_lines(line_tree, geometry, distance, expected):
+    assert_array_equal(
+        line_tree.query_bulk(geometry, predicate="dwithin", distance=distance), expected
+    )
+
+
+@pytest.mark.skipif(pygeos.geos_version < (3, 10, 0), reason="GEOS < 3.10")
+@pytest.mark.parametrize(
+    "geometry,distance,expected",
+    [
+        (pygeos.points(0, 0), 0, [[0], [0]]),
+        (pygeos.points(0, 0), 0.5, [[0], [0]]),
+        (pygeos.points(0, 0), 1.5, [[0, 0], [0, 1]]),
+        (pygeos.points(0.5, 0.5), 1, [[0, 0], [0, 1]]),
+        (pygeos.points(0.5, 0.5), 0.5, [[0, 0], [0, 1]]),
+        (box(0, 0, 1, 1), 0, [[0, 0], [0, 1]]),
+        (box(0, 0, 1, 1), 2, [[0, 0, 0], [0, 1, 2]]),
+        (pygeos.multipoints([[5, 5], [7, 7]]), 0.5, [[0, 0], [5, 7]]),
+        (
+            pygeos.multipoints([[5, 5], [7, 7]]),
+            2.5,
+            [[0, 0, 0, 0, 0, 0, 0], [3, 4, 5, 6, 7, 8, 9]],
+        ),
+    ],
+)
+def test_query_bulk_dwithin_polygons(poly_tree, geometry, distance, expected):
+    assert_array_equal(
+        poly_tree.query_bulk(geometry, predicate="dwithin", distance=distance), expected
+    )
+
+
+### STRtree nearest
 
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 6, 0), reason="GEOS < 3.6")
