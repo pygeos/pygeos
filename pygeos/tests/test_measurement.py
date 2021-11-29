@@ -145,7 +145,8 @@ def test_hausdorff_distance():
     a = pygeos.linestrings([[0, 0], [100, 0], [10, 100], [10, 100]])
     b = pygeos.linestrings([[0, 100], [0, 10], [80, 10]])
     with ignore_invalid():
-        # Hausdorff distnace emits "invalid value encountered"
+        # Hausdorff distance emits "invalid value encountered"
+        # (see https://github.com/libgeos/geos/issues/515)
         actual = pygeos.hausdorff_distance(a, b)
     assert actual == pytest.approx(22.360679775, abs=1e-7)
 
@@ -155,7 +156,8 @@ def test_hausdorff_distance_densify():
     a = pygeos.linestrings([[0, 0], [100, 0], [10, 100], [10, 100]])
     b = pygeos.linestrings([[0, 100], [0, 10], [80, 10]])
     with ignore_invalid():
-        # Hausdorff distnace emits "invalid value encountered"
+        # Hausdorff distance emits "invalid value encountered"
+        # (see https://github.com/libgeos/geos/issues/515)
         actual = pygeos.hausdorff_distance(a, b, densify=0.001)
     assert actual == pytest.approx(47.8, abs=0.1)
 

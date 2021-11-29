@@ -52,6 +52,8 @@ def test_float_arg_array(geometry, func):
         with pytest.raises(GEOSException, match="only accept linestrings"):
             func([geometry, geometry], 0.0)
         return
+    # voronoi_polygons emits an "invalid" warning when supplied with an empty
+    # point (see https://github.com/libgeos/geos/issues/515)
     with ignore_invalid(
         func is pygeos.voronoi_polygons and pygeos.get_type_id(geometry) == 0
     ):
@@ -214,6 +216,8 @@ def test_normalize(geom, expected):
 
 def test_offset_curve_empty():
     with ignore_invalid():
+        # Empty geometries emit an "invalid" warning
+        # (see https://github.com/libgeos/geos/issues/515)
         actual = pygeos.offset_curve(empty_line_string, 2.0)
     assert pygeos.is_empty(actual)
 

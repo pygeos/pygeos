@@ -86,6 +86,7 @@ def test_unary_missing(func):
 def test_binary_array(a, func):
     with ignore_invalid(pygeos.is_empty(a)):
         # Empty geometries give 'invalid value encountered' in all predicates
+        # (see https://github.com/libgeos/geos/issues/515)
         actual = func([a, a], point)
     assert actual.shape == (2,)
     assert actual.dtype == np.bool_
@@ -179,6 +180,7 @@ def test_relate_pattern():
 def test_relate_pattern_empty():
     with ignore_invalid():
         # Empty geometries give 'invalid value encountered' in all predicates
+        # (see https://github.com/libgeos/geos/issues/515)
         assert pygeos.relate_pattern(empty, empty, "*" * 9).item() is True
 
 
@@ -238,6 +240,7 @@ def _prepare_with_copy(geometry):
 def test_binary_prepared(a, func):
     with ignore_invalid(pygeos.is_empty(a)):
         # Empty geometries give 'invalid value encountered' in all predicates
+        # (see https://github.com/libgeos/geos/issues/515)
         actual = func(a, point)
         result = func(_prepare_with_copy(a), point)
     assert actual == result
