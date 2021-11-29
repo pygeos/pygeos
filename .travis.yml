@@ -3,25 +3,45 @@ dist: focal
 language: python
 python: "3.8"
 
+env:
+  - GEOS_VERSION=3.10.1
+
+cache:
+  directories:
+    - $HOME/geosinstall
+    - ~/.cache/pip
+
 matrix:
   include:
     - arch: ppc64le
     - arch: s390x
     - arch: arm64
+    - arch: arm64
+      env:
+        - CIBUILDWHEEL=1
+        - CIBW_SKIP="pp* *musllinux* cp310-win32 cp310-macosx_x86_64 cp310-manylinux_i686"
+        - CIBW_ENVIRONMENT_LINUX="GEOS_VERSION=3.10.1 GEOS_INSTALL=/host/home/travis/geos-3.10.1 GEOS_CONFIG=/host/home/travis/geos-3.10.1/bin/geos-config LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/host/home/travis/geos-3.10.1/lib"
+        - CIBW_BEFORE_ALL="./ci/install_geos.sh"
+        - CIBW_TEST_REQUIRES="pytest"
+        - CIBW_TEST_COMMAND="pytest --pyargs pygeos.tests"
+
   allow_failures:
     - arch: s390x
 
 branches:
   only:
   - master
+  - travis
 
 before_install:
-  - sudo apt-get --yes install libgeos-dev
-  - pip install numpy cython
+  - if [[ -z $CIBUILDWHEEL ]]; export GEOS_INSTALL=$HOME/geosinstall/geos-$GEOS_VERSION; fi
+  - if [[ -z $CIBUILDWHEEL ]]; ./ci/install_geos.sh; fi
 
 install:
-  - python setup.py build_ext --inplace
-  - pip install . --no-deps --no-build-isolation
+  - if [[ -z $CIBUILDWHEEL ]]; export GEOS_CONFIG=$HOME/geosinstall/geos-$GEOS_VERSION/bin/geos-config
+  - if [[ -z $CIBUILDWHEEL ]]; then pip install .[test]; fi
+  - if [[ -n $CIBUILDWHEEL ]]; then python3 -m pip install cibuildwheel==2.3.0; fi
 
 script:
-  - pytest pygeos
+  - if [[ -z $CIBUILDWHEEL ]]; then pytest pygeos; fi
+  - if [[ -n $CIBUILDWHEEL ]]; then python3 -m cibuildwheel --output-dir wheelhouse; fi
