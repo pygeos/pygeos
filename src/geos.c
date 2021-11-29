@@ -892,10 +892,22 @@ GEOSCoordSequence* coordseq_from_buffer(GEOSContextHandle_t ctx, const double* b
 
 #if GEOS_SINCE_3_10_0
 
-  if ((!ring_closure) && (cs1 == dims * 8) && (cs2 == 8)) {
-    int hasZ = dims == 3;
-    coord_seq = GEOSCoordSeq_copyFromBuffer_r(ctx, buf, size, hasZ, 0);
-    return coord_seq;
+  if (!ring_closure) {
+    if ((cs1 == dims * 8) && (cs2 == 8)) {
+      /* C-contiguous memory */
+      int hasZ = dims == 3;
+      coord_seq = GEOSCoordSeq_copyFromBuffer_r(ctx, buf, size, hasZ, 0);
+      return coord_seq;
+    }
+    else if ((cs1 == 8) && (cs2 == size * 8)) {
+      /* F-contiguous memory (note: this for the subset, so we don't necessarily
+      end up here if the full array is F-contiguous) */
+      const double* x = buf;
+      const double* y =  (double*)((char*)buf + cs2);
+      const double* z = (dims == 3) ? (double*)((char*)buf + 2 * cs2) : NULL;
+      coord_seq = GEOSCoordSeq_copyFromArrays_r(ctx, x, y, z, NULL, size);
+      return coord_seq;
+    }
   }
 
 #endif

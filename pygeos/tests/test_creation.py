@@ -176,6 +176,11 @@ def test_linearrings_buffer(dim, order):
     result2 = pygeos.linearrings(coords2)
     assert_geometries_equal(result1, result2)
 
+    # create scalar -> can also directly copy from buffer if F order
+    coords3 = np.asarray(coords2[0], order=order)
+    result3 = pygeos.linearrings(coords3)
+    assert_geometries_equal(result3, result1[0])
+
 
 def test_polygon_from_linearring():
     actual = pygeos.polygons(pygeos.linearrings(box_tpl(0, 0, 1, 1)))
