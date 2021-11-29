@@ -39,7 +39,7 @@ branches:
 install:
   - if [ -z $CIBUILDWHEEL ]; then export GEOS_INSTALL=$HOME/geosinstall/geos-$GEOS_VERSION; fi
   - if [ -z $CIBUILDWHEEL ]; then ./ci/install_geos.sh; fi
-  - if [ -z $CIBUILDWHEEL ]; then export GEOS_CONFIG=$HOME/geosinstall/geos-$GEOS_VERSION/bin/geos-config
+  - if [ -z $CIBUILDWHEEL ]; then export GEOS_CONFIG=$HOME/geosinstall/geos-$GEOS_VERSION/bin/geos-config; fi
   - if [ -z $CIBUILDWHEEL ]; then pip install .[test]; fi
   - if [ -n $CIBUILDWHEEL ]; then python3 -m pip install cibuildwheel==2.3.0; fi
 
