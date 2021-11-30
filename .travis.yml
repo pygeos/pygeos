@@ -29,13 +29,19 @@ matrix:
         - CIBW_TEST_REQUIRES="pytest"
         - CIBW_TEST_COMMAND="pytest --pyargs pygeos.tests"
 
-  allow_failures:
-    - arch: s390x
-
 branches:
   only:
   - master
   - travis
+
+before_install:
+  # Fix 'TLS handshake timeout' issue when downloading docker
+  #  https://travis-ci.community/t/ssl-the-handshake-operation-timed-out-to-github/3288/11
+  - |
+    sudo tee /etc/resolvconf/resolv.conf.d/tail <<EOF
+    options attempts:5
+    EOF
+    sudo service resolvconf restart
 
 install:
   - |
