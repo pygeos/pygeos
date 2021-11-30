@@ -40,20 +40,20 @@ branches:
 install:
   - |
     if [[ -z $CIBUILDWHEEL ]]; then
-      export GEOS_INSTALL=$HOME/geosinstall/geos-$GEOS_VERSION;
-      ./ci/install_geos.sh;
-      export GEOS_CONFIG=$HOME/geosinstall/geos-$GEOS_VERSION/bin/geos-config;
-      then pip install .[test];
+      export GEOS_INSTALL=$HOME/geosinstall/geos-$GEOS_VERSION
+      ./ci/install_geos.sh
+      export GEOS_CONFIG=$HOME/geosinstall/geos-$GEOS_VERSION/bin/geos-config
+      pip install .[test]
     else
-      python3 -m pip install cibuildwheel==2.3.0;
+      python3 -m pip install cibuildwheel==2.3.0
     fi
 
 script:
   - |
-    if [ -z $CIBUILDWHEEL ]; then
-      pytest pygeos;
+    if [[ -z $CIBUILDWHEEL ]]; then
+      pytest pygeos
     else
-      python3 -m cibuildwheel --output-dir wheelhouse;
+      python3 -m cibuildwheel --output-dir wheelhouse
     fi
 
 deploy:
