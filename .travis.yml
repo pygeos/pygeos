@@ -1,5 +1,5 @@
 os: linux
-dist: bionic
+dist: focal
 language: python
 python: "3.8"
 
@@ -17,10 +17,11 @@ matrix:
     - arch: s390x
     - arch: arm64
     - arch: arm64
+      dist: bionic  # docker pull gives TLS handshake timeouts on focal
       services: docker
       env:
         - CIBUILDWHEEL=1
-        - CIBW_SKIP="pp*"
+        - CIBW_BUILD="cp*-manylinux_aarch64"
         - CIBW_ENVIRONMENT_LINUX="GEOS_VERSION=3.10.1 
                                  GEOS_INSTALL=/host/home/travis/geosinstall/geos-3.10.1
                                  GEOS_CONFIG=/host/home/travis/geosinstall/geos-3.10.1/bin/geos-config
