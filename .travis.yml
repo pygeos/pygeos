@@ -22,9 +22,9 @@ matrix:
         - CIBUILDWHEEL=1
         - CIBW_SKIP="pp*"
         - CIBW_ENVIRONMENT_LINUX="GEOS_VERSION=3.10.1 
-                                 GEOS_INSTALL=/host/home/travis/geos-3.10.1
-                                 GEOS_CONFIG=/host/home/travis/geos-3.10.1/bin/geos-config
-                                 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/host/home/travis/geos-3.10.1/lib"
+                                 GEOS_INSTALL=/host/home/travis/geosinstall/geos-3.10.1
+                                 GEOS_CONFIG=/host/home/travis/geosinstall/geos-3.10.1/bin/geos-config
+                                 LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/host/home/travis/geosinstall/geos-3.10.1/lib"
         - CIBW_BEFORE_ALL="./ci/install_geos.sh"
         - CIBW_TEST_REQUIRES="pytest"
         - CIBW_TEST_COMMAND="pytest --pyargs pygeos.tests"
@@ -42,7 +42,7 @@ install:
     if [[ -z $CIBUILDWHEEL ]]; then
       export GEOS_INSTALL=$HOME/geosinstall/geos-$GEOS_VERSION
       ./ci/install_geos.sh
-      export GEOS_CONFIG=$HOME/geosinstall/geos-$GEOS_VERSION/bin/geos-config
+      export PATH=$HOME/geosinstall/geos-$GEOS_VERSION/bin:$PATH
       pip install .[test]
     else
       python3 -m pip install cibuildwheel==2.3.0
@@ -51,7 +51,8 @@ install:
 script:
   - |
     if [[ -z $CIBUILDWHEEL ]]; then
-      pytest pygeos
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HOME/geosinstall/geos-$GEOS_VERSION/lib
+      pytest --pyargs pygeos.tests
     else
       python3 -m cibuildwheel --output-dir wheelhouse
     fi
