@@ -4,7 +4,8 @@ language: python
 python: '3.8'
 
 env:
-- GEOS_VERSION=3.10.1
+  global:
+  - GEOS_VERSION=3.10.1
 
 cache:
   directories:
@@ -21,7 +22,6 @@ jobs:
     services: docker
     env:
     - CIBUILDWHEEL=1
-    - GEOS_VERSION=3.10.1
     - CIBW_BUILD="cp*-manylinux_aarch64"
     - CIBW_MANYLINUX_AARCH64_IMAGE=manylinux2014
     - CIBW_ENVIRONMENT_PASS_LINUX="GEOS_VERSION GEOS_INSTALL GEOS_CONFIG LD_LIBRARY_PATH"
