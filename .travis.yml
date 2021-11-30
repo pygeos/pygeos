@@ -11,7 +11,7 @@ cache:
   - "$HOME/geosinstall"
   - "~/.cache/pip"
 
-matrix:
+jobs:
   include:
   - arch: ppc64le
   - arch: s390x
@@ -59,7 +59,6 @@ script:
 deploy:
   provider: pypi
   username: __token__
-  skip_cleanup: true
   on:
     tags: true
   password:
