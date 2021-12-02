@@ -44,7 +44,7 @@ operations are done in the open-source geometry library GEOS. PyGEOS wraps
 these operations in NumPy ufuncs providing a performance improvement when
 operating on arrays of geometries.
 
-**Important note**: PyGEOS was merged with `Shapely <https://shapely.readthedocs.io>`
+**Important note**: PyGEOS was merged with Shapely (https://shapely.readthedocs.io)
 in December 2021 and will be released as part of Shapely 2.0. The development will take place
 at the Shapely repository. Please raise issues or create pull request over there.
 PyGEOS itself will receive updates (by backporting from the Shapely repository) until
