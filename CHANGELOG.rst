@@ -1,6 +1,31 @@
 Changelog
 =========
 
+Version 0.13 (unreleased)
+-------------------------
+
+**Major enhancements**
+
+* ...
+
+**API Changes**
+
+* ...
+
+**Bug fixes**
+
+* ...
+
+
+**Acknowledgments**
+
+Thanks to everyone who contributed to this release!
+People with a "+" by their names contributed a patch for the first time.
+
+* Brendan Ward
+* Casper van der Wel
+* Joris Van den Bossche
+
 
 Version 0.12 (2021-12-03)
 -------------------------
