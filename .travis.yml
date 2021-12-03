@@ -33,6 +33,7 @@ branches:
   only:
   - master
   - travis
+  - /^\d+\.\d+(\.\d+)?(-\S*)?$/  # run on tags (without 'v' prefix)
 
 install:
 - |
