@@ -2,7 +2,7 @@ Changelog
 =========
 
 
-Version 0.12 (unreleased)
+Version 0.12 (2021-12-03)
 -------------------------
 
 **Distribution**
