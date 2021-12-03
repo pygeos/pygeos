@@ -181,4 +181,5 @@ jobs:
         with:
           user: __token__
           password: ${{ secrets.pypi_password }}
+          skip_existing: true
           # To test: repository_url: https://test.pypi.org/legacy/
