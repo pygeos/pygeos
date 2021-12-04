@@ -18,7 +18,6 @@ jobs:
   - arch: s390x
   - arch: arm64
   - arch: arm64
-    dist: bionic  # docker pull gives TLS handshake timeouts on focal
     services: docker
     env:
     - CIBUILDWHEEL=1
