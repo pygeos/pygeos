@@ -7,6 +7,10 @@
 #  - export GEOS_VERSION=3.7.3 or main -- to download and compile
 pushd .
 
+#temprorarily crash for Travis tests
+crash
+
+
 set -e
 
 if [ -z "$GEOS_INSTALL" ]; then
