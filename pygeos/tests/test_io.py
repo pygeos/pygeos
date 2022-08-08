@@ -1,6 +1,7 @@
 import json
 import pickle
 import struct
+import warnings
 from unittest import mock
 
 import numpy as np
@@ -169,10 +170,9 @@ def test_from_wkt_warn_on_invalid():
 
 
 def test_from_wkb_ignore_on_invalid():
-    with pytest.warns(None):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # no warning
         pygeos.from_wkt("", on_invalid="ignore")
-
-    with pytest.warns(None):
         pygeos.from_wkt("NOT A WKT STRING", on_invalid="ignore")
 
 
@@ -250,17 +250,16 @@ def test_from_wkb_warn_on_invalid_warn():
 
 
 def test_from_wkb_ignore_on_invalid_ignore():
-    # invalid WKB
-    with pytest.warns(None) as w:
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # no warning
+
+        # invalid WKB
         result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00", on_invalid="ignore")
         assert result is None
-        assert len(w) == 0  # no warning
 
-    # invalid ring in WKB
-    with pytest.warns(None) as w:
+        # invalid ring in WKB
         result = pygeos.from_wkb(INVALID_WKB, on_invalid="ignore")
         assert result is None
-        assert len(w) == 0  # no warning
 
 
 def test_from_wkb_on_invalid_unsupported_option():
@@ -792,7 +791,8 @@ def test_from_geojson_warn_on_invalid():
 
 @pytest.mark.skipif(pygeos.geos_version < (3, 10, 1), reason="GEOS < 3.10.1")
 def test_from_geojson_ignore_on_invalid():
-    with pytest.warns(None):
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")  # no warning
         assert pygeos.from_geojson("", on_invalid="ignore") is None
 
 
