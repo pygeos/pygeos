@@ -27,12 +27,12 @@ DecodingErrorOptions = ParamEnum(
 )
 
 
+shapely_mod = None
 ShapelyGeometry = None
 ShapelyPreparedGeometry = None
-shapely_lgeos = None
-shapely_geom_factory = None
 shapely_wkb_loads = None
 shapely_compatible = None
+shapely_version = None
 _shapely_checked = False
 
 
@@ -43,37 +43,36 @@ def check_shapely_version():
 
     This function sets a few global variables:
 
+    - shapely_mod:
+        the top-level module
     - ShapelyGeometry:
         shapely.geometry.base.BaseGeometry
     - ShapelyPreparedGeometry:
         shapely.prepared.PreparedGeometry
-    - shapely_lgeos:
-        shapely.geos.lgeos
-    - shapely_geom_factory:
-        shapely.geometry.base.geom_factory
     - shapely_wkb_loads:
         shapely.wkb.loads
     - shapely_compatible:
         ``None`` if shapely is not installed,
         ``True`` if shapely and PyGEOS use the same GEOS version,
         ``False`` otherwise
+    - shapely_version
     - _shapely_checked:
         Mostly internal variable to mark that we already tried to import shapely
     """
+    global shapely_mod
     global ShapelyGeometry
     global ShapelyPreparedGeometry
-    global shapely_lgeos
-    global shapely_geom_factory
     global shapely_wkb_loads
     global shapely_compatible
+    global shapely_version
     global _shapely_checked
 
     if not _shapely_checked:
         try:
+            import shapely as shapely_mod
+            from shapely import __version__ as shapely_version
             from shapely.geometry.base import BaseGeometry as ShapelyGeometry
-            from shapely.geometry.base import geom_factory as shapely_geom_factory
             from shapely.geos import geos_version_string
-            from shapely.geos import lgeos as shapely_lgeos
             from shapely.prepared import PreparedGeometry as ShapelyPreparedGeometry
             from shapely.wkb import loads as shapely_wkb_loads
 
@@ -322,7 +321,12 @@ def to_shapely(geometry):
     if unpack:
         geometry = (geometry,)
 
-    if shapely_compatible:
+    # we can only take the compatible fast-path for shapely < 2,
+    # because shapely 2+ doesn't expose clone
+    if shapely_compatible and int(shapely_version[0]) < 2:
+        from shapely.geometry.base import geom_factory as shapely_geom_factory
+        from shapely.geos import lgeos as shapely_lgeos
+
         geometry = [
             None
             if g is None
@@ -331,7 +335,10 @@ def to_shapely(geometry):
         ]
     else:
         geometry = to_wkb(geometry)
-        geometry = [None if g is None else shapely_wkb_loads(g) for g in geometry]
+        if int(shapely_version[0]) >= 2:
+            geometry = shapely_mod.from_wkb(geometry)
+        else:
+            geometry = [None if g is None else shapely_wkb_loads(g) for g in geometry]
 
     if unpack:
         return geometry[0]

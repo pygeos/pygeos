@@ -2787,17 +2787,17 @@ static void from_shapely_func(char** args, npy_intp* dimensions, npy_intp* steps
       if (PyObject_HasAttrString(in1, "context")) {
         in1 = PyObject_GetAttrString(in1, "context");
       }
-      /* Get the __geom__ attribute */
-      attr = PyObject_GetAttrString(in1, "__geom__");
+      /* Get the _geom attribute */
+      attr = PyObject_GetAttrString(in1, "_geom");
       if (attr == NULL) {
-        /* Raise if __geom__ does not exist */
+        /* Raise if _geom does not exist */
         PyErr_Format(PyExc_TypeError, "Expected a shapely object or None, got %s",
                      Py_TYPE(in1)->tp_name);
         GEOS_FINISH;
         return;
       } else if (!PyLong_Check(attr)) {
-        /* Raise if __geom__ is of incorrect type */
-        PyErr_Format(PyExc_TypeError, "Expected int for the __geom__ attribute, got %s",
+        /* Raise if _geom is of incorrect type */
+        PyErr_Format(PyExc_TypeError, "Expected int for the _geom attribute, got %s",
                      Py_TYPE(attr)->tp_name);
         Py_XDECREF(attr);
         GEOS_FINISH;
