@@ -1,7 +1,7 @@
 files: 'pygeos'
 repos:
 -   repo: https://github.com/psf/black
-    rev: 20.8b1
+    rev: 22.3.0
     hooks:
     - id: black
 -   repo: https://gitlab.com/pycqa/flake8
