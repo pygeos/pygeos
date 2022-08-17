@@ -1,20 +1,18 @@
 Changelog
 =========
 
-Version 0.13 (unreleased)
+Version 0.13 (2022-08-??)
 -------------------------
 
-**Major enhancements**
+**Distribution**
 
-* ...
-
-**API Changes**
-
-* ...
+* All binary wheels now have GEOS 3.10.3. See https://github.com/libgeos/geos/blob/3.10/NEWS
+  for the changes (#454).
 
 **Bug fixes**
 
-* ...
+* Fixed the ``to_shapely`` and ``from_shapely`` functions for compatibility
+  with the upcoming Shapely 2.0 release (#452)
 
 
 **Acknowledgments**
@@ -22,9 +20,9 @@ Version 0.13 (unreleased)
 Thanks to everyone who contributed to this release!
 People with a "+" by their names contributed a patch for the first time.
 
-* Brendan Ward
 * Casper van der Wel
 * Joris Van den Bossche
+* Mike Taves
 
 
 Version 0.12 (2021-12-03)
