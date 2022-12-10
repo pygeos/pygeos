@@ -14,7 +14,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-2019]
         architecture: [x64]
-        geos: [3.6.5, 3.7.5, 3.8.3, 3.9.3, 3.10.3, 3.11.1, main]
+        geos: [3.6.5, 3.7.5, 3.8.3, 3.9.3, 3.10.4, 3.11.1, main]
         include:
           # 2017
           - python: 3.6
@@ -54,9 +54,9 @@ jobs:
             numpy: 1.13.3
           - os: windows-2019
             architecture: x86
-            python: 3.9
-            geos: 3.10.3
-            numpy: 1.19.5
+            python: "3.10"
+            geos: 3.10.4
+            numpy: 1.21.3
 
     env:
       GEOS_VERSION: ${{ matrix.geos }}
