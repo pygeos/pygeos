@@ -17,9 +17,9 @@ jobs:
         geos: [3.6.5, 3.7.5, 3.8.3, 3.9.3, 3.10.4, 3.11.1, main]
         include:
           # 2017
-          - python: 3.6
+          - python: 3.7  # 3.6 is dropped
             geos: 3.6.5
-            numpy: 1.13.3
+            numpy: 1.14.6
           # 2018
           - python: 3.7
             geos: 3.7.5
@@ -40,23 +40,23 @@ jobs:
           # 2022
           - python: "3.11"
             geos: 3.11.1
-            numpy: 1.23.5
-            extra_pytest_args: "-W error"  # error on warnings
+            numpy: 1.23.4
+            # extra_pytest_args: "-W error"  # error on warnings
           # dev
-          - python: "3.10"
+          - python: "3.11"
             geos: main
-            extra_pytest_args: "-W error"  # error on warnings
+            extra_pytest_args: "-W error" # error on warnings
           # enable two 32-bit windows builds:
           - os: windows-2019
             architecture: x86
-            python: 3.6
-            geos: 3.6.5
-            numpy: 1.13.3
+            python: 3.7
+            geos: 3.7.5
+            numpy: 1.15.4
           - os: windows-2019
             architecture: x86
-            python: "3.10"
+            python: 3.9
             geos: 3.10.4
-            numpy: 1.21.3
+            numpy: 1.19.5
 
     env:
       GEOS_VERSION: ${{ matrix.geos }}
