@@ -224,16 +224,14 @@ def test_from_wkb_exceptions():
         pygeos.from_wkb(1)
 
     # invalid WKB
-    with pytest.raises(pygeos.GEOSException, match="Unexpected EOF parsing WKB"):
-        result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00")
-        assert result is None
-
-    # invalid ring in WKB
     with pytest.raises(
         pygeos.GEOSException,
-        match="Points of LinearRing do not form a closed linestring",
+        match=(
+            "Unexpected EOF parsing WKB|"
+            "ParseException: Input buffer is smaller than requested object size"
+        ),
     ):
-        result = pygeos.from_wkb(INVALID_WKB)
+        result = pygeos.from_wkb(b"\x01\x01\x00\x00\x00\x00")
         assert result is None
 
 
@@ -327,7 +325,7 @@ def test_to_wkt_exceptions():
         pygeos.to_wkt(1)
 
     with pytest.raises(pygeos.GEOSException):
-        pygeos.to_wkt(point, output_dimension=4)
+        pygeos.to_wkt(point, output_dimension=5)
 
 
 def test_to_wkt_point_empty():
@@ -443,7 +441,7 @@ def test_to_wkb_exceptions():
         pygeos.to_wkb(1)
 
     with pytest.raises(pygeos.GEOSException):
-        pygeos.to_wkb(point, output_dimension=4)
+        pygeos.to_wkb(point, output_dimension=5)
 
 
 def test_to_wkb_byte_order():
