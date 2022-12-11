@@ -1,3 +1,5 @@
+import os
+import sys
 import warnings
 from collections.abc import Sized
 
@@ -78,9 +80,12 @@ def check_shapely_version():
 
             # shapely has something like: "3.6.2-CAPI-1.10.2 4d2925d6"
             # pygeos has something like: "3.6.2-CAPI-1.10.2"
-            shapely_compatible = True
-            if not geos_version_string.startswith(geos_capi_version_string):
-                shapely_compatible = False
+            shapely_compatible = False
+            if os.path.exists(os.path.join(sys.prefix, "conda-meta")):
+                if geos_version_string.startswith(geos_capi_version_string):
+                    # only if using conda and having the same GEOS version
+                    shapely_compatible = True
+            if not shapely_compatible:
                 warnings.warn(
                     "The shapely GEOS version ({}) is incompatible "
                     "with the PyGEOS GEOS version ({}). "
