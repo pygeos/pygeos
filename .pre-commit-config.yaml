@@ -4,12 +4,12 @@ repos:
     rev: 22.3.0
     hooks:
     - id: black
--   repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.0
+-   repo: https://github.com/pycqa/flake8
+    rev: 5.0.4
     hooks:
     - id: flake8
 -   repo: https://github.com/pycqa/isort
-    rev: 5.8.0
+    rev: 5.10.1
     hooks:
     - id: isort
       exclude: pygeos/__init__.py
