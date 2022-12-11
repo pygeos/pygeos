@@ -2,11 +2,13 @@ Changelog
 =========
 
 Version 0.13.1 (unreleased)
--------------------------
+---------------------------
 
 * Added support for Python 3.11 binary wheels.
 
 * Binary wheels now include GEOS 3.10.4.
+
+* Fixed unittests for GEOS 3.11.
 
 
 Version 0.13 (2022-08-25)
