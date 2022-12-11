@@ -4,13 +4,24 @@ Changelog
 Version 0.13.1 (unreleased)
 ---------------------------
 
-* Added support for Python 3.11 binary wheels.
+* Added support for Python 3.11 binary wheels (#458).
 
-* Dropped support for Python 3.6.
+* Dropped support for Python 3.6 (#458).
 
-* Binary wheels now include GEOS 3.10.4.
+* Binary wheels now include GEOS 3.10.4 (#458).
 
-* Fixed unittests for GEOS 3.11.
+* Fixed unittests for GEOS 3.11 (#458).
+
+* Only use the 'fast' path in to/from_shapely when using conda (#459).
+
+
+**Acknowledgments**
+
+Thanks to everyone who contributed to this release!
+People with a "+" by their names contributed a patch for the first time.
+
+* Casper van der Wel
+* Joris Van den Bossche
 
 
 Version 0.13 (2022-08-25)
