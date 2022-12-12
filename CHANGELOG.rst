@@ -1,8 +1,8 @@
 Changelog
 =========
 
-Version 0.13.1 (unreleased)
----------------------------
+Version 0.14 (2022-12-12)
+-------------------------
 
 * Added support for Python 3.11 binary wheels (#458).
 
