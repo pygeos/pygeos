@@ -2,6 +2,12 @@
 PyGEOS
 ======
 
+**Important note**: PyGEOS was merged with Shapely (https://shapely.readthedocs.io)
+in December 2021 and has been released as part of Shapely 2.0. The development now takes place
+at the Shapely repository. Please raise issues or create pull request over there.
+PyGEOS itself will in principle not receive updates anymore.
+
+
 .. Documentation at RTD — https://readthedocs.org
 
 .. image:: https://readthedocs.org/projects/pygeos/badge/?version=latest
@@ -43,12 +49,6 @@ PyGEOS is a C/Python library with vectorized geometry functions. The geometry
 operations are done in the open-source geometry library GEOS. PyGEOS wraps
 these operations in NumPy ufuncs providing a performance improvement when
 operating on arrays of geometries.
-
-**Important note**: PyGEOS was merged with Shapely (https://shapely.readthedocs.io)
-in December 2021 and will be released as part of Shapely 2.0. The development will take place
-at the Shapely repository. Please raise issues or create pull request over there.
-PyGEOS itself will receive updates (by backporting from the Shapely repository) until
-Shapely 2.0 is actually released.
 
 What is a ufunc?
 ----------------
